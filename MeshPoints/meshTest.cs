@@ -62,6 +62,8 @@ namespace MeshPoints
 
             //mf.Set(0, 1, 2, 3);
             
+            // test 1
+
 
             MeshFace mf = new MeshFace(0,1,2,3);
             m.Faces.AddFace(mf);
