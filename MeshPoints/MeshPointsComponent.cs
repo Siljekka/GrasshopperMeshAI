@@ -72,7 +72,7 @@ namespace MeshPoints
                     p2 = pts[i+1][j];
                     p3 = pts[i+1][j + 1];
                     p4 = pts[i][j + 1];
-
+                    
                    
                     p1.CastTo<Point3d>(out Point3d p1proxy);
                     p2.CastTo<Point3d>(out Point3d p2proxy);

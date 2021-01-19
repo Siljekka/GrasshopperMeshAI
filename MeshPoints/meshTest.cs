@@ -62,7 +62,7 @@ namespace MeshPoints
 
             //mf.Set(0, 1, 2, 3);
             
-            // test 1
+            // Test Silje og Hilde ny
 
 
             MeshFace mf = new MeshFace(0,1,2,3);
