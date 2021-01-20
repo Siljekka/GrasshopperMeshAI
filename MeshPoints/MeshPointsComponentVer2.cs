@@ -5,15 +5,24 @@ using System.Collections.Generic;
 using Grasshopper.Kernel.Types;
 using Grasshopper.Kernel.Data;
 
+//Created: 18.01.21
+//Name: Silje Knutsvik Kalleberg
+//File: MeshPointsComponentVer2.cs
+//Operating system: Win10
+//Compiler & Version: Visual Studio 2019 C# for Rhino/Grasshopper v6
+//
+//Component meshes between input points and return a consistant mesh.
+//The version meshes without meshwelding.
+
 namespace MeshPoints
 {
-    public class MeshPointsComponent : GH_Component
+    public class MeshPointsComponentVer2 : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
-        public MeshPointsComponent()
-          : base("MeshPoints", "MeshPts",
+        public MeshPointsComponentVer2()
+          : base("MeshPointsComponentVer2", "MeshPts",
               "Create mesh between given points",
               "MyPlugIn", "Mesh")
         {
@@ -44,61 +53,48 @@ namespace MeshPoints
         {
             //Variables
             Mesh m = new Mesh();
-            Mesh allMesh = new Mesh();
-            MeshFace mf = new MeshFace();
-            GH_Point p1 = new GH_Point();
-            GH_Point p2 = new GH_Point();
-            GH_Point p3 = new GH_Point();
-            GH_Point p4 = new GH_Point();
-
+            GH_Point pt = new GH_Point();
+            GH_Structure<GH_Point> pts = new GH_Structure<GH_Point>();
             int nx = 0;
             int ny = 0;
-            
-            GH_Structure<GH_Point> pts = new GH_Structure<GH_Point>();
+            int counter = 0;
 
             //Input
             DA.GetDataTree(0, out pts);
 
-            #region Loop
-            nx = pts.Branches.Count;
-            ny = pts.Branches[0].Count;
+            #region Loop Vertices
+            nx = pts.Branches.Count; //number points in x-dir; Control
+            ny = pts.Branches[0].Count; //number points in y-dir; Control
 
-            for (int i = 0; i < ny - 1; i++)
+            for (int i = 0; i < nx; i++)
             {
-
-                for (int j = 0; j < nx - 1; j++)
+                for (int j = 0; j < ny; j++)
                 {
-                    p1 = pts[i][j];
-                    p2 = pts[i+1][j];
-                    p3 = pts[i+1][j + 1];
-                    p4 = pts[i][j + 1];
-
-                    p1.CastTo<Point3d>(out Point3d p1proxy);
-                    p2.CastTo<Point3d>(out Point3d p2proxy);
-                    p3.CastTo<Point3d>(out Point3d p3proxy);
-                    p4.CastTo<Point3d>(out Point3d p4proxy);
-
-                    m.Vertices.Add(p1proxy);
-                    m.Vertices.Add(p2proxy);
-                    m.Vertices.Add(p3proxy);
-                    m.Vertices.Add(p4proxy);
-
-                    mf.Set(0, 1, 2, 3);
-                    m.Faces.AddFace(mf);
-                    m.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-                    m.Compact(); //to ensure that it calculate
-                    allMesh.Append(m);
-                    m = new Mesh();
+                    pt = pts[i][j]; //Get a point from input
+                    pt.CastTo<Point3d>(out Point3d ptProxy); //From GH_Point to Point3d
+                    m.Vertices.Add(ptProxy); //Add point as mesh vertice
                 }
-
-
             }
             #endregion
 
-            allMesh.Weld(0.1);
+            #region Loop MeshFace
+            for (int i = 0; i < nx - 1; i++)
+            {
+                for (int j = 0; j < ny - 1; j++)
+                {
+                    m.Faces.AddFace(counter, counter + 1, counter + ny + 1, counter + ny); //Add MeshFace; Constrol nx vs ny
+                    counter++;
+                }
+                counter++; //Skip when new "row" to mesh
+            }
+
+            #endregion
+            m.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+            //m.Normals.ComputeNormals(); //Control if needed
+            m.Compact(); //to ensure that it calculate
 
             // Output
-            DA.SetData(0, allMesh);
+            DA.SetData(0, m);
         }
 
         /// <summary>
@@ -119,7 +115,8 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("235955ae-889b-4281-a7cf-6df443f17d74"); }
+            get { return new Guid("5ea3f97e-8d41-4d40-b0ad-a4b3b3819a61"); }
         }
     }
 }
+
