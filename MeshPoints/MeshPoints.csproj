@@ -61,11 +61,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MeshFlattenPointsComponent.cs" />
     <Compile Include="MeshPointsInfo.cs" />
     <Compile Include="MeshPointsComponentVer2.cs" />
-    <Compile Include="meshTest.cs" />
-    <Compile Include="MeshPointsComponent.cs" />
+    <Compile Include="MeshPointsComponentVer1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
