@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel.Types;
 using Grasshopper.Kernel.Data;
-using Rhino.Geometry.Collections;
 
 //Created: 18.01.21
 //Name: Silje Knutsvik Kalleberg
