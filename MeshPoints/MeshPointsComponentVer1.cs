@@ -7,12 +7,12 @@ using Grasshopper.Kernel.Data;
 
 namespace MeshPoints
 {
-    public class MeshPointsComponent : GH_Component
+    public class MeshPointsComponentVer1 : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
-        public MeshPointsComponent()
+        public MeshPointsComponentVer1()
           : base("MeshPoints", "MeshPts",
               "Create mesh between given points",
               "MyPlugIn", "Mesh")
