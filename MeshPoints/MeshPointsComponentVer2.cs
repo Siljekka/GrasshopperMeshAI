@@ -12,7 +12,7 @@ using Grasshopper.Kernel.Data;
 //Compiler & Version: Visual Studio 2019 C# for Rhino/Grasshopper v6
 //
 //Component meshes between input points and return a consistant mesh.
-//The version meshes without meshwelding.
+//The version meshes without welding.
 
 namespace MeshPoints
 {

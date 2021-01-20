@@ -5,6 +5,15 @@ using System.Collections.Generic;
 using Grasshopper.Kernel.Types;
 using Grasshopper.Kernel.Data;
 
+//Created: 16.01.21
+//Name: Silje Knutsvik Kalleberg
+//File: MeshPointsComponentVer1.cs
+//Operating system: Win10
+//Compiler & Version: Visual Studio 2019 C# for Rhino/Grasshopper v6
+//
+//Component meshes between input points and return a consistant mesh.
+//The version meshes with welding.
+
 namespace MeshPoints
 {
     public class MeshPointsComponentVer1 : GH_Component
