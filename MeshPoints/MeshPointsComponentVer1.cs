@@ -22,8 +22,8 @@ namespace MeshPoints
         /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
         public MeshPointsComponentVer1()
-          : base("MeshPoints", "MeshPts",
-              "Create mesh between given points",
+          : base("MeshPointsVer1", "MeshPts",
+              "Create mesh between given points w welding",
               "MyPlugIn", "Mesh")
         {
         }
