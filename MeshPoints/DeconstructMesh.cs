@@ -13,9 +13,9 @@ namespace MeshPoints
         /// Initializes a new instance of the DeconstructMesh class.
         /// </summary>
         public DeconstructMesh()
-          : base("DeconstructMesh", "Nickname",
-              "Description",
-              "Category", "Subcategory")
+          : base("DeconstructMesh", "decM",
+              "Deconstructing the mesh",
+              "MyPlugIn", "Deconstruct")
         {
         }
 
@@ -24,7 +24,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddPointParameter("Mesh", "m", "Base mesh", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Mesh", "m", "Base mesh", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -35,8 +35,8 @@ namespace MeshPoints
             pManager.AddGenericParameter("Vertices", "v", "Verticies of a face", GH_ParamAccess.list);
             pManager.AddGenericParameter("Face", "f", "Faces of a mesh", GH_ParamAccess.list);
             pManager.AddGenericParameter("Colours", "c", "Mesh vertex colour", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Normals", "n", "Mesh normals", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Quality", "q", "Quality of mesh", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Normals", "n", "Mesh normals", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Quality_AR", "q", "Quality of mesh", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -45,30 +45,87 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //Variables
+            #region Input
             Mesh m = new Mesh();
-            var faces = m.Faces;
-            List<Point3d> verticies = new List<Point3d>();
-            var normals = m.Normals;
-            //var colours;
-            //MeshQuality quality;
+            MeshQuality quality = new MeshQuality();
 
-
-            //Input
             DA.GetData(0, ref m);
+            #endregion
+
+
+            #region Code
+            var verticies = m.Vertices; //Vertices of the mesh
+            var faces = m.Faces; //Faces of the mesh
+            var normals = m.FaceNormals; //FaceNormals of the mesh
+            var colours = m.VertexColors;
+
+
+            // Quality: Aspect Ratio
+            List<double> distances = new List<double>(); //list with distacens between points in mesh face
+            List<double> qualityAR = new List<double>();
+
+            for (int i = 0; i < faces.Count; i++) //find the distances between vertices in a face and then calculates AR
+            {
+                distances.Clear();  //emties the distances list
+                faces.GetFaceVertices(i, out Point3f p1, out Point3f p2, out Point3f p3, out Point3f p4);
+
+                double dist1 = p1.DistanceTo(p2);
+                double dist2 = p2.DistanceTo(p3);
+                double dist3 = p3.DistanceTo(p4);
+                double dist4 = p4.DistanceTo(p1);
+                distances.Add(dist1);
+                distances.Add(dist2);
+                distances.Add(dist3);
+                distances.Add(dist4);
+                distances.Sort();  //sorterer listen med distances
+
+                double AR = (distances[0] / distances[3]); // calculates AR
+                qualityAR.Add(AR);  // Puts the ARs in one list
+
+                /*
+                if (AR > 0.75)
+                {
+                    m.VertexColors.SetColor(faces[i], Color.Green);
+                }
+                else if (AR > 0.5)
+                {
+                    m.VertexColors.SetColor(faces[i], Color.Yellow);
+                }
+                else if (AR > 0.25)
+                {
+                    m.VertexColors.SetColor(faces[i], Color.Orange);
+                }
+                else if (AR > 0)
+                {
+                    m.VertexColors.SetColor(faces[i], Color.Red);
+                }
+                */
+
+
+            }
+
+            //quality.aspectRatio = qualityAR;
+
+            // Warp angle:
 
 
 
+            #endregion
 
-            //Output
+
+            #region Output
             DA.SetDataList(0, verticies); //Vertices
-            DA.SetDataList(1, faces); //Vertices
-            //DA.SetDataList(2, colours); //Vertices
-            DA.SetDataList(3, normals); //Vertices
-            //DA.SetData(4, quality); //Vertices
+            DA.SetDataList(1, faces);
+            DA.SetDataList(2, colours);
+            DA.SetDataList(3, normals);
+            DA.SetDataList(4, qualityAR);
+            #endregion
 
 
         }
+
+        //Methods:
+
 
         /// <summary>
         /// Provides an Icon for the component.
