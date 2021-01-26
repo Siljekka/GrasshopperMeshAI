@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel.Types;
 using Grasshopper.Kernel.Data;
+using Rhino.Geometry.Collections;
+using System.Drawing;
 
 namespace MeshPoints
 {
@@ -54,25 +56,33 @@ namespace MeshPoints
 
 
             #region Code
-            var verticies = m.Vertices; //Vertices of the mesh
-            var faces = m.Faces; //Faces of the mesh
-            var normals = m.FaceNormals; //FaceNormals of the mesh
-            var colours = m.VertexColors;
+            MeshVertexList verticies = m.Vertices; //Vertices of the mesh
+            MeshFaceList faces = m.Faces; //Faces of the mesh
+            MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
+            MeshVertexColorList colors = m.VertexColors;
 
 
             // Quality: Aspect Ratio
             List<double> distances = new List<double>(); //list with distacens between points in mesh face
             List<double> qualityAR = new List<double>();
 
+
+            m.VertexColors.Add(Color.Red);
+            m.VertexColors.Add(Color.Yellow);
+            m.VertexColors.Add(Color.Yellow);
+            m.VertexColors.Add(Color.Red);
+            m.VertexColors.Add(Color.Green);
+            m.VertexColors.Add(Color.Green);
+
             for (int i = 0; i < faces.Count; i++) //find the distances between vertices in a face and then calculates AR
             {
-                distances.Clear();  //emties the distances list
-                faces.GetFaceVertices(i, out Point3f p1, out Point3f p2, out Point3f p3, out Point3f p4);
-
+                // Hilde: faces.GetFaceVertices(i, out Point3f p1, out Point3f p2, out Point3f p3, out Point3f p4);
+                faces.GetFaceVertices(i, out Point3f p1, out Point3f p4, out Point3f p3, out Point3f p2);
                 double dist1 = p1.DistanceTo(p2);
                 double dist2 = p2.DistanceTo(p3);
                 double dist3 = p3.DistanceTo(p4);
                 double dist4 = p4.DistanceTo(p1);
+
                 distances.Add(dist1);
                 distances.Add(dist2);
                 distances.Add(dist3);
@@ -80,12 +90,16 @@ namespace MeshPoints
                 distances.Sort();  //sorterer listen med distances
 
                 double AR = (distances[0] / distances[3]); // calculates AR
+                //quality.aspectRatio.Add(AR);
                 qualityAR.Add(AR);  // Puts the ARs in one list
 
+                //m.VertexColors.SetColor()
+                //colors.Add( m.VertexColors.SetColor(faces[0], Color.Green));
+                
                 /*
                 if (AR > 0.75)
                 {
-                    m.VertexColors.SetColor(faces[i], Color.Green);
+                    m.VertexColors.SetColor(faces[i], Color.Green );
                 }
                 else if (AR > 0.5)
                 {
@@ -102,6 +116,9 @@ namespace MeshPoints
                 */
 
 
+                distances.Clear();  //emties the distances list
+
+
             }
 
             //quality.aspectRatio = qualityAR;
@@ -116,7 +133,7 @@ namespace MeshPoints
             #region Output
             DA.SetDataList(0, verticies); //Vertices
             DA.SetDataList(1, faces);
-            DA.SetDataList(2, colours);
+            DA.SetDataList(2, colors);
             DA.SetDataList(3, normals);
             DA.SetDataList(4, qualityAR);
             #endregion

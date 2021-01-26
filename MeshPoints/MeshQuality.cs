@@ -26,6 +26,11 @@ namespace MeshPoints
             angleRatio = _angleRatio;
         }
 
+        public MeshQuality(List<double> _aspectRatio)
+        {
+            aspectRatio = _aspectRatio;
+        }
+
         //Methods
     }
 }
