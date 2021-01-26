@@ -7,6 +7,8 @@ using Grasshopper.Kernel.Data;
 using Rhino.Geometry.Collections;
 using System.Drawing;
 
+
+
 namespace MeshPoints
 {
     public class DeconstructMesh : GH_Component
@@ -39,6 +41,7 @@ namespace MeshPoints
             pManager.AddGenericParameter("Colours", "c", "Mesh vertex colour", GH_ParamAccess.list);
             pManager.AddGenericParameter("Normals", "n", "Mesh normals", GH_ParamAccess.item);
             pManager.AddGenericParameter("Quality_AR", "q", "Quality of mesh", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Quality_SK", "q", "Quality of mesh", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -47,55 +50,87 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            #region Input
+            //Input
             Mesh m = new Mesh();
-            MeshQuality quality = new MeshQuality();
-
             DA.GetData(0, ref m);
-            #endregion
 
-
-            #region Code
+            //Variables
             MeshVertexList verticies = m.Vertices; //Vertices of the mesh
             MeshFaceList faces = m.Faces; //Faces of the mesh
-            MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
             MeshVertexColorList colors = m.VertexColors;
+            MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
 
+            //_var for mesh quality
+            MeshFace face = new MeshFace(); // might delete later.
+            MeshQuality quality = new MeshQuality();
+            List<Point3f> pts = new List<Point3f>(); //list of vertices of a mesh face
 
-            // Quality: Aspect Ratio
-            List<double> distances = new List<double>(); //list with distacens between points in mesh face
-            List<double> qualityAR = new List<double>();
+            //_var for AR
+            double AR = 0; 
+            List<double> dist = new List<double>(); //list distacens between vertices in a mesh face, following mesh edges CCW
+            List<double> qualityAR = new List<double>(); //Metrics of mesh quality_aspectRatio
 
+            //_var for SK
+            double SK = 0;
+            List<double> angle = new List<double>();
+            double angleIdeal = 90;
+            double angleRad = 0;
+            int neigbourPt = 0;
+            List<double> qualitySK = new List<double>(); //Metrics of mesh quality_aspectRatio
 
-            m.VertexColors.Add(Color.Red);
-            m.VertexColors.Add(Color.Yellow);
-            m.VertexColors.Add(Color.Yellow);
-            m.VertexColors.Add(Color.Red);
-            m.VertexColors.Add(Color.Green);
-            m.VertexColors.Add(Color.Green);
-
+            #region Code
             for (int i = 0; i < faces.Count; i++) //find the distances between vertices in a face and then calculates AR
             {
-                // Hilde: faces.GetFaceVertices(i, out Point3f p1, out Point3f p2, out Point3f p3, out Point3f p4);
-                faces.GetFaceVertices(i, out Point3f p1, out Point3f p4, out Point3f p3, out Point3f p2);
-                double dist1 = p1.DistanceTo(p2);
-                double dist2 = p2.DistanceTo(p3);
-                double dist3 = p3.DistanceTo(p4);
-                double dist4 = p4.DistanceTo(p1);
+                #region Get Vertices 
+                face = faces.GetFace(i);
+                if (face.IsQuad)
+                {
+                    faces.GetFaceVertices(i, out Point3f p1, out Point3f p4, out Point3f p3, out Point3f p2); // Vertices CCW of meshface //wanna insert in list pts right away
+                    pts.Add(p1);
+                    pts.Add(p2);
+                    pts.Add(p3);
+                    pts.Add(p4);
 
-                distances.Add(dist1);
-                distances.Add(dist2);
-                distances.Add(dist3);
-                distances.Add(dist4);
-                distances.Sort();  //sorterer listen med distances
+                    pts.Add(p1); //dublicate list, wanna do this more efficient
+                    pts.Add(p2);
+                    pts.Add(p3);
+                    pts.Add(p4);
+                    neigbourPt = 3;
+                }
+                else if (face.IsTriangle)
+                {
+                    //faces.GetFaceVertices(i, out Point3f p1, out Point3f p3, out Point3f p2); //Need to change
+                    neigbourPt = 2;
+                }
+                #endregion
 
-                double AR = (distances[0] / distances[3]); // calculates AR
-                //quality.aspectRatio.Add(AR);
-                qualityAR.Add(AR);  // Puts the ARs in one list
+                #region AspectRatio
+                for (int n = 0; n < pts.Count/2; n++)
+                {
+                    dist.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
+                }
+                dist.Sort();
+                AR = (dist[0] / dist[3]); //calculates AR
+                qualityAR.Add(AR);  //wanna add AR to the property quality.Aspectratio
+                #endregion
 
+                #region Skewness
+                for (int n = 0; n < pts.Count/2; n++) //gjelder quads
+                {
+                    Vector3f a = new Vector3f(pts[n].X - pts[n+1].X, pts[n].Y - pts[n+1].Y, pts[n].Z - pts[n+1].Z); //creat a vector from a vertice to a neighbour vertice
+                    Vector3f b = new Vector3f(pts[n].X - pts[n + neigbourPt].X, pts[n].Y - pts[n + neigbourPt].Y, pts[n].Z - pts[n + neigbourPt].Z); //creat a vector from a vertice to the other neighbour vertice
+                    angleRad = Math.Abs( Math.Acos(Vector3f.Multiply(a, b) / (a.Length * b.Length))); //calc angles in radians between vectors
+                    angle.Add( angleRad * 180/Math.PI); //convert from rad to deg
+                }
+                angle.Sort();
+                SK = 1 - Math.Max((angle[3] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal));
+                qualitySK.Add(SK);
+                #endregion
+
+                #region Color
                 //m.VertexColors.SetColor()
                 //colors.Add( m.VertexColors.SetColor(faces[0], Color.Green));
-                
+
                 /*
                 if (AR > 0.75)
                 {
@@ -114,34 +149,23 @@ namespace MeshPoints
                     m.VertexColors.SetColor(faces[i], Color.Red);
                 }
                 */
+                #endregion
 
-
-                distances.Clear();  //emties the distances list
-
-
+                dist.Clear();
+                pts.Clear();
             }
-
-            //quality.aspectRatio = qualityAR;
-
-            // Warp angle:
-
 
 
             #endregion
 
-
-            #region Output
-            DA.SetDataList(0, verticies); //Vertices
+            //Output
+            DA.SetDataList(0, verticies); 
             DA.SetDataList(1, faces);
             DA.SetDataList(2, colors);
             DA.SetDataList(3, normals);
             DA.SetDataList(4, qualityAR);
-            #endregion
-
-
+            DA.SetDataList(5, qualitySK);
         }
-
-        //Methods:
 
 
         /// <summary>

@@ -11,9 +11,9 @@ namespace MeshPoints
     class MeshQuality
     {
         //Properties
-        public List<double> aspectRatio { get; set; }
-        public List<double> angleRatio { get; set; }
-        public MeshFace meshFace { get; set; }
+        public List<double> AspectRatio { get; set; }
+        public List<double> AngleRatio { get; set; }
+        public MeshFace MeshFace { get; set; }
 
         //Constructor
         public MeshQuality()
@@ -22,13 +22,13 @@ namespace MeshPoints
         }
         public MeshQuality(List<double> _aspectRatio, List<double> _angleRatio)
         {
-            aspectRatio = _aspectRatio;
-            angleRatio = _angleRatio;
+            AspectRatio = _aspectRatio;
+            AngleRatio = _angleRatio;
         }
 
         public MeshQuality(List<double> _aspectRatio)
         {
-            aspectRatio = _aspectRatio;
+            AspectRatio = _aspectRatio;
         }
 
         //Methods
