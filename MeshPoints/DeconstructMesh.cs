@@ -42,6 +42,7 @@ namespace MeshPoints
             pManager.AddGenericParameter("Normals", "n", "Mesh normals", GH_ParamAccess.item);
             pManager.AddGenericParameter("Quality_AR", "q", "Quality of mesh", GH_ParamAccess.list);
             pManager.AddGenericParameter("Quality_SK", "q", "Quality of mesh", GH_ParamAccess.list);
+            pManager.AddGenericParameter("MeshAR", "q", "Qualtity of mesh", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -57,7 +58,7 @@ namespace MeshPoints
             //Variables
             MeshVertexList verticies = m.Vertices; //Vertices of the mesh
             MeshFaceList faces = m.Faces; //Faces of the mesh
-            MeshVertexColorList colors = m.VertexColors;
+            //MeshVertexColorList colors = m.VertexColors;
             MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
 
             //_var for mesh quality
@@ -78,6 +79,17 @@ namespace MeshPoints
             int neigbourPt = 0;
             List<double> qualitySK = new List<double>(); //Metrics of mesh quality_aspectRatio
 
+            m.VertexColors.CreateMonotoneMesh(Color.White);
+            int test = m.VertexColors.Count - 1;
+            Random rnd = new Random(5);
+            //int colorIndex = 0; slett?
+
+            Point3f[] myArray = verticies.ToPoint3fArray();
+            List<Point3f> vertList = new List<Point3f>(myArray);
+
+            Mesh meshColor = new Mesh();
+            Mesh singleMesh = new Mesh();
+
             #region Code
             for (int i = 0; i < faces.Count; i++) //find the distances between vertices in a face and then calculates AR
             {
@@ -96,6 +108,7 @@ namespace MeshPoints
                     pts.Add(p3);
                     pts.Add(p4);
                     neigbourPt = 3;
+
                 }
                 else if (face.IsTriangle)
                 {
@@ -103,6 +116,8 @@ namespace MeshPoints
                     neigbourPt = 2;
                 }
                 #endregion
+
+                
 
                 #region AspectRatio
                 for (int n = 0; n < pts.Count/2; n++)
@@ -128,6 +143,68 @@ namespace MeshPoints
                 #endregion
 
                 #region Color
+                //Create single mesh
+                for (int n = 0; n < 4; n++) //change 4 to a genertic parameter (triangle/quad)
+                {
+                    singleMesh.Vertices.Add(pts[n]); //add vertices to a single mesh
+                }
+                singleMesh.Faces.AddFace(face);
+
+                //Color AR
+                if (AR > 0.9)
+                {
+                    singleMesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                }
+                else if (AR > 0.7)
+                {
+                    singleMesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                }
+                else if (AR > 0.6)
+                {
+                    singleMesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                }
+                else if (AR > 0)
+                {
+                    singleMesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                }
+
+                meshColor.Append(singleMesh);
+
+                #region slett?
+                /*
+                for (int n = 0; n < 3; n++)
+                {
+                    // get the verticies of face i, update the color... will overwrite all verticies exept the boundaries
+                    
+                    var indexColor = vertList.FindIndex(Predicate<pts[0]> match);
+                    if (AR > 0.75)
+                    {
+                        m.VertexColors[colorIndex] = Color.FromArgb(0, 204, 0);
+                    }
+                    else if (AR > 0.5)
+                    {
+                        m.VertexColors[colorIndex] = Color.FromArgb(255, 255, 204);
+                    }
+                    else if (AR > 0.25)
+                    {
+                        m.VertexColors[colorIndex] = Color.FromArgb(255, 128, 0);
+                    }
+                    else if (AR > 0)
+                    {
+                        m.VertexColors[colorIndex] = Color.FromArgb(204, 0, 0);
+                    }
+                    colorIndex++;
+
+                }
+
+                */
+
+                /*m.VertexColors.CreateMonotoneMesh(Color.White);
+                Random rnd = new Random(5);
+                for (int n = 0; n < m.VertexColors.Count - 1; n++)
+                {
+                    m.VertexColors[n] = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
+                }*/
                 //m.VertexColors.SetColor()
                 //colors.Add( m.VertexColors.SetColor(faces[0], Color.Green));
 
@@ -150,13 +227,52 @@ namespace MeshPoints
                 }
                 */
                 #endregion
-
+                #endregion
                 dist.Clear();
                 pts.Clear();
+                singleMesh = new Mesh();
             }
 
 
             #endregion
+
+
+            #region slett?
+            /*
+            for (int n = 0; n < m.VertexColors.Count - 1; n++)
+            {
+                if (n < 20)
+                {
+                    m.VertexColors[n] = Color.FromArgb(0, 0, 0);
+                }
+                else
+                {
+                    m.VertexColors[n] = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
+                }
+            }
+
+            if (AR > 0.75)
+            {
+                m.VertexColors[i] = Color.FromArgb(0, 204, 0);
+            }
+            else if (AR > 0.5)
+            {
+                m.VertexColors[i] = Color.FromArgb(255, 255, 204);
+            }
+            else if (AR > 0.25)
+            {
+                m.VertexColors[i] = Color.FromArgb(255, 128, 0);
+            }
+            else if (AR > 0)
+            {
+                m.VertexColors[i] = Color.FromArgb(204, 0, 0);
+            }*/
+            #endregion
+
+            MeshVertexColorList colors = meshColor.VertexColors;
+
+
+
 
             //Output
             DA.SetDataList(0, verticies); 
@@ -165,8 +281,8 @@ namespace MeshPoints
             DA.SetDataList(3, normals);
             DA.SetDataList(4, qualityAR);
             DA.SetDataList(5, qualitySK);
+            DA.SetData(6, meshColor);
         }
-
 
         /// <summary>
         /// Provides an Icon for the component.
