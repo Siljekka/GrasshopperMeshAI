@@ -117,8 +117,6 @@ namespace MeshPoints
                 }
                 #endregion
 
-                
-
                 #region AspectRatio
                 for (int n = 0; n < pts.Count/2; n++)
                 {
@@ -144,17 +142,33 @@ namespace MeshPoints
 
                 #region Color
                 //Create single mesh
+                List<Point3d> pts3d = new List<Point3d>();
                 for (int n = 0; n < 4; n++) //change 4 to a genertic parameter (triangle/quad)
                 {
-                    singleMesh.Vertices.Add(pts[n]); //add vertices to a single mesh
+                    //singleMesh.Vertices.Ad
+                    Point3d pt3d = new Point3d(pts[n]);
+                    pts3d.Add(pt3d);
+                    singleMesh.Vertices.Add(pt3d); //add vertices to a single mesh
+                   
                 }
-                singleMesh.Faces.AddFace(face);
+                MeshFace mf = new MeshFace();
+                mf.Set(0, 1, 2, 3);
+                singleMesh.Faces.AddFace(mf);
+                //singleMesh.Faces.AddFace(face);
+                singleMesh.FaceNormals.ComputeFaceNormals();
+                singleMesh.Compact();
 
                 //Color AR
+                /*
                 if (AR > 0.9)
                 {
-                    singleMesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                    //singleMesh.VertexColors.CreateMonotoneMesh(Color.Green)
+                    singleMesh.VertexColors.Add(Color.Green);
+                    singleMesh.VertexColors.Add(Color.Green);
+                    singleMesh.VertexColors.Add(Color.Green);
+                    singleMesh.VertexColors.Add(Color.Green);
                 }
+                
                 else if (AR > 0.7)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
@@ -167,6 +181,7 @@ namespace MeshPoints
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Red);
                 }
+                */
 
                 meshColor.Append(singleMesh);
 
@@ -228,11 +243,12 @@ namespace MeshPoints
                 */
                 #endregion
                 #endregion
+
                 dist.Clear();
                 pts.Clear();
                 singleMesh = new Mesh();
             }
-
+            meshColor.Weld(0.1);
 
             #endregion
 
@@ -281,7 +297,7 @@ namespace MeshPoints
             DA.SetDataList(3, normals);
             DA.SetDataList(4, qualityAR);
             DA.SetDataList(5, qualitySK);
-            DA.SetData(6, meshColor);
+            DA.SetData(6, singleMesh);
         }
 
         /// <summary>
