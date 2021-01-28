@@ -58,7 +58,6 @@ namespace MeshPoints
             //Variables
             MeshVertexList verticies = m.Vertices; //Vertices of the mesh
             MeshFaceList faces = m.Faces; //Faces of the mesh
-            //MeshVertexColorList colors = m.VertexColors;
             MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
 
             //_var for mesh quality
@@ -71,6 +70,7 @@ namespace MeshPoints
             List<double> dist = new List<double>(); //list distacens between vertices in a mesh face, following mesh edges CCW
             List<double> qualityAR = new List<double>(); //Metrics of mesh quality_aspectRatio
 
+
             //_var for SK
             double SK = 0;
             List<double> angle = new List<double>();
@@ -82,13 +82,14 @@ namespace MeshPoints
             m.VertexColors.CreateMonotoneMesh(Color.White);
             int test = m.VertexColors.Count - 1;
             Random rnd = new Random(5);
-            //int colorIndex = 0; slett?
 
             Point3f[] myArray = verticies.ToPoint3fArray();
             List<Point3f> vertList = new List<Point3f>(myArray);
 
             Mesh meshColor = new Mesh();
             Mesh singleMesh = new Mesh();
+            //List<Mesh> test2 = new List<Mesh>();
+            MeshFace mf = new MeshFace();
 
             #region Code
             for (int i = 0; i < faces.Count; i++) //find the distances between vertices in a face and then calculates AR
@@ -139,36 +140,25 @@ namespace MeshPoints
                 SK = 1 - Math.Max((angle[3] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal));
                 qualitySK.Add(SK);
                 #endregion
+                
 
                 #region Color
                 //Create single mesh
-                List<Point3d> pts3d = new List<Point3d>();
                 for (int n = 0; n < 4; n++) //change 4 to a genertic parameter (triangle/quad)
                 {
-                    //singleMesh.Vertices.Ad
-                    Point3d pt3d = new Point3d(pts[n]);
-                    pts3d.Add(pt3d);
-                    singleMesh.Vertices.Add(pt3d); //add vertices to a single mesh
-                   
-                }
-                MeshFace mf = new MeshFace();
-                mf.Set(0, 1, 2, 3);
-                singleMesh.Faces.AddFace(mf);
-                //singleMesh.Faces.AddFace(face);
-                singleMesh.FaceNormals.ComputeFaceNormals();
-                singleMesh.Compact();
-
-                //Color AR
-                /*
-                if (AR > 0.9)
-                {
-                    //singleMesh.VertexColors.CreateMonotoneMesh(Color.Green)
-                    singleMesh.VertexColors.Add(Color.Green);
-                    singleMesh.VertexColors.Add(Color.Green);
-                    singleMesh.VertexColors.Add(Color.Green);
-                    singleMesh.VertexColors.Add(Color.Green);
+                    singleMesh.Vertices.Add(pts[n]); //add vertices to a single mesh
                 }
                 
+                mf.Set(0, 1, 2, 3);
+                singleMesh.Faces.AddFace(mf);
+                
+
+
+                //Color AR
+                if (AR > 0.9)
+                {
+                    singleMesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                }
                 else if (AR > 0.7)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
@@ -181,109 +171,19 @@ namespace MeshPoints
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Red);
                 }
-                */
-
+                
                 meshColor.Append(singleMesh);
+                //test2.Add(singleMesh);
 
-                #region slett?
-                /*
-                for (int n = 0; n < 3; n++)
-                {
-                    // get the verticies of face i, update the color... will overwrite all verticies exept the boundaries
-                    
-                    var indexColor = vertList.FindIndex(Predicate<pts[0]> match);
-                    if (AR > 0.75)
-                    {
-                        m.VertexColors[colorIndex] = Color.FromArgb(0, 204, 0);
-                    }
-                    else if (AR > 0.5)
-                    {
-                        m.VertexColors[colorIndex] = Color.FromArgb(255, 255, 204);
-                    }
-                    else if (AR > 0.25)
-                    {
-                        m.VertexColors[colorIndex] = Color.FromArgb(255, 128, 0);
-                    }
-                    else if (AR > 0)
-                    {
-                        m.VertexColors[colorIndex] = Color.FromArgb(204, 0, 0);
-                    }
-                    colorIndex++;
-
-                }
-
-                */
-
-                /*m.VertexColors.CreateMonotoneMesh(Color.White);
-                Random rnd = new Random(5);
-                for (int n = 0; n < m.VertexColors.Count - 1; n++)
-                {
-                    m.VertexColors[n] = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
-                }*/
-                //m.VertexColors.SetColor()
-                //colors.Add( m.VertexColors.SetColor(faces[0], Color.Green));
-
-                /*
-                if (AR > 0.75)
-                {
-                    m.VertexColors.SetColor(faces[i], Color.Green );
-                }
-                else if (AR > 0.5)
-                {
-                    m.VertexColors.SetColor(faces[i], Color.Yellow);
-                }
-                else if (AR > 0.25)
-                {
-                    m.VertexColors.SetColor(faces[i], Color.Orange);
-                }
-                else if (AR > 0)
-                {
-                    m.VertexColors.SetColor(faces[i], Color.Red);
-                }
-                */
-                #endregion
-                #endregion
 
                 dist.Clear();
                 pts.Clear();
+                mf = new MeshFace();
                 singleMesh = new Mesh();
             }
-            meshColor.Weld(0.1);
 
             #endregion
 
-
-            #region slett?
-            /*
-            for (int n = 0; n < m.VertexColors.Count - 1; n++)
-            {
-                if (n < 20)
-                {
-                    m.VertexColors[n] = Color.FromArgb(0, 0, 0);
-                }
-                else
-                {
-                    m.VertexColors[n] = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
-                }
-            }
-
-            if (AR > 0.75)
-            {
-                m.VertexColors[i] = Color.FromArgb(0, 204, 0);
-            }
-            else if (AR > 0.5)
-            {
-                m.VertexColors[i] = Color.FromArgb(255, 255, 204);
-            }
-            else if (AR > 0.25)
-            {
-                m.VertexColors[i] = Color.FromArgb(255, 128, 0);
-            }
-            else if (AR > 0)
-            {
-                m.VertexColors[i] = Color.FromArgb(204, 0, 0);
-            }*/
-            #endregion
 
             MeshVertexColorList colors = meshColor.VertexColors;
 
@@ -297,7 +197,7 @@ namespace MeshPoints
             DA.SetDataList(3, normals);
             DA.SetDataList(4, qualityAR);
             DA.SetDataList(5, qualitySK);
-            DA.SetData(6, singleMesh);
+            DA.SetData(6, meshColor);
         }
 
         /// <summary>
