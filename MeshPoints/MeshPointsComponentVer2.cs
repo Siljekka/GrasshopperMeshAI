@@ -89,6 +89,7 @@ namespace MeshPoints
             }
 
             #endregion
+
             m.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
             //m.Normals.ComputeNormals(); //Control if needed
             m.Compact(); //to ensure that it calculate
