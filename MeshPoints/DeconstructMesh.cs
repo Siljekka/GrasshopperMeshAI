@@ -65,7 +65,7 @@ namespace MeshPoints
             //_var for mesh quality
             MeshFace face = new MeshFace(); // might delete later. Used to desiced if quad/triangle
             MeshQuality quality = new MeshQuality();
-            List<Point3f> pts = new List<Point3f>(); //list of vertices of a mesh face
+            List<Point3d> pts = new List<Point3d>(); //list of vertices of a mesh face
 
             //_var for Quality Check
             List<double> dist = new List<double>(); //list distacens between vertices in a mesh face, following mesh edges CCW
@@ -89,7 +89,18 @@ namespace MeshPoints
                 face = faces.GetFace(i);
                 if (face.IsQuad)
                 {
-                    faces.GetFaceVertices(i, out Point3f p1, out Point3f p4, out Point3f p3, out Point3f p2); // Vertices CCW of meshface //wanna insert in list pts right away
+                    //faces.GetFaceVertices(i, out Point3f p1, out Point3f p4, out Point3f p3, out Point3f p2); // Vertices CCW of meshface //wanna insert in list pts right away
+                    pts.Add(verticies[face.A]);
+                    pts.Add(verticies[face.B]);
+                    pts.Add(verticies[face.C]);
+                    pts.Add(verticies[face.D]);
+
+                    pts.Add(verticies[face.A]);
+                    pts.Add(verticies[face.B]);
+                    pts.Add(verticies[face.C]);
+                    pts.Add(verticies[face.D]);
+
+                    /*
                     pts.Add(p1);
                     pts.Add(p2);
                     pts.Add(p3);
@@ -99,6 +110,7 @@ namespace MeshPoints
                     pts.Add(p2);
                     pts.Add(p3);
                     pts.Add(p4);
+                    */
 
                     neigbourPt = 3;
                     angleIdeal = 90;
@@ -106,7 +118,14 @@ namespace MeshPoints
                 else if (face.IsTriangle)
                 {
                     //Get the vertices
-                    //faces.GetFaceVertices(i, out Point3f p1, out Point3f p3, out Point3f p2); //Need to change
+                    pts.Add(verticies[face.A]);
+                    pts.Add(verticies[face.B]);
+                    pts.Add(verticies[face.C]);
+
+                    pts.Add(verticies[face.A]); //dublicate list, wanna do this more efficient
+                    pts.Add(verticies[face.B]);
+                    pts.Add(verticies[face.C]);
+
                     neigbourPt = 2; 
                     angleIdeal = 60;
                 }
@@ -118,8 +137,20 @@ namespace MeshPoints
                 {
                     singleMesh.Vertices.Add(pts[n]); //add vertices to a single mesh
                 }
-                mf.Set(0, 1, 2, 3);
+                if (face.IsQuad)
+                {
+                    mf.Set(0, 1, 2, 3);
+                }
+                else if (face.IsTriangle)
+                {
+                    mf.Set(0, 1, 2);
+                }
+
+                
                 singleMesh.Faces.AddFace(mf);
+                singleMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                singleMesh.Normals.ComputeNormals(); //Control if needed
+                singleMesh.Compact(); //to ensure that it calculate
                 #endregion
 
                 #region Quality Check
@@ -130,21 +161,20 @@ namespace MeshPoints
                         dist.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
                     }
                     dist.Sort();
-                    qualityValue = (dist[0] / dist[3]); //calculates AR
+                    qualityValue = (dist[dist.Count - 1] / dist[0]); //calculates AR, ENDRET!!
                     qualityValueList.Add(qualityValue);  //wanna add AR to the property quality.Aspectratio
                 }
                 else if (check == 2)
                 {
-                    //Only for quads
                     for (int n = 0; n < pts.Count / 2; n++) //gjelder quads
                     {
-                        Vector3f a = new Vector3f(pts[n].X - pts[n + 1].X, pts[n].Y - pts[n + 1].Y, pts[n].Z - pts[n + 1].Z); //creat a vector from a vertice to a neighbour vertice
-                        Vector3f b = new Vector3f(pts[n].X - pts[n + neigbourPt].X, pts[n].Y - pts[n + neigbourPt].Y, pts[n].Z - pts[n + neigbourPt].Z); //creat a vector from a vertice to the other neighbour vertice
-                        angleRad = Math.Abs(Math.Acos(Vector3f.Multiply(a, b) / (a.Length * b.Length))); //calc angles in radians between vectors
+                        Vector3d a = new Vector3d(pts[n].X - pts[n + 1].X, pts[n].Y - pts[n + 1].Y, pts[n].Z - pts[n + 1].Z); //creat a vector from a vertice to a neighbour vertice
+                        Vector3d b = new Vector3d(pts[n].X - pts[n + neigbourPt].X, pts[n].Y - pts[n + neigbourPt].Y, pts[n].Z - pts[n + neigbourPt].Z); //creat a vector from a vertice to the other neighbour vertice
+                        angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(a, b) / (a.Length * b.Length))); //calc angles in radians between vectors
                         angle.Add(angleRad * 180 / Math.PI); //convert from rad to deg
                     }
                     angle.Sort();
-                    qualityValue = 1 - Math.Max((angle[3] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal)); //for quads
+                    qualityValue = 1 - Math.Max((angle[angle.Count-1] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal)); //for quads
                     qualityValueList.Add(qualityValue);
                 }
                 else 
@@ -154,9 +184,7 @@ namespace MeshPoints
                 #endregion
 
                 #region Color
-
                 //Color
-                //can change to switch-case
                 if (qualityValue > 0.9)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Green);
@@ -173,9 +201,8 @@ namespace MeshPoints
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Red);
                 }
-                
-                meshColor.Append(singleMesh);
 
+                meshColor.Append(singleMesh);
                 dist.Clear();
                 pts.Clear();
                 mf = new MeshFace();
@@ -183,8 +210,7 @@ namespace MeshPoints
             }
 
             #endregion
-
-
+            
             MeshVertexColorList colors = meshColor.VertexColors;
 
             #endregion

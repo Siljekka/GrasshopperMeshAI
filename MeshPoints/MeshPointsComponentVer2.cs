@@ -33,7 +33,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddPointParameter("Points", "pts", "Insert list of points", GH_ParamAccess.tree); //Point??
+            pManager.AddPointParameter("Points", "pts", "Insert list of points", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace MeshPoints
             #endregion
 
             m.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-            //m.Normals.ComputeNormals(); //Control if needed
+            m.Normals.ComputeNormals(); //Control if needed
             m.Compact(); //to ensure that it calculate
 
             // Output
