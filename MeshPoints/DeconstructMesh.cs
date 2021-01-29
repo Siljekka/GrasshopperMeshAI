@@ -161,7 +161,7 @@ namespace MeshPoints
                         dist.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
                     }
                     dist.Sort();
-                    qualityValue = (dist[dist.Count - 1] / dist[0]); //calculates AR, ENDRET!!
+                    qualityValue = (dist[0] / dist[dist.Count - 1]); //calculates AR, ENDRET!!
                     qualityValueList.Add(qualityValue);  //wanna add AR to the property quality.Aspectratio
                 }
                 else if (check == 2)
@@ -220,7 +220,7 @@ namespace MeshPoints
             DA.SetDataList(1, faces);
             DA.SetDataList(2, normals);
             DA.SetDataList(3, qualityValueList);
-            DA.SetData(4, meshColor);
+            DA.SetData(4, colors);
         }
 
         /// <summary>

@@ -61,6 +61,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MeshFlattenPoints.cs" />
     <Compile Include="MeshQuality.cs" />
     <Compile Include="DeconstructMesh.cs" />
     <Compile Include="MeshPointsInfo.cs" />
