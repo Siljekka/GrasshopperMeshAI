@@ -29,6 +29,8 @@ namespace MeshPoints
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh", "m", "Base mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Quality check", "qc", "AspectRatio(1) or Skewness(2)", GH_ParamAccess.item);
+
         }
 
         /// <summary>
@@ -36,13 +38,11 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Vertices", "v", "Verticies of a face", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Face", "f", "Faces of a mesh", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Colours", "c", "Mesh vertex colour", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Normals", "n", "Mesh normals", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Quality_AR", "q", "Quality of mesh", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Quality_SK", "q", "Quality of mesh", GH_ParamAccess.list);
-            pManager.AddGenericParameter("MeshAR", "q", "Qualtity of mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Vertices", "v", "Verticies of a face", GH_ParamAccess.list); //0
+            pManager.AddGenericParameter("Face", "f", "Faces of a mesh", GH_ParamAccess.list); //1
+            pManager.AddGenericParameter("Normals", "n", "Mesh normals", GH_ParamAccess.list); //2
+            pManager.AddGenericParameter("Quality Values", "q", "Quality of mesh", GH_ParamAccess.list); //3
+            pManager.AddGenericParameter("Qualiy Colours", "c", "Mesh vertex colour", GH_ParamAccess.item); //4
         }
 
         /// <summary>
@@ -53,7 +53,9 @@ namespace MeshPoints
         {
             //Input
             Mesh m = new Mesh();
+            double check = 0;
             DA.GetData(0, ref m);
+            DA.GetData(1, ref check);
 
             //Variables
             MeshVertexList verticies = m.Vertices; //Vertices of the mesh
@@ -61,34 +63,23 @@ namespace MeshPoints
             MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
 
             //_var for mesh quality
-            MeshFace face = new MeshFace(); // might delete later.
+            MeshFace face = new MeshFace(); // might delete later. Used to desiced if quad/triangle
             MeshQuality quality = new MeshQuality();
             List<Point3f> pts = new List<Point3f>(); //list of vertices of a mesh face
 
-            //_var for AR
-            double AR = 0; 
+            //_var for Quality Check
             List<double> dist = new List<double>(); //list distacens between vertices in a mesh face, following mesh edges CCW
-            List<double> qualityAR = new List<double>(); //Metrics of mesh quality_aspectRatio
-
-
-            //_var for SK
-            double SK = 0;
-            List<double> angle = new List<double>();
-            double angleIdeal = 90;
-            double angleRad = 0;
-            int neigbourPt = 0;
-            List<double> qualitySK = new List<double>(); //Metrics of mesh quality_aspectRatio
-
-            m.VertexColors.CreateMonotoneMesh(Color.White);
-            int test = m.VertexColors.Count - 1;
-            Random rnd = new Random(5);
-
-            Point3f[] myArray = verticies.ToPoint3fArray();
-            List<Point3f> vertList = new List<Point3f>(myArray);
-
+            List<double> qualityValueList = new List<double>();
+            double qualityValue = 0;
+            double angleIdeal = 0; //ideal angle in degrees
+            double angleRad = 0; //angle in radians
+            List<double> angle = new List<double>(); //list of angles in a element
+            int neigbourPt = 0; //variable used in skweness calcualtion
+            
+            //_var for coloring
+            m.VertexColors.CreateMonotoneMesh(Color.White); //slett?
             Mesh meshColor = new Mesh();
             Mesh singleMesh = new Mesh();
-            //List<Mesh> test2 = new List<Mesh>();
             MeshFace mf = new MeshFace();
 
             #region Code
@@ -108,73 +99,82 @@ namespace MeshPoints
                     pts.Add(p2);
                     pts.Add(p3);
                     pts.Add(p4);
-                    neigbourPt = 3;
 
+                    neigbourPt = 3;
+                    angleIdeal = 90;
                 }
                 else if (face.IsTriangle)
                 {
+                    //Get the vertices
                     //faces.GetFaceVertices(i, out Point3f p1, out Point3f p3, out Point3f p2); //Need to change
-                    neigbourPt = 2;
+                    neigbourPt = 2; 
+                    angleIdeal = 60;
                 }
                 #endregion
 
-                #region AspectRatio
-                for (int n = 0; n < pts.Count/2; n++)
-                {
-                    dist.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
-                }
-                dist.Sort();
-                AR = (dist[0] / dist[3]); //calculates AR
-                qualityAR.Add(AR);  //wanna add AR to the property quality.Aspectratio
-                #endregion
-
-                #region Skewness
-                for (int n = 0; n < pts.Count/2; n++) //gjelder quads
-                {
-                    Vector3f a = new Vector3f(pts[n].X - pts[n+1].X, pts[n].Y - pts[n+1].Y, pts[n].Z - pts[n+1].Z); //creat a vector from a vertice to a neighbour vertice
-                    Vector3f b = new Vector3f(pts[n].X - pts[n + neigbourPt].X, pts[n].Y - pts[n + neigbourPt].Y, pts[n].Z - pts[n + neigbourPt].Z); //creat a vector from a vertice to the other neighbour vertice
-                    angleRad = Math.Abs( Math.Acos(Vector3f.Multiply(a, b) / (a.Length * b.Length))); //calc angles in radians between vectors
-                    angle.Add( angleRad * 180/Math.PI); //convert from rad to deg
-                }
-                angle.Sort();
-                SK = 1 - Math.Max((angle[3] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal));
-                qualitySK.Add(SK);
-                #endregion
-                
-
-                #region Color
+                #region Single Mesh
                 //Create single mesh
-                for (int n = 0; n < 4; n++) //change 4 to a genertic parameter (triangle/quad)
+                for (int n = 0; n < pts.Count / 2; n++) 
                 {
                     singleMesh.Vertices.Add(pts[n]); //add vertices to a single mesh
                 }
-                
                 mf.Set(0, 1, 2, 3);
                 singleMesh.Faces.AddFace(mf);
-                
+                #endregion
 
+                #region Quality Check
+                if (check == 1) //Aspect ratio
+                {
+                    for (int n = 0; n < pts.Count / 2; n++)
+                    {
+                        dist.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
+                    }
+                    dist.Sort();
+                    qualityValue = (dist[0] / dist[3]); //calculates AR
+                    qualityValueList.Add(qualityValue);  //wanna add AR to the property quality.Aspectratio
+                }
+                else if (check == 2)
+                {
+                    //Only for quads
+                    for (int n = 0; n < pts.Count / 2; n++) //gjelder quads
+                    {
+                        Vector3f a = new Vector3f(pts[n].X - pts[n + 1].X, pts[n].Y - pts[n + 1].Y, pts[n].Z - pts[n + 1].Z); //creat a vector from a vertice to a neighbour vertice
+                        Vector3f b = new Vector3f(pts[n].X - pts[n + neigbourPt].X, pts[n].Y - pts[n + neigbourPt].Y, pts[n].Z - pts[n + neigbourPt].Z); //creat a vector from a vertice to the other neighbour vertice
+                        angleRad = Math.Abs(Math.Acos(Vector3f.Multiply(a, b) / (a.Length * b.Length))); //calc angles in radians between vectors
+                        angle.Add(angleRad * 180 / Math.PI); //convert from rad to deg
+                    }
+                    angle.Sort();
+                    qualityValue = 1 - Math.Max((angle[3] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal)); //for quads
+                    qualityValueList.Add(qualityValue);
+                }
+                else 
+                {
+                    qualityValueList.Add(0);
+                }
+                #endregion
 
-                //Color AR
-                if (AR > 0.9)
+                #region Color
+
+                //Color
+                //can change to switch-case
+                if (qualityValue > 0.9)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Green);
                 }
-                else if (AR > 0.7)
+                else if (qualityValue > 0.7)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                 }
-                else if (AR > 0.6)
+                else if (qualityValue > 0.6)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                 }
-                else if (AR > 0)
+                else if (qualityValue > 0)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Red);
                 }
                 
                 meshColor.Append(singleMesh);
-                //test2.Add(singleMesh);
-
 
                 dist.Clear();
                 pts.Clear();
@@ -187,17 +187,14 @@ namespace MeshPoints
 
             MeshVertexColorList colors = meshColor.VertexColors;
 
-
-
+            #endregion
 
             //Output
             DA.SetDataList(0, verticies); 
             DA.SetDataList(1, faces);
-            DA.SetDataList(2, colors);
-            DA.SetDataList(3, normals);
-            DA.SetDataList(4, qualityAR);
-            DA.SetDataList(5, qualitySK);
-            DA.SetData(6, meshColor);
+            DA.SetDataList(2, normals);
+            DA.SetDataList(3, qualityValueList);
+            DA.SetData(4, meshColor);
         }
 
         /// <summary>
