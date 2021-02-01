@@ -11,26 +11,23 @@ namespace MeshPoints
     class MeshQuality
     {
         //Properties
-        public List<double> AspectRatio { get; set; }
-        public List<double> AngleRatio { get; set; }
+        public double AspectRatio { get; set; }
+        public double Skewness { get; set; }
         public MeshFace MeshFace { get; set; }
+
+        //add vertices
 
         //Constructor
         public MeshQuality()
         {
             //Empty constructor
         }
-        public MeshQuality(List<double> _aspectRatio, List<double> _angleRatio)
+        public MeshQuality(MeshFace _meshFace, double _aspectRatio, double _skewness)
         {
+            MeshFace = _meshFace;
             AspectRatio = _aspectRatio;
-            AngleRatio = _angleRatio;
+            Skewness = _skewness;
         }
-
-        public MeshQuality(List<double> _aspectRatio)
-        {
-            AspectRatio = _aspectRatio;
-        }
-
         //Methods
     }
 }
