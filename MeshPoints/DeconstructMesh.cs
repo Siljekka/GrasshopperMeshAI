@@ -63,14 +63,12 @@ namespace MeshPoints
             MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
 
             //_var for mesh quality
-            MeshFace face = new MeshFace(); // might delete later. Used to desiced if quad/triangle
-            MeshQuality quality = new MeshQuality();
+            MeshQuality mq = new MeshQuality();
             List<Point3d> pts = new List<Point3d>(); //list of vertices of a mesh face
 
             //_var for Quality Check
             List<double> dist = new List<double>(); //list distacens between vertices in a mesh face, following mesh edges CCW
             List<double> qualityValueList = new List<double>();
-            double qualityValue = 0;
             double angleIdeal = 0; //ideal angle in degrees
             double angleRad = 0; //angle in radians
             List<double> angle = new List<double>(); //list of angles in a element
@@ -86,66 +84,53 @@ namespace MeshPoints
             for (int i = 0; i < faces.Count; i++) //find the distances between vertices in a face and then calculates AR
             {
                 #region Get Vertices 
-                face = faces.GetFace(i);
-                if (face.IsQuad)
+                mq.MeshFace = faces.GetFace(i);
+                if (mq.MeshFace.IsQuad)
                 {
                     //faces.GetFaceVertices(i, out Point3f p1, out Point3f p4, out Point3f p3, out Point3f p2); // Vertices CCW of meshface //wanna insert in list pts right away
-                    pts.Add(verticies[face.A]);
-                    pts.Add(verticies[face.B]);
-                    pts.Add(verticies[face.C]);
-                    pts.Add(verticies[face.D]);
+                    pts.Add(verticies[mq.MeshFace.A]);
+                    pts.Add(verticies[mq.MeshFace.B]);
+                    pts.Add(verticies[mq.MeshFace.C]);
+                    pts.Add(verticies[mq.MeshFace.D]);
 
-                    pts.Add(verticies[face.A]);
-                    pts.Add(verticies[face.B]);
-                    pts.Add(verticies[face.C]);
-                    pts.Add(verticies[face.D]);
-
-                    /*
-                    pts.Add(p1);
-                    pts.Add(p2);
-                    pts.Add(p3);
-                    pts.Add(p4);
-
-                    pts.Add(p1); //dublicate list, wanna do this more efficient
-                    pts.Add(p2);
-                    pts.Add(p3);
-                    pts.Add(p4);
-                    */
+                    pts.Add(verticies[mq.MeshFace.A]);
+                    pts.Add(verticies[mq.MeshFace.B]);
+                    pts.Add(verticies[mq.MeshFace.C]);
+                    pts.Add(verticies[mq.MeshFace.D]);
 
                     neigbourPt = 3;
                     angleIdeal = 90;
                 }
-                else if (face.IsTriangle)
+                else if (mq.MeshFace.IsTriangle)
                 {
                     //Get the vertices
-                    pts.Add(verticies[face.A]);
-                    pts.Add(verticies[face.B]);
-                    pts.Add(verticies[face.C]);
+                    pts.Add(verticies[mq.MeshFace.A]);
+                    pts.Add(verticies[mq.MeshFace.B]);
+                    pts.Add(verticies[mq.MeshFace.C]);
 
-                    pts.Add(verticies[face.A]); //dublicate list, wanna do this more efficient
-                    pts.Add(verticies[face.B]);
-                    pts.Add(verticies[face.C]);
+                    pts.Add(verticies[mq.MeshFace.A]); //dublicate list, wanna do this more efficient
+                    pts.Add(verticies[mq.MeshFace.B]);
+                    pts.Add(verticies[mq.MeshFace.C]);
 
                     neigbourPt = 2; 
                     angleIdeal = 60;
                 }
                 #endregion
 
-                #region Single Mesh
-                //Create single mesh
+                #region Single Mesh  
+                //Create single mesh //Change single mesh to class..
                 for (int n = 0; n < pts.Count / 2; n++) 
                 {
                     singleMesh.Vertices.Add(pts[n]); //add vertices to a single mesh
                 }
-                if (face.IsQuad)
+                if (mq.MeshFace.IsQuad)
                 {
                     mf.Set(0, 1, 2, 3);
                 }
-                else if (face.IsTriangle)
+                else if (mq.MeshFace.IsTriangle)
                 {
                     mf.Set(0, 1, 2);
                 }
-
                 
                 singleMesh.Faces.AddFace(mf);
                 singleMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
@@ -161,12 +146,12 @@ namespace MeshPoints
                         dist.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
                     }
                     dist.Sort();
-                    qualityValue = (dist[0] / dist[dist.Count - 1]); //calculates AR, ENDRET!!
-                    qualityValueList.Add(qualityValue);  //wanna add AR to the property quality.Aspectratio
+                    mq.AspectRatio = (dist[0] / dist[dist.Count - 1]);
+                    qualityValueList.Add(mq.AspectRatio); 
                 }
                 else if (check == 2)
                 {
-                    for (int n = 0; n < pts.Count / 2; n++) //gjelder quads
+                    for (int n = 0; n < pts.Count / 2; n++)
                     {
                         Vector3d a = new Vector3d(pts[n].X - pts[n + 1].X, pts[n].Y - pts[n + 1].Y, pts[n].Z - pts[n + 1].Z); //creat a vector from a vertice to a neighbour vertice
                         Vector3d b = new Vector3d(pts[n].X - pts[n + neigbourPt].X, pts[n].Y - pts[n + neigbourPt].Y, pts[n].Z - pts[n + neigbourPt].Z); //creat a vector from a vertice to the other neighbour vertice
@@ -174,8 +159,8 @@ namespace MeshPoints
                         angle.Add(angleRad * 180 / Math.PI); //convert from rad to deg
                     }
                     angle.Sort();
-                    qualityValue = 1 - Math.Max((angle[angle.Count-1] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal)); //for quads
-                    qualityValueList.Add(qualityValue);
+                    mq.Skewness = 1- Math.Max((angle[angle.Count-1] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal));
+                    qualityValueList.Add(mq.Skewness);
                 }
                 else 
                 {
@@ -185,25 +170,27 @@ namespace MeshPoints
 
                 #region Color
                 //Color
-                if (qualityValue > 0.9)
+                if (qualityValueList[i] > 0.9)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Green);
                 }
-                else if (qualityValue > 0.7)
+                else if (qualityValueList[i] > 0.7)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                 }
-                else if (qualityValue > 0.6)
+                else if (qualityValueList[i] > 0.6)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                 }
-                else if (qualityValue > 0)
+                else if (qualityValueList[i] > 0)
                 {
                     singleMesh.VertexColors.CreateMonotoneMesh(Color.Red);
                 }
 
                 meshColor.Append(singleMesh);
+
                 dist.Clear();
+                angle.Clear();
                 pts.Clear();
                 mf = new MeshFace();
                 singleMesh = new Mesh();
@@ -211,7 +198,7 @@ namespace MeshPoints
 
             #endregion
             
-            MeshVertexColorList colors = meshColor.VertexColors;
+            //MeshVertexColorList colors = meshColor.VertexColors;
 
             #endregion
 
@@ -220,7 +207,7 @@ namespace MeshPoints
             DA.SetDataList(1, faces);
             DA.SetDataList(2, normals);
             DA.SetDataList(3, qualityValueList);
-            DA.SetData(4, colors);
+            DA.SetData(4, meshColor);
         }
 
         /// <summary>
