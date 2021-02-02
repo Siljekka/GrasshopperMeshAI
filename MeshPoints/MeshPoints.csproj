@@ -61,7 +61,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Element.cs" />
     <Compile Include="GalapagosMesh.cs" />
+    <Compile Include="Mesh2D.cs" />
+    <Compile Include="Mesh3D.cs" />
     <Compile Include="MeshFlattenPoints.cs" />
     <Compile Include="MeshQuality.cs" />
     <Compile Include="DeconstructMesh.cs" />
