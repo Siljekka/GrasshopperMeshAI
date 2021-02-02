@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MeshPoints
+namespace MeshPoints.Classes
 {
     class Mesh2D
     {
