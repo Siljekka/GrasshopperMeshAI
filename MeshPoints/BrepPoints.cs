@@ -32,7 +32,6 @@ namespace MeshPoints
             pManager.AddIntegerParameter("u", "u", "", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("v", "v", "", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("w", "w", "", GH_ParamAccess.item, 4);
-  
         }
 
         /// <summary>
@@ -129,8 +128,7 @@ namespace MeshPoints
             get
             {
                 //You can add image files to your project resources and access them like this:
-                // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.test;
             }
         }
 
