@@ -40,7 +40,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddNumberParameter("Points", "pt", "Points on Brep", GH_ParamAccess.list);
+            pManager.AddPointParameter("Points", "pt", "Points on Brep", GH_ParamAccess.list);
         }
 
         /// <summary>
