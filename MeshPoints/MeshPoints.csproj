@@ -68,6 +68,7 @@
     <Compile Include="GalapagosMesh.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
+    <Compile Include="Mesh3D.cs" />
     <Compile Include="MeshFlattenPoints.cs" />
     <Compile Include="MeshPoints3D.cs" />
     <Compile Include="MeshQuality.cs" />
@@ -92,7 +93,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources\test.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Properties\Resources\mountain.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
