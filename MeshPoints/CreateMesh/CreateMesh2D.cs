@@ -7,6 +7,8 @@ using Grasshopper.Kernel.Data;
 using Rhino.Geometry.Collections;
 using MeshPoints.Classes;
 
+//Create a Mesh2D from list of flatten points
+
 namespace MeshPoints
 {
     public class MeshPoints2D : GH_Component
@@ -15,7 +17,7 @@ namespace MeshPoints
         /// Initializes a new instance of the MeshPoints2D class.
         /// </summary>
         public MeshPoints2D()
-          : base("MeshPoints2D", "mp2D",
+          : base("Create Mesh2D", "mp2D",
               "Mesh list with flatten points in 2D",
               "MyPlugIn", "Mesh")
         {
@@ -34,7 +36,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh", "m", "Mesh between points", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh2D", "m", "Mesh2D from given points", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -53,10 +55,8 @@ namespace MeshPoints
             List<Element> elements = new List<Element>();
             List<Point3d> pts = new List<Point3d>();
 
-            m.Nx = 2;//Number points in x-dir, start by adding first/last point in a row
-            m.Ny = 1; //Number points in y-dir, start by adding first point in a colomn
+            int newRow = 0;
             int counter = 0;
-
             double dist1 = 0;
             double dist2 = 0;
             Boolean completeRow = false;
@@ -64,7 +64,10 @@ namespace MeshPoints
             //Input
             DA.GetDataList(0, pts);
 
-            #region Find nx and ny
+            
+            #region Find nu and nv
+            m.nu = 2;//Number points in u-dir, start by adding first/last point in a row
+            m.nv = 1; //Number points in v-dir, start by adding first point in a colomn
             for (int i = 0; i < pts.Count - 2; i++)
             {
                 dist1 = Math.Abs(pts[0].X - pts[i + 1].X); //distance from start point to point[i+1]
@@ -73,12 +76,12 @@ namespace MeshPoints
                 {
                     if (!completeRow)
                     {
-                        m.Nx++; //count inner points in first row
+                        m.nu++; //count inner points in first row
                     }
                 }
                 else
                 {
-                    m.Ny++; //count each end of row
+                    m.nv++; //count each end of row
                     completeRow = true;
                 }
             }
@@ -92,12 +95,12 @@ namespace MeshPoints
             {
                 allMesh.Vertices.Add(pts[i]);
                 Node node = new Node(i, pts[i]); //Assign Global ID and cooridinates
-                if (row == 0 | row == m.Ny - 1) {node.BC_Y = true;}
-                if (column == 0 | column == m.Nx - 1) {node.BC_X = true;}
+                if (row == 0 | row == m.nv - 1) {node.BC_V = true;}
+                if (column == 0 | column == m.nu - 1) {node.BC_U = true;}
 
                 column++;
 
-                if (column == m.Nx)
+                if (column == m.nu)
                 {
                     row++;
                     column = 0;
@@ -107,22 +110,21 @@ namespace MeshPoints
             #endregion
 
             #region Create Elements and Mesh
-            int newRow = 0;
-            for (int i = 0; i < (m.Nx - 1) * (m.Ny - 1); i++)
+            for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++)
             {
                 //add properties
                 e.Id = i;
 
-                e.Node1 = nodes[counter]; //OBS: bug with LocalID... changes nodes when changing e.Node1.LocalId.. wanna make a copy ????????????
+                e.Node1 = nodes[counter]; //OBS: bug with LocalID... changes nodes when changing e.Node1.LocalId.. wanna make a copy ???????????? 
                 e.Node1.LocalId = 1;
 
                 e.Node2 = nodes[counter + 1];
                 e.Node2.LocalId = 2;
 
-                e.Node3 = nodes[counter + m.Nx + 1];
+                e.Node3 = nodes[counter + m.nu + 1];
                 e.Node3.LocalId = 3;
 
-                e.Node4 = nodes[counter + m.Nx];
+                e.Node4 = nodes[counter + m.nu];
                 e.Node4.LocalId = 4;
 
                 //create local mesh for element
@@ -136,11 +138,11 @@ namespace MeshPoints
                 mesh.Compact(); //to ensure that it calculate
                 e.mesh = mesh;
 
+                //create global mesh
+                allMesh.Faces.AddFace(counter, counter + 1, counter + m.nu + 1, counter + m.nu);
+                
                 //add element and mesh to element list
                 elements.Add(e);
-
-                //create global mesh
-                allMesh.Faces.AddFace(counter, counter + 1, counter + m.Nx + 1, counter + m.Nx);
 
                 //clear
                 e = new Element();
@@ -149,15 +151,13 @@ namespace MeshPoints
                 //element counter
                 counter++;
                 newRow++; ;
-                if (newRow == (m.Nx - 1)) //new row
+                if (newRow == (m.nu - 1)) //new row
                 {
                     counter++;
                     newRow = 0;
                 }
             }
-            #endregion
-
-
+            
             //OBS: burde finne en annen løsning for meshingen...
             allMesh.Normals.ComputeNormals();  //Control if needed
             allMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
@@ -167,6 +167,7 @@ namespace MeshPoints
             m.Nodes = nodes;
             m.Elements = elements;
             m.mesh = allMesh;
+            #endregion
 
             // Output
             DA.SetData(0, m); 

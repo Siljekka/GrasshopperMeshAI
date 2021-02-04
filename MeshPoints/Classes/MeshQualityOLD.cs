@@ -5,10 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Rhino.Geometry;
 
+//_______OLD VERSION_________
 
-namespace MeshPoints
+namespace MeshPoints.Classes
 {
-    class MeshQuality
+    class MeshQualityOLD
     {
         //Properties
         public double AspectRatio { get; set; }
@@ -18,11 +19,11 @@ namespace MeshPoints
         //add vertices
 
         //Constructor
-        public MeshQuality()
+        public MeshQualityOLD()
         {
             //Empty constructor
         }
-        public MeshQuality(MeshFace _meshFace, double _aspectRatio, double _skewness)
+        public MeshQualityOLD(MeshFace _meshFace, double _aspectRatio, double _skewness)
         {
             MeshFace = _meshFace;
             AspectRatio = _aspectRatio;

@@ -5,15 +5,17 @@ using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Drawing;
 
+//Calculate the mesh quality, both Aspect Ratio and Skewness
+
 namespace MeshPoints
 {
-    public class Mesh_Quality : GH_Component
+    public class MeshQuality : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the Mesh_Quality class.
         /// </summary>
-        public Mesh_Quality()
-          : base("Mesh Quality", "mq",
+        public MeshQuality()
+          : base("Deconstruct Mesh 2D (quality)", "mq",
               "Mesh Quality",
               "MyPlugIn", "Quality")
         {
@@ -33,6 +35,9 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
+            pManager.AddGenericParameter("Vertices", "v", "Mesh vertices", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Faces", "f", "Mesh faces", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Normals", "n", "Mesh normals", GH_ParamAccess.list);
             pManager.AddGenericParameter("Quality", "mq", "Mesh Quality for elements", GH_ParamAccess.list);
             pManager.AddGenericParameter("Aspect Ratio", "ar", "Sum apect ratio", GH_ParamAccess.item);
             pManager.AddGenericParameter("Skewness", "sk", "Sum skewness", GH_ParamAccess.item);
@@ -49,24 +54,19 @@ namespace MeshPoints
             Quality q = new Quality();
             List<Quality> qualityList = new List<Quality>();
 
-
-            //_var for Quality Check
             List<double> dist = new List<double>(); //list distacens between vertices in a mesh face, following mesh edges CCW
             List<double> qualityValueList = new List<double>();
+            List<double> angle = new List<double>(); //list of angles in a element
             double angleIdeal = 90; //ideal angle in degrees
             double angleRad = 0; //angle in radians
-            List<double> angle = new List<double>(); //list of angles in a element
             int neigbourPt = 3; //variable used in skweness calcualtion
-
             double sumAR = 0;
             double sumSK = 0;
 
             //input
             DA.GetData(0, ref m);
 
-           
-
-            //code
+            #region Code
             foreach (Element e in m.Elements)
             {
                 List < Point3d > pts = new List<Point3d>()
@@ -75,12 +75,12 @@ namespace MeshPoints
                         e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
                 };
 
-                
                 for (int n = 0; n < pts.Count / 2; n++)
                 {   
                     //Aspect Ratio
                     dist.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
 
+                    //Skewness
                     Vector3d a = new Vector3d(pts[n].X - pts[n + 1].X, pts[n].Y - pts[n + 1].Y, pts[n].Z - pts[n + 1].Z); //creat a vector from a vertice to a neighbour vertice
                     Vector3d b = new Vector3d(pts[n].X - pts[n + neigbourPt].X, pts[n].Y - pts[n + neigbourPt].Y, pts[n].Z - pts[n + neigbourPt].Z); //creat a vector from a vertice to the other neighbour vertice
                     angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(a, b) / (a.Length * b.Length))); //calc angles in radians between vectors
@@ -90,9 +90,9 @@ namespace MeshPoints
                 dist.Sort();
                 angle.Sort();
 
-                q.element = e;
                 q.AspectRatio = (dist[0] / dist[dist.Count - 1]);
                 q.Skewness = 1 - Math.Max((angle[angle.Count - 1] - angleIdeal) / (180 - angleIdeal), (angleIdeal - angle[0]) / (angleIdeal));
+                q.element = e;
                 e.quality = q;
 
                 sumAR += q.AspectRatio;
@@ -104,7 +104,8 @@ namespace MeshPoints
                 angle.Clear();
                 //pts.Clear();
             }
- 
+            #endregion
+
             //output
             DA.SetDataList(0, qualityList);
             DA.SetData(1, sumAR);

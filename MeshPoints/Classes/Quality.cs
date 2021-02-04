@@ -23,7 +23,7 @@ namespace MeshPoints.Classes
                 //Empty constructor
             }
 
-        public Quality(double _aspectRatio, double _skewness, Element _elem)
+        public Quality(Element _elem, double _aspectRatio, double _skewness)
         {
             AspectRatio = _aspectRatio;
             Skewness = _skewness;

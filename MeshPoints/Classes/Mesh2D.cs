@@ -12,8 +12,8 @@ namespace MeshPoints.Classes
         public List<Element> Elements{ get; set; } //list of nodes
         public List<Node> Nodes { get; set; } //list of nodes
         public Mesh mesh { get; set; } //list of nodes
-        public int Nx{ get; set; } //number of nodes in x-dir
-        public int Ny { get; set; } //number of nodes in y-dir
+        public int nu{ get; set; } //number of nodes in u-dir
+        public int nv { get; set; } //number of nodes in v-dir
 
         public Mesh2D()
         {

@@ -6,7 +6,7 @@ using Grasshopper.Kernel.Types;
 using Grasshopper.Kernel.Data;
 using Rhino.Geometry.Collections;
 using System.Drawing;
-
+using MeshPoints.Classes;
 
 
 namespace MeshPoints
@@ -63,7 +63,7 @@ namespace MeshPoints
             MeshVertexNormalList normals = m.Normals; //FaceNormals of the mesh
 
             //_var for mesh quality
-            MeshQuality mq = new MeshQuality();
+            MeshQualityOLD mq = new MeshQualityOLD();
             List<Point3d> pts = new List<Point3d>(); //list of vertices of a mesh face
 
             //_var for Quality Check
