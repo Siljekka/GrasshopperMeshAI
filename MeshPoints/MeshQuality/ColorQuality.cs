@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Drawing;
 
+// Create a color map for the mesh quality. Choose between Aspect Ration (1) or Skewness (2) check.
+
 namespace MeshPoints
 {
     public class ColorQuality : GH_Component

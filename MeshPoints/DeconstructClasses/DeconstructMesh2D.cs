@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
+//Deconstruct the class Mesh2D
+
 namespace MeshPoints
 {
     public class Deconstruct_Mesh2D : GH_Component

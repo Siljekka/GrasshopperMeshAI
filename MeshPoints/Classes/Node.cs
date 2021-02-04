@@ -14,9 +14,9 @@ namespace MeshPoints.Classes
         public int GlobalId { get; set; }
         public Point3d Coordinate { get; set; }
 
-        public bool BC_X { get; set; }
-        public bool BC_Y { get; set; }
-        public bool CornerNode { get; set; }
+        public bool BC_U { get; set; }
+        public bool BC_V { get; set; }
+        //public bool CornerNode { get; set; } 
 
 
         //Constructor
@@ -30,12 +30,12 @@ namespace MeshPoints.Classes
             GlobalId = _globalId;
             Coordinate = _coord;
         }
-        public Node(int _globalId, Point3d _coord, bool _BC_X, bool _BC_Y)
+        public Node(int _globalId, Point3d _coord, bool _BC_U, bool _BC_V)
         {
             GlobalId = _globalId;
             Coordinate = _coord;
-            BC_X = _BC_X;
-            BC_Y = _BC_Y;
+            BC_U = _BC_U;
+            BC_V = _BC_V;
         }
 
         //Methods

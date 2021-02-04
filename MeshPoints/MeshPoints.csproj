@@ -65,23 +65,23 @@
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
-    <Compile Include="ColorQuality.cs" />
-    <Compile Include="Deconstruct Element.cs" />
-    <Compile Include="Deconstruct Mesh2D.cs" />
-    <Compile Include="Deconstruct Node.cs" />
-    <Compile Include="GalapagosMesh.cs" />
+    <Compile Include="MeshQuality\ColorQuality.cs" />
+    <Compile Include="DeconstructClasses\DeconstructElement.cs" />
+    <Compile Include="DeconstructClasses\DeconstructMesh2D.cs" />
+    <Compile Include="DeconstructClasses\DeconstructNode.cs" />
+    <Compile Include="Galapagos\GalapagosMesh.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
-    <Compile Include="Mesh Quality.cs" />
+    <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh3D.cs" />
-    <Compile Include="MeshFlattenPoints.cs" />
-    <Compile Include="MeshPoints2D.cs" />
+    <Compile Include="CreateMesh_outdated\MeshFlattenPoints.cs" />
+    <Compile Include="CreateMesh\CreateMesh2D.cs" />
     <Compile Include="MeshPoints3D.cs" />
-    <Compile Include="MeshQuality.cs" />
+    <Compile Include="Classes\MeshQualityOLD.cs" />
     <Compile Include="DeconstructMesh.cs" />
     <Compile Include="MeshPointsInfo.cs" />
-    <Compile Include="MeshPointsComponentVer2.cs" />
-    <Compile Include="MeshPointsComponentVer1.cs" />
+    <Compile Include="CreateMesh_outdated\MeshPointsComponentVer2.cs" />
+    <Compile Include="CreateMesh_outdated\MeshPointsComponentVer1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -102,6 +102,7 @@
   <ItemGroup>
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
