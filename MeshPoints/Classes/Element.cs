@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Rhino.Geometry;
+
 
 namespace MeshPoints.Classes
 {
@@ -18,9 +20,11 @@ namespace MeshPoints.Classes
         public Node Node7 { get; set; }
         public Node Node8 { get; set; }
 
-        public Quality QualityElement { get; set; }
+        public Quality quality { get; set; }
         public int Id { get; set; }
         public bool IsCube { get; set; } //if 3D element
+
+        public Mesh mesh { get; set; }
 
         //Constructer
 

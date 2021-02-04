@@ -14,8 +14,7 @@ namespace MeshPoints.Classes
         //Properties
         public double AspectRatio { get; set; }
         public double Skewness { get; set; }
-        
-        public Element Elem { get; set; }
+        public Element element { get; set; }
 
 
         //Constructor
@@ -28,7 +27,7 @@ namespace MeshPoints.Classes
         {
             AspectRatio = _aspectRatio;
             Skewness = _skewness;
-            Elem = _elem;
+            element = _elem;
         }
 
         //Methods

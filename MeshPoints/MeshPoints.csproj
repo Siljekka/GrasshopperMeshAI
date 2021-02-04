@@ -64,10 +64,16 @@
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
+    <Compile Include="ColorQuality.cs" />
+    <Compile Include="Deconstruct Element.cs" />
+    <Compile Include="Deconstruct Mesh2D.cs" />
+    <Compile Include="Deconstruct Node.cs" />
     <Compile Include="GalapagosMesh.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
+    <Compile Include="Mesh Quality.cs" />
     <Compile Include="MeshFlattenPoints.cs" />
+    <Compile Include="MeshPoints2D.cs" />
     <Compile Include="MeshPoints3D.cs" />
     <Compile Include="MeshQuality.cs" />
     <Compile Include="DeconstructMesh.cs" />

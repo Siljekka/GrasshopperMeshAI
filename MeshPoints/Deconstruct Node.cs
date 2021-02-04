@@ -1,0 +1,80 @@
+﻿using Grasshopper.Kernel;
+using Rhino.Geometry;
+using System;
+using System.Collections.Generic;
+using MeshPoints.Classes;
+
+namespace MeshPoints
+{
+    public class Deconstruct_Node : GH_Component
+    {
+        /// <summary>
+        /// Initializes a new instance of the Deconstruct_Node class.
+        /// </summary>
+        public Deconstruct_Node()
+          : base("Deconstruct Node", "decN",
+              "Deconstructing node class",
+              "MyPlugIn", "Deconstruct")
+        {
+        }
+
+        /// <summary>
+        /// Registers all the input parameters for this component.
+        /// </summary>
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddGenericParameter("Node", "n", "Node class", GH_ParamAccess.item);
+        }
+
+        /// <summary>
+        /// Registers all the output parameters for this component.
+        /// </summary>
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddGenericParameter("Local Id", "lid", "Local Id", GH_ParamAccess.item); //0
+            pManager.AddGenericParameter("Global Id", "gid", "Global Id", GH_ParamAccess.item); //1
+            pManager.AddGenericParameter("Coordinate", "xyz", "Coordinate", GH_ParamAccess.item); //2
+            pManager.AddGenericParameter("BC x-dir", "bcx", "Boundary condtion in x-direction", GH_ParamAccess.item); //3
+            pManager.AddGenericParameter("BC y-dir", "bcy", "Boundary condtion in y-direction", GH_ParamAccess.item); //4 
+        }
+
+        /// <summary>
+        /// This is the method that actually does the work.
+        /// </summary>
+        /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            //input
+            Node n = new Node();
+            DA.GetData(0, ref n);
+
+            //output
+            DA.SetData(0, n.LocalId);
+            DA.SetData(1, n.GlobalId);
+            DA.SetData(2, n.Coordinate);
+            DA.SetData(3, n.BC_X);
+            DA.SetData(4, n.BC_Y);
+        }
+
+        /// <summary>
+        /// Provides an Icon for the component.
+        /// </summary>
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                //You can add image files to your project resources and access them like this:
+                // return Resources.IconForThisComponent;
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the unique ID for this component. Do not change this ID after release.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("3dd1c36b-9f95-4d31-aa83-ebea7b7d0ea9"); }
+        }
+    }
+}
