@@ -24,7 +24,6 @@ namespace MeshPoints
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh2D", "m2D", "Mesh2D class", GH_ParamAccess.item);
-
         }
 
         /// <summary>

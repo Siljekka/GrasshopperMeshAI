@@ -30,6 +30,14 @@ namespace MeshPoints.Classes
             GlobalId = _globalId;
             Coordinate = _coord;
         }
+
+        public Node(int _localId, int _globalId, Point3d _coord)
+        {
+            LocalId = _localId;
+            GlobalId = _globalId;
+            Coordinate = _coord;
+        }
+
         public Node(int _globalId, Point3d _coord, bool _BC_X, bool _BC_Y)
         {
             GlobalId = _globalId;

@@ -73,10 +73,9 @@
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
     <Compile Include="Mesh Quality.cs" />
-    <Compile Include="Mesh3D.cs" />
+    <Compile Include="MeshPoints3D.cs" />
     <Compile Include="MeshFlattenPoints.cs" />
     <Compile Include="MeshPoints2D.cs" />
-    <Compile Include="MeshPoints3D.cs" />
     <Compile Include="MeshQuality.cs" />
     <Compile Include="DeconstructMesh.cs" />
     <Compile Include="MeshPointsInfo.cs" />

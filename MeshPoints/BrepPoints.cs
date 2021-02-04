@@ -66,9 +66,8 @@ namespace MeshPoints
             BrepEdgeList egd = bp.Edges;
             List<Point3d> pts = new List<Point3d>();
             //List<Point3d> a = new List<Point3d>();
-
+  
             var list = bpVert.OrderBy(f =>  f.Location.X).ToList();
-
 
             Point3d n1 = new Point3d(list[0].Location);
             Point3d n2 = new Point3d(list[2].Location);
