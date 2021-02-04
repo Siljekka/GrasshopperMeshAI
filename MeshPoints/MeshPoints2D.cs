@@ -2,21 +2,22 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
+using Grasshopper.Kernel.Types;
+using Grasshopper.Kernel.Data;
 using Rhino.Geometry.Collections;
-using System.Drawing;
 using MeshPoints.Classes;
 
 namespace MeshPoints
 {
-    public class GalapagosMesh : GH_Component
+    public class MeshPoints2D : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the GalapagosMesh class.
+        /// Initializes a new instance of the MeshPoints2D class.
         /// </summary>
-        public GalapagosMesh()
-          : base("GalapagosMesh", "gM",
-              "Optimize mesh with gene pool",
-              "MyPlugIn", "Evolutionary Solving")
+        public MeshPoints2D()
+          : base("MeshPoints2D", "mp2D",
+              "Mesh list with flatten points in 2D",
+              "MyPlugIn", "Mesh")
         {
         }
 
@@ -25,9 +26,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh", "m", "Base mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Gene Pool X-dir", "qp", "Gene pool list", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Gene Pool Y-dir", "qp", "Gene pool list", GH_ParamAccess.list);
+            pManager.AddPointParameter("Points", "pts", "Insert flatten list of points", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -35,7 +34,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh", "m", "Updated mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "m", "Mesh between points", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -44,71 +43,71 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //Input
+            //Variables
             Mesh2D m = new Mesh2D();
-            List<double> genesX = new List<double>();
-            List<double> genesY = new List<double>();
-
-            DA.GetData(0, ref m);
-            DA.GetDataList(1, genesX);
-            DA.GetDataList(2, genesY);
-
-            //Galapagos
             Element e = new Element();
             Mesh mesh = new Mesh();
             Mesh allMesh = new Mesh();
-            Mesh2D mUpdated = new Mesh2D();
 
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
-            double devX = 0;
-            double devY = 0;
-            List<Point3d> newPts = new List<Point3d>(); //list with updraged vertices
+            List<Point3d> pts = new List<Point3d>();
 
-            //upgrade the vertices of mesh
-            //_ Check if DistanceTo > 0
-            //_change from BC... to node.BC.... when node class is ready
-            // add warning message if length of geneX or geneY does not match vertices.Count
-            //_change to methods
+            m.Nx = 2;//Number points in x-dir, start by adding first/last point in a row
+            m.Ny = 1; //Number points in y-dir, start by adding first point in a colomn
+            int counter = 0;
 
-            #region Update nodes
-            for (int i = 0; i < m.Nodes.Count; i++)
+            double dist1 = 0;
+            double dist2 = 0;
+            Boolean completeRow = false;
+
+            //Input
+            DA.GetDataList(0, pts);
+
+            #region Find nx and ny
+            for (int i = 0; i < pts.Count - 2; i++)
             {
-                //Deviation X
-                if (genesX[i] > 0 & !m.Nodes[i].BC_X)
+                dist1 = Math.Abs(pts[0].X - pts[i + 1].X); //distance from start point to point[i+1]
+                dist2 = Math.Abs(pts[0].X - pts[i + 2].X);  //distance from start point to point[i+2]
+                if (dist1 < dist2)
                 {
-                    devX = Math.Abs(m.Nodes[i].Coordinate.X - m.Nodes[i + 1].Coordinate.X) / 2 * genesX[i];
+                    if (!completeRow)
+                    {
+                        m.Nx++; //count inner points in first row
+                    }
                 }
-                else if (genesX[i] < 0 & !m.Nodes[i].BC_X)
+                else
                 {
-                    devX = Math.Abs(m.Nodes[i].Coordinate.X - m.Nodes[i - 1].Coordinate.X) / 2 * genesX[i];
+                    m.Ny++; //count each end of row
+                    completeRow = true;
                 }
-                else { devX = 0; }
-
-
-                //Deviation Y
-                if (genesY[i] > 0 & !m.Nodes[i].BC_Y)
-                {
-                    devY = Math.Abs(m.Nodes[i].Coordinate.Y - m.Nodes[i + 1].Coordinate.Y) / 2 * genesY[i]; //nx...
-                }
-                else if (genesY[i] < 0 & !m.Nodes[i].BC_Y)
-                {
-                    devY = Math.Abs(m.Nodes[i].Coordinate.Y - m.Nodes[i - 1].Coordinate.Y) / 2 * genesY[i]; //nx...                
-                }
-                else { devY = 0; }
-
-                //Update vertices
-                Point3d pt = new Point3d(m.Nodes[i].Coordinate.X + devX, m.Nodes[i].Coordinate.Y + devY, m.Nodes[i].Coordinate.Z + 0);
-                Node n = new Node(i, pt, m.Nodes[i].BC_X, m.Nodes[i].BC_Y);
-                
-                nodes.Add(n);
-                allMesh.Vertices.Add(pt);
             }
             #endregion
 
-            #region Element and mesh
+            #region Create Vertices and Nodes   
+            int row = 0;
+            int column = 0;
+            //OBS: use nodes instead of vertices??
+            for (int i = 0; i < pts.Count; i++)
+            {
+                allMesh.Vertices.Add(pts[i]);
+                Node node = new Node(i, pts[i]); //Assign Global ID and cooridinates
+                if (row == 0 | row == m.Ny - 1) {node.BC_Y = true;}
+                if (column == 0 | column == m.Nx - 1) {node.BC_X = true;}
+
+                column++;
+
+                if (column == m.Nx)
+                {
+                    row++;
+                    column = 0;
+                }
+                nodes.Add(node);
+            }
+            #endregion
+
+            #region Create Elements and Mesh
             int newRow = 0;
-            int counter = 0;
             for (int i = 0; i < (m.Nx - 1) * (m.Ny - 1); i++)
             {
                 //add properties
@@ -165,12 +164,12 @@ namespace MeshPoints
             allMesh.Compact(); //to ensure that it calculate
 
             //Add properties to Mesh2D
-            mUpdated.Nodes = nodes;
-            mUpdated.Elements = elements;
-            mUpdated.mesh = allMesh;
+            m.Nodes = nodes;
+            m.Elements = elements;
+            m.mesh = allMesh;
 
-            //Output
-            DA.SetData(0, mUpdated);
+            // Output
+            DA.SetData(0, m); 
         }
 
         /// <summary>
@@ -191,7 +190,7 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("219e8033-a05c-473a-8219-f7a6c96c7256"); }
+            get { return new Guid("c43287d0-d99d-40d8-81d4-b967ec6f8263"); }
         }
     }
 }
