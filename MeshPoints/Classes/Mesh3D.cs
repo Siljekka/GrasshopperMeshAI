@@ -10,14 +10,13 @@ namespace MeshPoints.Classes
     {
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
-        public int Nx { get; set; } //number of nodes in x-dir
-        public int Ny { get; set; } //number of nodes in y-dir
-        public int Nz { get; set; } //number of nodes in z-dir
+        public int nx { get; set; } //number of nodes in x-dir
+        public int ny { get; set; } //number of nodes in y-dir
+        public int nz { get; set; } //number of nodes in z-dir
 
         public Mesh3D()
         {
             //Empty constructor
         }
-
     }
 }
