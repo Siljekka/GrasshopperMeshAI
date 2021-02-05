@@ -24,7 +24,7 @@ namespace MeshPoints
         public MeshPointsComponentVer2()
           : base("MeshPointsVer2", "MeshPts",
               "Create mesh between given points w0 welding",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 
