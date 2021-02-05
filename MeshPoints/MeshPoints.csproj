@@ -65,6 +65,7 @@
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
+    <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="MeshQuality\ColorQuality.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement.cs" />
     <Compile Include="DeconstructClasses\DeconstructMesh2D.cs" />

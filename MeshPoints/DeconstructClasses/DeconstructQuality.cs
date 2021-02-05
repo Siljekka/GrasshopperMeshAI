@@ -4,18 +4,18 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-// Deconstruct the class Element
+// Deconstruct the class Quality
 
 namespace MeshPoints
 {
-    public class Deconstruct_Element : GH_Component
+    public class DeconstructQuality : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the Deconstruct_Element class.
+        /// Initializes a new instance of the DeconstructQuality class.
         /// </summary>
-        public Deconstruct_Element()
-          : base("Deconstruct Element", "decE",
-              "Deconstructing element class",
+        public DeconstructQuality()
+          : base("Deconstruct Quality", "decQ",
+              "Deconstructing quality class",
               "MyPlugIn", "Deconstruct")
         {
         }
@@ -25,7 +25,8 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Element class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Quality", "q", "Quality class", GH_ParamAccess.item);
+
         }
 
         /// <summary>
@@ -33,13 +34,9 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Node 1", "n", "Node 1", GH_ParamAccess.item); //0
-            pManager.AddGenericParameter("Node 2", "n", "Node 2", GH_ParamAccess.item); //1
-            pManager.AddGenericParameter("Node 3", "n", "Node 3", GH_ParamAccess.item); //2
-            pManager.AddGenericParameter("Node 4", "n", "Node 4", GH_ParamAccess.item); //3
-
-            pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //4 
-            pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //5
+            pManager.AddGenericParameter("Element", "e", "Corresponing element", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Aspect Ratio", "AR", "Ratio between shortest and longest mesh edge", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Skewness", "SK", "Angle ratio of mesh", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -49,16 +46,13 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             //input
-            Element e = new Element();
-            DA.GetData(0, ref e);
+            Quality q = new Quality();
+            DA.GetData(0, ref q);
 
             //output
-            DA.SetData(0, e.Node1);
-            DA.SetData(1, e.Node2);
-            DA.SetData(2, e.Node3);
-            DA.SetData(3, e.Node4);
-            DA.SetData(4, e.Id);
-            DA.SetData(5, e.mesh);
+            DA.SetData(0, q.element);
+            DA.SetData(1, q.AspectRatio);
+            DA.SetData(2, q.Skewness);
         }
 
         /// <summary>
@@ -79,7 +73,7 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("149bdc58-2f8a-4b90-ae82-62389190e956"); }
+            get { return new Guid("ef2f555e-2d22-4c47-8f10-eb6f7ce8ff52"); }
         }
     }
 }
