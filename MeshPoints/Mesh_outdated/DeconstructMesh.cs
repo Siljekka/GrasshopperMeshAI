@@ -19,7 +19,7 @@ namespace MeshPoints
         public DeconstructMesh()
           : base("DeconstructMesh", "decM",
               "Deconstructing the mesh",
-              "MyPlugIn", "Deconstruct")
+              "MyPlugIn", "Outdated")
         {
         }
 

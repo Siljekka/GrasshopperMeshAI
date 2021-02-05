@@ -16,7 +16,7 @@ namespace MeshPoints
         public MeshFlattenPoints()
           : base("MeshFlattenPoints", "MeshPts",
               "Create mesh between given a flatten list of points",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 

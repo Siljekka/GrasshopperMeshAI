@@ -36,8 +36,8 @@ namespace MeshPoints
             pManager.AddGenericParameter("Local Id", "lid", "Local Id", GH_ParamAccess.item); //0
             pManager.AddGenericParameter("Global Id", "gid", "Global Id", GH_ParamAccess.item); //1
             pManager.AddGenericParameter("Coordinate", "xyz", "Coordinate", GH_ParamAccess.item); //2
-            pManager.AddGenericParameter("BC x-dir", "bcx", "Boundary condtion in x-direction", GH_ParamAccess.item); //3
-            pManager.AddGenericParameter("BC y-dir", "bcy", "Boundary condtion in y-direction", GH_ParamAccess.item); //4 
+            pManager.AddGenericParameter("BC u-dir", "bcx", "Boundary condtion in x-direction", GH_ParamAccess.item); //3
+            pManager.AddGenericParameter("BC v-dir", "bcy", "Boundary condtion in y-direction", GH_ParamAccess.item); //4 
         }
 
         /// <summary>

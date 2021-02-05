@@ -55,6 +55,8 @@ namespace MeshPoints
             List<Element> elements = new List<Element>();
             List<Point3d> pts = new List<Point3d>();
 
+            int row = 0;
+            int column = 0;
             int newRow = 0;
             int counter = 0;
             double dist1 = 0;
@@ -88,8 +90,6 @@ namespace MeshPoints
             #endregion
 
             #region Create Vertices and Nodes   
-            int row = 0;
-            int column = 0;
             //OBS: use nodes instead of vertices??
             for (int i = 0; i < pts.Count; i++)
             {
@@ -112,20 +112,19 @@ namespace MeshPoints
             #region Create Elements and Mesh
             for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++)
             {
-                //add properties
+                //create nodes
                 e.Id = i;
+                Node n1 = new Node(1, nodes[counter].GlobalId, nodes[counter].Coordinate, nodes[counter].BC_U, nodes[counter].BC_V);
+                e.Node1 =  n1;
 
-                e.Node1 = nodes[counter]; //OBS: bug with LocalID... changes nodes when changing e.Node1.LocalId.. wanna make a copy ???????????? 
-                e.Node1.LocalId = 1;
+                Node n2 = new Node(2, nodes[counter+1].GlobalId, nodes[counter+1].Coordinate, nodes[counter+1].BC_U, nodes[counter+1].BC_V);
+                e.Node2 = n2;
 
-                e.Node2 = nodes[counter + 1];
-                e.Node2.LocalId = 2;
+                Node n3 = new Node(3, nodes[counter + m.nu + 1].GlobalId, nodes[counter + m.nu + 1].Coordinate, nodes[counter + m.nu + 1].BC_U, nodes[counter + m.nu + 1].BC_V);
+                e.Node3 = n3;
 
-                e.Node3 = nodes[counter + m.nu + 1];
-                e.Node3.LocalId = 3;
-
-                e.Node4 = nodes[counter + m.nu];
-                e.Node4.LocalId = 4;
+                Node n4 = new Node(4, nodes[counter + m.nu].GlobalId, nodes[counter + m.nu].Coordinate, nodes[counter + m.nu].BC_U, nodes[counter + m.nu].BC_V);
+                e.Node4 = n4;
 
                 //create local mesh for element
                 mesh.Vertices.Add(e.Node1.Coordinate);
