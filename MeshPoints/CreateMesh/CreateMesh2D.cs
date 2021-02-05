@@ -69,12 +69,12 @@ namespace MeshPoints
             
             #region Find nu and nv
             m.nu = 2;//Number points in u-dir, start by adding first/last point in a row
-            m.nv = 1; //Number points in v-dir, start by adding first point in a colomn
+            m.nv = 2; //Number points in v-dir, start by adding first point in a colomn
             for (int i = 0; i < pts.Count - 2; i++)
             {
-                dist1 = Math.Abs(pts[0].X - pts[i + 1].X); //distance from start point to point[i+1]
-                dist2 = Math.Abs(pts[0].X - pts[i + 2].X);  //distance from start point to point[i+2]
-                if (dist1 < dist2)
+                Vector3d vec1 = (pts[i + 1] - pts[i]) / (pts[i + 1] - pts[i]).Length;
+                Vector3d vec2 = (pts[i + 2] - pts[i]) / (pts[i + 2] - pts[i]).Length;
+                if (vec1.IsParallelTo(vec2) == 1)
                 {
                     if (!completeRow)
                     {
@@ -87,6 +87,7 @@ namespace MeshPoints
                     completeRow = true;
                 }
             }
+            m.nv = m.nv / 2;
             #endregion
 
             #region Create Vertices and Nodes   
