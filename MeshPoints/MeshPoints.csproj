@@ -65,6 +65,7 @@
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
+    <Compile Include="CreateMesh\CreateMesh3D.cs" />
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="MeshQuality\ColorQuality.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement.cs" />
@@ -74,10 +75,9 @@
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
-    <Compile Include="Mesh3D.cs" />
     <Compile Include="Mesh_outdated\MeshFlattenPoints.cs" />
     <Compile Include="CreateMesh\CreateMesh2D.cs" />
-    <Compile Include="MeshPoints3D.cs" />
+    <Compile Include="Mesh_outdated\MeshPoints3D_outdated.cs" />
     <Compile Include="Classes\MeshQualityOLD.cs" />
     <Compile Include="Mesh_outdated\DeconstructMesh.cs" />
     <Compile Include="MeshPointsInfo.cs" />
