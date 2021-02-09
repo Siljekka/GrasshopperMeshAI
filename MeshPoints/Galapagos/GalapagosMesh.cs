@@ -63,11 +63,17 @@ namespace MeshPoints
             double devY = 0;
             int newRow = 0;
             int counter = 0;
+            Point3d pt = new Point3d();
+            Node n = new Node();
 
             //Input
             DA.GetData(0, ref m);
             DA.GetDataList(1, genesX);
             DA.GetDataList(2, genesY);
+
+            Vector3d vecU = (m.Nodes[1].Coordinate - m.Nodes[0].Coordinate) * 0;  //dummy-vector: only to be able to assign value to vecU
+            Vector3d vecV = (m.Nodes[1].Coordinate - m.Nodes[0].Coordinate) * 0;  //dummy-vector: only to be able to assign value to vecV
+
 
             #region Update nodes
             for (int i = 0; i < m.Nodes.Count; i++)
@@ -76,29 +82,45 @@ namespace MeshPoints
                 if (genesX[i] > 0 & !m.Nodes[i].BC_U)
                 {
                     devX = Math.Abs(m.Nodes[i].Coordinate.X - m.Nodes[i + 1].Coordinate.X) / 2 * genesX[i];
+                    vecU = (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) / (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate).Length;
                 }
                 else if (genesX[i] < 0 & !m.Nodes[i].BC_U)
                 {
                     devX = Math.Abs(m.Nodes[i].Coordinate.X - m.Nodes[i - 1].Coordinate.X) / 2 * genesX[i];
+                    vecU = (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) / (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate).Length;
                 }
-                else { devX = 0; }
+                else { devX = 0; vecU = vecU * 0; }
 
 
                 //Deviation V
                 if (genesY[i] > 0 & !m.Nodes[i].BC_V)
                 {
-                    devY = Math.Abs(m.Nodes[i].Coordinate.Y - m.Nodes[i + 1].Coordinate.Y) / 2 * genesY[i]; //nx...
+                    devY = Math.Abs(m.Nodes[i].Coordinate.Y - m.Nodes[i + m.nu].Coordinate.Y) / 2 * genesY[i]; //nx...
+                    vecV = (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate) / (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate).Length;
                 }
                 else if (genesY[i] < 0 & !m.Nodes[i].BC_V)
                 {
-                    devY = Math.Abs(m.Nodes[i].Coordinate.Y - m.Nodes[i - 1].Coordinate.Y) / 2 * genesY[i]; //nx...                
+                    devY = Math.Abs(m.Nodes[i].Coordinate.Y - m.Nodes[i - m.nu].Coordinate.Y) / 2 * genesY[i]; //nx... 
+                    vecV = (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate) / (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate).Length;
                 }
-                else { devY = 0; }
+                else { devY = 0; vecV = vecV*0; }
 
                 //Update vertices
-                Point3d pt = new Point3d(m.Nodes[i].Coordinate.X + devX, m.Nodes[i].Coordinate.Y + devY, m.Nodes[i].Coordinate.Z + 0);
-                Node n = new Node(i, pt, m.Nodes[i].BC_U, m.Nodes[i].BC_V);
-                
+                if (!m.Nodes[i].BC_U)
+                {
+                    pt = new Point3d(m.Nodes[i].Coordinate.X + devX * vecU.X, m.Nodes[i].Coordinate.Y + devX * vecU.Y, m.Nodes[i].Coordinate.Z + 0);
+                    n = new Node(i, pt, m.Nodes[i].BC_U, m.Nodes[i].BC_V);
+                }
+                else if (!m.Nodes[i].BC_V)
+                {
+                    pt = new Point3d(m.Nodes[i].Coordinate.X + devY * vecV.X, m.Nodes[i].Coordinate.Y + devY*vecV.Y, m.Nodes[i].Coordinate.Z + 0);
+                    n = new Node(i, pt, m.Nodes[i].BC_U, m.Nodes[i].BC_V);
+                }
+                else
+                {
+                    pt = new Point3d(m.Nodes[i].Coordinate.X + devX * vecU.X + devY * vecV.X, m.Nodes[i].Coordinate.Y + devX * vecU.Y + devY * vecV.Y, m.Nodes[i].Coordinate.Z + 0);
+                    n = new Node(i, pt, m.Nodes[i].BC_U, m.Nodes[i].BC_V);
+                }
                 nodes.Add(n);
                 allMesh.Vertices.Add(pt);
             }
