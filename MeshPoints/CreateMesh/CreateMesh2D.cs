@@ -9,7 +9,7 @@ using MeshPoints.Classes;
 
 //Create a Mesh2D from list of flatten points
 
-namespace MeshPoints
+namespace MeshPoints.CreateMesh
 {
     public class MeshPoints2D : GH_Component
     {
@@ -73,7 +73,7 @@ namespace MeshPoints
             for (int i = 0; i < pts.Count - 2; i++)
             {
                 Vector3d vec1 = (pts[i + 1] - pts[i]) / (pts[i + 1] - pts[i]).Length;
-                Vector3d vec2 = (pts[i + 2] - pts[i]) / (pts[i + 2] - pts[i]).Length;
+                Vector3d vec2 = (pts[i + 2] - pts[i+1]) / (pts[i + 2] - pts[i+1]).Length;
                 if (vec1.IsParallelTo(vec2) == 1)
                 {
                     if (!completeRow)
@@ -87,9 +87,9 @@ namespace MeshPoints
                     completeRow = true;
                 }
             }
-            m.nv = m.nv / 2;
+            m.nv = m.nv/2;
             #endregion
-
+            
             #region Create Vertices and Nodes   
             //OBS: use nodes instead of vertices??
             for (int i = 0; i < pts.Count; i++)
@@ -168,7 +168,7 @@ namespace MeshPoints
             m.Elements = elements;
             m.mesh = allMesh;
             #endregion
-
+            
             // Output
             DA.SetData(0, m); 
         }
