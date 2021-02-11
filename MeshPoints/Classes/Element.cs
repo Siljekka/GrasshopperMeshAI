@@ -14,7 +14,6 @@ namespace MeshPoints.Classes
         public Node Node2 { get; set; }
         public Node Node3 { get; set; }
         public Node Node4 { get; set; }
-
         public Node Node5 { get; set; }
         public Node Node6 { get; set; }
         public Node Node7 { get; set; }
