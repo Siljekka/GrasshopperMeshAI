@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Rhino.Geometry;
 
 namespace MeshPoints.Classes
 {
@@ -10,9 +11,10 @@ namespace MeshPoints.Classes
     {
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
-        public int nx { get; set; } //number of nodes in x-dir
-        public int ny { get; set; } //number of nodes in y-dir
-        public int nz { get; set; } //number of nodes in z-dir
+        public Mesh mesh { get; set; } //list of nodes
+        public int nu { get; set; } //number of nodes in x-dir
+        public int nv { get; set; } //number of nodes in y-dir
+        public int nw { get; set; } //number of nodes in z-dir
 
         public Mesh3D()
         {
