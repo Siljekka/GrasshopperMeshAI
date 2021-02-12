@@ -59,8 +59,6 @@ namespace MeshPoints.CreateMesh
             int column = 0;
             int newRow = 0;
             int counter = 0;
-            double dist1 = 0;
-            double dist2 = 0;
             Boolean completeRow = false;
 
             //Input
@@ -74,7 +72,8 @@ namespace MeshPoints.CreateMesh
             {
                 Vector3d vec1 = (pts[i + 1] - pts[i]) / (pts[i + 1] - pts[i]).Length;
                 Vector3d vec2 = (pts[i + 2] - pts[i+1]) / (pts[i + 2] - pts[i+1]).Length;
-                if (vec1.IsParallelTo(vec2) == 1)
+                double dot = Vector3d.Multiply(vec1, vec2);
+                if (dot >= 0) //vec1.IsParallelTo(vec2) == 1
                 {
                     if (!completeRow)
                     {
@@ -93,7 +92,8 @@ namespace MeshPoints.CreateMesh
             #region Create Vertices and Nodes   
             //OBS: use nodes instead of vertices??
             for (int i = 0; i < pts.Count; i++)
-            {
+            { 
+                //check if pts sorted in u or v dir first
                 allMesh.Vertices.Add(pts[i]);
                 Node node = new Node(i, pts[i]); //Assign Global ID and cooridinates
                 if (row == 0 | row == m.nv - 1) {node.BC_V = true;}
@@ -109,7 +109,8 @@ namespace MeshPoints.CreateMesh
                 nodes.Add(node);
             }
             #endregion
-
+            
+            
             #region Create Elements and Mesh
             for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++)
             {
