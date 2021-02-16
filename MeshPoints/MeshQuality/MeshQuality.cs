@@ -27,7 +27,7 @@ namespace MeshPoints
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh2D", "m", "Insert Mesh2D class", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Quality metric", "q", "AR=1, SK=2", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Quality metric", "q", "AR=1, SK=2, Jacobian = 3", GH_ParamAccess.item);
 
         }
 
@@ -39,6 +39,7 @@ namespace MeshPoints
             pManager.AddGenericParameter("Quality", "mq", "Mesh Quality for elements", GH_ParamAccess.list);
             pManager.AddGenericParameter("Avg. Aspect Ratio", "ar", "Average apect ratio", GH_ParamAccess.item);
             pManager.AddGenericParameter("Avg. Skewness", "sk", "Average skewness", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Avg. Jacobian", "jb", "Average Jacobian ratio of all elements", GH_ParamAccess.item);
             pManager.AddGenericParameter("Color Mesh", "cm", "Color map over quality check", GH_ParamAccess.item);
         }
 
@@ -61,10 +62,14 @@ namespace MeshPoints
             double angleIdeal = 90; //ideal angle in degrees
             double angleRad = 0; //angle in radians
             int neigbourPt = 3; //variable used in skweness calcualtion
+
             double sumAR = 0;
             double sumSK = 0;
+            double sumJacobian = 0;
+
             double avgAR = 0;
             double avgSK = 0;
+            double avgJacobian = 0;
 
             //input
             DA.GetData(0, ref m);
@@ -166,7 +171,8 @@ namespace MeshPoints
             DA.SetDataList(0, qualityList);
             DA.SetData(1, avgAR);
             DA.SetData(2, avgSK);
-            DA.SetData(3, colorMesh);
+            DA.SetData(3, avgJacobian);
+            DA.SetData(4, colorMesh);
 
 
         }
