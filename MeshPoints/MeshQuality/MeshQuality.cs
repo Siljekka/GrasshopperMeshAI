@@ -1,6 +1,7 @@
 ﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Drawing;
@@ -64,7 +65,7 @@ namespace MeshPoints
 
             double sumAspectRatio = 0;
             double sumSkewness = 0;
-            double sumJacobian = 0;
+            double sumJacobianRatio = 0;
             #endregion
 
             //input
@@ -102,14 +103,14 @@ namespace MeshPoints
 
                 elementQuality.AspectRatio = (vertexDistance[0] / vertexDistance[vertexDistance.Count - 1]);
                 elementQuality.Skewness = 1 - Math.Max((elementAngles[elementAngles.Count - 1] - idealAngle) / (180 - idealAngle), (idealAngle - elementAngles[0]) / (idealAngle));
-                elementQuality.Jacobian = CalculateJacobianOf2DQuadElement(e);
+                elementQuality.JacobianRatio = CalculateJacobianRatioOf2DQuadElement(e);
                 
                 elementQuality.element = e;
                 e.quality = elementQuality;
 
                 sumAspectRatio += elementQuality.AspectRatio;
                 sumSkewness += elementQuality.Skewness;
-                sumJacobian += elementQuality.Jacobian;
+                sumJacobianRatio += elementQuality.JacobianRatio;
 
                 qualityList.Add(elementQuality);
         
@@ -119,7 +120,7 @@ namespace MeshPoints
 
             double avgAspectRatio = sumAspectRatio / mesh2D.Elements.Count;
             double avgSkewness = sumSkewness / mesh2D.Elements.Count;
-            double avgJacobian = sumJacobian / mesh2D.Elements.Count;
+            double avgJacobianRatio = sumJacobianRatio / mesh2D.Elements.Count;
             #endregion
 
             #region Color the mesh based on quality type
@@ -171,29 +172,28 @@ namespace MeshPoints
                     colorMesh.Append(q.element.mesh);
                 }
             }
+            // Todo implement mesh coloring for jacobian ratio
             #endregion
 
             #region Outputs
             DA.SetDataList(0, qualityList);
             DA.SetData(1, avgAspectRatio);
             DA.SetData(2, avgSkewness);
-            DA.SetData(3, avgJacobian);
+            DA.SetData(3, avgJacobianRatio);
             DA.SetData(4, colorMesh);
             #endregion
         }
 
         #region Component methods
-        double CalculateJacobianOf2DQuadElement(Element meshFace)
+        double CalculateJacobianRatioOf2DQuadElement(Element meshFace)
         {
             /* 
             1. Collect corner points.
             2. Define corner of natural quad element.
             3. Calculate the Jacobian determinant of each corner.
-            4. Average the determinants to get a quality measure of the element.
+            4. The Jacobian ratio for mesh quality is the ratio of the minimum and maximum jacobian determinants of the element.
+               A value of 1 is a perfect square mesh.
              */
-
-            double avgJacobianOfElement;
-            double sumJacobianOfCorners = 0;
 
             // NodeN.Coordinate is a reference to the inherited Point3d object of the Node-class
             // Todo refactor Node-class, why is Point3d named Coordinate???
@@ -211,8 +211,10 @@ namespace MeshPoints
                 new List<double>{ -1, -1}, new List<double> { 1, -1 }, new List<double> { 1, 1 }, new List<double> { -1, 1 }
             };
 
+            var jacobiansOfElement = new List<Double>();
+
             // Calculate the Jacobian determinant of each corner point
-            for(int n=0; n<naturalCornerPoints.Count; n++)
+            for (int n=0; n<naturalCornerPoints.Count; n++)
             {
                 double nX = naturalCornerPoints[n][0];
                 double nY = naturalCornerPoints[n][1];
@@ -227,11 +229,13 @@ namespace MeshPoints
                     ((1 - nX) * (gX[3] - gX[0]) + (1 + nX) * (gX[2] - gX[1]))
                     );
 
-                sumJacobianOfCorners += jacobianOfCorner;
+                jacobiansOfElement.Add(jacobianOfCorner);
             };
 
-            avgJacobianOfElement = sumJacobianOfCorners/4;
-            return avgJacobianOfElement;
+            // Minimum element divided by maximum element. A value of 1 is a perfect square.
+            double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
+
+            return jacobianRatio;
         }
         #endregion
 
