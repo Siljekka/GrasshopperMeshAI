@@ -45,7 +45,7 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //Variables
+            // variables
             Mesh2D m = new Mesh2D();
             Element e = new Element();
             Mesh mesh = new Mesh();
@@ -53,54 +53,87 @@ namespace MeshPoints.CreateMesh
 
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
-            List<Point3d> pts = new List<Point3d>();
+            List<Point3d> meshPts = new List<Point3d>();
+            List<Point3d> meshPtsSorted = new List<Point3d>();
 
             int row = 0;
             int column = 0;
             int newRow = 0;
             int counter = 0;
-            Boolean completeRow = false;
+            int numPtsDirection1 = 2; //Number points in 1. direction, start by adding first and last point in the 1. direction
+            int numPtsDirection2 = 0;
+            Boolean completeCountDirection1 = false;
 
-            //Input
-            DA.GetDataList(0, pts);
+            // input
+            DA.GetDataList(0, meshPts);
 
-            
+            if (meshPts.Count < 4) { return; }// add warning message
+
             #region Find nu and nv
-            m.nu = 2;//Number points in u-dir, start by adding first/last point in a row
-            m.nv = 2; //Number points in v-dir, start by adding first point in a colomn
-            for (int i = 0; i < pts.Count - 2; i++)
+            // count the number of points in 1. direction and 2. direction
+            for (int i = 0; i < meshPts.Count - 2; i++)
             {
-                Vector3d vec1 = (pts[i + 1] - pts[i]) / (pts[i + 1] - pts[i]).Length;
-                Vector3d vec2 = (pts[i + 2] - pts[i+1]) / (pts[i + 2] - pts[i+1]).Length;
+                Vector3d vec1 = (meshPts[i + 1] - meshPts[i]);
+                Vector3d vec2 = (meshPts[i + 2] - meshPts[i]);
                 double dot = Vector3d.Multiply(vec1, vec2);
-                if (dot >= 0) //vec1.IsParallelTo(vec2) == 1
+
+                if (dot > 0)
                 {
-                    if (!completeRow)
+                    if (!completeCountDirection1)
                     {
-                        m.nu++; //count inner points in first row
+                        numPtsDirection1++; // count points in direction 1
                     }
                 }
                 else
                 {
-                    m.nv++; //count each end of row
-                    completeRow = true;
+                    completeCountDirection1 = true;
                 }
             }
-            m.nv = m.nv/2;
+            numPtsDirection2 = meshPts.Count / numPtsDirection1;
+
+            // assign directions to u and v axis
+            bool switchAxis = false;
+            Vector3d vecDirection1 = (meshPts[1] - meshPts[0]) / (meshPts[1] - meshPts[0]).Length;
+            Vector3d vecDirection2 = (meshPts[numPtsDirection1]-meshPts[0]) / (meshPts[numPtsDirection1] - meshPts[0]).Length;
+            if (vecDirection1.X < vecDirection2.X)
+            {
+                // meshPts has "Column format"
+                m.nu = numPtsDirection2; // u is direction 2 
+                m.nv = numPtsDirection1; // v is direction 1
+                switchAxis = true;
+            }
+            else
+            {
+                // meshPts has "Row format"
+                m.nu = numPtsDirection1; // u is direction 1
+                m.nv = numPtsDirection2; // v is direction 2
+            }
             #endregion
+
+            // change meshPts from "Column format" to "Row format":
+            if (switchAxis)
+            {
+                for (int k = 0; k < m.nv; k++)
+                {
+                    for (int n = 0; n < m.nu; n++)
+                    {
+                        meshPtsSorted.Add(meshPts[n * m.nv + k]); 
+                    }
+                }
+                meshPts = meshPtsSorted;
+            }
             
             #region Create Vertices and Nodes   
-            //OBS: use nodes instead of vertices??
-            for (int i = 0; i < pts.Count; i++)
-            { 
-                //check if pts sorted in u or v dir first
-                allMesh.Vertices.Add(pts[i]);
-                Node node = new Node(i, pts[i]); //Assign Global ID and cooridinates
-                if (row == 0 | row == m.nv - 1) {node.BC_V = true;}
-                if (column == 0 | column == m.nu - 1) {node.BC_U = true;}
-
+            //OBS: should use nodes instead of vertices
+            for (int i = 0; i < meshPts.Count; i++)
+            {
+                allMesh.Vertices.Add(meshPts[i]);
+                Node node = new Node(i, meshPts[i]); // assign Global ID and cooridinates
+                if (row == 0 | row == m.nv - 1) { node.BC_V = true; } // assign BC v-dir
+                if (column == 0 | column == m.nu - 1) { node.BC_U = true; } // assign BC u-dir
+                
                 column++;
-
+                
                 if (column == m.nu)
                 {
                     row++;
@@ -109,8 +142,7 @@ namespace MeshPoints.CreateMesh
                 nodes.Add(node);
             }
             #endregion
-            
-            
+
             #region Create Elements and Mesh
             for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++)
             {
@@ -159,19 +191,20 @@ namespace MeshPoints.CreateMesh
                 }
             }
             
-            //OBS: burde finne en annen løsning for meshingen...
+            //OBS: should find a better solution for meshing
             allMesh.Normals.ComputeNormals();  //Control if needed
             allMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
             allMesh.Compact(); //to ensure that it calculate
 
-            //Add properties to Mesh2D
+            // add properties to Mesh2D
             m.Nodes = nodes;
             m.Elements = elements;
             m.mesh = allMesh;
+            m.Nodes = nodes;
             #endregion
-            
-            // Output
-            DA.SetData(0, m); 
+
+            // output
+            DA.SetData(0, m);
         }
 
         /// <summary>
