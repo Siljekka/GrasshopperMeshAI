@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Drawing;
 
-
 namespace MeshPoints
 {
     public class MeshQuality : GH_Component
@@ -49,7 +48,7 @@ namespace MeshPoints
         {
             #region Variables
             //variables
-            Mesh2D mesh = new Mesh2D();
+            Mesh2D mesh2D = new Mesh2D();
             Mesh colorMesh = new Mesh();
 
             List<Quality> qualityList = new List<Quality>(); // list of Quality for each element in the mesh
@@ -65,15 +64,15 @@ namespace MeshPoints
 
             double sumAspectRatio = 0;
             double sumSkewness = 0;
-            double sumJacobian = 0; // todo: implement jacobian
+            double sumJacobian = 0;
             #endregion
 
             //input
-            DA.GetData(0, ref mesh);
+            DA.GetData(0, ref mesh2D);
             DA.GetData(1, ref qualityCheckType);
 
             #region Calculate mesh quality
-            foreach (Element e in mesh.Elements)
+            foreach (Element e in mesh2D.Elements)
             {
                 Quality elementQuality = new Quality();
 
@@ -103,21 +102,24 @@ namespace MeshPoints
 
                 elementQuality.AspectRatio = (vertexDistance[0] / vertexDistance[vertexDistance.Count - 1]);
                 elementQuality.Skewness = 1 - Math.Max((elementAngles[elementAngles.Count - 1] - idealAngle) / (180 - idealAngle), (idealAngle - elementAngles[0]) / (idealAngle));
+                elementQuality.Jacobian = CalculateJacobianOf2DQuadElement(e);
                 
                 elementQuality.element = e;
                 e.quality = elementQuality;
 
                 sumAspectRatio += elementQuality.AspectRatio;
                 sumSkewness += elementQuality.Skewness;
+                sumJacobian += elementQuality.Jacobian;
+
                 qualityList.Add(elementQuality);
         
                 vertexDistance.Clear();
                 elementAngles.Clear();
             }
 
-            double avgAspectRatio = sumAspectRatio / mesh.Elements.Count;
-            double avgSkewness = sumSkewness / mesh.Elements.Count;
-            double avgJacobian = 123;
+            double avgAspectRatio = sumAspectRatio / mesh2D.Elements.Count;
+            double avgSkewness = sumSkewness / mesh2D.Elements.Count;
+            double avgJacobian = sumJacobian / mesh2D.Elements.Count;
             #endregion
 
             #region Color the mesh based on quality type
@@ -179,6 +181,59 @@ namespace MeshPoints
             DA.SetData(4, colorMesh);
             #endregion
         }
+
+        #region Component methods
+        double CalculateJacobianOf2DQuadElement(Element meshFace)
+        {
+            /* 
+            1. Collect corner points.
+            2. Define corner of natural quad element.
+            3. Calculate the Jacobian determinant of each corner.
+            4. Average the determinants to get a quality measure of the element.
+             */
+
+            double avgJacobianOfElement;
+            double sumJacobianOfCorners = 0;
+
+            // NodeN.Coordinate is a reference to the inherited Point3d object of the Node-class
+            // Todo refactor Node-class, why is Point3d named Coordinate???
+            var gX = new List<Double>() // global x-coordinates of corner points
+            {
+                meshFace.Node1.Coordinate.X, meshFace.Node2.Coordinate.X, meshFace.Node3.Coordinate.X, meshFace.Node4.Coordinate.X,
+            };
+            var gY = new List<Double>() // global y-coordinates of corner points
+            {
+                meshFace.Node1.Coordinate.Y, meshFace.Node2.Coordinate.Y, meshFace.Node3.Coordinate.Y, meshFace.Node4.Coordinate.Y,
+            };
+
+            var naturalCornerPoints = new List<List<Double>>
+            {
+                new List<double>{ -1, -1}, new List<double> { 1, -1 }, new List<double> { 1, 1 }, new List<double> { -1, 1 }
+            };
+
+            // Calculate the Jacobian determinant of each corner point
+            for(int n=0; n<naturalCornerPoints.Count; n++)
+            {
+                double nX = naturalCornerPoints[n][0];
+                double nY = naturalCornerPoints[n][1];
+
+                // See documentation for derivation of formula
+                double jacobianOfCorner = 0.25 *
+                    (
+                    ((1 - nY) * (gX[1] - gX[0]) + (1  +nY) * (gX[2] - gX[3]))*
+                    ((1 - nX) * (gY[3] - gY[0]) + (1 + nX) * (gY[2] - gY[1]))
+                    -
+                    ((1 - nY) * (gY[1] - gY[0]) + (1 + nY) * (gY[2] - gY[3])) *
+                    ((1 - nX) * (gX[3] - gX[0]) + (1 + nX) * (gX[2] - gX[1]))
+                    );
+
+                sumJacobianOfCorners += jacobianOfCorner;
+            };
+
+            avgJacobianOfElement = sumJacobianOfCorners/4;
+            return avgJacobianOfElement;
+        }
+        #endregion
 
         /// <summary>
         /// Provides an Icon for the component.
