@@ -14,7 +14,7 @@ namespace MeshPoints.Classes
         //Properties
         public double AspectRatio { get; set; }
         public double Skewness { get; set; }
-        public double Jacobian { get; set; }
+        public double JacobianRatio { get; set; }
         public Element element { get; set; }
 
 
@@ -24,11 +24,11 @@ namespace MeshPoints.Classes
                 //Empty constructor
             }
 
-        public Quality(Element _elem, double _aspectRatio, double _skewness, double _jacobian)
+        public Quality(Element _elem, double _aspectRatio, double _skewness, double _jacobianRatio)
         {
             AspectRatio = _aspectRatio;
             Skewness = _skewness;
-            Jacobian = _jacobian;
+            JacobianRatio = _jacobianRatio;
             element = _elem;
         }
 
