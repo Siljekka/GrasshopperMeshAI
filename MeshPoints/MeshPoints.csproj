@@ -67,11 +67,10 @@
     <Compile Include="Classes\Element.cs" />
     <Compile Include="CreateMesh\CreateMesh3D.cs" />
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
-    <Compile Include="MeshQuality\ColorQuality.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement.cs" />
     <Compile Include="DeconstructClasses\DeconstructMesh2D.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
-    <Compile Include="Galapagos\GalapagosMesh.cs" />
+    <Compile Include="Galapagos\MoveMeshVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
