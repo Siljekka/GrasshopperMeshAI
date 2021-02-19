@@ -28,7 +28,8 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Brep", "bp", "Brep", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh2D", "m2D", "Mesh2D for bottom surface of Brep", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("u", "u", "division in u direction", GH_ParamAccess.item, 4);
+            pManager.AddIntegerParameter("v", "v", "division in v direction", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("w", "w", "division in w direction", GH_ParamAccess.item, 4);
         }
 
@@ -49,8 +50,7 @@ namespace MeshPoints.CreateMesh
         {
             // Variables
             Brep bp = new Brep();
-            
-            Mesh2D m2D = new Mesh2D();
+           
             Mesh3D m3D = new Mesh3D();
             Element e = new Element();
             List<Node> nodes = new List<Node>();
@@ -73,6 +73,8 @@ namespace MeshPoints.CreateMesh
 
             List<Curve> rails = new List<Curve>();
 
+            int nu = 0;
+            int nv = 0;
             int nw = 0;
             int row = 0;
             int column = 0;
@@ -83,13 +85,14 @@ namespace MeshPoints.CreateMesh
 
             //Input
             DA.GetData(0, ref bp);
-            DA.GetData(1, ref m2D);
+            DA.GetData(1, ref nu);
+            DA.GetData(1, ref nv);
             DA.GetData(2, ref nw);
 
 
             // Code
-            m3D.nu = m2D.nu;
-            m3D.nv = m2D.nv;
+            m3D.nu = nu;
+            m3D.nv = nv;
             m3D.nw = nw;
 
             Curve rail1 = bp.Edges[0];  //get edge1 of brep = rail 1
@@ -124,20 +127,20 @@ namespace MeshPoints.CreateMesh
                 p3 = p.Branch(2)[i]; //points on rail 4 
                 p4 = p.Branch(3)[i]; //points on rail 3 
 
-                double spanV1 = (p4 - p1).Length / (m2D.nv - 1);  //distance between points on v1 direction
-                double spanV2 = (p3 - p2).Length / (m2D.nv - 1);  //distance between points on v2 direction
+                double spanV1 = (p4 - p1).Length / (nv - 1);  //distance between points on v1 direction
+                double spanV2 = (p3 - p2).Length / (nv - 1);  //distance between points on v2 direction
                 Vector3d vecV1 = new Vector3d((p4 - p1) / (p4 - p1).Length);  //vector in v1 direction
                 Vector3d vecV2 = new Vector3d((p3 - p2) / (p3 - p2).Length);  //vector in v2 direction
 
-                for (int j = 0; j < m2D.nv; j++) //Loop for v-direction
+                for (int j = 0; j < nv; j++) //Loop for v-direction
                 {
                     p1 = new Point3d(p1.X + spanV1 * j * vecV1.X, p1.Y + spanV1 * j * vecV1.Y, p1.Z + spanV1 * j * vecV1.Z);  //makes point in v1 direction
                     p2 = new Point3d(p2.X + spanV2 * j * vecV2.X, p2.Y + spanV2 * j * vecV2.Y, p2.Z + spanV2 * j * vecV2.Z);  //makes point in v2 direction
 
-                    double spanU = (p2 - p1).Length / (m2D.nu - 1); //distance between points on u direction
+                    double spanU = (p2 - p1).Length / (nu - 1); //distance between points on u direction
                     Vector3d vecU = new Vector3d((p2 - p1) / (p2 - p1).Length);  //vector in u direction
 
-                    for (int k = 0; k < m2D.nu; k++) //Loop for u-direction
+                    for (int k = 0; k < nu; k++) //Loop for u-direction
                     {
                         Point3d pt = new Point3d(p1.X + spanU * k * vecU.X, p1.Y + spanU * k * vecU.Y, p1.Z + spanU * k * vecU.Z);  //make points in u direction (between v1 and v2)
                         pts.Add(pt, new GH_Path(i));  //Tree with points in v and u direction. Branch: level nw
@@ -173,8 +176,9 @@ namespace MeshPoints.CreateMesh
                     Node node = new Node(count1, pts.Branch(i)[j]); //Assign Global ID and cooridinates
                     count1++;
 
-                    if (row == 0 | row == m3D.nv - 1) { node.BC_V = true; }
                     if (column == 0 | column == m3D.nu - 1) { node.BC_U = true; }
+                    if (row == 0 | row == m3D.nv - 1) { node.BC_V = true; }
+                    if (i == 0 | i == nw) { node.BC_W = true; }
 
                     column++;
 
@@ -204,28 +208,28 @@ namespace MeshPoints.CreateMesh
                     e.Id = elemId;
                     if (count2 < m3D.nu - 1)
                     {
-                        Node n1 = new Node(1, nodes[j].GlobalId, ptsBot[j], nodes[j].BC_U, nodes[j].BC_V);
+                        Node n1 = new Node(1, nodes[j].GlobalId, ptsBot[j], nodes[j].BC_U, nodes[j].BC_V, nodes[j].BC_W);
                         e.Node1 = n1;
 
-                        Node n2 = new Node(2, nodes[j + 1].GlobalId, ptsBot[j + 1], nodes[j + 1].BC_U, nodes[j + 1].BC_V);
+                        Node n2 = new Node(2, nodes[j + 1].GlobalId, ptsBot[j + 1], nodes[j + 1].BC_U, nodes[j + 1].BC_V, nodes[j + 1].BC_W);
                         e.Node2 = n2;
 
-                        Node n3 = new Node(3, nodes[j + m3D.nu + 1].GlobalId, ptsBot[j + m3D.nu + 1], nodes[j + m3D.nu + 1].BC_U, nodes[j + m3D.nu + 1].BC_V);
+                        Node n3 = new Node(3, nodes[j + m3D.nu + 1].GlobalId, ptsBot[j + m3D.nu + 1], nodes[j + m3D.nu + 1].BC_U, nodes[j + m3D.nu + 1].BC_V, nodes[j + m3D.nu + 1].BC_W);
                         e.Node3 = n3;
 
-                        Node n4 = new Node(4, nodes[j + m3D.nu].GlobalId, ptsBot[j + m3D.nu], nodes[j + m3D.nu].BC_U, nodes[j + m3D.nu].BC_V);
+                        Node n4 = new Node(4, nodes[j + m3D.nu].GlobalId, ptsBot[j + m3D.nu], nodes[j + m3D.nu].BC_U, nodes[j + m3D.nu].BC_V, nodes[j + m3D.nu].BC_W);
                         e.Node4 = n4;
 
-                        Node n5 = new Node(5, nodes[j + m3D.nu * m3D.nv].GlobalId, ptsTop[j], nodes[j + m3D.nu * m3D.nv].BC_U, nodes[j + m3D.nu * m3D.nv].BC_V);
+                        Node n5 = new Node(5, nodes[j + m3D.nu * m3D.nv].GlobalId, ptsTop[j], nodes[j + m3D.nu * m3D.nv].BC_U, nodes[j + m3D.nu * m3D.nv].BC_V, nodes[j + m3D.nu * m3D.nv].BC_W);
                         e.Node5 = n5;
 
-                        Node n6 = new Node(6, nodes[j + 1 + m3D.nu * m3D.nv].GlobalId, ptsTop[j + 1], nodes[j + 1 + m3D.nu * m3D.nv].BC_U, nodes[j + 1 + m3D.nu * m3D.nv].BC_V);
+                        Node n6 = new Node(6, nodes[j + 1 + m3D.nu * m3D.nv].GlobalId, ptsTop[j + 1], nodes[j + 1 + m3D.nu * m3D.nv].BC_U, nodes[j + 1 + m3D.nu * m3D.nv].BC_V, nodes[j + 1 + m3D.nu * m3D.nv].BC_W);
                         e.Node6 = n6;
 
-                        Node n7 = new Node(7, nodes[j + m3D.nu + 1 + m3D.nu * m3D.nv].GlobalId, ptsTop[j + m3D.nu + 1], nodes[j + m3D.nu + 1 + m3D.nu * m3D.nv].BC_U, nodes[j + m3D.nu + 1 + m3D.nu * m3D.nv].BC_V);
+                        Node n7 = new Node(7, nodes[j + m3D.nu + 1 + m3D.nu * m3D.nv].GlobalId, ptsTop[j + m3D.nu + 1], nodes[j + m3D.nu + 1 + m3D.nu * m3D.nv].BC_U, nodes[j + m3D.nu + 1 + m3D.nu * m3D.nv].BC_V, nodes[j + m3D.nu + 1 + m3D.nu * m3D.nv].BC_W);
                         e.Node7 = n7;
 
-                        Node n8 = new Node(8, nodes[j + m3D.nu + m3D.nu * m3D.nv].GlobalId, ptsTop[j + m3D.nu], nodes[j + m3D.nu + m3D.nu * m3D.nv].BC_U, nodes[j + m3D.nu + m3D.nu * m3D.nv].BC_V);
+                        Node n8 = new Node(8, nodes[j + m3D.nu + m3D.nu * m3D.nv].GlobalId, ptsTop[j + m3D.nu], nodes[j + m3D.nu + m3D.nu * m3D.nv].BC_U, nodes[j + m3D.nu + m3D.nu * m3D.nv].BC_V, nodes[j + m3D.nu + m3D.nu * m3D.nv].BC_W);
                         e.Node8 = n8;
 
                         mesh.Vertices.Add(e.Node1.Coordinate); //0
