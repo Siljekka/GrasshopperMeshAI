@@ -106,7 +106,7 @@ namespace MeshPoints
                 elementQuality.JacobianRatio = CalculateJacobianRatioOf2DQuadElement(e);
                 
                 elementQuality.element = e;
-                e.quality = elementQuality;
+                e.MeshQuality = elementQuality;
 
                 sumAspectRatio += elementQuality.AspectRatio;
                 sumSkewness += elementQuality.Skewness;
