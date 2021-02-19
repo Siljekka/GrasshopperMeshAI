@@ -220,7 +220,7 @@ namespace MeshPoints
                 double nY = naturalCornerPoints[n][1];
 
                 // See documentation for derivation of formula
-                double jacobianOfCorner = 0.25 *
+                double jacobianOfCorner = 0.0625 *
                     (
                     ((1 - nY) * (gX[1] - gX[0]) + (1  +nY) * (gX[2] - gX[3]))*
                     ((1 - nX) * (gY[3] - gY[0]) + (1 + nX) * (gY[2] - gY[1]))
