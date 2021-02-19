@@ -19,7 +19,7 @@ namespace MeshPoints
         public GalapagosMesh()
           : base("Move Mesh Vertices", "mmv",
               "Move mesh vertices with gene pools",
-              "MyPlugIn", "Modify Mesh2D")
+              "MyPlugIn", "Modify Mesh")
         {
         }
 
