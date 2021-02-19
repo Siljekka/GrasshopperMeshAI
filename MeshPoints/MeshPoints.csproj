@@ -65,7 +65,10 @@
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
-    <Compile Include="CreateMesh\CreateMesh3D.cs" />
+    <Compile Include="CreateMesh\CreateMesh3D_Box.cs" />
+    <Compile Include="CreateMesh\CreateMesh3D_Sweep.cs" />
+    <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />
+    <Compile Include="DeconstructClasses\DeconstructMesh3D.cs" />
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement.cs" />
     <Compile Include="DeconstructClasses\DeconstructMesh2D.cs" />
@@ -73,6 +76,7 @@
     <Compile Include="Galapagos\MoveMeshVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
+    <Compile Include="IsSweepable.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh_outdated\MeshFlattenPoints.cs" />
     <Compile Include="CreateMesh\CreateMesh2D.cs" />
