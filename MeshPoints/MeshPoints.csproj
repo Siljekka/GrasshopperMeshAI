@@ -77,6 +77,7 @@
     <Compile Include="Galapagos\MoveMeshVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
+    <Compile Include="IsSweepable.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh_outdated\MeshFlattenPoints.cs" />
     <Compile Include="CreateMesh\CreateMesh2D.cs" />
@@ -104,6 +105,7 @@
     <EmbeddedResource Include="Properties\Resources\test.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Properties\Resources\MeshQuality.png" />
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>
   <ItemGroup />

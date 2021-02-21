@@ -19,7 +19,7 @@ namespace MeshPoints.Classes
         public Node Node7 { get; set; }
         public Node Node8 { get; set; }
 
-        public Quality quality { get; set; }
+        public Quality MeshQuality { get; set; }
         public int Id { get; set; }
         public bool IsCube { get; set; } //if 3D element
 
