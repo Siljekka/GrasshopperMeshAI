@@ -16,7 +16,7 @@ namespace MeshPoints
         public MeshPoints3D_outdated()
           : base("Mesh3D", "M3D",
               "Creates mesh for solid elements",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 

@@ -36,8 +36,9 @@ namespace MeshPoints
             pManager.AddGenericParameter("Local Id", "lid", "Local Id", GH_ParamAccess.item); //0
             pManager.AddGenericParameter("Global Id", "gid", "Global Id", GH_ParamAccess.item); //1
             pManager.AddGenericParameter("Coordinate", "xyz", "Coordinate", GH_ParamAccess.item); //2
-            pManager.AddGenericParameter("BC u-dir", "bcx", "Boundary condtion in x-direction", GH_ParamAccess.item); //3
-            pManager.AddGenericParameter("BC v-dir", "bcy", "Boundary condtion in y-direction", GH_ParamAccess.item); //4 
+            pManager.AddGenericParameter("BC u-dir", "bcu", "Boundary condtion in u-direction", GH_ParamAccess.item); //3
+            pManager.AddGenericParameter("BC v-dir", "bcv", "Boundary condtion in v-direction", GH_ParamAccess.item); //4
+            pManager.AddGenericParameter("BC w-dir", "bcw", "Boundary condtion in w-direction", GH_ParamAccess.item); //5
         }
 
         /// <summary>
@@ -56,6 +57,7 @@ namespace MeshPoints
             DA.SetData(2, n.Coordinate);
             DA.SetData(3, n.BC_U);
             DA.SetData(4, n.BC_V);
+            DA.SetData(5, n.BC_W);
         }
 
         /// <summary>
