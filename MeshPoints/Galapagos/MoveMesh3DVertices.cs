@@ -40,8 +40,6 @@ namespace MeshPoints.Galapagos
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3d", "Updated mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("list", "m3d", "Updated mesh", GH_ParamAccess.list);
-
 
         }
 
@@ -108,7 +106,6 @@ namespace MeshPoints.Galapagos
                 }
                 else { translationVectorVDirection = translationVectorVDirection * 0; }
 
-                //___________new
                 // translation in w direction
                 if (genesW[i] > 0 & !m.Nodes[i].BC_W)
                 {
@@ -121,32 +118,28 @@ namespace MeshPoints.Galapagos
                 }
                 else { translationVectorWDirection = translationVectorWDirection * 0; }
 
-                //________modified
                 meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorUDirection.X + translationVectorVDirection.X + translationVectorWDirection.X) * overlapTolerance,
                     m.Nodes[i].Coordinate.Y + (translationVectorUDirection.Y + translationVectorVDirection.Y + translationVectorWDirection.Y) * overlapTolerance,
                     m.Nodes[i].Coordinate.Z + (translationVectorUDirection.Z + translationVectorVDirection.Z + translationVectorWDirection.Z) * overlapTolerance);
 
-                //______modified: necessary to change vector=
-                // project meshPoint to brep
-               // var meshPointProjected = Intersection.ProjectPointsToBreps(
-                 //   new List<Brep> { bp }, // brep on which to project
-                   // new List<Point3d> { meshPoint }, // some random points to project
-                    //new Vector3d(0, 0, 1), // project on Z axis
-                   // 0.01);
+                // todo: fix projecting onto brep
 
-                n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V);
+                // project meshPoint to brep
+                // var meshPointProjected = Intersection.ProjectPointsToBreps(
+                //   new List<Brep> { bp }, // brep on which to project
+                // new List<Point3d> { meshPoint }, // some random points to project
+                //new Vector3d(0, 0, 1), // project on Z axis
+                // 0.01);
                 //n = new Node(i, meshPointProjected[0], m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W);
+
+                n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W); // todo: fix local id;
                 nodes.Add(n);
                 allMesh.Vertices.Add(meshPoint);
             }
             #endregion
 
-
-
             #region Element and mesh3D
             counter = 0;
-            int meshPtsAtLevel = m.nu * m.nv;
-
             for (int j = 0; j < m.nw ; j++) // loop trough levels
             {
                 counter = m.nu * m.nv*j;
@@ -156,7 +149,7 @@ namespace MeshPoints.Galapagos
                     e = CreateElement(id, nodes, counter, m.nu, m.nv);
                     e.mesh = MakeConsistent(e.mesh);
                     elements.Add(e); // add element and mesh to element list
-                    allMesh = CreateGlobalMesh(allMesh, counter,m.nu,m.nv);
+                    allMesh = CreateGlobalMesh(allMesh, counter, m.nu, m.nv);
 
                     // clear
                     e = new Element();
@@ -173,7 +166,7 @@ namespace MeshPoints.Galapagos
                 }
             }
             #endregion
-            // OBS: should find a better way to mesh
+            // todo: should find a better way to mesh
             allMesh = MakeConsistent(allMesh);
 
             //Add properties to Mesh3D
@@ -183,13 +176,11 @@ namespace MeshPoints.Galapagos
 
             // Output
             DA.SetData(0, meshUpdated);
-            DA.SetDataList(1, nodes);
-
         }
 
         Mesh MakeConsistent(Mesh mesh)
         {
-            mesh.Normals.ComputeNormals();  // control if needed
+            mesh.Normals.ComputeNormals();  // todo: control if needed
             mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
             mesh.Compact(); // to ensure that it calculate
             return mesh;
@@ -249,8 +240,6 @@ namespace MeshPoints.Galapagos
             e.mesh = mesh;
             return e;
         }
-
-        
 
         /// <summary>
         /// Provides an Icon for the component.
