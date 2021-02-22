@@ -86,6 +86,7 @@
     <Compile Include="MeshPointsInfo.cs" />
     <Compile Include="Mesh_outdated\MeshPointsComponentVer2.cs" />
     <Compile Include="Mesh_outdated\MeshPointsComponentVer1.cs" />
+    <Compile Include="IsSweepable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
