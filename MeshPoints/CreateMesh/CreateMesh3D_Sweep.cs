@@ -171,6 +171,8 @@ namespace MeshPoints.CreateMesh
             // Create Nodes   
             for (int i = 0; i < nw + 1; i++)
             {
+                row = 0;
+                column = 0;
                 for (int j = 0; j < pts.Branch(i).Count; j++)
                 {
                     Node node = new Node(count1, pts.Branch(i)[j]); //Assign Global ID and cooridinates
