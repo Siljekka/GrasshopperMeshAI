@@ -86,8 +86,8 @@ namespace MeshPoints.CreateMesh
             //Input
             DA.GetData(0, ref bp);
             DA.GetData(1, ref nu);
-            DA.GetData(1, ref nv);
-            DA.GetData(2, ref nw);
+            DA.GetData(2, ref nv);
+            DA.GetData(3, ref nw);
 
 
             // Code
