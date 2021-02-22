@@ -104,7 +104,7 @@ namespace MeshPoints
 
                 elementQuality.AspectRatio = (vertexDistance[0] / vertexDistance[vertexDistance.Count - 1]);
                 elementQuality.Skewness = 1 - Math.Max((elementAngles[elementAngles.Count - 1] - idealAngle) / (180 - idealAngle), (idealAngle - elementAngles[0]) / (idealAngle));
-                elementQuality.JacobianRatio = CalculateJacobianRatioOf2DQuadElement(e);
+                elementQuality.JacobianRatio = CalculateJacobianRatioOfPlaneQuadElement(e);
                 
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
@@ -187,57 +187,96 @@ namespace MeshPoints
 
         #region Component methods
 
-        Vector3d CalculateSurfaceNormalOfQuadElement(Element meshFace)
+        List<Point3d> CalculateLocalCoordinatesOfPlaneElement(Element meshFace)
         {
-            // Todo: is assuming a plane element valid?
             /*
-             Assuming a plane element we can use the same procedure as one would with a triangle, i.e.
-            1. Define two vectors from start point to adjacent points, in our case 
-               Node1->Node2 and Node1->Node4
-            2. Calculate cross product and normalize/Unitize.
-            3. Output is a normalized 3d vector.
+            1. Calculate surface normal.
+            2. Calculate transformation matrix between surface normal and unit z-vector [0,0,1].
+            3. Extract global corner points of meshFace.
+            4. Transform points to local coordinate system (x', y', z'=0)
+            output: list of Point3d
              */
+
             var elementPoints = new List<Point3d>(){
                 meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
             };
 
-            // Check if points are co-planar to determine if calculation of cross-product is possible
-            if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
+            var elementNormal = meshFace.mesh.NormalAt(0, 1, 0, 0, 0); // // for planar element normal is the same in every point
+            var elementPlane = new Plane(meshFace.Node1.Coordinate, elementNormal);
+            var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+
+            var elementTransform = Transform.PlaneToPlane(elementPlane, xyPlane); // generates a transformation matrix for mapping points to xy-plane
+
+            var transformedPoints = new List<Point3d>();
+            foreach (Point3d point in elementPoints)
             {
-                throw new ArgumentException("Points are not co-planar.");
+                transformedPoints.Add(elementTransform * point);
             }
 
-            var elementVectors = new List<Vector3d>
-            {
-                new Vector3d(elementPoints[1].X - elementPoints[0].X, elementPoints[1].Y - elementPoints[0].Y, elementPoints[1].Z - elementPoints[0].Z),
-                new Vector3d(elementPoints[3].X - elementPoints[0].X, elementPoints[3].Y - elementPoints[0].Y, elementPoints[3].Z - elementPoints[0].Z)
-            };
+            return transformedPoints;
 
-            Vector3d surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
-            surfaceNormal.Unitize();
-            return surfaceNormal;
+            // todo remove old code
+            //var elementPoints = new List<Point3d>(){
+            //    meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
+            //};
+            //// Check if points are co-planar to determine if we want to continue
+            //if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
+            //{
+            //    throw new ArgumentException("Points of element are not co-planar.");
+            //}
+
+            //var meshBrep = Brep.CreateFromCornerPoints(
+            //    elementPoints[0],
+            //    elementPoints[1],
+            //    elementPoints[2],
+            //    elementPoints[3],
+            //    0
+            //    );
+
+            //if (!meshBrep.IsSurface)
+            //{
+            //    throw new ArgumentNullException("Brep does not contain a surface.");
+            //}
+            //var meshBrepSurface = meshBrep.Surfaces[0]; // this should only have one element
+            //var surfaceNormal = meshBrepSurface.NormalAt(0, 0); // for planar element normal is the same in every point
 
         }
-        double CalculateJacobianRatioOf2DQuadElement(Element meshFace)
+        double CalculateJacobianRatioOfPlaneQuadElement(Element meshFace)
         {
+            /*Alternate method:
+            1. Define surface from corner points. It already is
+            2. Find normal.
+            3. Transform to plane element.
+            4. Use local coordinates to calculate Jacobian.
+             */
+            var localPoints = CalculateLocalCoordinatesOfPlaneElement(meshFace);
+
+            var gX = new List<Double>()
+            {
+                localPoints[0].X, localPoints[1].X, localPoints[2].X, localPoints[3].X,
+            };
+            var gY = new List<Double>()
+            {
+                localPoints[0].Y, localPoints[1].Y, localPoints[2].Y, localPoints[3].Y,
+            };
             /* 
             1. Collect corner points.
             2. Define corner of natural quad element.
             3. Calculate the Jacobian determinant of each corner.
             4. The Jacobian ratio for mesh quality is the ratio of the minimum and maximum jacobian determinants of the element.
-               A value of 1 is a perfect square mesh.
+               A value of 1 is a perfect rectangular mesh.
              */
 
             // NodeN.Coordinate is a reference to the inherited Point3d object of the Node-class
             // Todo refactor Node-class, why is Point3d named Coordinate???
-            var gX = new List<Double>() // global x-coordinates of corner points
-            {
-                meshFace.Node1.Coordinate.X, meshFace.Node2.Coordinate.X, meshFace.Node3.Coordinate.X, meshFace.Node4.Coordinate.X,
-            };
-            var gY = new List<Double>() // global y-coordinates of corner points
-            {
-                meshFace.Node1.Coordinate.Y, meshFace.Node2.Coordinate.Y, meshFace.Node3.Coordinate.Y, meshFace.Node4.Coordinate.Y,
-            };
+            //var gX = new List<Double>() // global x-coordinates of corner points
+            //{
+            //    meshFace.Node1.Coordinate.X, meshFace.Node2.Coordinate.X, meshFace.Node3.Coordinate.X, meshFace.Node4.Coordinate.X,
+            //};
+            //var gY = new List<Double>() // global y-coordinates of corner points
+            //{
+            //    meshFace.Node1.Coordinate.Y, meshFace.Node2.Coordinate.Y, meshFace.Node3.Coordinate.Y, meshFace.Node4.Coordinate.Y,
+            //};
 
             var naturalCornerPoints = new List<List<Double>>
             {
