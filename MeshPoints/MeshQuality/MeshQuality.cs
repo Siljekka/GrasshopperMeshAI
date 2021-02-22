@@ -1,5 +1,6 @@
 ﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
+using Rhino;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -185,6 +186,38 @@ namespace MeshPoints
         }
 
         #region Component methods
+
+        Vector3d CalculateSurfaceNormalOfQuadElement(Element meshFace)
+        {
+            // Todo: is assuming a plane element valid?
+            /*
+             Assuming a plane element we can use the same procedure as one would with a triangle, i.e.
+            1. Define two vectors from start point to adjacent points, in our case 
+               Node1->Node2 and Node1->Node4
+            2. Calculate cross product and normalize/Unitize.
+            3. Output is a normalized 3d vector.
+             */
+            var elementPoints = new List<Point3d>(){
+                meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
+            };
+
+            // Check if points are co-planar to determine if calculation of cross-product is possible
+            if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
+            {
+                throw new ArgumentException("Points are not co-planar.");
+            }
+
+            var elementVectors = new List<Vector3d>
+            {
+                new Vector3d(elementPoints[1].X - elementPoints[0].X, elementPoints[1].Y - elementPoints[0].Y, elementPoints[1].Z - elementPoints[0].Z),
+                new Vector3d(elementPoints[3].X - elementPoints[0].X, elementPoints[3].Y - elementPoints[0].Y, elementPoints[3].Z - elementPoints[0].Z)
+            };
+
+            Vector3d surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
+            surfaceNormal.Unitize();
+            return surfaceNormal;
+
+        }
         double CalculateJacobianRatioOf2DQuadElement(Element meshFace)
         {
             /* 
