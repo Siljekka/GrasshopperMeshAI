@@ -49,12 +49,13 @@ namespace MeshPoints.Classes
             BC_V = _BC_V;
         }
 
-        public Node(int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool  BC_W)
+        public Node(int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool  _BC_W)
         {
             GlobalId = _globalId;
             Coordinate = _coord;
             BC_U = _BC_U;
             BC_V = _BC_V;
+            BC_W = _BC_W;
         }
 
         public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool _BC_W)
