@@ -76,7 +76,6 @@
     <Compile Include="Galapagos\MoveMeshVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
-    <Compile Include="IsSweepable.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh_outdated\MeshFlattenPoints.cs" />
     <Compile Include="CreateMesh\CreateMesh2D.cs" />
@@ -86,6 +85,7 @@
     <Compile Include="MeshPointsInfo.cs" />
     <Compile Include="Mesh_outdated\MeshPointsComponentVer2.cs" />
     <Compile Include="Mesh_outdated\MeshPointsComponentVer1.cs" />
+    <Compile Include="IsSweepable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
