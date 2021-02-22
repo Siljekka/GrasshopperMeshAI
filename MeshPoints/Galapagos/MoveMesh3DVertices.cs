@@ -40,6 +40,8 @@ namespace MeshPoints.Galapagos
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3d", "Updated mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("list", "m3d", "Updated mesh", GH_ParamAccess.list);
+
 
         }
 
@@ -99,7 +101,6 @@ namespace MeshPoints.Galapagos
                 if (genesV[i] > 0 & !m.Nodes[i].BC_V)
                 {
                     translationVectorVDirection = 0.5 * (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate) * genesV[i];
-
                 }
                 else if (genesV[i] < 0 & !m.Nodes[i].BC_V)
                 {
@@ -127,15 +128,16 @@ namespace MeshPoints.Galapagos
 
                 //______modified: necessary to change vector=
                 // project meshPoint to brep
-                var meshPointProjected = Intersection.ProjectPointsToBreps(
-                    new List<Brep> { bp }, // brep on which to project
-                    new List<Point3d> { meshPoint }, // some random points to project
-                    new Vector3d(0, 0, 1), // project on Z axis
-                    0.01);
+               // var meshPointProjected = Intersection.ProjectPointsToBreps(
+                 //   new List<Brep> { bp }, // brep on which to project
+                   // new List<Point3d> { meshPoint }, // some random points to project
+                    //new Vector3d(0, 0, 1), // project on Z axis
+                   // 0.01);
 
-                n = new Node(i, meshPointProjected[0], m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W);
+                n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V);
+                //n = new Node(i, meshPointProjected[0], m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W);
                 nodes.Add(n);
-                allMesh.Vertices.Add(meshPointProjected[0]);
+                allMesh.Vertices.Add(meshPoint);
             }
             #endregion
 
@@ -145,8 +147,9 @@ namespace MeshPoints.Galapagos
             counter = 0;
             int meshPtsAtLevel = m.nu * m.nv;
 
-            for (int j = 0; j < m.nw - 1; j++) // loop trough levels
+            for (int j = 0; j < m.nw ; j++) // loop trough levels
             {
+                counter = m.nu * m.nv*j;
                 for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++) // mesh a level
                 {
                     int id = i * (j + 1); // element id
@@ -180,6 +183,8 @@ namespace MeshPoints.Galapagos
 
             // Output
             DA.SetData(0, meshUpdated);
+            DA.SetDataList(1, nodes);
+
         }
 
         Mesh MakeConsistent(Mesh mesh)
