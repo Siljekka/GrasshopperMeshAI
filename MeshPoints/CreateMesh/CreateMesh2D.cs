@@ -57,15 +57,15 @@ namespace MeshPoints.CreateMesh
 
             int nu = 0;
             int nv = 0;
-            int vSequence = 0;
             int uSequence = 0;
+            int vSequence = 0;
             int counter = 0;
-            int numPtsDirectionV = 2; // number points in 1. direction, start by adding first and last point in the 1. direction
-            int numPtsDirectionU = 0;
+            int numPtsDirectionU = 2; // number points in 1. direction, start by adding first and last point in the 1. direction
+            int numPtsDirectionV = 0;
             double dotProduct = 0;
             Vector3d vec1 = Vector3d.Zero;
             Vector3d vec2 = Vector3d.Zero;
-            Boolean completeCountOfPtsDirectionV = false;
+            Boolean completeCountOfPtsDirectionU = false;
 
             // input
             DA.GetDataList(0, meshPts);
@@ -82,19 +82,19 @@ namespace MeshPoints.CreateMesh
 
                 if (dotProduct > 0)
                 {
-                    if (!completeCountOfPtsDirectionV)
+                    if (!completeCountOfPtsDirectionU)
                     {
-                        numPtsDirectionV++; // count points in direction 1
+                        numPtsDirectionU++; // count points in direction 1
                     }
                 }
                 else
                 {
-                    completeCountOfPtsDirectionV = true;
+                    completeCountOfPtsDirectionU = true;
                 }
             }
-            numPtsDirectionU = meshPts.Count / numPtsDirectionV;
-            nv = numPtsDirectionV; // u is direction 1
-            nu = numPtsDirectionU; // v is direction 2
+            numPtsDirectionV = meshPts.Count / numPtsDirectionU;
+            nu = numPtsDirectionU;
+            nv = numPtsDirectionV; 
             #endregion
 
             #region Create Vertices and Nodes   
@@ -105,18 +105,18 @@ namespace MeshPoints.CreateMesh
                 if (uSequence == 0 | uSequence == nu - 1) { node.BC_U = true; } // assign BC u-dir
                 if (vSequence == 0 | vSequence == nv - 1) { node.BC_V = true; } // assign BC v-dir
                 
-                vSequence++;
-                if (vSequence == nv)
+                uSequence++;
+                if (uSequence == nu)
                 {
-                    uSequence++;
-                    vSequence = 0;
+                    vSequence++;
+                    uSequence = 0;
                 }
                 nodes.Add(node);
             }
             #endregion
 
             #region Create Elements and Mesh
-            vSequence = 0;
+            uSequence = 0;
             for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
             {
                 e = CreateElement(i, nodes, counter, nu, nv);
@@ -124,11 +124,11 @@ namespace MeshPoints.CreateMesh
                 globalMesh = CreateGlobalMesh(globalMesh, counter, nu, nv);
                 
                 counter++;
-                vSequence++;
-                if (vSequence == (nv - 1)) // check if done with a v sequence
+                uSequence++;
+                if (uSequence == (nu - 1)) // check if done with a v sequence
                 {
                     counter++;
-                    vSequence = 0; // new v sequence
+                    uSequence = 0; // new v sequence
                 }
             }
 
@@ -150,7 +150,7 @@ namespace MeshPoints.CreateMesh
 
         Mesh CreateGlobalMesh(Mesh m, int counter, int nu, int nv)
         {
-            m.Faces.AddFace(counter, counter + 1, counter + nv + 1, counter + nv);
+            m.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
             return m;
         }
 
@@ -165,10 +165,10 @@ namespace MeshPoints.CreateMesh
             Node n2 = new Node(2, nodes[counter + 1].GlobalId, nodes[counter + 1].Coordinate, nodes[counter + 1].BC_U, nodes[counter + 1].BC_V);
             e.Node2 = n2;
 
-            Node n3 = new Node(3, nodes[counter + nv + 1].GlobalId, nodes[counter + nv+ 1].Coordinate, nodes[counter + nv + 1].BC_U, nodes[counter + nv + 1].BC_V);
+            Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, nodes[counter + nu+ 1].Coordinate, nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V);
             e.Node3 = n3;
 
-            Node n4 = new Node(4, nodes[counter + nv].GlobalId, nodes[counter + nv].Coordinate, nodes[counter + nv].BC_U, nodes[counter + nv].BC_V);
+            Node n4 = new Node(4, nodes[counter + nu].GlobalId, nodes[counter + nu].Coordinate, nodes[counter + nu].BC_U, nodes[counter + nu].BC_V);
             e.Node4 = n4;
 
             Mesh m = new Mesh();
