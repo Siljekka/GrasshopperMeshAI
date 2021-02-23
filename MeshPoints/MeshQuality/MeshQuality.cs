@@ -186,70 +186,83 @@ namespace MeshPoints
         }
 
         #region Component methods
-
-        List<Point3d> CalculateLocalCoordinatesOfPlaneElement(Element meshFace)
+        /// <summary>
+        /// Transforms the corner points of an arbitrary 3D plane quad surface to a 2D plane.
+        /// </summary>
+        /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
+        /// <returns>A list of <see cref="Point3d"/> where the Z (third) coordinate is 0.</returns>
+        /// <exception cref="System.ArgumentException">
+        /// <paramref name="meshFace"/> is not planar.
+        /// </exception>
+        List<Point3d> TransformPlaneQuadSurfaceTo2DPoints(Element meshFace)
         {
             /*
-            1. Calculate surface normal.
-            2. Calculate transformation matrix between surface normal and unit z-vector [0,0,1].
-            3. Extract global corner points of meshFace.
-            4. Transform points to local coordinate system (x', y', z'=0)
-            output: list of Point3d
+             * 1. Calculate surface normal.
+             * 2. Define surface plane using surface normal and first point of element.
+             * 3. Define xy-plane by origin: (0, 0, 0) and unit Z-vector: [0, 0, 1]
+             * 4. Define transformation from surface plane to xy-plane using PlaneToPlane().
+             * 5. Transform points to local coordinate system (X', Y', Z'=0)
+             * output: list of Point3d where Z (third) coordinate = 0
              */
 
+            var transformedPoints = new List<Point3d>(); // output
             var elementPoints = new List<Point3d>(){
                 meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
             };
 
-            var elementNormal = meshFace.mesh.NormalAt(0, 1, 0, 0, 0); // // for planar element normal is the same in every point
-            var elementPlane = new Plane(meshFace.Node1.Coordinate, elementNormal);
+            // Check that surface is planar
+            if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
+            {
+                throw new ArgumentException(
+                    message: "Corner points of input surface are not co-planar.",
+                    paramName: "elementPoints");
+            }
+
+            var elementVectors = new List<Vector3d>
+            {
+                new Vector3d(elementPoints[1].X - elementPoints[0].X, elementPoints[1].Y - elementPoints[0].Y, elementPoints[1].Z - elementPoints[0].Z),
+                new Vector3d(elementPoints[3].X - elementPoints[0].X, elementPoints[3].Y - elementPoints[0].Y, elementPoints[3].Z - elementPoints[0].Z)
+            };
+            
+            // Cross product of two linearily independent vectors is the normal to the plane containing them
+            var surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
+
+            var surfacePlane = new Plane(meshFace.Node1.Coordinate, surfaceNormal);
             var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
 
-            var elementTransform = Transform.PlaneToPlane(elementPlane, xyPlane); // generates a transformation matrix for mapping points to xy-plane
+            var elementTransformation = Transform.PlaneToPlane(surfacePlane, xyPlane); 
 
-            var transformedPoints = new List<Point3d>();
             foreach (Point3d point in elementPoints)
             {
-                transformedPoints.Add(elementTransform * point);
+                transformedPoints.Add(elementTransformation * point);
             }
 
             return transformedPoints;
-
-            // todo remove old code
-            //var elementPoints = new List<Point3d>(){
-            //    meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
-            //};
-            //// Check if points are co-planar to determine if we want to continue
-            //if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
-            //{
-            //    throw new ArgumentException("Points of element are not co-planar.");
-            //}
-
-            //var meshBrep = Brep.CreateFromCornerPoints(
-            //    elementPoints[0],
-            //    elementPoints[1],
-            //    elementPoints[2],
-            //    elementPoints[3],
-            //    0
-            //    );
-
-            //if (!meshBrep.IsSurface)
-            //{
-            //    throw new ArgumentNullException("Brep does not contain a surface.");
-            //}
-            //var meshBrepSurface = meshBrep.Surfaces[0]; // this should only have one element
-            //var surfaceNormal = meshBrepSurface.NormalAt(0, 0); // for planar element normal is the same in every point
-
         }
+
+        /// <summary>
+        /// Calculates the Jacobian ratio of a plane and simple quadrilateral mesh element.
+        /// </summary>
+        /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
+        /// <returns>A <see cref="double"/> between 0.0 and 1.0. A negative Jacobian might indicate a self-intersecting element.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <paramref name="jacobianRatio"/> is not between 0.0 and 1.0.
+        /// </exception>
         double CalculateJacobianRatioOfPlaneQuadElement(Element meshFace)
         {
-            /*Alternate method:
-            1. Define surface from corner points. It already is
-            2. Find normal.
-            3. Transform to plane element.
-            4. Use local coordinates to calculate Jacobian.
-             */
-            var localPoints = CalculateLocalCoordinatesOfPlaneElement(meshFace);
+            /*
+             * This method utilizes the idea of shape functions and natural coordinate system to calculate the Jacobian
+             * of given points on a plane and simple quadrilateral element.
+             * 
+             * 1. Transform the input 3D plane element (and specifically the corner points) to a 2D space (X', Y', Z'=0).
+             * 2. Define natural coordinates we want to calculate the Jacobian in. This could be the corner points (or 
+             *    alternatively the Gauss points) of the quad element. 
+             * 3. Calculate the Jacobian of each point. 
+             * 4. The ratio is the ratio of the minimum and maximum Jacobian calculated, given as a double from 0.0 to 1.0.
+             *    A negative Jacobian indicates a self-intersecting element and should not happen.
+                */
+
+            List<Point3d> localPoints = TransformPlaneQuadSurfaceTo2DPoints(meshFace);
 
             var gX = new List<Double>()
             {
@@ -259,53 +272,51 @@ namespace MeshPoints
             {
                 localPoints[0].Y, localPoints[1].Y, localPoints[2].Y, localPoints[3].Y,
             };
-            /* 
-            1. Collect corner points.
-            2. Define corner of natural quad element.
-            3. Calculate the Jacobian determinant of each corner.
-            4. The Jacobian ratio for mesh quality is the ratio of the minimum and maximum jacobian determinants of the element.
-               A value of 1 is a perfect rectangular mesh.
-             */
 
-            // NodeN.Coordinate is a reference to the inherited Point3d object of the Node-class
-            // Todo refactor Node-class, why is Point3d named Coordinate???
-            //var gX = new List<Double>() // global x-coordinates of corner points
-            //{
-            //    meshFace.Node1.Coordinate.X, meshFace.Node2.Coordinate.X, meshFace.Node3.Coordinate.X, meshFace.Node4.Coordinate.X,
-            //};
-            //var gY = new List<Double>() // global y-coordinates of corner points
-            //{
-            //    meshFace.Node1.Coordinate.Y, meshFace.Node2.Coordinate.Y, meshFace.Node3.Coordinate.Y, meshFace.Node4.Coordinate.Y,
-            //};
-
-            var naturalCornerPoints = new List<List<Double>>
+            var naturalPoints = new List<List<Double>> // natural coordinates of corner points
             {
                 new List<double>{ -1, -1}, new List<double> { 1, -1 }, new List<double> { 1, 1 }, new List<double> { -1, 1 }
             };
 
+            #region Todo: Implement which points we want to evaluate the jacobians for (corner vs 4 gauss integration points)
+            //double s = 0.57735; // this represents the Gauss point of an isoparametric quadrilateral element: sqrt(1/3)
+            //var naturalGaussPoints = new List<List<Double>> // natural coordinates of Gauss points
+            //{
+            //    new List<double>{ -s, -s}, new List<double> { s, -s }, new List<double> { s, s }, new List<double> { -s, s }
+            //};
+            #endregion
+
             var jacobiansOfElement = new List<Double>();
 
             // Calculate the Jacobian determinant of each corner point
-            for (int n=0; n<naturalCornerPoints.Count; n++)
+            for (int n=0; n<naturalPoints.Count; n++)
             {
-                double nX = naturalCornerPoints[n][0];
-                double nY = naturalCornerPoints[n][1];
+                double nX = naturalPoints[n][0];
+                double nY = naturalPoints[n][1];
 
                 // See documentation for derivation of formula
-                double jacobianOfCorner = 0.0625 *
+                double jacobianDeterminantOfPoint = 0.0625 *
                     (
-                    ((1 - nY) * (gX[1] - gX[0]) + (1  +nY) * (gX[2] - gX[3]))*
+                    ((1 - nY) * (gX[1] - gX[0]) + (1 + nY) * (gX[2] - gX[3]))*
                     ((1 - nX) * (gY[3] - gY[0]) + (1 + nX) * (gY[2] - gY[1]))
                     -
                     ((1 - nY) * (gY[1] - gY[0]) + (1 + nY) * (gY[2] - gY[3])) *
                     ((1 - nX) * (gX[3] - gX[0]) + (1 + nX) * (gX[2] - gX[1]))
                     );
 
-                jacobiansOfElement.Add(jacobianOfCorner);
+                jacobiansOfElement.Add(jacobianDeterminantOfPoint);
             };
 
-            // Minimum element divided by maximum element. A value of 1 is a perfect square.
+            // Minimum element divided by maximum element. A value of 1 denotes a rectangular element.
             double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
+
+            // Throw error if Jacobian ratio is outside of range: [0.0, 1.0]
+            if (jacobianRatio < 0 || 1.0 < jacobianRatio)
+            {
+                throw new ArgumentOutOfRangeException(
+                    paramName: "jacobianRatio", jacobianRatio,
+                    message: "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a self-intersecting element.");
+            }
 
             return jacobianRatio;
         }
