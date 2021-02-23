@@ -63,7 +63,7 @@ namespace MeshPoints.Galapagos
             Node n = new Node();
             Element e = new Element();
             Mesh mesh = new Mesh();
-            Mesh allMesh = new Mesh();
+            Mesh globalMesh = new Mesh();
             Mesh3D meshUpdated = new Mesh3D();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
@@ -134,7 +134,7 @@ namespace MeshPoints.Galapagos
 
                 n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W); // todo: fix local id;
                 nodes.Add(n);
-                allMesh.Vertices.Add(meshPoint);
+                globalMesh.Vertices.Add(meshPoint);
             }
             #endregion
 
@@ -147,9 +147,8 @@ namespace MeshPoints.Galapagos
                 {
                     int id = i * (j + 1); // element id
                     e = CreateElement(id, nodes, counter, m.nu, m.nv);
-                    e.mesh = MakeConsistent(e.mesh);
                     elements.Add(e); // add element and mesh to element list
-                    allMesh = CreateGlobalMesh(allMesh, counter, m.nu, m.nv);
+                    globalMesh = CreateGlobalMesh(globalMesh, counter, m.nu, m.nv);
 
                     // clear
                     e = new Element();
@@ -167,15 +166,21 @@ namespace MeshPoints.Galapagos
             }
             #endregion
             // todo: should find a better way to mesh
-            allMesh = MakeConsistent(allMesh);
+            globalMesh = MakeConsistent(globalMesh);
 
             //Add properties to Mesh3D
-            meshUpdated.Nodes = nodes;
-            meshUpdated.Elements = elements;
-            meshUpdated.mesh = allMesh;
+            meshUpdated = CreateMesh3D(nodes, elements, globalMesh);
 
             // Output
             DA.SetData(0, meshUpdated);
+        }
+        Mesh3D CreateMesh3D(List<Node> nodes, List<Element> elements, Mesh mesh)
+        {
+            Mesh3D _mesh3D = new Mesh3D();
+            _mesh3D.Nodes = nodes;
+            _mesh3D.Elements = elements;
+            _mesh3D.mesh = mesh;
+            return _mesh3D;
         }
 
         Mesh MakeConsistent(Mesh mesh)
@@ -237,6 +242,7 @@ namespace MeshPoints.Galapagos
             mesh.Faces.AddFace(3, 0, 4, 7);
             mesh.Faces.AddFace(0, 1, 2, 3);
             mesh.Faces.AddFace(4, 5, 6, 7);
+            mesh = MakeConsistent(mesh);
             e.mesh = mesh;
             return e;
         }
