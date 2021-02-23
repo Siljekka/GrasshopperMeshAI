@@ -37,6 +37,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh2D", "m", "Mesh2D from given points", GH_ParamAccess.item);
+
         }
 
         /// <summary>
@@ -48,163 +49,137 @@ namespace MeshPoints.CreateMesh
             // variables
             Mesh2D m = new Mesh2D();
             Element e = new Element();
-            Mesh mesh = new Mesh();
-            Mesh allMesh = new Mesh();
+            Mesh globalMesh = new Mesh();
 
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
             List<Point3d> meshPts = new List<Point3d>();
-            List<Point3d> meshPtsSorted = new List<Point3d>();
 
-            int row = 0;
-            int column = 0;
-            int newRow = 0;
+            int nu = 0;
+            int nv = 0;
+            int vSequence = 0;
+            int uSequence = 0;
             int counter = 0;
-            int numPtsDirection1 = 2; //Number points in 1. direction, start by adding first and last point in the 1. direction
-            int numPtsDirection2 = 0;
-            Boolean completeCountDirection1 = false;
+            int numPtsDirectionV = 2; // number points in 1. direction, start by adding first and last point in the 1. direction
+            int numPtsDirectionU = 0;
+            double dotProduct = 0;
+            Vector3d vec1 = Vector3d.Zero;
+            Vector3d vec2 = Vector3d.Zero;
+            Boolean completeCountOfPtsDirectionV = false;
 
             // input
             DA.GetDataList(0, meshPts);
 
-            if (meshPts.Count < 4) { return; }// add warning message
+            if (meshPts.Count < 4) { return; } // add warning message
 
             #region Find nu and nv
             // count the number of points in 1. direction and 2. direction
             for (int i = 0; i < meshPts.Count - 2; i++)
             {
-                Vector3d vec1 = (meshPts[i + 1] - meshPts[i]);
-                Vector3d vec2 = (meshPts[i + 2] - meshPts[i]);
-                double dot = Vector3d.Multiply(vec1, vec2);
+                vec1 = (meshPts[i + 1] - meshPts[i]);
+                vec2 = (meshPts[i + 2] - meshPts[i]);
+                dotProduct = Vector3d.Multiply(vec1, vec2);
 
-                if (dot > 0)
+                if (dotProduct > 0)
                 {
-                    if (!completeCountDirection1)
+                    if (!completeCountOfPtsDirectionV)
                     {
-                        numPtsDirection1++; // count points in direction 1
+                        numPtsDirectionV++; // count points in direction 1
                     }
                 }
                 else
                 {
-                    completeCountDirection1 = true;
+                    completeCountOfPtsDirectionV = true;
                 }
             }
-            numPtsDirection2 = meshPts.Count / numPtsDirection1;
-
-            // assign directions to u and v axis
-            bool switchAxis = false;
-            Vector3d vecDirection1 = (meshPts[1] - meshPts[0]) / (meshPts[1] - meshPts[0]).Length;
-            Vector3d vecDirection2 = (meshPts[numPtsDirection1]-meshPts[0]) / (meshPts[numPtsDirection1] - meshPts[0]).Length;
-            if (vecDirection1.X < vecDirection2.X)
-            {
-                // meshPts has "Column format"
-                m.nu = numPtsDirection2; // u is direction 2 
-                m.nv = numPtsDirection1; // v is direction 1
-                switchAxis = true;
-            }
-            else
-            {
-                // meshPts has "Row format"
-                m.nu = numPtsDirection1; // u is direction 1
-                m.nv = numPtsDirection2; // v is direction 2
-            }
+            numPtsDirectionU = meshPts.Count / numPtsDirectionV;
+            nv = numPtsDirectionV; // u is direction 1
+            nu = numPtsDirectionU; // v is direction 2
             #endregion
 
-            // change meshPts from "Column format" to "Row format":
-            if (switchAxis)
-            {
-                for (int k = 0; k < m.nv; k++)
-                {
-                    for (int n = 0; n < m.nu; n++)
-                    {
-                        meshPtsSorted.Add(meshPts[n * m.nv + k]); 
-                    }
-                }
-                meshPts = meshPtsSorted;
-            }
-            
             #region Create Vertices and Nodes   
-            //OBS: should use nodes instead of vertices
             for (int i = 0; i < meshPts.Count; i++)
             {
-                allMesh.Vertices.Add(meshPts[i]);
-                Node node = new Node(i, meshPts[i]); // assign Global ID and cooridinates
-                if (row == 0 | row == m.nv - 1) { node.BC_V = true; } // assign BC v-dir
-                if (column == 0 | column == m.nu - 1) { node.BC_U = true; } // assign BC u-dir
+                globalMesh.Vertices.Add(meshPts[i]);
+                Node node = new Node(i, meshPts[i]); // assign global id and cooridinates
+                if (uSequence == 0 | uSequence == nu - 1) { node.BC_U = true; } // assign BC u-dir
+                if (vSequence == 0 | vSequence == nv - 1) { node.BC_V = true; } // assign BC v-dir
                 
-                column++;
-                
-                if (column == m.nu)
+                vSequence++;
+                if (vSequence == nv)
                 {
-                    row++;
-                    column = 0;
+                    uSequence++;
+                    vSequence = 0;
                 }
                 nodes.Add(node);
             }
             #endregion
 
             #region Create Elements and Mesh
-            for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++)
+            vSequence = 0;
+            for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
             {
-                //create nodes
-                e.Id = i;
-                Node n1 = new Node(1, nodes[counter].GlobalId, nodes[counter].Coordinate, nodes[counter].BC_U, nodes[counter].BC_V);
-                e.Node1 =  n1;
-
-                Node n2 = new Node(2, nodes[counter+1].GlobalId, nodes[counter+1].Coordinate, nodes[counter+1].BC_U, nodes[counter+1].BC_V);
-                e.Node2 = n2;
-
-                Node n3 = new Node(3, nodes[counter + m.nu + 1].GlobalId, nodes[counter + m.nu + 1].Coordinate, nodes[counter + m.nu + 1].BC_U, nodes[counter + m.nu + 1].BC_V);
-                e.Node3 = n3;
-
-                Node n4 = new Node(4, nodes[counter + m.nu].GlobalId, nodes[counter + m.nu].Coordinate, nodes[counter + m.nu].BC_U, nodes[counter + m.nu].BC_V);
-                e.Node4 = n4;
-
-                //create local mesh for element
-                mesh.Vertices.Add(e.Node1.Coordinate);
-                mesh.Vertices.Add(e.Node2.Coordinate);
-                mesh.Vertices.Add(e.Node3.Coordinate);
-                mesh.Vertices.Add(e.Node4.Coordinate);
-                mesh.Faces.AddFace(0, 1, 2, 3);
-                mesh.Normals.ComputeNormals();  //Control if needed
-                mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                mesh.Compact(); //to ensure that it calculate
-                e.mesh = mesh;
-
-                //create global mesh
-                allMesh.Faces.AddFace(counter, counter + 1, counter + m.nu + 1, counter + m.nu);
+                e = CreateElement(i, nodes, counter, nu, nv);
+                elements.Add(e); // add element to list of elements
+                globalMesh = CreateGlobalMesh(globalMesh, counter, nu, nv);
                 
-                //add element and mesh to element list
-                elements.Add(e);
-
-                //clear
-                e = new Element();
-                mesh = new Mesh();
-
-                //element counter
                 counter++;
-                newRow++; ;
-                if (newRow == (m.nu - 1)) //new row
+                vSequence++;
+                if (vSequence == (nv - 1)) // check if done with a v sequence
                 {
                     counter++;
-                    newRow = 0;
+                    vSequence = 0; // new v sequence
                 }
             }
-            
-            //OBS: should find a better solution for meshing
-            allMesh.Normals.ComputeNormals();  //Control if needed
-            allMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-            allMesh.Compact(); //to ensure that it calculate
 
-            // add properties to Mesh2D
-            m.Nodes = nodes;
-            m.Elements = elements;
-            m.mesh = allMesh;
-            m.Nodes = nodes;
+            globalMesh = MakeConsistent(globalMesh);
+            m = new Mesh2D(nu, nv, nodes, elements, globalMesh);
             #endregion
 
             // output
             DA.SetData(0, m);
+        }
+
+        Mesh MakeConsistent(Mesh m)
+        {
+            m.Normals.ComputeNormals();  // todo: control if needed
+            m.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
+            m.Compact(); // to ensure that it calculate
+            return m;
+        }
+
+        Mesh CreateGlobalMesh(Mesh m, int counter, int nu, int nv)
+        {
+            m.Faces.AddFace(counter, counter + 1, counter + nv + 1, counter + nv);
+            return m;
+        }
+
+        Element CreateElement(int id, List<Node> nodes, int counter, int nu, int nv)
+        {
+            Element e = new Element();
+            e.Id = id;
+
+            Node n1 = new Node(1, nodes[counter].GlobalId, nodes[counter].Coordinate, nodes[counter].BC_U, nodes[counter].BC_V);
+            e.Node1 = n1;
+
+            Node n2 = new Node(2, nodes[counter + 1].GlobalId, nodes[counter + 1].Coordinate, nodes[counter + 1].BC_U, nodes[counter + 1].BC_V);
+            e.Node2 = n2;
+
+            Node n3 = new Node(3, nodes[counter + nv + 1].GlobalId, nodes[counter + nv+ 1].Coordinate, nodes[counter + nv + 1].BC_U, nodes[counter + nv + 1].BC_V);
+            e.Node3 = n3;
+
+            Node n4 = new Node(4, nodes[counter + nv].GlobalId, nodes[counter + nv].Coordinate, nodes[counter + nv].BC_U, nodes[counter + nv].BC_V);
+            e.Node4 = n4;
+
+            Mesh m = new Mesh();
+            m.Vertices.Add(e.Node1.Coordinate);
+            m.Vertices.Add(e.Node2.Coordinate);
+            m.Vertices.Add(e.Node3.Coordinate);
+            m.Vertices.Add(e.Node4.Coordinate);
+            m.Faces.AddFace(0, 1, 2, 3);
+
+            e.mesh = m;
+            return e;
         }
 
         /// <summary>
