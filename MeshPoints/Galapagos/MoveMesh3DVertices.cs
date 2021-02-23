@@ -167,20 +167,10 @@ namespace MeshPoints.Galapagos
             #endregion
             // todo: should find a better way to mesh
             globalMesh = MakeConsistent(globalMesh);
-
-            //Add properties to Mesh3D
-            meshUpdated = CreateMesh3D(nodes, elements, globalMesh);
+            meshUpdated = new Mesh3D(m.nu, m.nv, m.nw, nodes, elements, globalMesh);
 
             // Output
             DA.SetData(0, meshUpdated);
-        }
-        Mesh3D CreateMesh3D(List<Node> nodes, List<Element> elements, Mesh mesh)
-        {
-            Mesh3D _mesh3D = new Mesh3D();
-            _mesh3D.Nodes = nodes;
-            _mesh3D.Elements = elements;
-            _mesh3D.mesh = mesh;
-            return _mesh3D;
         }
 
         Mesh MakeConsistent(Mesh mesh)
