@@ -55,6 +55,8 @@ namespace MeshPoints.CreateMesh
             List<Element> elements = new List<Element>();
             List<Point3d> meshPts = new List<Point3d>();
 
+            int nu = 0;
+            int nv = 0;
             int vSequence = 0;
             int uSequence = 0;
             int counter = 0;
@@ -91,8 +93,8 @@ namespace MeshPoints.CreateMesh
                 }
             }
             numPtsDirectionU = meshPts.Count / numPtsDirectionV;
-            m.nv = numPtsDirectionV; // u is direction 1
-            m.nu = numPtsDirectionU; // v is direction 2
+            nv = numPtsDirectionV; // u is direction 1
+            nu = numPtsDirectionU; // v is direction 2
             #endregion
 
             #region Create Vertices and Nodes   
@@ -100,8 +102,8 @@ namespace MeshPoints.CreateMesh
             {
                 globalMesh.Vertices.Add(meshPts[i]);
                 Node node = new Node(i, meshPts[i]); // assign global id and cooridinates
-                if (uSequence == 0 | uSequence == m.nu - 1) { node.BC_U = true; } // assign BC u-dir
-                if (vSequence == 0 | vSequence == m.nv - 1) { node.BC_V = true; } // assign BC v-dir
+                if (uSequence == 0 | uSequence == nu - 1) { node.BC_U = true; } // assign BC u-dir
+                if (vSequence == 0 | vSequence == nv - 1) { node.BC_V = true; } // assign BC v-dir
                 
                 vSequence++;
                 if (vSequence == m.nv)
@@ -115,15 +117,15 @@ namespace MeshPoints.CreateMesh
 
             #region Create Elements and Mesh
             vSequence = 0;
-            for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++) // loop elements
+            for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
             {
-                e = CreateElement(i, nodes, counter, m.nu, m.nv);
+                e = CreateElement(i, nodes, counter, nu, nv);
                 elements.Add(e); // add element to list of elements
-                globalMesh = CreateGlobalMesh(globalMesh, counter, m.nu, m.nv);
+                globalMesh = CreateGlobalMesh(globalMesh, counter, nu, nv);
                 
                 counter++;
                 vSequence++;
-                if (vSequence == (m.nv - 1)) // check if done with a v sequence
+                if (vSequence == (nv - 1)) // check if done with a v sequence
                 {
                     counter++;
                     vSequence = 0; // new v sequence
@@ -131,20 +133,12 @@ namespace MeshPoints.CreateMesh
             }
 
             globalMesh = MakeConsistent(globalMesh);
-            m = AddProperties(m, nodes, elements, globalMesh);
+            m = new Mesh2D(nu, nv, nodes, elements, globalMesh);
             #endregion
 
             // output
             DA.SetData(0, m);
         }
-
-        Mesh2D AddProperties(Mesh2D _mesh2D, List<Node> nodes, List<Element> elements, Mesh mesh)
-        {
-            _mesh2D.Nodes = nodes;
-            _mesh2D.Elements = elements;
-            _mesh2D.mesh = mesh;
-            return _mesh2D;
-        } 
 
         Mesh MakeConsistent(Mesh m)
         {
