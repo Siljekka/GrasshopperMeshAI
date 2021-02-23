@@ -106,7 +106,7 @@ namespace MeshPoints.CreateMesh
                 if (vSequence == 0 | vSequence == nv - 1) { node.BC_V = true; } // assign BC v-dir
                 
                 vSequence++;
-                if (vSequence == m.nv)
+                if (vSequence == nv)
                 {
                     uSequence++;
                     vSequence = 0;
