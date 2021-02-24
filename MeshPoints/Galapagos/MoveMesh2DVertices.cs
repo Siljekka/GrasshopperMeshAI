@@ -14,7 +14,7 @@ namespace MeshPoints
     public class GalapagosMesh : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the GalapagosMesh class.
+        /// Initializes a new instance of the MoveMesh2DVertices class.
         /// </summary>
         public GalapagosMesh()
           : base("Move Mesh Vertices", "mmv",
