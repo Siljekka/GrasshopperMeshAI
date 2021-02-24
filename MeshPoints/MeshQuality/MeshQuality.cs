@@ -28,6 +28,8 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("Mesh2D", "m", "Insert Mesh2D class", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            
+            pManager[1].Optional = true; // coloring the mesh is optional
         }
 
         /// <summary>
@@ -57,7 +59,7 @@ namespace MeshPoints
             List<double> vertexDistance = new List<double>(); //list distances between vertices in a mesh face, following mesh edges CCW (counter-clockwise)
             List<double> elementAngles = new List<double>(); //list of angles in a element
 
-            // determines which quality check type to color mesh with
+            // Determines which quality check type to color mesh with
             // 1 = aspect ratio, 2 = skewness, 3 = jacobian
             int qualityCheckType = 0; 
 
@@ -124,57 +126,8 @@ namespace MeshPoints
             double avgJacobianRatio = sumJacobianRatio / mesh2D.Elements.Count;
             #endregion
 
-            #region Color the mesh based on quality type
-            // 1 = aspect ratio
-            if (qualityCheckType == 1) 
-            {
-                foreach (Quality q in qualityList)
-                {
-                    if (q.AspectRatio > 0.9)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
-                    }
-                    else if (q.AspectRatio > 0.7)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
-                    }
-                    else if (q.AspectRatio > 0.6)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
-                    }
-                    else if (q.AspectRatio > 0)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
-                    }
-                    colorMesh.Append(q.element.mesh);
-                }
-            }
-            // 2 = skewness
-            else if (qualityCheckType == 2)
-            {
-                foreach (Quality q in qualityList)
-                {
-                    if (q.Skewness > 0.9)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
-                    }
-                    else if (q.Skewness > 0.7)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
-                    }
-                    else if (q.Skewness > 0.6)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
-                    }
-                    else if (q.Skewness > 0)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
-                    }
-                    colorMesh.Append(q.element.mesh);
-                }
-            }
-            // Todo implement mesh coloring for jacobian ratio
-            #endregion
+            // Color the mesh based on quality type
+            ColorMesh(colorMesh, qualityList, qualityCheckType);
 
             #region Outputs
             DA.SetDataList(0, qualityList);
@@ -186,14 +139,12 @@ namespace MeshPoints
         }
 
         #region Component methods
+        
         /// <summary>
         /// Transforms the corner points of an arbitrary 3D plane quad surface to a 2D plane.
         /// </summary>
         /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
         /// <returns>A list of <see cref="Point3d"/> where the Z (third) coordinate is 0.</returns>
-        /// <exception cref="System.ArgumentException">
-        /// <paramref name="meshFace"/> is not planar.
-        /// </exception>
         List<Point3d> TransformPlaneQuadSurfaceTo2DPoints(Element meshFace)
         {
             /*
@@ -245,14 +196,11 @@ namespace MeshPoints
         /// </summary>
         /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0. A negative Jacobian might indicate a self-intersecting element.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// <paramref name="jacobianRatio"/> is not between 0.0 and 1.0.
-        /// </exception>
         double CalculateJacobianRatioOfPlaneQuadElement(Element meshFace)
         {
             /*
              * This method utilizes the idea of shape functions and natural coordinate system to calculate the Jacobian
-             * of given points on a plane and simple quadrilateral element.
+             * of given points on a plane, simple quadrilateral element.
              * 
              * 1. Transform the input 3D plane element (and specifically the corner points) to a 2D space (X', Y', Z'=0).
              * 2. Define natural coordinates we want to calculate the Jacobian in. This could be the corner points (or 
@@ -319,6 +267,92 @@ namespace MeshPoints
             }
 
             return jacobianRatio;
+        }
+        
+        /// <summary>
+        /// Color each mesh face based on a given quality type.
+        /// </summary>
+        /// <param name="colorMesh">The output colored <see cref="Mesh"/> object.</param>
+        /// <param name="qualityList">List of <see cref="Quality"/> objects for each element in the mesh.</param>
+        /// <param name="qualityCheckType">Which quality type to color the mesh with.</param>
+        void ColorMesh(Mesh colorMesh, List<Quality> qualityList, int qualityCheckType)
+        {
+            switch (qualityCheckType)
+            {
+                // 1 = Aspect ratio
+                case 1:
+                    foreach (Quality q in qualityList)
+                    {
+                        if (q.AspectRatio > 0.9)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                        }
+                        else if (q.AspectRatio > 0.7)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                        }
+                        else if (q.AspectRatio > 0.6)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                        }
+                        else if (q.AspectRatio > 0)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        colorMesh.Append(q.element.mesh);
+                    }
+                    break;
+                // 2 = Skewness
+                case 2:
+                    foreach (Quality q in qualityList)
+                    {
+                        if (q.Skewness > 0.9)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                        }
+                        else if (q.Skewness > 0.7)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                        }
+                        else if (q.Skewness > 0.6)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                        }
+                        else if (q.Skewness > 0)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        colorMesh.Append(q.element.mesh);
+                    }
+                    break;
+                // 3 = Jacobian
+                case 3:
+                    foreach (Quality q in qualityList)
+                    {
+                        if (q.JacobianRatio > 0.8)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                        }
+                        else if (q.JacobianRatio > 0.5)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                        }
+                        else if (q.JacobianRatio > 0.03)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                        }
+                        else if (q.JacobianRatio >= 0)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        else
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.HotPink);
+                        }
+                        colorMesh.Append(q.element.mesh);
+                    }
+                    break;
+            }
         }
         #endregion
 
