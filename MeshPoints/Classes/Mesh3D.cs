@@ -19,5 +19,15 @@ namespace MeshPoints.Classes
         {
             //Empty constructor
         }
+
+        public Mesh3D(int _nu, int _nv, int _nw, List<Node> _nodes, List<Element> _elements, Mesh _mesh)
+        {
+            nu = _nu;
+            nv = _nv;
+            nw = _nw;
+            Nodes = _nodes;
+            Elements = _elements;
+            mesh = _mesh;
+        }
     }
 }
