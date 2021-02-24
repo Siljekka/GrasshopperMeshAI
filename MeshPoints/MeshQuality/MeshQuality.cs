@@ -1,5 +1,6 @@
 ﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
+using Rhino;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("Mesh2D", "m", "Insert Mesh2D class", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            
+            pManager[1].Optional = true; // coloring the mesh is optional
         }
 
         /// <summary>
@@ -56,7 +59,7 @@ namespace MeshPoints
             List<double> vertexDistance = new List<double>(); //list distances between vertices in a mesh face, following mesh edges CCW (counter-clockwise)
             List<double> elementAngles = new List<double>(); //list of angles in a element
 
-            // determines which quality check type to color mesh with
+            // Determines which quality check type to color mesh with
             // 1 = aspect ratio, 2 = skewness, 3 = jacobian
             int qualityCheckType = 0; 
 
@@ -103,7 +106,7 @@ namespace MeshPoints
 
                 elementQuality.AspectRatio = (vertexDistance[0] / vertexDistance[vertexDistance.Count - 1]);
                 elementQuality.Skewness = 1 - Math.Max((elementAngles[elementAngles.Count - 1] - idealAngle) / (180 - idealAngle), (idealAngle - elementAngles[0]) / (idealAngle));
-                elementQuality.JacobianRatio = CalculateJacobianRatioOf2DQuadElement(e);
+                elementQuality.JacobianRatio = CalculateJacobianRatioOfPlaneQuadElement(e);
                 
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
@@ -123,57 +126,8 @@ namespace MeshPoints
             double avgJacobianRatio = sumJacobianRatio / mesh2D.Elements.Count;
             #endregion
 
-            #region Color the mesh based on quality type
-            // 1 = aspect ratio
-            if (qualityCheckType == 1) 
-            {
-                foreach (Quality q in qualityList)
-                {
-                    if (q.AspectRatio > 0.9)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
-                    }
-                    else if (q.AspectRatio > 0.7)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
-                    }
-                    else if (q.AspectRatio > 0.6)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
-                    }
-                    else if (q.AspectRatio > 0)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
-                    }
-                    colorMesh.Append(q.element.mesh);
-                }
-            }
-            // 2 = skewness
-            else if (qualityCheckType == 2)
-            {
-                foreach (Quality q in qualityList)
-                {
-                    if (q.Skewness > 0.9)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
-                    }
-                    else if (q.Skewness > 0.7)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
-                    }
-                    else if (q.Skewness > 0.6)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
-                    }
-                    else if (q.Skewness > 0)
-                    {
-                        q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
-                    }
-                    colorMesh.Append(q.element.mesh);
-                }
-            }
-            // Todo implement mesh coloring for jacobian ratio
-            #endregion
+            // Color the mesh based on quality type
+            ColorMesh(colorMesh, qualityList, qualityCheckType);
 
             #region Outputs
             DA.SetDataList(0, qualityList);
@@ -185,57 +139,220 @@ namespace MeshPoints
         }
 
         #region Component methods
-        double CalculateJacobianRatioOf2DQuadElement(Element meshFace)
+        
+        /// <summary>
+        /// Transforms the corner points of an arbitrary 3D plane quad surface to a 2D plane.
+        /// </summary>
+        /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
+        /// <returns>A list of <see cref="Point3d"/> where the Z (third) coordinate is 0.</returns>
+        List<Point3d> TransformPlaneQuadSurfaceTo2DPoints(Element meshFace)
         {
-            /* 
-            1. Collect corner points.
-            2. Define corner of natural quad element.
-            3. Calculate the Jacobian determinant of each corner.
-            4. The Jacobian ratio for mesh quality is the ratio of the minimum and maximum jacobian determinants of the element.
-               A value of 1 is a perfect square mesh.
+            /*
+             * 1. Calculate surface normal.
+             * 2. Define surface plane using surface normal and first point of element.
+             * 3. Define xy-plane by origin: (0, 0, 0) and unit Z-vector: [0, 0, 1]
+             * 4. Define transformation from surface plane to xy-plane using PlaneToPlane().
+             * 5. Transform points to local coordinate system (X', Y', Z'=0)
+             * output: list of Point3d where Z (third) coordinate = 0
              */
 
-            // NodeN.Coordinate is a reference to the inherited Point3d object of the Node-class
-            // Todo refactor Node-class, why is Point3d named Coordinate???
-            var gX = new List<Double>() // global x-coordinates of corner points
-            {
-                meshFace.Node1.Coordinate.X, meshFace.Node2.Coordinate.X, meshFace.Node3.Coordinate.X, meshFace.Node4.Coordinate.X,
-            };
-            var gY = new List<Double>() // global y-coordinates of corner points
-            {
-                meshFace.Node1.Coordinate.Y, meshFace.Node2.Coordinate.Y, meshFace.Node3.Coordinate.Y, meshFace.Node4.Coordinate.Y,
+            var transformedPoints = new List<Point3d>(); // output
+            var elementPoints = new List<Point3d>(){
+                meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
             };
 
-            var naturalCornerPoints = new List<List<Double>>
+            // Check that surface is planar
+            if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
+            {
+                throw new ArgumentException(
+                    message: "Corner points of input surface are not co-planar.",
+                    paramName: "elementPoints");
+            }
+
+            var elementVectors = new List<Vector3d>
+            {
+                new Vector3d(elementPoints[1].X - elementPoints[0].X, elementPoints[1].Y - elementPoints[0].Y, elementPoints[1].Z - elementPoints[0].Z),
+                new Vector3d(elementPoints[3].X - elementPoints[0].X, elementPoints[3].Y - elementPoints[0].Y, elementPoints[3].Z - elementPoints[0].Z)
+            };
+            
+            // Cross product of two linearily independent vectors is the normal to the plane containing them
+            var surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
+
+            var surfacePlane = new Plane(meshFace.Node1.Coordinate, surfaceNormal);
+            var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+
+            var elementTransformation = Transform.PlaneToPlane(surfacePlane, xyPlane); 
+
+            foreach (Point3d point in elementPoints)
+            {
+                transformedPoints.Add(elementTransformation * point);
+            }
+
+            return transformedPoints;
+        }
+
+        /// <summary>
+        /// Calculates the Jacobian ratio of a plane and simple quadrilateral mesh element.
+        /// </summary>
+        /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
+        /// <returns>A <see cref="double"/> between 0.0 and 1.0. A negative Jacobian might indicate a self-intersecting element.</returns>
+        double CalculateJacobianRatioOfPlaneQuadElement(Element meshFace)
+        {
+            /*
+             * This method utilizes the idea of shape functions and natural coordinate system to calculate the Jacobian
+             * of given points on a plane, simple quadrilateral element.
+             * 
+             * 1. Transform the input 3D plane element (and specifically the corner points) to a 2D space (X', Y', Z'=0).
+             * 2. Define natural coordinates we want to calculate the Jacobian in. This could be the corner points (or 
+             *    alternatively the Gauss points) of the quad element. 
+             * 3. Calculate the Jacobian of each point. 
+             * 4. The ratio is the ratio of the minimum and maximum Jacobian calculated, given as a double from 0.0 to 1.0.
+             *    A negative Jacobian indicates a self-intersecting element and should not happen.
+                */
+
+            List<Point3d> localPoints = TransformPlaneQuadSurfaceTo2DPoints(meshFace);
+
+            var gX = new List<Double>()
+            {
+                localPoints[0].X, localPoints[1].X, localPoints[2].X, localPoints[3].X,
+            };
+            var gY = new List<Double>()
+            {
+                localPoints[0].Y, localPoints[1].Y, localPoints[2].Y, localPoints[3].Y,
+            };
+
+            var naturalPoints = new List<List<Double>> // natural coordinates of corner points
             {
                 new List<double>{ -1, -1}, new List<double> { 1, -1 }, new List<double> { 1, 1 }, new List<double> { -1, 1 }
             };
 
+            #region Todo: Implement which points we want to evaluate the jacobians for (corner vs 4 gauss integration points)
+            //double s = 0.57735; // this represents the Gauss point of an isoparametric quadrilateral element: sqrt(1/3)
+            //var naturalGaussPoints = new List<List<Double>> // natural coordinates of Gauss points
+            //{
+            //    new List<double>{ -s, -s}, new List<double> { s, -s }, new List<double> { s, s }, new List<double> { -s, s }
+            //};
+            #endregion
+
             var jacobiansOfElement = new List<Double>();
 
             // Calculate the Jacobian determinant of each corner point
-            for (int n=0; n<naturalCornerPoints.Count; n++)
+            for (int n=0; n<naturalPoints.Count; n++)
             {
-                double nX = naturalCornerPoints[n][0];
-                double nY = naturalCornerPoints[n][1];
+                double nX = naturalPoints[n][0];
+                double nY = naturalPoints[n][1];
 
                 // See documentation for derivation of formula
-                double jacobianOfCorner = 0.0625 *
+                double jacobianDeterminantOfPoint = 0.0625 *
                     (
-                    ((1 - nY) * (gX[1] - gX[0]) + (1  +nY) * (gX[2] - gX[3]))*
+                    ((1 - nY) * (gX[1] - gX[0]) + (1 + nY) * (gX[2] - gX[3]))*
                     ((1 - nX) * (gY[3] - gY[0]) + (1 + nX) * (gY[2] - gY[1]))
                     -
                     ((1 - nY) * (gY[1] - gY[0]) + (1 + nY) * (gY[2] - gY[3])) *
                     ((1 - nX) * (gX[3] - gX[0]) + (1 + nX) * (gX[2] - gX[1]))
                     );
 
-                jacobiansOfElement.Add(jacobianOfCorner);
+                jacobiansOfElement.Add(jacobianDeterminantOfPoint);
             };
 
-            // Minimum element divided by maximum element. A value of 1 is a perfect square.
+            // Minimum element divided by maximum element. A value of 1 denotes a rectangular element.
             double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
 
+            // Throw error if Jacobian ratio is outside of range: [0.0, 1.0]
+            if (jacobianRatio < 0 || 1.0 < jacobianRatio)
+            {
+                throw new ArgumentOutOfRangeException(
+                    paramName: "jacobianRatio", jacobianRatio,
+                    message: "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a self-intersecting element.");
+            }
+
             return jacobianRatio;
+        }
+        
+        /// <summary>
+        /// Color each mesh face based on a given quality type.
+        /// </summary>
+        /// <param name="colorMesh">The output colored <see cref="Mesh"/> object.</param>
+        /// <param name="qualityList">List of <see cref="Quality"/> objects for each element in the mesh.</param>
+        /// <param name="qualityCheckType">Which quality type to color the mesh with.</param>
+        void ColorMesh(Mesh colorMesh, List<Quality> qualityList, int qualityCheckType)
+        {
+            switch (qualityCheckType)
+            {
+                // 1 = Aspect ratio
+                case 1:
+                    foreach (Quality q in qualityList)
+                    {
+                        if (q.AspectRatio > 0.9)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                        }
+                        else if (q.AspectRatio > 0.7)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                        }
+                        else if (q.AspectRatio > 0.6)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                        }
+                        else if (q.AspectRatio > 0)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        colorMesh.Append(q.element.mesh);
+                    }
+                    break;
+                // 2 = Skewness
+                case 2:
+                    foreach (Quality q in qualityList)
+                    {
+                        if (q.Skewness > 0.9)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                        }
+                        else if (q.Skewness > 0.7)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                        }
+                        else if (q.Skewness > 0.6)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                        }
+                        else if (q.Skewness > 0)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        colorMesh.Append(q.element.mesh);
+                    }
+                    break;
+                // 3 = Jacobian
+                case 3:
+                    foreach (Quality q in qualityList)
+                    {
+                        if (q.JacobianRatio > 0.8)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                        }
+                        else if (q.JacobianRatio > 0.5)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                        }
+                        else if (q.JacobianRatio > 0.03)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                        }
+                        else if (q.JacobianRatio >= 0)
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        else
+                        {
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.HotPink);
+                        }
+                        colorMesh.Append(q.element.mesh);
+                    }
+                    break;
+            }
         }
         #endregion
 
