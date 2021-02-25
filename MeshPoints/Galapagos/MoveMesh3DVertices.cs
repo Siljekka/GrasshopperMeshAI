@@ -140,14 +140,13 @@ namespace MeshPoints.Galapagos
                 if (genesU[i] >= 0 & !m.Nodes[i].BC_U) // not restrained in U
                 {
                     translationVectorUDirection = 0.5 * (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) * genesU[i];
-                    if (IsOnFace) //if nodes is on edge, set new meshPoint
+                    /*if (IsOnFace) //if nodes is on edge, set new meshPoint
                     {
-                        translationVectorUDirection = 0.5 * (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) * genesU[i];
                         meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorUDirection.X + translationVectorVDirection.X + translationVectorWDirection.X) * overlapTolerance,
                             m.Nodes[i].Coordinate.Y + (translationVectorUDirection.Y + translationVectorVDirection.Y + translationVectorWDirection.Y) * overlapTolerance,
                             m.Nodes[i].Coordinate.Z + (translationVectorUDirection.Z + translationVectorVDirection.Z + translationVectorWDirection.Z) * overlapTolerance);
-                    }
-                    else if (IsOnEdge)
+                    }*/
+                    if (IsOnEdge)
                     {
                         edgeCurve = edge.DuplicateCurve();
                         edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
@@ -160,11 +159,7 @@ namespace MeshPoints.Galapagos
                 else if (genesU[i] <= 0 & !m.Nodes[i].BC_U)
                 {
                     translationVectorUDirection = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - 1].Coordinate) * genesU[i];
-                    if (IsOnFace) //if nodes is on edge, set new meshPoint
-                    {
-
-                    }
-                    else if (IsOnEdge)
+                    if (IsOnEdge)
                     {
                         edgeCurve = edge.DuplicateCurve();
                         edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
@@ -178,11 +173,7 @@ namespace MeshPoints.Galapagos
                 if (genesV[i] >= 0 & !m.Nodes[i].BC_V) // not restrained in V
                 {
                     translationVectorVDirection = 0.5 * (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate) * genesV[i];
-                    if (IsOnFace) //if nodes is on edge, set new meshPoint
-                    {
-
-                    }
-                    else if (IsOnEdge)
+                    if (IsOnEdge)
                     {
                         edgeCurve = edge.DuplicateCurve();
                         edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
@@ -193,11 +184,7 @@ namespace MeshPoints.Galapagos
                 else if (genesV[i] <= 0 & !m.Nodes[i].BC_V)
                 {
                     translationVectorVDirection = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - m.nu].Coordinate) * genesV[i];
-                    if (IsOnFace) //if nodes is on edge, set new meshPoint
-                    {
-
-                    }
-                    else if (IsOnEdge)
+                    if (IsOnEdge)
                     {
                         edgeCurve = edge.DuplicateCurve();
                         edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
@@ -211,11 +198,7 @@ namespace MeshPoints.Galapagos
                 if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // not restrained in W
                 {
                     translationVectorWDirection = 0.5 * (m.Nodes[i + m.nu * m.nv].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
-                    if (IsOnFace) //if nodes is on edge, set new meshPoint
-                    {
-
-                    }
-                    else if (IsOnEdge)
+                    if (IsOnEdge)
                     {
                         edgeCurve = edge.DuplicateCurve();
                         edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
@@ -226,11 +209,7 @@ namespace MeshPoints.Galapagos
                 else if (genesW[i] <= 0 & !m.Nodes[i].BC_W)
                 {
                     translationVectorWDirection = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - m.nu * m.nv].Coordinate) * genesW[i];
-                    if (IsOnFace) //if nodes is on edge, set new meshPoint
-                    {
-
-                    }
-                    else if (IsOnEdge)
+                    if (IsOnEdge)
                     {
                         edgeCurve = edge.DuplicateCurve();
                         edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
