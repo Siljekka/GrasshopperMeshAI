@@ -162,33 +162,71 @@ namespace MeshPoints
             };
 
             // Check that surface is planar
+            // If it is not we divide the quad into two triangles and create one transformation
+            // for three of the points based on first triangle and one transformation for last point
+            // based on the second triangle
             if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
             {
-                throw new ArgumentException(
-                    message: "Corner points of input surface are not co-planar.",
-                    paramName: "elementPoints");
+                //throw new ArgumentException(
+                //    message: "Corner points of input surface are not co-planar.",
+                //    paramName: "elementPoints");
+
+                // First and second triangle must have a common "base" point
+                var firstTriangle = new List<Point3d>()
+                {
+                    meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate
+                };
+                var secondTriangle = new List<Point3d>()
+                {
+                    meshFace.Node1.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
+                };
+                Transform firstTransformation = GetTransformationOfPointsFrom3DSurfaceTo2DPlane(firstTriangle);
+                Transform secondTransformation = GetTransformationOfPointsFrom3DSurfaceTo2DPlane(secondTriangle);
+
+                for (int i=0; i<elementPoints.Count(); i++)
+                {
+                    if (i == 3)
+                    {
+                        transformedPoints.Add(secondTransformation * elementPoints[i]);
+                    }
+                    else
+                    {
+                        transformedPoints.Add(firstTransformation * elementPoints[i]);
+                    }
+                }
             }
-
-            var elementVectors = new List<Vector3d>
+            else // points are co-planar
             {
-                new Vector3d(elementPoints[1].X - elementPoints[0].X, elementPoints[1].Y - elementPoints[0].Y, elementPoints[1].Z - elementPoints[0].Z),
-                new Vector3d(elementPoints[3].X - elementPoints[0].X, elementPoints[3].Y - elementPoints[0].Y, elementPoints[3].Z - elementPoints[0].Z)
-            };
-            
-            // Cross product of two linearily independent vectors is the normal to the plane containing them
-            var surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
-
-            var surfacePlane = new Plane(meshFace.Node1.Coordinate, surfaceNormal);
-            var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
-
-            var elementTransformation = Transform.PlaneToPlane(surfacePlane, xyPlane); 
-
-            foreach (Point3d point in elementPoints)
-            {
-                transformedPoints.Add(elementTransformation * point);
+                Transform elementTransformation = GetTransformationOfPointsFrom3DSurfaceTo2DPlane(elementPoints);
+                
+                foreach (Point3d point in elementPoints)
+                {
+                    transformedPoints.Add(elementTransformation * point);
+                }
             }
 
             return transformedPoints;
+
+
+            // Inner methods
+            Transform GetTransformationOfPointsFrom3DSurfaceTo2DPlane(List<Point3d> points)
+            {
+                var elementVectors = new List<Vector3d>
+                {
+                    new Vector3d(points[1].X - points[0].X, points[1].Y - points[0].Y, points[1].Z - points[0].Z),
+                    new Vector3d(points.Last().X - points[0].X, points.Last().Y - points[0].Y, points.Last().Z - points[0].Z)
+                };
+
+                // Cross product of two linearily independent vectors is the normal to the plane containing them
+                var surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
+
+                var surfacePlane = new Plane(points[0], surfaceNormal);
+                var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+
+                var elementTransformation = Transform.PlaneToPlane(surfacePlane, xyPlane);
+                
+                return elementTransformation;
+            }
         }
 
         /// <summary>
