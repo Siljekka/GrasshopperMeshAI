@@ -116,6 +116,11 @@ namespace MeshPoints
 
 
 
+
+        #region Component methods
+
+        /// <summary>
+        /// Gets the elements from a mesh, independent of the mesh type is Mesh2D or Mesh3D.
         List<Element> GetElements(Mesh2D mesh2D, Mesh3D mesh3D)
         {
             List<Element> elements = new List<Element>();
@@ -134,22 +139,22 @@ namespace MeshPoints
             return elements;
         }
 
-
-        #region Caculate Asprect Ratio
+        /// <summary>
+        /// Calculates the Aspect Ratio of an element.
         double CalculateAspectRatio(Element e)
         {
             double AR = 0;
             double maxDistance = 0;
             double minDistance = 0;
-            double idealAR = 0.5 / Math.Sqrt(Math.Pow(0.5, 2)* 3);
+            double idealAR = 0.5 / Math.Sqrt(Math.Pow(0.5, 2) * 3);
 
             List<double> cornerToCornerDistance = new List<double>();
             List<double> cornerToCentroidDistance = new List<double>();
             List<double> faceToCentroidDistance = new List<double>();
-            
-            List<Point3d> faceCenterPts = FindFaceCenter(e);
-            Point3d centroidPt = FindCentroidOfElement(e);
-            List<Point3d> elementCornerPtsDublicated = FindCoordinatesOfNodesDublicated(e);
+
+            List<Point3d> faceCenterPts = GetFaceCenter(e);
+            Point3d centroidPt = GetCentroidOfElement(e);
+            List<Point3d> elementCornerPtsDublicated = GetCoordinatesOfNodesDublicated(e);
 
             // find distances from corners to centroid
             for (int n = 0; n < elementCornerPtsDublicated.Count / 2; n++)
@@ -178,13 +183,13 @@ namespace MeshPoints
             {
                 minDistance = Math.Min(cornerToCentroidDistance[0], faceToCentroidDistance[0]);
                 maxDistance = Math.Max(cornerToCentroidDistance[cornerToCentroidDistance.Count - 1], faceToCentroidDistance[faceToCentroidDistance.Count - 1]);
-                AR = (minDistance / maxDistance)/idealAR; // normalized AR
+                AR = (minDistance / maxDistance) / idealAR; // normalized AR
             }
             return AR;
         }
-        #endregion
 
-        #region Caculate Skewness
+        /// <summary>
+        /// Calculates the Skewness of an element.
         double CalculateSkewness(Element e)
         {
             double SK = 0;
@@ -217,7 +222,7 @@ namespace MeshPoints
                     //calculate angles between vectors
                     double angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(vec1, vec2) / (vec1.Length * vec2.Length)));
                     double angleDegree = angleRad * 180 / Math.PI;//convert from rad to deg
-                    elementAngles.Add(angleDegree); 
+                    elementAngles.Add(angleDegree);
                 }
 
             }
@@ -227,10 +232,10 @@ namespace MeshPoints
             SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle));
             return SK;
         }
-        #endregion
 
-        #region Find Points on a element
-        List<Point3d> FindCoordinatesOfNodesDublicated(Element e)
+        /// <summary>
+        /// Returns a list of node coordinated that is dublicate.
+        List<Point3d> GetCoordinatesOfNodesDublicated(Element e)
         {
             List<Point3d> pts = new List<Point3d>();
             if (!e.IsCube) // mesh2D
@@ -243,7 +248,7 @@ namespace MeshPoints
             }
             else // mesh3D
             {
-                pts = new List<Point3d>() 
+                pts = new List<Point3d>()
                 {
                     e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
                     e.Node5.Coordinate, e.Node6.Coordinate, e.Node7.Coordinate, e.Node8.Coordinate,
@@ -254,12 +259,13 @@ namespace MeshPoints
             }
             return pts;
         }
-
-        List<Point3d> FindFaceCenter(Element e)
+        /// <summary>
+        /// Returns a list of the face centroid to an element
+        List<Point3d> GetFaceCenter(Element e)
         {
             List<Point3d> faceCenterPts = new List<Point3d>();
-            int numFaces = 1; // mesh2D
-            if (e.IsCube) { numFaces = 6; } // mesh3D
+            int numFaces = 1; // if mesh2D
+            if (e.IsCube) { numFaces = 6; } // if mesh3D
 
             for (int i = 0; i < numFaces; i++)
             {
@@ -268,12 +274,14 @@ namespace MeshPoints
             return faceCenterPts;
         }
 
-        Point3d FindCentroidOfElement(Element e)
+        /// <summary>
+        /// Return the centroid of an element
+        Point3d GetCentroidOfElement(Element e)
         {
             double sx = 0;
             double sy = 0;
             double sz = 0;
-            List<Point3d> pts = FindCoordinatesOfNodesDublicated(e);
+            List<Point3d> pts = GetCoordinatesOfNodesDublicated(e);
             foreach (Point3d pt in pts)
             {
                 sx = sx + pt.X;
@@ -281,14 +289,10 @@ namespace MeshPoints
                 sz = sz + pt.Z;
             }
             int n = pts.Count;
-            Point3d centroidPt = new Point3d(sx/n, sy/n, sz/n);
+            Point3d centroidPt = new Point3d(sx / n, sy / n, sz / n);
 
             return centroidPt;
         }
-       
-        #endregion
-
-        #region Component methods
 
         /// <summary>
         /// Transforms the corner points of an arbitrary 3D plane quad surface to a 2D plane.
