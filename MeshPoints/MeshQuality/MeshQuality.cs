@@ -27,9 +27,13 @@ namespace MeshPoints
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh2D", "m", "Insert Mesh2D class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh3D", "m", "Insert Mesh3D class", GH_ParamAccess.item);
+
             pManager.AddIntegerParameter("Quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
-            
-            pManager[1].Optional = true; // coloring the mesh is optional
+
+            pManager[0].Optional = true; // mesh2D is optional
+            pManager[1].Optional = true; // mesh3D is optional
+            pManager[2].Optional = true; // coloring the mesh is optional
         }
 
         /// <summary>
@@ -51,63 +55,37 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             #region Variables
-            //variables
             Mesh2D mesh2D = new Mesh2D();
+            Mesh3D mesh3D = new Mesh3D();
             Mesh colorMesh = new Mesh();
-
-            List<Quality> qualityList = new List<Quality>(); // list of Quality for each element in the mesh
-            List<double> vertexDistance = new List<double>(); //list distances between vertices in a mesh face, following mesh edges CCW (counter-clockwise)
-            List<double> elementAngles = new List<double>(); //list of angles in a element
 
             // Determines which quality check type to color mesh with
             // 1 = aspect ratio, 2 = skewness, 3 = jacobian
-            int qualityCheckType = 0; 
+            int qualityCheckType = 0;
 
-            double idealAngle = 90; //ideal angle in degrees
-            int neighborPoint = 3; //variable used in skewness calculation
-
+            List<Quality> qualityList = new List<Quality>(); // list of Quality for each element in the mesh
+            Quality elementQuality = new Quality(); 
+            List<Element> elements = new List<Element>();
             double sumAspectRatio = 0;
             double sumSkewness = 0;
             double sumJacobianRatio = 0;
             #endregion
 
-            //input
+            #region Inputs
             DA.GetData(0, ref mesh2D);
-            DA.GetData(1, ref qualityCheckType);
+            DA.GetData(1, ref mesh3D);
+            DA.GetData(2, ref qualityCheckType);
+            #endregion
 
             #region Calculate mesh quality
-            foreach (Element e in mesh2D.Elements)
+            elements = GetElements(mesh2D, mesh3D);
+
+            foreach (Element e in elements)
             {
-                Quality elementQuality = new Quality();
-
-                List < Point3d > pts = new List<Point3d>()
-                { 
-                        e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
-                        e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
-                };
-
-                for (int n = 0; n < pts.Count / 2; n++)
-                {   
-                    //Aspect Ratio
-                    vertexDistance.Add(pts[n].DistanceTo(pts[n + 1])); //Add the distance between the points, following mesh edges CCW
-
-                    //Skewness
-                    //create a vector from a vertex to a neighbouring vertex
-                    Vector3d a = new Vector3d(pts[n].X - pts[n + 1].X, pts[n].Y - pts[n + 1].Y, pts[n].Z - pts[n + 1].Z); 
-                    Vector3d b = new Vector3d(pts[n].X - pts[n + neighborPoint].X, pts[n].Y - pts[n + neighborPoint].Y, pts[n].Z - pts[n + neighborPoint].Z);
-
-                    //calculate angles in radians between vectors
-                    double angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(a, b) / (a.Length * b.Length))); 
-                    elementAngles.Add(angleRad * 180 / Math.PI); //convert from rad to deg
-                }
-                
-                vertexDistance.Sort();
-                elementAngles.Sort();
-
-                elementQuality.AspectRatio = (vertexDistance[0] / vertexDistance[vertexDistance.Count - 1]);
-                elementQuality.Skewness = 1 - Math.Max((elementAngles[elementAngles.Count - 1] - idealAngle) / (180 - idealAngle), (idealAngle - elementAngles[0]) / (idealAngle));
+                elementQuality.AspectRatio = CalculateAspectRatio(e);
+                elementQuality.Skewness = CalculateSkewness(e);
                 elementQuality.JacobianRatio = CalculateJacobianRatioOfPlaneQuadElement(e);
-                
+
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
 
@@ -115,15 +93,13 @@ namespace MeshPoints
                 sumSkewness += elementQuality.Skewness;
                 sumJacobianRatio += elementQuality.JacobianRatio;
 
-                qualityList.Add(elementQuality);
-        
-                vertexDistance.Clear();
-                elementAngles.Clear();
+                qualityList.Add(elementQuality); // todo: check if this is needed
+                elementQuality = new Quality();
             }
 
-            double avgAspectRatio = sumAspectRatio / mesh2D.Elements.Count;
-            double avgSkewness = sumSkewness / mesh2D.Elements.Count;
-            double avgJacobianRatio = sumJacobianRatio / mesh2D.Elements.Count;
+            double avgAspectRatio = Math.Round(sumAspectRatio / elements.Count, 3);
+            double avgSkewness = Math.Round(sumSkewness / elements.Count, 3);
+            double avgJacobianRatio = Math.Round(sumJacobianRatio / elements.Count, 3);
             #endregion
 
             // Color the mesh based on quality type
@@ -138,8 +114,186 @@ namespace MeshPoints
             #endregion
         }
 
+
+
+
         #region Component methods
-        
+
+        /// <summary>
+        /// Gets the elements from a mesh, independent of the mesh type is Mesh2D or Mesh3D.
+        List<Element> GetElements(Mesh2D mesh2D, Mesh3D mesh3D)
+        {
+            List<Element> elements = new List<Element>();
+
+            // check mesh type
+            if (mesh2D.Elements != null) { elements = mesh2D.Elements; } // mesh2D input
+            else { elements = mesh3D.Elements; } // mesh3D input
+
+            // if no elements are found
+            if (elements == null)
+            {
+                throw new ArgumentNullException(
+                    message: "No elements found.",
+                    paramName: "elements");
+            }
+            return elements;
+        }
+
+        /// <summary>
+        /// Calculates the Aspect Ratio of an element.
+        double CalculateAspectRatio(Element e)
+        {
+            double AR = 0;
+            double maxDistance = 0;
+            double minDistance = 0;
+            double idealAR = 0.5 / Math.Sqrt(Math.Pow(0.5, 2) * 3);
+
+            List<double> cornerToCornerDistance = new List<double>();
+            List<double> cornerToCentroidDistance = new List<double>();
+            List<double> faceToCentroidDistance = new List<double>();
+
+            List<Point3d> faceCenterPts = GetFaceCenter(e);
+            Point3d centroidPt = GetCentroidOfElement(e);
+            List<Point3d> elementCornerPtsDublicated = GetCoordinatesOfNodesDublicated(e);
+
+            // find distances from corners to centroid
+            for (int n = 0; n < elementCornerPtsDublicated.Count / 2; n++)
+            {
+                cornerToCentroidDistance.Add(elementCornerPtsDublicated[n].DistanceTo(centroidPt));
+                cornerToCornerDistance.Add(elementCornerPtsDublicated[n].DistanceTo(elementCornerPtsDublicated[n + 1])); // add the distance between the points, following mesh edges CCW
+            }
+
+            // find distances from face center to centroid
+            for (int n = 0; n < faceCenterPts.Count; n++)
+            {
+                faceToCentroidDistance.Add(faceCenterPts[n].DistanceTo(centroidPt));
+            }
+
+            cornerToCentroidDistance.Sort();
+            cornerToCornerDistance.Sort();
+            faceToCentroidDistance.Sort();
+
+            if (!e.IsCube) // mesh2d
+            {
+                minDistance = cornerToCornerDistance[0];
+                maxDistance = cornerToCornerDistance[cornerToCornerDistance.Count - 1];
+                AR = minDistance / maxDistance;
+            }
+            else // mesh3d
+            {
+                minDistance = Math.Min(cornerToCentroidDistance[0], faceToCentroidDistance[0]);
+                maxDistance = Math.Max(cornerToCentroidDistance[cornerToCentroidDistance.Count - 1], faceToCentroidDistance[faceToCentroidDistance.Count - 1]);
+                AR = (minDistance / maxDistance) / idealAR; // normalized AR
+            }
+            return AR;
+        }
+
+        /// <summary>
+        /// Calculates the Skewness of an element.
+        double CalculateSkewness(Element e)
+        {
+            double SK = 0;
+            double maxAngle = 0;
+            double minAngle = 0;
+            double idealAngle = 90; //ideal angle in degrees
+            int neighborPoint = 3; //variable used in skewness calculation
+            Vector3d vec1 = Vector3d.Zero;
+            Vector3d vec2 = Vector3d.Zero;
+            List<double> elementAngles = new List<double>();
+
+            int numFaces = 1; // mesh2D
+            if (e.IsCube) { numFaces = 6; } // mesh3D
+
+            for (int i = 0; i < numFaces; i++)
+            {
+                e.mesh.Faces.GetFaceVertices(i, out Point3f n1, out Point3f n2, out Point3f n3, out Point3f n4); // todo: sjekk rekkefølge // todo: rett opp i rekkefølge og point3f til point3d
+                List<Point3d> faceCornersDublicated = new List<Point3d>()
+                {
+                        n1, n2, n3, n4,
+                        n1, n2, n3, n4
+                };
+
+                for (int n = 0; n < faceCornersDublicated.Count / 2; n++)
+                {
+                    //create a vector from a vertex to a neighbouring vertex
+                    vec1 = faceCornersDublicated[n] - faceCornersDublicated[n + 1];
+                    vec2 = faceCornersDublicated[n] - faceCornersDublicated[n + neighborPoint];
+
+                    //calculate angles between vectors
+                    double angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(vec1, vec2) / (vec1.Length * vec2.Length)));
+                    double angleDegree = angleRad * 180 / Math.PI;//convert from rad to deg
+                    elementAngles.Add(angleDegree);
+                }
+
+            }
+            elementAngles.Sort();
+            minAngle = Math.Abs(elementAngles[0]); // todo: controll if abs ok
+            maxAngle = Math.Abs(elementAngles[elementAngles.Count - 1]);
+            SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle));
+            return SK;
+        }
+
+        /// <summary>
+        /// Returns a list of node coordinated that is dublicate.
+        List<Point3d> GetCoordinatesOfNodesDublicated(Element e)
+        {
+            List<Point3d> pts = new List<Point3d>();
+            if (!e.IsCube) // mesh2D
+            {
+                pts = new List<Point3d>()
+                {
+                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
+                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
+                };
+            }
+            else // mesh3D
+            {
+                pts = new List<Point3d>()
+                {
+                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
+                    e.Node5.Coordinate, e.Node6.Coordinate, e.Node7.Coordinate, e.Node8.Coordinate,
+                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
+                    e.Node5.Coordinate, e.Node6.Coordinate, e.Node7.Coordinate, e.Node8.Coordinate,
+                };
+
+            }
+            return pts;
+        }
+        /// <summary>
+        /// Returns a list of the face centroid to an element
+        List<Point3d> GetFaceCenter(Element e)
+        {
+            List<Point3d> faceCenterPts = new List<Point3d>();
+            int numFaces = 1; // if mesh2D
+            if (e.IsCube) { numFaces = 6; } // if mesh3D
+
+            for (int i = 0; i < numFaces; i++)
+            {
+                faceCenterPts.Add(e.mesh.Faces.GetFaceCenter(i));
+            }
+            return faceCenterPts;
+        }
+
+        /// <summary>
+        /// Return the centroid of an element
+        Point3d GetCentroidOfElement(Element e)
+        {
+            double sx = 0;
+            double sy = 0;
+            double sz = 0;
+            List<Point3d> pts = GetCoordinatesOfNodesDublicated(e);
+            foreach (Point3d pt in pts)
+            {
+                sx = sx + pt.X;
+                sy = sy + pt.Y;
+                sz = sz + pt.Z;
+            }
+            int n = pts.Count;
+            Point3d centroidPt = new Point3d(sx / n, sy / n, sz / n);
+
+            return centroidPt;
+        }
+
         /// <summary>
         /// Transforms the corner points of an arbitrary 3D plane quad surface to a 2D plane.
         /// </summary>
@@ -310,7 +464,7 @@ namespace MeshPoints
                         {
                             q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.Skewness > 0.7)
+                        else if (q.Skewness > 0.75)
                         {
                             q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }

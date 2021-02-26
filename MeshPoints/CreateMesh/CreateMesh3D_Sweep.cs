@@ -207,6 +207,7 @@ namespace MeshPoints.CreateMesh
                 for (int j = 0; j < pts.Branch(0).Count - m3D.nu - 1; j++) // loop elements in a level
                 {
                     e.Id = elemId;
+                    e.IsCube = true;
                     if (count2 < m3D.nu - 1)
                     {
                         Node n1 = new Node(1, nodes[counter].GlobalId, ptsBot[j], nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
