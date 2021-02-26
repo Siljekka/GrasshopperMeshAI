@@ -106,7 +106,7 @@ namespace MeshPoints
 
                 elementQuality.AspectRatio = (vertexDistance[0] / vertexDistance[vertexDistance.Count - 1]);
                 elementQuality.Skewness = 1 - Math.Max((elementAngles[elementAngles.Count - 1] - idealAngle) / (180 - idealAngle), (idealAngle - elementAngles[0]) / (idealAngle));
-                elementQuality.JacobianRatio = CalculateJacobianRatioOfPlaneQuadElement(e);
+                elementQuality.JacobianRatio = CalculateJacobianRatioOfQuadElement(e);
                 
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
@@ -140,63 +140,14 @@ namespace MeshPoints
 
         #region Component methods
         
-        /// <summary>
-        /// Transforms the corner points of an arbitrary 3D plane quad surface to a 2D plane.
-        /// </summary>
-        /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
-        /// <returns>A list of <see cref="Point3d"/> where the Z (third) coordinate is 0.</returns>
-        List<Point3d> TransformPlaneQuadSurfaceTo2DPoints(Element meshFace)
-        {
-            /*
-             * 1. Calculate surface normal.
-             * 2. Define surface plane using surface normal and first point of element.
-             * 3. Define xy-plane by origin: (0, 0, 0) and unit Z-vector: [0, 0, 1]
-             * 4. Define transformation from surface plane to xy-plane using PlaneToPlane().
-             * 5. Transform points to local coordinate system (X', Y', Z'=0)
-             * output: list of Point3d where Z (third) coordinate = 0
-             */
-
-            var transformedPoints = new List<Point3d>(); // output
-            var elementPoints = new List<Point3d>(){
-                meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
-            };
-
-            // Check that surface is planar
-            if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
-            {
-                throw new ArgumentException(
-                    message: "Corner points of input surface are not co-planar.",
-                    paramName: "elementPoints");
-            }
-
-            var elementVectors = new List<Vector3d>
-            {
-                new Vector3d(elementPoints[1].X - elementPoints[0].X, elementPoints[1].Y - elementPoints[0].Y, elementPoints[1].Z - elementPoints[0].Z),
-                new Vector3d(elementPoints[3].X - elementPoints[0].X, elementPoints[3].Y - elementPoints[0].Y, elementPoints[3].Z - elementPoints[0].Z)
-            };
-            
-            // Cross product of two linearily independent vectors is the normal to the plane containing them
-            var surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
-
-            var surfacePlane = new Plane(meshFace.Node1.Coordinate, surfaceNormal);
-            var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
-
-            var elementTransformation = Transform.PlaneToPlane(surfacePlane, xyPlane); 
-
-            foreach (Point3d point in elementPoints)
-            {
-                transformedPoints.Add(elementTransformation * point);
-            }
-
-            return transformedPoints;
-        }
+        
 
         /// <summary>
         /// Calculates the Jacobian ratio of a plane and simple quadrilateral mesh element.
         /// </summary>
         /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0. A negative Jacobian might indicate a self-intersecting element.</returns>
-        double CalculateJacobianRatioOfPlaneQuadElement(Element meshFace)
+        double CalculateJacobianRatioOfQuadElement(Element meshFace)
         {
             /*
              * This method utilizes the idea of shape functions and natural coordinate system to calculate the Jacobian
@@ -209,8 +160,10 @@ namespace MeshPoints
              * 4. The ratio is the ratio of the minimum and maximum Jacobian calculated, given as a double from 0.0 to 1.0.
              *    A negative Jacobian indicates a self-intersecting element and should not happen.
                 */
-
-            List<Point3d> localPoints = TransformPlaneQuadSurfaceTo2DPoints(meshFace);
+            List<Point3d> cornerPoints = new List<Point3d>(){
+                meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
+            };
+            List<Point3d> localPoints = TransformQuadSurfaceTo2DPoints(cornerPoints);
 
             var gX = new List<Double>()
             {
@@ -258,23 +211,107 @@ namespace MeshPoints
             // Minimum element divided by maximum element. A value of 1 denotes a rectangular element.
             double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
 
-            // Throw error if Jacobian ratio is outside of range: [0.0, 1.0]
+            // Throw an error if Jacobian ratio is outside of the valid range: [0.0, 1.0].
             if (jacobianRatio < 0 || 1.0 < jacobianRatio)
             {
                 throw new ArgumentOutOfRangeException(
                     paramName: "jacobianRatio", jacobianRatio,
-                    message: "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a self-intersecting element.");
+                    message: "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a concave or self-intersecting element.");
             }
 
             return jacobianRatio;
         }
+
+        /// <summary>
+        /// Transforms the corner points of an arbitrary 3D quad surface to a 2D plane.
+        /// </summary>
+        /// <param name="cornerPoints">A list of <see cref="Point3d"/> containing the corner points of a mesh element.</param>
+        /// <returns>A list of <see cref="Point3d"/> where the Z (third) coordinate is 0.</returns>
+        List<Point3d> TransformQuadSurfaceTo2DPoints(List<Point3d> cornerPoints)
+        {
+            List<Point3d> planeCornerPoints = new List<Point3d>();
+            if (Point3d.ArePointsCoplanar(cornerPoints, RhinoMath.ZeroTolerance))
+            {
+                planeCornerPoints = cornerPoints;
+            } 
+            else
+            {
+                // Calculate average surface normal based on corner points
+                List<Vector3d> pointNormals = new List<Vector3d>();
+                for (int i = 0; i<cornerPoints.Count(); i++)
+                {
+                    var n = (i + 1) % 4; // next point in quad
+                    var p = (i + 3) % 4; // previous point in quad
+
+                    var pointVectors = new List<Vector3d>()
+                    {
+                        new Vector3d(cornerPoints[n].X - cornerPoints[0].X, cornerPoints[n].Y - cornerPoints[0].Y, cornerPoints[n].Z - cornerPoints[0].Z),
+                        new Vector3d(cornerPoints[p].X - cornerPoints[0].X, cornerPoints[p].Y - cornerPoints[0].Y, cornerPoints[p].Z - cornerPoints[0].Z)
+                    };
+                    pointNormals.Add(Vector3d.CrossProduct(pointVectors[0], pointVectors[1]));
+                }
+                Vector3d averageNormal = pointNormals[0] + pointNormals[1] + pointNormals[2] + pointNormals[3];
+
+                // Calculate average point of all corner locations.
+                double avgX, avgY, avgZ;
+                avgX = avgY = avgZ = 0;
+
+                foreach (Point3d point in cornerPoints)
+                {
+                    avgX += 0.25 * point.X;
+                    avgY += 0.25 * point.Y;
+                    avgZ += 0.25 * point.Z;
+                }
+                Point3d averagePoint = new Point3d(avgX, avgY, avgZ);
+
+                // Create a plane: through the "average point" & along the average normal.
+                Plane projectPlane = new Plane(averagePoint, averageNormal);
+
+                // Project all points onto the plane along the average normal
+                Transform planeProjectionTransformation = Transform.ProjectAlong(projectPlane, averageNormal);
+                foreach (Point3d point in cornerPoints)
+                {
+                    planeCornerPoints.Add(planeProjectionTransformation * point);
+                }
+            }
+            
+            // Finally, transform the input points to the xy-plane. 
+            Transform elementTransformation = GetTransformationPlanePointsToXYPlane(planeCornerPoints);
+            List<Point3d> transformedPoints = new List<Point3d>();
+            foreach (Point3d point in planeCornerPoints)
+            {
+                transformedPoints.Add(elementTransformation * point);
+            }
+            
+            return transformedPoints;
+
+
+            // Method for getting a Transform object for mapping plane points in 3D space to the xy-plane (z=0).
+            Transform GetTransformationPlanePointsToXYPlane(List<Point3d> points)
+            {
+                var elementVectors = new List<Vector3d>
+                {
+                    new Vector3d(points[1].X - points[0].X, points[1].Y - points[0].Y, points[1].Z - points[0].Z),
+                    new Vector3d(points.Last().X - points[0].X, points.Last().Y - points[0].Y, points.Last().Z - points[0].Z)
+                };
+
+                // Cross product of two linearily independent vectors is the normal to the plane containing them
+                var surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
+
+                var surfacePlane = new Plane(points[0], surfaceNormal);
+                var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+
+                return Transform.PlaneToPlane(surfacePlane, xyPlane);
+            }
+        }
+        
         
         /// <summary>
         /// Color each mesh face based on a given quality type.
         /// </summary>
         /// <param name="colorMesh">The output colored <see cref="Mesh"/> object.</param>
         /// <param name="qualityList">List of <see cref="Quality"/> objects for each element in the mesh.</param>
-        /// <param name="qualityCheckType">Which quality type to color the mesh with.</param>
+        /// <param name="qualityCheckType">Which quality type to color the mesh with; 1 = AR, 2 = SK, 3 = J.</param>
         void ColorMesh(Mesh colorMesh, List<Quality> qualityList, int qualityCheckType)
         {
             switch (qualityCheckType)
@@ -347,7 +384,7 @@ namespace MeshPoints
                         }
                         else
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.HotPink);
+                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
                         }
                         colorMesh.Append(q.element.mesh);
                     }
