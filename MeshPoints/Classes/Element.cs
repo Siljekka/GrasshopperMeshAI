@@ -34,13 +34,14 @@ namespace MeshPoints.Classes
         }
 
         //_for 2D
-        public Element(int _id, Node _node1, Node _node2, Node _node3, Node _node4)
+        public Element(int _id, Node _node1, Node _node2, Node _node3, Node _node4, Mesh _mesh)
         {
             Id = _id;
             Node1 = _node1;
             Node2 = _node2;
             Node3 = _node3;
             Node4 = _node4;
+            mesh = _mesh;
         }
 
         //_for 3D
