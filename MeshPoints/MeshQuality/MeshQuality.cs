@@ -132,7 +132,7 @@ namespace MeshPoints
             // if no elements are found
             if (elements == null)
             {
-                throw new ArgumentException(
+                throw new ArgumentNullException(
                     message: "No elements found.",
                     paramName: "elements");
             }
