@@ -66,9 +66,14 @@ namespace MeshPoints
             List<Quality> qualityList = new List<Quality>(); // list of Quality for each element in the mesh
             Quality elementQuality = new Quality(); 
             List<Element> elements = new List<Element>();
+
             double sumAspectRatio = 0;
             double sumSkewness = 0;
             double sumJacobianRatio = 0;
+            double avgAspectRatio = 0;
+            double avgSkewness = 0;
+            double avgJacobianRatio = 0;
+
             #endregion
 
             #region Inputs
@@ -80,30 +85,32 @@ namespace MeshPoints
             #region Calculate mesh quality
             elements = GetElements(mesh2D, mesh3D);
 
-            foreach (Element e in elements)
-            {
-                elementQuality.AspectRatio = CalculateAspectRatio(e);
-                elementQuality.Skewness = CalculateSkewness(e);
-                elementQuality.JacobianRatio = CalculateJacobianRatioOfPlaneQuadElement(e);
+            if (elements != null) {
+                foreach (Element e in elements)
+                {
+                    elementQuality.AspectRatio = CalculateAspectRatio(e);
+                    elementQuality.Skewness = CalculateSkewness(e);
+                    elementQuality.JacobianRatio = CalculateJacobianRatioOfQuadElement(e);
 
-                elementQuality.element = e;
-                e.MeshQuality = elementQuality;
+                    elementQuality.element = e;
+                    e.MeshQuality = elementQuality;
 
-                sumAspectRatio += elementQuality.AspectRatio;
-                sumSkewness += elementQuality.Skewness;
-                sumJacobianRatio += elementQuality.JacobianRatio;
+                    sumAspectRatio += elementQuality.AspectRatio;
+                    sumSkewness += elementQuality.Skewness;
+                    sumJacobianRatio += elementQuality.JacobianRatio;
 
-                qualityList.Add(elementQuality); // todo: check if this is needed
-                elementQuality = new Quality();
+                    qualityList.Add(elementQuality); // todo: check if this is needed
+                    elementQuality = new Quality();
+                }
+
+                avgAspectRatio = Math.Round(sumAspectRatio / elements.Count, 3);
+                avgSkewness = Math.Round(sumSkewness / elements.Count, 3);
+                avgJacobianRatio = Math.Round(sumJacobianRatio / elements.Count, 3);
+                #endregion
+
+                // Color the mesh based on quality type
+                ColorMesh(colorMesh, qualityList, qualityCheckType);
             }
-
-            double avgAspectRatio = Math.Round(sumAspectRatio / elements.Count, 3);
-            double avgSkewness = Math.Round(sumSkewness / elements.Count, 3);
-            double avgJacobianRatio = Math.Round(sumJacobianRatio / elements.Count, 3);
-            #endregion
-
-            // Color the mesh based on quality type
-            ColorMesh(colorMesh, qualityList, qualityCheckType);
 
             #region Outputs
             DA.SetDataList(0, qualityList);
@@ -114,13 +121,10 @@ namespace MeshPoints
             #endregion
         }
 
-
-
-
         #region Component methods
-
         /// <summary>
         /// Gets the elements from a mesh, independent of the mesh type is Mesh2D or Mesh3D.
+        /// </summary>
         List<Element> GetElements(Mesh2D mesh2D, Mesh3D mesh3D)
         {
             List<Element> elements = new List<Element>();
@@ -132,15 +136,17 @@ namespace MeshPoints
             // if no elements are found
             if (elements == null)
             {
-                throw new ArgumentNullException(
-                    message: "No elements found.",
-                    paramName: "elements");
+                //throw new ArgumentNullException(
+                //    message: "No elements found.",
+                //    paramName: "elements");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Zero mesh inputs found.");
             }
             return elements;
         }
 
         /// <summary>
         /// Calculates the Aspect Ratio of an element.
+        /// </summary>
         double CalculateAspectRatio(Element e)
         {
             double AR = 0;
@@ -190,6 +196,7 @@ namespace MeshPoints
 
         /// <summary>
         /// Calculates the Skewness of an element.
+        /// </summary>
         double CalculateSkewness(Element e)
         {
             double SK = 0;
@@ -235,6 +242,7 @@ namespace MeshPoints
 
         /// <summary>
         /// Returns a list of node coordinated that is dublicate.
+        /// </summary>
         List<Point3d> GetCoordinatesOfNodesDublicated(Element e)
         {
             List<Point3d> pts = new List<Point3d>();
@@ -259,8 +267,10 @@ namespace MeshPoints
             }
             return pts;
         }
+
         /// <summary>
         /// Returns a list of the face centroid to an element
+        /// </summary>
         List<Point3d> GetFaceCenter(Element e)
         {
             List<Point3d> faceCenterPts = new List<Point3d>();
@@ -276,6 +286,7 @@ namespace MeshPoints
 
         /// <summary>
         /// Return the centroid of an element
+        /// </summary>
         Point3d GetCentroidOfElement(Element e)
         {
             double sx = 0;
@@ -295,70 +306,22 @@ namespace MeshPoints
         }
 
         /// <summary>
-        /// Transforms the corner points of an arbitrary 3D plane quad surface to a 2D plane.
-        /// </summary>
-        /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
-        /// <returns>A list of <see cref="Point3d"/> where the Z (third) coordinate is 0.</returns>
-        List<Point3d> TransformPlaneQuadSurfaceTo2DPoints(Element meshFace)
-        {
-            /*
-             * 1. Calculate surface normal.
-             * 2. Define surface plane using surface normal and first point of element.
-             * 3. Define xy-plane by origin: (0, 0, 0) and unit Z-vector: [0, 0, 1]
-             * 4. Define transformation from surface plane to xy-plane using PlaneToPlane().
-             * 5. Transform points to local coordinate system (X', Y', Z'=0)
-             * output: list of Point3d where Z (third) coordinate = 0
-             */
-
-            var transformedPoints = new List<Point3d>(); // output
-            var elementPoints = new List<Point3d>(){
-                meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
-            };
-
-            // Check that surface is planar
-            if (!Point3d.ArePointsCoplanar(elementPoints, RhinoMath.ZeroTolerance))
-            {
-                throw new ArgumentException(
-                    message: "Corner points of input surface are not co-planar.",
-                    paramName: "elementPoints");
-            }
-
-            var elementVectors = new List<Vector3d>
-            {
-                new Vector3d(elementPoints[1].X - elementPoints[0].X, elementPoints[1].Y - elementPoints[0].Y, elementPoints[1].Z - elementPoints[0].Z),
-                new Vector3d(elementPoints[3].X - elementPoints[0].X, elementPoints[3].Y - elementPoints[0].Y, elementPoints[3].Z - elementPoints[0].Z)
-            };
-            
-            // Cross product of two linearily independent vectors is the normal to the plane containing them
-            var surfaceNormal = Vector3d.CrossProduct(elementVectors[0], elementVectors[1]);
-
-            var surfacePlane = new Plane(meshFace.Node1.Coordinate, surfaceNormal);
-            var xyPlane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
-
-            var elementTransformation = Transform.PlaneToPlane(surfacePlane, xyPlane); 
-
-            foreach (Point3d point in elementPoints)
-            {
-                transformedPoints.Add(elementTransformation * point);
-            }
-
-        /// <summary>
-        /// Calculates the Jacobian ratio of a plane and simple quadrilateral mesh element.
+        /// Calculates the Jacobian ratio of a simple quadrilateral mesh element.
         /// </summary>
         /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0. A negative Jacobian might indicate a self-intersecting element.</returns>
         double CalculateJacobianRatioOfQuadElement(Element meshFace)
         {
             /*
-             * This method utilizes the idea of shape functions and natural coordinate system to calculate the Jacobian
-             * of given points on a plane, simple quadrilateral element.
+             * This method uses the idea of shape functions and natural coordinate system to 
+             * calculate the Jacobian at given points on a simple quadrilateral element.
              * 
-             * 1. Transform the input 3D plane element (and specifically the corner points) to a 2D space (X', Y', Z'=0).
+             * 1. Transform the input 3D quad element (and specifically the corner points) to a 2D space (X', Y', Z'=0).
              * 2. Define natural coordinates we want to calculate the Jacobian in. This could be the corner points (or 
              *    alternatively the Gauss points) of the quad element. 
-             * 3. Calculate the Jacobian of each point. 
+             * 3. Calculate the Jacobian determinant of each point. 
              * 4. The ratio is the ratio of the minimum and maximum Jacobian calculated, given as a double from 0.0 to 1.0.
-             *    A negative Jacobian indicates a self-intersecting element and should not happen.
+             *    A negative Jacobian indicates a self-intersecting or convex element and should not happen.
                 */
             List<Point3d> cornerPoints = new List<Point3d>(){
                 meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
@@ -411,12 +374,13 @@ namespace MeshPoints
             // Minimum element divided by maximum element. A value of 1 denotes a rectangular element.
             double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
 
-            // Throw an error if Jacobian ratio is outside of the valid range: [0.0, 1.0].
+            // Generate a warning if Jacobian ratio is outside of the valid range: [0.0, 1.0].
             if (jacobianRatio < 0 || 1.0 < jacobianRatio)
             {
-                throw new ArgumentOutOfRangeException(
-                    paramName: "jacobianRatio", jacobianRatio,
-                    message: "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a concave or self-intersecting element.");
+                //throw new ArgumentOutOfRangeException(
+                //    paramName: "jacobianRatio", jacobianRatio,
+                //    message: "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a concave or self-intersecting element.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a concave or self-intersecting element.");
             }
 
             return jacobianRatio;
@@ -486,7 +450,7 @@ namespace MeshPoints
             return transformedPoints;
 
 
-            // Method for getting a Transform object for mapping plane points in 3D space to the xy-plane (z=0).
+            // Inner method for getting a Transform object/matrix for mapping plane points in 3D space to the xy-plane (z=0).
             Transform GetTransformationPlanePointsToXYPlane(List<Point3d> points)
             {
                 var elementVectors = new List<Vector3d>
@@ -504,7 +468,6 @@ namespace MeshPoints
                 return Transform.PlaneToPlane(surfacePlane, xyPlane);
             }
         }
-        
         
         /// <summary>
         /// Color each mesh face based on a given quality type.
