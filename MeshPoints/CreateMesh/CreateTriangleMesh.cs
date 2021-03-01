@@ -12,7 +12,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         public CreateTriangleMesh()
           : base("Triangle mesh", "TriMesh",
-              "Creates a triangle mesh using built-in Delauney method",
+              "Creates a triangle mesh on a (2D) brep using built-in Delaunay method",
               "MyPlugin", "Mesh")
         {
         }
@@ -42,6 +42,11 @@ namespace MeshPoints.CreateMesh
             // Input
             Brep meshSurface = new Brep();
             DA.GetData(0, ref meshSurface);
+            if (!meshSurface.IsSurface)
+            {
+                throw new ArgumentException("Input Brep must be a surface.", "meshSurface");
+                //AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Input brep must be a surface.");
+            }
             // Output
             Mesh triangleMesh = new Mesh();
             DA.SetData(0, triangleMesh);
