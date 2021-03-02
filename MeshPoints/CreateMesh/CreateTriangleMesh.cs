@@ -58,27 +58,95 @@ namespace MeshPoints.CreateMesh
             // 1. Generate a (BRep) rectangle containing the meshSurface
             // 2. Populate with points (based on sth)
             // 3. Remove points outside meshSurface
+            // todo: refactor 
             Brep boundingRectangle = CreateBoundingRectangle(meshSurface);
+            var edgePointsOfBoundingRectangle = CreateEdgePointsByCount(boundingRectangle, totalEdgeNodeCount);
+            var pointGridBoundingRectangle = CreatePointGridRectangle(edgePointsOfBoundingRectangle);
+            var gridPointsInsideMeshSurface = PrunePointsOutsideSurface(pointGridBoundingRectangle, meshSurface);
 
             // 1. Populate meshSurface edge with points (based on input)
-            List<Point3d> edgePointsSurface = CreateEdgePointsByCount(meshSurface, totalEdgeNodeCount);
-            List<Point3d> edgePointsBoundingRectangle = CreateEdgePointsByCount(boundingRectangle, totalEdgeNodeCount);
+            List<List<Point3d>> edgePointsSurface = CreateEdgePointsByCount(meshSurface, totalEdgeNodeCount);
+
             //List<Point3d> innerPoints = new List<Point3d>();
-            
+            var pointCollection = new List<Point3d>();
+            foreach(var list in edgePointsSurface)
+            {
+                pointCollection.AddRange(list);
+            }
+            pointCollection.AddRange(gridPointsInsideMeshSurface);
 
+            var meshPoints = new Grasshopper.Kernel.Geometry.Node2List(pointCollection);
             
-
+            //Mesh triangleMesh = new Mesh();
+            //var triangleFaces = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Faces(meshPoints, 0.01);
+            var meshFaces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
+            var triangleMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(meshPoints, 0.01, ref meshFaces);
+            
             // Output
-            Mesh triangleMesh = new Mesh();
             DA.SetData(0, triangleMesh);
-            DA.SetDataList(1, boundingRectangle.Edges);
+            DA.SetDataList(1, gridPointsInsideMeshSurface);
             DA.SetDataList(2, edgePointsSurface);
-            DA.SetDataList(3, edgePointsBoundingRectangle);
+            DA.SetDataList(3, edgePointsOfBoundingRectangle);
 
         }
-        
+
+        private List<Point3d> PrunePointsOutsideSurface(List<Point3d> pointGrid, Brep meshSurface)
+        {
+            // throw new NotImplementedException();
+            var insidePoints = new List<Point3d>();
+            var cornerPoints = new List<Point3d>()
+            {
+                meshSurface.Vertices[0].Location,
+                meshSurface.Vertices[1].Location,
+                meshSurface.Vertices[2].Location,
+                meshSurface.Vertices[3].Location,
+            };
+
+            foreach (Point3d point in pointGrid)
+            {
+                if (IsPointInside(point, cornerPoints))
+                {
+                    insidePoints.Add(point);
+                }
+            }
+            return insidePoints;
+
+            // Based on Solution 4 (3D) from 
+            // http://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
+            bool IsPointInside(Point3d testPoint, List<Point3d> boundingPoints)
+            {
+                double totalAngle = 0;
+                for (int i = 0; i<4; i++)
+                {
+                    var nextIndex = (i + 1) % 4;
+                    var vec1 = new Vector3d(
+                        boundingPoints[i].X - testPoint.X,
+                        boundingPoints[i].Y - testPoint.Y,
+                        boundingPoints[i].Z - testPoint.Z
+                        );
+                    var vec2 = new Vector3d(
+                        boundingPoints[nextIndex].X - testPoint.X,
+                        boundingPoints[nextIndex].Y - testPoint.Y,
+                        boundingPoints[nextIndex].Z - testPoint.Z
+                        );
+                    totalAngle += Vector3d.VectorAngle(vec1, vec2);
+                }
+
+                var twoPi = RhinoMath.TwoPI;
+                var e = RhinoMath.SqrtEpsilon;
+                if (twoPi < totalAngle+e && totalAngle-e < twoPi)
+                {
+                    return true;
+                } 
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
         /// <summary>
-        /// Creates a <see cref="Brep"/> rectangle around an arbitrary plane <see cref="Brep"/> geometry.
+        /// Creates a <see cref="Brep"/> rectangle around an arbitrary plane <see cref="Brep"/> geometry and fills it with points.
         /// </summary>
         private Brep CreateBoundingRectangle(Brep meshSurface)
         {
@@ -97,6 +165,7 @@ namespace MeshPoints.CreateMesh
             var p4 = new Point3d(xList.Min(), yList.Max(), 0);
 
             Brep boundingRectangle = Brep.CreateFromCornerPoints(p1, p2, p3, p4, RhinoMath.DefaultDistanceToleranceMillimeters);
+            // List<Point3d> cornerPoints = new List<Point3d>() { p1, p2, p3, p4 };
 
             return boundingRectangle;  
         }
@@ -105,9 +174,9 @@ namespace MeshPoints.CreateMesh
         /// Creates points on the <see cref="BrepEdge"/>s of a <see cref="Brep"/> based on a given total edge node count.
         /// </summary>
         /// <returns>Returnds a list of <see cref="Point3d"/> along the edge of a <see cref="Brep"/>.</returns>
-        private List<Point3d> CreateEdgePointsByCount(Brep meshSurface, double totalEdgeNodeCount)
+        private List<List<Point3d>> CreateEdgePointsByCount(Brep meshSurface, double totalEdgeNodeCount)
         {
-            List<Point3d> edgePoints = new List<Point3d>();
+            var edgePoints = new List<List<Point3d>>();
             double totalEdgeLength = 0;
             foreach (Curve edge in meshSurface.Edges)
             {
@@ -116,17 +185,46 @@ namespace MeshPoints.CreateMesh
             foreach (Curve edge in meshSurface.Edges)
             {
                 double[] tValues;
+                var innerEdgePoints = new List<Point3d>();
                 double edgeLength = edge.GetLength();
                 var edgeNodeCount = Convert.ToInt32(totalEdgeNodeCount * (edgeLength / totalEdgeLength) + 1);
                 
                 tValues = edge.DivideByCount(edgeNodeCount, true);
                 foreach (double t in tValues)
                 {
-                    edgePoints.Add(edge.PointAt(t));
+                    innerEdgePoints.Add(edge.PointAt(t));
                 }
+                edgePoints.Add(innerEdgePoints);
             }
             return edgePoints;
         }
+
+        private List<Point3d> CreatePointGridRectangle(List<List<Point3d>> edgeGrid)
+        {
+            var edge1 = edgeGrid[0];
+            //var edge2 = edgeGrid[1];
+            var edge3 = edgeGrid[2];
+            //var edge4 = edgeGrid[3];
+            edge3.Reverse();
+            //edge4.Reverse();
+
+            var gridPoints = new List<Point3d>();
+
+            var pointsInUDirection = edgeGrid[0].Count();
+            var pointsInVDirection = edgeGrid[1].Count();
+            for(int i = 0; i<pointsInUDirection; i++)
+            {
+                double[] tValues;
+                var line = new LineCurve(edge1[i], edge3[i]);
+                tValues = line.DivideByCount(pointsInVDirection - 1, true);
+                foreach (double t in tValues)
+                {
+                    gridPoints.Add(line.PointAt(t));
+                }
+            }
+            return gridPoints;
+        }
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
