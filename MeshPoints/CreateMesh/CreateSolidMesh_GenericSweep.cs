@@ -11,12 +11,12 @@ using Rhino.Geometry.Intersect;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateMesh3D_GenericSweep : GH_Component
+    public class CreateSolidMesh_GenericSweep : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
-        public CreateMesh3D_GenericSweep()
+        public CreateSolidMesh_GenericSweep()
           : base("Create Mesh3D (GenericSweep)", "mesh3DG",
               "Creates a solid mesh (more generic)",
               "MyPlugIn", "Mesh")
