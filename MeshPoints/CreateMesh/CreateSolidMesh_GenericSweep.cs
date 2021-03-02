@@ -51,26 +51,41 @@ namespace MeshPoints.CreateMesh
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Variables
-            Brep bp = new Brep();
-
-            Mesh3D m3D = new Mesh3D();
+            Brep brep = new Brep();
+            NurbsSurface nurbsSurface = null;
+            NurbsSurface surface = null;
+           
             Element e = new Element();
-            List<Node> nodes = new List<Node>();
-            List<Element> elements = new List<Element>();
+            Mesh3D m3D = new Mesh3D();
 
             Mesh mesh = new Mesh();
             Mesh allMesh = new Mesh();
 
             Point3d[] nwPt;
+            Point3d[] iPt;
+            Curve[] iCrv;
 
+            List<Node> nodes = new List<Node>();
+            List<Element> elements = new List<Element>();
             List<Point3d> nwPoints = new List<Point3d>();
             List<Point3d> ptsBot = new List<Point3d>();
             List<Point3d> ptsTop = new List<Point3d>();
+            List<Point3d> pt = new List<Point3d>();
+            List<Curve> rails = new List<Curve>();
+            List<Curve> intCrv = new List<Curve>();
+            List<Curve> interCrv = new List<Curve>();
+            List<Brep> planarBrep = new List<Brep>();
+            List<Plane> surfacePlanes = new List<Plane>();
+            List<NurbsSurface> nwSurface = new List<NurbsSurface>();
+
+            DataTree<Curve> intersectionCurve = new DataTree<Curve>();
             DataTree<Point3d> railPoints = new DataTree<Point3d>();
             DataTree<Point3d> points = new DataTree<Point3d>();
 
-            List<Curve> rails = new List<Curve>();
 
+            string curveOrientation = null;
+            double stepU = 0;
+            double stepV = 0;
             int nu = 0;
             int nv = 0;
             int nw = 0;
@@ -81,29 +96,17 @@ namespace MeshPoints.CreateMesh
             int counter = 0;
             int elemId = 0;
 
-            string curveOrientation = null;
-            Curve[] iCrv1;
-            Point3d[] iPt1;
-            List<Curve> intCrv = new List<Curve>();
-            List<Plane> surfacePlanes = new List<Plane>();
-
-            List<Brep> planarBrep = new List<Brep>();
-            List<Curve> interCrv = new List<Curve>();
-            Brep brep = new Brep();
-            NurbsSurface nurbsSurface = null;
-            List<NurbsSurface> nwSurface = new List<NurbsSurface>();
-            DataTree<Curve> intersectionCurve = new DataTree<Curve>();
-            NurbsSurface surface = null;
-            List<Point3d> pt = new List<Point3d>();
-
+            
 
             //Input
-            DA.GetData(0, ref bp);
+            DA.GetData(0, ref brep);
             DA.GetData(1, ref nu);
             DA.GetData(2, ref nv);
             DA.GetData(3, ref nw);
 
-            if ((nu == 0) | (nv == 0) | (nw == 0)) { return; } // todo: add warning message
+            if (nu == 0) { return; } // todo: add warning message
+            if (nv == 0) { return; } // todo: add warning message
+            if (nw == 0) { return; } // todo: add warning message
 
 
             // Code
@@ -111,10 +114,10 @@ namespace MeshPoints.CreateMesh
             m3D.nv = nv;
             m3D.nw = nw;
 
-            Curve rail1 = bp.Edges[0];  //get edge1 of brep = rail 1
-            Curve rail2 = bp.Edges[9];  //get edge2 of brep = rail 2
-            Curve rail3 = bp.Edges[10]; //get edge3 of brep = rail 3
-            Curve rail4 = bp.Edges[11]; //get edge4 of brep = rail 4
+            Curve rail1 = brep.Edges[0];  //get edge1 of brep = rail 1
+            Curve rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
+            Curve rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
+            Curve rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
 
             rails.Add(rail1);
             rails.Add(rail2);
@@ -135,51 +138,52 @@ namespace MeshPoints.CreateMesh
                 }
             }
 
-            // Make edgecurves for each floor
+            // Make nurbsSurface for each floor
             for (int i = 0; i < railPoints.BranchCount; i++)
             {
-                Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane);
-                surfacePlanes.Add(plane);
+                Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane); // make plane on floor i
+                Intersection.BrepPlane(brep, plane, 0.00001, out iCrv, out iPt); // make intersection curve between brep and plane on floor i
+                intCrv = iCrv.ToList();
 
-                Intersection.BrepPlane(bp, plane, 0.00001, out iCrv1, out iPt1);
-                intCrv = iCrv1.ToList();
+                for (int j = 0; j < intCrv.Count; j++) { intCrv[j].MakeClosed(0.0001); intersectionCurve.Add(intCrv[j], new GH_Path(i)); }  // make curve closed and add to intersectionCurve
+                //if (intersectionCurve.Branch(i).Count != 1) { return; } //todo: add error message "brep-input not OK."
 
-                for (int j = 0; j < intCrv.Count; j++) { intCrv[j].MakeClosed(0.0001); intersectionCurve.Add(intCrv[j], new GH_Path(i)); } //
-                //if (intersectionCurve.Branch(i).Count != 1) { return; } //todo: add error message "BrerailPointsis not OK."
-
-                planarBrep = Brep.CreatePlanarBreps(intersectionCurve.Branch(i), 0.0001).ToList();
+                planarBrep = Brep.CreatePlanarBreps(intersectionCurve.Branch(i), 0.0001).ToList(); // make planar brep on floor i
 
                 for (int j = 0; j < planarBrep.Count; j++)
                 {
-                    nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[j].Edges, 0, 0.000001, 0.000001, 0.000001, out int error);
+                    nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[j].Edges, 0, 0.000001, 0.000001, 0.000001, out int error); // make planar brep to nurbssurface
                     nwSurface.Add(surface);
                 }
+                surfacePlanes.Add(plane); // add planes to list
+
                 planarBrep.Clear();
                 intCrv.Clear();
                 interCrv.Clear();
             }
-            
 
-            #region Makes grid of points in v and u direction at level nw
 
-            double stepU = 1 / ((double)m3D.nu - 1);
-            double stepV = 1 / ((double)m3D.nv - 1);
+            #region  Make grid of points in u and v direction at leven nw
+            // Make grid of points in u and v direction at leven nw
             
-            for (int i = 0; i < nwSurface.Count; i++)
+            stepU = 1 / ((double)m3D.nu - 1);
+            stepV = 1 / ((double)m3D.nv - 1);
+            
+            for (int i = 0; i < nwSurface.Count; i++) // loop floors
             { 
                 curveOrientation = intersectionCurve.Branch(i)[0].ClosedCurveOrientation().ToString();
 
                 surface = nwSurface[i];
-                surface.SetDomain(0, new Interval(0, 1));
-                surface.SetDomain(1, new Interval(0, 1));
+                surface.SetDomain(0, new Interval(0, 1)); // set domain for surface 0-direction
+                surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 0-direction
 
-                if (curveOrientation == "CounterClockwise")
+                if (curveOrientation == "CounterClockwise") 
                 {
-                    for (double j = 0; j <= 1; j += stepV)
+                    for (double j = 0; j <= 1; j += stepV) 
                     {
                         for (double k = 0; k <= 1; k += stepU)
                         {
-                            pt.Add(surface.PointAt(j, k));
+                            pt.Add(surface.PointAt(j, k));  // make point on surface
                         }
                     }
                 }
@@ -189,27 +193,27 @@ namespace MeshPoints.CreateMesh
                     {
                         for (double k = 1; k >= 0; k -= stepU)
                         {
-                            pt.Add(surface.PointAt(j, k));
+                            pt.Add(surface.PointAt(j, k)); // make point on surface
                         }
                     }
                 }
-                points.AddRange(pt, new GH_Path(i));
+                points.AddRange(pt, new GH_Path(i)); // add points to datatree. Branch: floor level
                 pt.Clear();
             }
             #endregion
 
 
             #region Create Nodes
-
             // Create Nodes  
             count1 = 0;
+
             for (int i = 0; i < m3D.nw + 1; i++)
             {
                 row = 0;
                 column = 0;
                 for (int j = 0; j < points.Branch(i).Count; j++)
                 {
-                    Node node = new Node(count1, points.Branch(i)[j]); //Assign Global ID and cooridinates
+                    Node node = new Node(count1, points.Branch(i)[j]); // assign Global ID and cooridinates
                     count1++;
 
                     if (column == 0 | column == m3D.nu - 1) { node.BC_U = true; }
