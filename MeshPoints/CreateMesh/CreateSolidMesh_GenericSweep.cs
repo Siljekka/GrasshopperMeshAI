@@ -81,7 +81,7 @@ namespace MeshPoints.CreateMesh
             DataTree<Curve> intersectionCurve = new DataTree<Curve>();
             DataTree<Point3d> railPoints = new DataTree<Point3d>();
             DataTree<Point3d> points = new DataTree<Point3d>();
-
+            
 
             string curveOrientation = null;
             double stepU = 0;
@@ -104,6 +104,7 @@ namespace MeshPoints.CreateMesh
             DA.GetData(2, ref nv);
             DA.GetData(3, ref nw);
 
+            if (!brep.IsValid) { return; }
             if (nu == 0) { return; } // todo: add warning message
             if (nv == 0) { return; } // todo: add warning message
             if (nw == 0) { return; } // todo: add warning message
@@ -153,7 +154,7 @@ namespace MeshPoints.CreateMesh
                 for (int j = 0; j < planarBrep.Count; j++)
                 {
                     nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[j].Edges, 0, 0.000001, 0.000001, 0.000001, out int error); // make planar brep to nurbssurface
-                    nwSurface.Add(surface);
+                    nwSurface.Add(nurbsSurface);
                 }
                 surfacePlanes.Add(plane); // add planes to list
 
@@ -162,7 +163,7 @@ namespace MeshPoints.CreateMesh
                 interCrv.Clear();
             }
 
-
+            
             #region  Make grid of points in u and v direction at leven nw
             // Make grid of points in u and v direction at leven nw
             
@@ -175,7 +176,7 @@ namespace MeshPoints.CreateMesh
 
                 surface = nwSurface[i];
                 surface.SetDomain(0, new Interval(0, 1)); // set domain for surface 0-direction
-                surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 0-direction
+                surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 1-direction
 
                 if (curveOrientation == "CounterClockwise") 
                 {
@@ -238,7 +239,6 @@ namespace MeshPoints.CreateMesh
             
             for (int i = 0; i < points.BranchCount - 1; i++)  // loop levels
             {
-                
                 ptsBot = points.Branch(i);
                 ptsTop = points.Branch(i + 1);
                 count2 = 0;
