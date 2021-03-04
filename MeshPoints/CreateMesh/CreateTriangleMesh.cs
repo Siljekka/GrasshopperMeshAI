@@ -35,9 +35,9 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddMeshParameter("Triangle mesh", "m", "Triangle mesh (Delauney)", GH_ParamAccess.item);
+            pManager.AddMeshParameter("prunedTriangle mesh", "m", "Triangle mesh (Delauney) pruned", GH_ParamAccess.item);
             pManager.AddGenericParameter("Bounding rectangle", "r", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("edgepoints", "e", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("edgepoints", "f", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("meshpoints", "e", "", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -60,7 +60,17 @@ namespace MeshPoints.CreateMesh
             // 3. Remove points outside meshSurface
             // todo: refactor 
             Brep boundingRectangle = CreateBoundingRectangle(meshSurface);
-            var edgePointsOfBoundingRectangle = CreateEdgePointsByCount(boundingRectangle, totalEdgeNodeCount);
+            BoundingBox boundingBox = meshSurface.GetBoundingBox(false);
+            Brep boundingBoxBrep = Brep.CreateFromCornerPoints(
+                new Point3d(boundingBox.Min.X, boundingBox.Min.Y, 0),
+                new Point3d(boundingBox.Max.X, boundingBox.Min.Y, 0),
+                new Point3d(boundingBox.Max.X, boundingBox.Max.Y, 0),
+                new Point3d(boundingBox.Min.X, boundingBox.Max.Y, 0),
+                RhinoMath.ZeroTolerance
+                );
+
+
+            var edgePointsOfBoundingRectangle = CreateEdgePointsByCount(boundingBoxBrep, totalEdgeNodeCount);
             var pointGridBoundingRectangle = CreatePointGridRectangle(edgePointsOfBoundingRectangle);
             var gridPointsInsideMeshSurface = PrunePointsOutsideSurface(pointGridBoundingRectangle, meshSurface);
 
@@ -77,72 +87,91 @@ namespace MeshPoints.CreateMesh
 
             var meshPoints = new Grasshopper.Kernel.Geometry.Node2List(pointCollection);
             
-            //Mesh triangleMesh = new Mesh();
-            //var triangleFaces = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Faces(meshPoints, 0.01);
             var meshFaces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
             var triangleMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(meshPoints, 0.01, ref meshFaces);
-            
+
+            Mesh prunedTriangleMesh = PruneMeshFacesOutsideSurface(triangleMesh, meshSurface);
+
             // Output
             DA.SetData(0, triangleMesh);
-            DA.SetDataList(1, gridPointsInsideMeshSurface);
-            DA.SetDataList(2, edgePointsSurface);
-            DA.SetDataList(3, edgePointsOfBoundingRectangle);
+            DA.SetData(1, prunedTriangleMesh);
+            DA.SetDataList(2, gridPointsInsideMeshSurface);
+            DA.SetDataList(3, pointCollection);
 
+        }
+        private bool IsPointOnBrepSurface(Point3d point, Brep brep)
+        {
+            var testPointSurfaceDistance = point.DistanceTo(brep.ClosestPoint(point));
+            if (testPointSurfaceDistance < RhinoMath.SqrtEpsilon)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private Mesh PruneMeshFacesOutsideSurface(Mesh mesh, Brep brep)
+        {
+            Mesh insideFaces = mesh;
+            for (int i = mesh.Faces.Count-1; i>0; i--) // reverse iteration to maintain indices
+            {
+                if (!IsPointOnBrepSurface(mesh.Faces.GetFaceCenter(i), brep))
+                {
+                    insideFaces.Faces.RemoveAt(i);
+                }
+            }
+            return insideFaces;
         }
 
         private List<Point3d> PrunePointsOutsideSurface(List<Point3d> pointGrid, Brep meshSurface)
         {
-            // throw new NotImplementedException();
             var insidePoints = new List<Point3d>();
-            var cornerPoints = new List<Point3d>()
-            {
-                meshSurface.Vertices[0].Location,
-                meshSurface.Vertices[1].Location,
-                meshSurface.Vertices[2].Location,
-                meshSurface.Vertices[3].Location,
-            };
 
             foreach (Point3d point in pointGrid)
             {
-                if (IsPointInside(point, cornerPoints))
+                if (IsPointOnBrepSurface(point, meshSurface))
                 {
                     insidePoints.Add(point);
                 }
             }
             return insidePoints;
 
-            // Based on Solution 4 (3D) from 
-            // http://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
-            bool IsPointInside(Point3d testPoint, List<Point3d> boundingPoints)
-            {
-                double totalAngle = 0;
-                for (int i = 0; i<4; i++)
-                {
-                    var nextIndex = (i + 1) % 4;
-                    var vec1 = new Vector3d(
-                        boundingPoints[i].X - testPoint.X,
-                        boundingPoints[i].Y - testPoint.Y,
-                        boundingPoints[i].Z - testPoint.Z
-                        );
-                    var vec2 = new Vector3d(
-                        boundingPoints[nextIndex].X - testPoint.X,
-                        boundingPoints[nextIndex].Y - testPoint.Y,
-                        boundingPoints[nextIndex].Z - testPoint.Z
-                        );
-                    totalAngle += Vector3d.VectorAngle(vec1, vec2);
-                }
+            
 
-                var twoPi = RhinoMath.TwoPI;
-                var e = RhinoMath.SqrtEpsilon;
-                if (twoPi < totalAngle+e && totalAngle-e < twoPi)
-                {
-                    return true;
-                } 
-                else
-                {
-                    return false;
-                }
-            }
+            //// Based on Solution 4 (3D) from:
+            //// http://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
+            //bool IsPointInside(Point3d testPoint, List<Point3d> boundingPoints)
+            //{
+            //    double totalAngle = 0;
+            //    for (int i = 0; i<boundingPoints.Count-1; i++)
+            //    {
+            //        var nextIndex = i + 1;
+            //        var vec1 = new Vector3d(
+            //            boundingPoints[i].X - testPoint.X,
+            //            boundingPoints[i].Y - testPoint.Y,
+            //            boundingPoints[i].Z - testPoint.Z
+            //            );
+            //        var vec2 = new Vector3d(
+            //            boundingPoints[nextIndex].X - testPoint.X,
+            //            boundingPoints[nextIndex].Y - testPoint.Y,
+            //            boundingPoints[nextIndex].Z - testPoint.Z
+            //            );
+            //        totalAngle += Vector3d.VectorAngle(vec1, vec2);
+            //    }
+
+            //    var twoPi = RhinoMath.TwoPI;
+            //    var e = RhinoMath.SqrtEpsilon;
+            //    if (twoPi < totalAngle+e && totalAngle-e < twoPi)
+            //    {
+            //        return true;
+            //    } 
+            //    else
+            //    {
+            //        return false;
+            //    }
+            //}
         }
 
         /// <summary>
