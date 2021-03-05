@@ -65,6 +65,7 @@
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
+    <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
     <Compile Include="CreateMesh\CreateMesh3D_Box.cs" />
     <Compile Include="CreateMesh\CreateMesh3D_Sweep.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />
