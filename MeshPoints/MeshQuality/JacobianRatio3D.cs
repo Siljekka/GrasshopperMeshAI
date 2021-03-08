@@ -2,6 +2,7 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
+using MathNet.Symbolics;
 
 namespace MeshPoints.MeshQuality
 {
@@ -39,6 +40,8 @@ namespace MeshPoints.MeshQuality
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            // Input 
+            Mesh3D mesh3D = new Mesh3D();
         }
 
         /// <summary>
