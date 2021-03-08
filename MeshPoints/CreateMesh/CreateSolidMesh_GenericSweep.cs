@@ -41,7 +41,6 @@ namespace MeshPoints.CreateMesh
         {
             pManager.AddGenericParameter("Mesh3D", "m3D", "Creates a Mesh3D", GH_ParamAccess.item);
             pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("test2", "", "", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -105,9 +104,9 @@ namespace MeshPoints.CreateMesh
             DA.GetData(3, ref nw);
 
             if (!brep.IsValid) { return; }
-            if (nu == 0) { return; } // todo: add warning message
-            if (nv == 0) { return; } // todo: add warning message
-            if (nw == 0) { return; } // todo: add warning message
+            if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "nu can not be zero."); return; } 
+            if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "nv can not be zero."); return; } 
+            if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "nw can not be zero."); return; } 
 
 
             // Code
@@ -147,8 +146,8 @@ namespace MeshPoints.CreateMesh
                 intCrv = iCrv.ToList();
 
                 for (int j = 0; j < intCrv.Count; j++) { intCrv[j].MakeClosed(0.0001); intersectionCurve.Add(intCrv[j], new GH_Path(i)); }  // make curve closed and add to intersectionCurve
-                //if (intersectionCurve.Branch(i).Count != 1) { return; } //todo: add error message "brep-input not OK."
-
+                if (intersectionCurve.Branch(i).Count != 1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not OK."); return; } 
+                
                 planarBrep = Brep.CreatePlanarBreps(intersectionCurve.Branch(i), 0.0001).ToList(); // make planar brep on floor i
 
                 for (int j = 0; j < planarBrep.Count; j++)
@@ -324,10 +323,10 @@ namespace MeshPoints.CreateMesh
                
             // Output
             DA.SetData(0, m3D);
-            DA.SetDataList(1, ptsTop);
-            DA.SetDataTree(2, points);
-
+            DA.SetDataTree(1, intersectionCurve);
         }
+
+
 
         /// <summary>
         /// Provides an Icon for the component.
