@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Drawing;
 
-namespace MeshPoints
+namespace MeshPoints.MeshQuality
 {
     public class MeshQuality : GH_Component
     {
