@@ -75,11 +75,12 @@ namespace MeshPoints.Galapagos
             DA.GetDataList(3, genesV);
             DA.GetDataList(4, genesW);
 
-            if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { return; }// add warning message
+            if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
+            if (m == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mesh3D input is not valid."); return; }
+            if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { return; }//todo: add warning message
 
 
             Point3d testPoint = new Point3d();
-            Point3d meshPointProjected = new Point3d();
             
             double distanceToFace = 1;
             double distanceToCurve = 1;
@@ -106,7 +107,7 @@ namespace MeshPoints.Galapagos
                     bFace.ClosestPoint(m.Nodes[i].Coordinate, out double PointOnCurveU, out double PointOnCurveV);
                     testPoint = bFace.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
                     distanceToFace = testPoint.DistanceTo(m.Nodes[i].Coordinate); // calculate distance between testPoint and node
-                    if (distanceToFace <= 0.000001 & distanceToFace >= -0.000001) // if distance = 0: node is on edge
+                    if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
                     {
                         if (m.Nodes[i].BC_U & m.Nodes[i].BC_V & m.Nodes[i].BC_W) // cornerpoints
                         {
@@ -128,24 +129,17 @@ namespace MeshPoints.Galapagos
                                 bEdge.ClosestPoint(m.Nodes[i].Coordinate, out double PointOnCurve);
                                 testPoint = bEdge.PointAt(PointOnCurve);  // make test point 
                                 distanceToCurve = testPoint.DistanceTo(m.Nodes[i].Coordinate); // calculate distance between testPoint and node
-                                if (distanceToCurve <= 0.000001 & distanceToCurve >= -0.000001) { edge = bEdge; } // if distance = 0: node is on edge
+                                if (distanceToCurve <= 0.0001 & distanceToCurve >= -0.0001) { edge = bEdge; } // if distance = 0: node is on edge
                             }
                         }
                     }
                 }
 
 
-
                 // translation in u direction
                 if (genesU[i] >= 0 & !m.Nodes[i].BC_U) // not restrained in U
                 {
                     translationVectorUDirection = 0.5 * (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) * genesU[i];
-                    /*if (IsOnFace) //if nodes is on edge, set new meshPoint
-                    {
-                        meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorUDirection.X + translationVectorVDirection.X + translationVectorWDirection.X) * overlapTolerance,
-                            m.Nodes[i].Coordinate.Y + (translationVectorUDirection.Y + translationVectorVDirection.Y + translationVectorWDirection.Y) * overlapTolerance,
-                            m.Nodes[i].Coordinate.Z + (translationVectorUDirection.Z + translationVectorVDirection.Z + translationVectorWDirection.Z) * overlapTolerance);
-                    }*/
                     if (IsOnEdge)
                     {
                         edgeCurve = edge.DuplicateCurve();
@@ -228,7 +222,6 @@ namespace MeshPoints.Galapagos
                     Brep srf = face.DuplicateFace(false);
                     meshPoint = srf.ClosestPoint(meshPoint); // "Project" meshPoint to surface.
                 }
-
                 if (!IsOnEdge & !IsOnFace)
                 {
                     meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorUDirection.X + translationVectorVDirection.X + translationVectorWDirection.X) * overlapTolerance,
@@ -236,20 +229,11 @@ namespace MeshPoints.Galapagos
                         m.Nodes[i].Coordinate.Z + (translationVectorUDirection.Z + translationVectorVDirection.Z + translationVectorWDirection.Z) * overlapTolerance);
                 }
 
-                meshPointProjected = brep.ClosestPoint(meshPoint); // "Project" meshPoint to surface.
-                
-                // todo: fix projecting onto brep
-                // project meshPoint to brep
-                // var meshPointProjected = Intersection.ProjectPointsToBreps(
-                //   new List<Brep> { brep }, // brep on which to project
-                // new List<Point3d> { meshPoint }, // some random points to project
-                //new Vector3d(0, 0, 1), // project on Z axis
-                // 0.01);
-                //n = new Node(i, meshPointProjected[0], m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W);
+               
 
-                n = new Node(i, meshPointProjected, m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W); // todo: fix local id;
+                n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W); // todo: fix local id;
                 nodes.Add(n);
-                globalMesh.Vertices.Add(meshPointProjected);
+                globalMesh.Vertices.Add(meshPoint);
             }
             #endregion
 
