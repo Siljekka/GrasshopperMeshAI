@@ -77,7 +77,7 @@ namespace MeshPoints.Galapagos
 
             if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
             if (m == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mesh3D input is not valid."); return; }
-            if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { return; }//todo: add warning message
+            if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { return; } //todo: add warning message
 
 
             Point3d testPoint = new Point3d();
@@ -85,8 +85,8 @@ namespace MeshPoints.Galapagos
             double distanceToFace = 1;
             double distanceToCurve = 1;
             
-            BrepFace face = null;
-            BrepEdge edge = null;
+            //BrepFace face = null;
+            //BrepEdge edge = null;
             
 
             #region Update nodes
@@ -98,8 +98,15 @@ namespace MeshPoints.Galapagos
             BrepEdgeList brepEdge = brep.Edges;
             Curve edgeCurve;
 
-            for (int i = 0; i < m.Nodes.Count; i++)
-            {
+            bool IsOnFace = PointOnFace(m.Nodes, brep).Item1;
+            BrepFace face = PointOnFace(m.Nodes, brep).Item2;
+
+            bool IsOnEdge = PointOnEdge(m.Nodes, brep).Item1;
+            BrepEdge edge = PointOnEdge(m.Nodes, brep).Item2;
+            #region Old code
+
+            #region Old Code
+            /*
                 bool IsOnFace = false;
                 bool IsOnEdge = false;
                 foreach (BrepFace bFace in brepFace) // check if node is on edge
@@ -133,9 +140,11 @@ namespace MeshPoints.Galapagos
                             }
                         }
                     }
-                }
+                }*/
+            #endregion
 
-
+            for (int i = 0; i < m.Nodes.Count; i++)
+            {
                 // translation in u direction
                 if (genesU[i] >= 0 & !m.Nodes[i].BC_U) // not restrained in U
                 {
@@ -222,6 +231,7 @@ namespace MeshPoints.Galapagos
                     Brep srf = face.DuplicateFace(false);
                     meshPoint = srf.ClosestPoint(meshPoint); // "Project" meshPoint to surface.
                 }
+
                 if (!IsOnEdge & !IsOnFace)
                 {
                     meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorUDirection.X + translationVectorVDirection.X + translationVectorWDirection.X) * overlapTolerance,
@@ -235,6 +245,7 @@ namespace MeshPoints.Galapagos
                 nodes.Add(n);
                 globalMesh.Vertices.Add(meshPoint);
             }
+            #endregion
             #endregion
 
             #region Element and mesh3D
@@ -280,7 +291,7 @@ namespace MeshPoints.Galapagos
             return mesh;
         }
 
-        Mesh CreateGlobalMesh(Mesh m, int counter, int nu, int nv)
+        private Mesh CreateGlobalMesh(Mesh m, int counter, int nu, int nv)
         {
             int meshPtsAtLevel = nu * nv;
             m.Faces.AddFace(counter, counter + 1, counter + meshPtsAtLevel + 1, counter + meshPtsAtLevel);
@@ -292,7 +303,7 @@ namespace MeshPoints.Galapagos
             return m;
         }
 
-        Element CreateElement(int id, List<Node> nodes, int counter, int nu, int nv)
+        private Element CreateElement(int id, List<Node> nodes, int counter, int nu, int nv)
         {
             Element e = new Element();
             int meshPtsAtLevel = nu * nv;
@@ -334,6 +345,60 @@ namespace MeshPoints.Galapagos
             mesh = MakeConsistent(mesh);
             e.mesh = mesh;
             return e;
+        }
+
+        private Tuple<bool, BrepFace> PointOnFace(List<Node> nodes, Brep brep)
+        {
+            bool IsOnFace = false;
+            BrepFace face = null;
+            BrepFaceList brepFace = brep.Faces;
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                IsOnFace = false;
+                foreach (BrepFace bFace in brepFace) // check if node is on edge
+                {
+                    bFace.ClosestPoint(nodes[i].Coordinate, out double PointOnCurveU, out double PointOnCurveV);
+                    Point3d testPoint = bFace.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
+                    double distanceToFace = testPoint.DistanceTo(nodes[i].Coordinate); // calculate distance between testPoint and node
+                    if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
+                    {
+                        if (nodes[i].BC_U & nodes[i].BC_V & nodes[i].BC_W) { IsOnFace = false; } // cornerpoints
+                        else if ((!nodes[i].BC_U & nodes[i].BC_V) | (!nodes[i].BC_U & !nodes[i].BC_W) | (!nodes[i].BC_V & !nodes[i].BC_W))
+                        {
+                            IsOnFace = true;
+                            face = bFace;
+                        }                    
+                    }
+                }               
+            }
+            return new Tuple<bool, BrepFace>(IsOnFace, face);
+        }
+
+        private Tuple<bool, BrepEdge> PointOnEdge(List<Node> nodes, Brep brep)
+        {
+            bool IsOnEdge = false;
+            BrepEdge edge = null;
+            BrepEdgeList brepEdge = brep.Edges;
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                IsOnEdge = false;
+                foreach (BrepEdge bEdge in brepEdge) // check if node is on edge
+                {
+                    bEdge.ClosestPoint(nodes[i].Coordinate, out double PointOnCurve);
+                    Point3d testPoint = bEdge.PointAt(PointOnCurve);  // make test point 
+                    double distanceToEdge = testPoint.DistanceTo(nodes[i].Coordinate); // calculate distance between testPoint and node
+                    if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
+                    {
+                        if (nodes[i].BC_U & nodes[i].BC_V) { IsOnEdge = false; } // cornerpoints: IsOnCurve must be false
+                        else if ((nodes[i].BC_U & nodes[i].BC_V) | (nodes[i].BC_U & nodes[i].BC_W) | (nodes[i].BC_V & nodes[i].BC_W))
+                        { 
+                            IsOnEdge = true; 
+                            edge = bEdge; 
+                        }
+                    }
+                }
+            }
+            return new Tuple<bool, BrepEdge>(IsOnEdge, edge);
         }
 
         /// <summary>
