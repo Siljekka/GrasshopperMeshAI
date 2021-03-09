@@ -18,7 +18,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         public CreateSolidMesh_GenericSweep()
           : base("Create SolidMesh (Sweep)", "mesh3DG",
-              "Creates a solid mesh (brep has to be swept or lofted)",
+              "Creates a solid mesh (brep can not be made from box",
               "MyPlugIn", "Mesh")
         {
         }
