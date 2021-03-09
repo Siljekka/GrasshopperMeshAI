@@ -105,6 +105,7 @@ namespace MeshPoints.CreateMesh
 
             // Output
             DA.SetData(0, m3D);
+            DA.SetDataTree(1, meshPoints);
         }
 
         #region Methods
@@ -176,7 +177,7 @@ namespace MeshPoints.CreateMesh
 
                 for (int j = 0; j < planarBrep.Count; j++)
                 {
-                    NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[j].Edges, 0, 0.000001, 0.000001, 0.000001, out int error); // make planar brep to nurbssurface
+                    NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[j].Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
                     surfaceAtNw.Add(nurbsSurface);
                 }
 
@@ -210,36 +211,56 @@ namespace MeshPoints.CreateMesh
         private List<Point3d> CreateGridOfPointsUV(int nu, int nv, NurbsSurface surfaceAtNw, List<Curve> intersectionCurve)
         {
             List<Point3d> pt = new List<Point3d>();
-            double stepU = 1 / ((double)nu - 1);
-            double stepV = 1 / ((double)nv - 1);
-
-            string curveOrientation = intersectionCurve[0].ClosedCurveOrientation().ToString();
             NurbsSurface surface = surfaceAtNw;
+
+            var u = surface.Domain(0);
+            var v = surface.Domain(1);
+
+            double stepU = 1 / ((double)nu) * u.Length;
+            double stepV = 1 / ((double)nv) * v.Length;
+
+
+            /*
             surface.SetDomain(0, new Interval(0, 1)); // set domain for surface 0-direction
             surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 1-direction
-
+            double stepU = 1 / ((double)nu - 1);
+            double stepV = 1 / ((double)nv - 1);*/
+            string curveOrientation = intersectionCurve[0].ClosedCurveOrientation().ToString();
             if (curveOrientation == "CounterClockwise")
             {
-                for (double j = 0; j <= 1; j += stepV)
+                double pointU = 0;
+                double pointV = 0;
+                for (double j = 0; j <= nv; j++)
                 {
-                    for (double k = 0; k <= 1; k += stepU)
+                    for (double k = 0; k <= nu; k++)
                     {
-                        pt.Add(surface.PointAt(j, k));  // make point on surface
+                        pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
+                        pointU = pointU + stepU;
                     }
+                    pointV = pointV + stepV;
+                    pointU = 0;
                 }
             }
             else
             {
-                for (double j = 0; j <= 1; j += stepV)
+                double pointU = 0;//u.Length;
+                double pointV = v.Length;
+                for (double j = 0; j <= nv; j++)
                 {
-                    for (double k = 1; k >= 0; k -= stepU)
+                    for (double k = 0; k <= nu; k++)
                     {
-                        pt.Add(surface.PointAt(j, k)); // make point on surface
+                        pt.Add(surface.PointAt(pointU, pointV)); // make point on surface
+                        pointU = pointU + stepU;
                     }
+                    pointV = pointV - stepV;
+                    pointU = 0;//u.Length;
                 }
             }
             return pt;
         }
+
+
+
 
         /// <summary>
         /// Create Nodes: assign Coordiantes, GlobalId and Boundary Conditions
@@ -299,28 +320,28 @@ namespace MeshPoints.CreateMesh
                     e.Id = elemId;
                     if (count2 < nu - 1)
                     {
-                        Node n1 = new Node(1, nodes[counter].GlobalId, ptsBot[j], nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
+                        Node n1 = new Node(1, nodes[j].GlobalId, ptsBot[j], nodes[j].BC_U, nodes[j].BC_V, nodes[j].BC_W);
                         e.Node1 = n1;
 
-                        Node n2 = new Node(2, nodes[counter + 1].GlobalId, ptsBot[j + 1], nodes[counter + 1].BC_U, nodes[counter + 1].BC_V, nodes[counter + 1].BC_W);
+                        Node n2 = new Node(2, nodes[j + 1].GlobalId, ptsBot[j + 1], nodes[j + 1].BC_U, nodes[j + 1].BC_V, nodes[j + 1].BC_W);
                         e.Node2 = n2;
 
-                        Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, ptsBot[j + nu + 1], nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V, nodes[counter + nu + 1].BC_W);
+                        Node n3 = new Node(3, nodes[j + nu + 1].GlobalId, ptsBot[j + nu + 1], nodes[j + nu + 1].BC_U, nodes[j + nu + 1].BC_V, nodes[j + nu + 1].BC_W);
                         e.Node3 = n3;
 
-                        Node n4 = new Node(4, nodes[counter + nu].GlobalId, ptsBot[j + nu], nodes[counter + nu].BC_U, nodes[counter + nu].BC_V, nodes[counter + nu].BC_W);
+                        Node n4 = new Node(4, nodes[j + nu].GlobalId, ptsBot[j + nu], nodes[j + nu].BC_U, nodes[j + nu].BC_V, nodes[j + nu].BC_W);
                         e.Node4 = n4;
 
-                        Node n5 = new Node(5, nodes[counter + nu * nv].GlobalId, ptsTop[j], nodes[counter + nu * nv].BC_U, nodes[counter + nu * nv].BC_V, nodes[counter + nu * nv].BC_W);
+                        Node n5 = new Node(5, nodes[j + nu * nv].GlobalId, ptsTop[j], nodes[j + nu * nv].BC_U, nodes[j + nu * nv].BC_V, nodes[j + nu * nv].BC_W);
                         e.Node5 = n5;
 
-                        Node n6 = new Node(6, nodes[counter + 1 + nu * nv].GlobalId, ptsTop[j + 1], nodes[counter + 1 + nu * nv].BC_U, nodes[counter + 1 + nu * nv].BC_V, nodes[counter + 1 + nu * nv].BC_W);
+                        Node n6 = new Node(6, nodes[j + 1 + nu * nv].GlobalId, ptsTop[j + 1], nodes[j + 1 + nu * nv].BC_U, nodes[j + 1 + nu * nv].BC_V, nodes[j + 1 + nu * nv].BC_W);
                         e.Node6 = n6;
 
-                        Node n7 = new Node(7, nodes[counter + nu + 1 + nu * nv].GlobalId, ptsTop[j + nu + 1], nodes[counter + nu + 1 + nu * nv].BC_U, nodes[counter + nu + 1 + nu * nv].BC_V, nodes[counter + nu + 1 + nu * nv].BC_W);
+                        Node n7 = new Node(7, nodes[j + nu + 1 + nu * nv].GlobalId, ptsTop[j + nu + 1], nodes[j + nu + 1 + nu * nv].BC_U, nodes[j + nu + 1 + nu * nv].BC_V, nodes[j + nu + 1 + nu * nv].BC_W);
                         e.Node7 = n7;
 
-                        Node n8 = new Node(8, nodes[counter + nu + nu * nv].GlobalId, ptsTop[j + nu], nodes[counter + nu + nu * nv].BC_U, nodes[counter + nu + nu * nv].BC_V, nodes[counter + nu + nu * nv].BC_W);
+                        Node n8 = new Node(8, nodes[j + nu + nu * nv].GlobalId, ptsTop[j + nu], nodes[j + nu + nu * nv].BC_U, nodes[j + nu + nu * nv].BC_V, nodes[j + nu + nu * nv].BC_W);
                         e.Node8 = n8;
 
                         Mesh mesh = new Mesh();
