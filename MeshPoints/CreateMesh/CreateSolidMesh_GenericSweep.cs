@@ -17,8 +17,8 @@ namespace MeshPoints.CreateMesh
         /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
         public CreateSolidMesh_GenericSweep()
-          : base("Create Mesh3D (GenericSweep)", "mesh3DG",
-              "Creates a solid mesh (more generic)",
+          : base("Create SolidMesh (Sweep)", "mesh3DG",
+              "Creates a solid mesh (brep has to be swept or lofted)",
               "MyPlugIn", "Mesh")
         {
         }
