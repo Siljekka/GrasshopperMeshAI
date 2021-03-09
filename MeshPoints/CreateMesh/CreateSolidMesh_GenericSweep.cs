@@ -40,7 +40,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3D", "Creates a Mesh3D", GH_ParamAccess.item);
-            pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
+            //pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace MeshPoints.CreateMesh
             DataTree<Point3d> meshPoints = new DataTree<Point3d>();
             #endregion
 
-            if (!brep.IsValid) { return; }
+            if (!brep.IsValid) { return; } //todo: is this one needed?
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
@@ -105,7 +105,6 @@ namespace MeshPoints.CreateMesh
 
             // Output
             DA.SetData(0, m3D);
-            DA.SetDataTree(1, meshPoints);
         }
 
         #region Methods
@@ -260,8 +259,6 @@ namespace MeshPoints.CreateMesh
         }
 
 
-
-
         /// <summary>
         /// Create Nodes: assign Coordiantes, GlobalId and Boundary Conditions
         /// </summary>
@@ -270,8 +267,11 @@ namespace MeshPoints.CreateMesh
         {
             List<Node> nodes = new List<Node>();
             int count1 = 0;
+            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
+            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
+            nw = nw + 1; //input nw = nw - 1. Exs: nw = 3, total points in w-direction is 4;
 
-            for (int i = 0; i < nw + 1; i++)
+            for (int i = 0; i < nw ; i++)
             {
                 int row = 0;
                 int column = 0;
@@ -280,9 +280,9 @@ namespace MeshPoints.CreateMesh
                     Node node = new Node(count1, meshPoints.Branch(i)[j]); // assign Global ID and cooridinates
                     count1++;
 
-                    if (column == 0 | column == nu - 1) { node.BC_U = true; } // assign BC
-                    if (row == 0 | row == nv - 1) { node.BC_V = true; } // assign BC
-                    if (i == 0 | i == nw) { node.BC_W = true; } // assign BC
+                    if (column == 0 | column == nu - 1) { node.BC_U = true; } // assign BCU
+                    if (row == 0 | row == nv - 1) { node.BC_V = true; } // assign BCV
+                    if (i == 0 | i == nw - 1 ) { node.BC_W = true; } // assign BCW
 
                     column++;
                     if (column == nu)
@@ -303,10 +303,14 @@ namespace MeshPoints.CreateMesh
         private List<Element> CreateHexElements(DataTree<Point3d> meshPoints, List<Node> nodes, int nu, int nv)
         {
             Element e = new Element();
+            Mesh mesh = new Mesh();
             List<Element> elements = new List<Element>();
             List<Point3d> ptsBot = new List<Point3d>();
             List<Point3d> ptsTop = new List<Point3d>();
             int elemId = 0;
+
+            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
+            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
 
             for (int i = 0; i < meshPoints.BranchCount - 1; i++)  // loop levels
             {
@@ -318,33 +322,34 @@ namespace MeshPoints.CreateMesh
                 for (int j = 0; j < meshPoints.Branch(0).Count - nu - 1; j++) // loop elements in a level
                 {
                     e.Id = elemId;
+                    e.IsCube = true;
                     if (count2 < nu - 1)
                     {
-                        Node n1 = new Node(1, nodes[j].GlobalId, ptsBot[j], nodes[j].BC_U, nodes[j].BC_V, nodes[j].BC_W);
+                        Node n1 = new Node(1, nodes[counter].GlobalId, ptsBot[j], nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
                         e.Node1 = n1;
 
-                        Node n2 = new Node(2, nodes[j + 1].GlobalId, ptsBot[j + 1], nodes[j + 1].BC_U, nodes[j + 1].BC_V, nodes[j + 1].BC_W);
+                        Node n2 = new Node(2, nodes[counter + 1].GlobalId, ptsBot[j + 1], nodes[counter + 1].BC_U, nodes[counter + 1].BC_V, nodes[counter + 1].BC_W);
                         e.Node2 = n2;
 
-                        Node n3 = new Node(3, nodes[j + nu + 1].GlobalId, ptsBot[j + nu + 1], nodes[j + nu + 1].BC_U, nodes[j + nu + 1].BC_V, nodes[j + nu + 1].BC_W);
+                        Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, ptsBot[j + nu + 1], nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V, nodes[counter + nu + 1].BC_W);
                         e.Node3 = n3;
 
-                        Node n4 = new Node(4, nodes[j + nu].GlobalId, ptsBot[j + nu], nodes[j + nu].BC_U, nodes[j + nu].BC_V, nodes[j + nu].BC_W);
+                        Node n4 = new Node(4, nodes[counter + nu].GlobalId, ptsBot[j + nu], nodes[counter + nu].BC_U, nodes[counter + nu].BC_V, nodes[counter + nu].BC_W);
                         e.Node4 = n4;
 
-                        Node n5 = new Node(5, nodes[j + nu * nv].GlobalId, ptsTop[j], nodes[j + nu * nv].BC_U, nodes[j + nu * nv].BC_V, nodes[j + nu * nv].BC_W);
+                        Node n5 = new Node(5, nodes[counter + nu * nv].GlobalId, ptsTop[j], nodes[counter + nu * nv].BC_U, nodes[counter + nu * nv].BC_V, nodes[counter + nu * nv].BC_W);
                         e.Node5 = n5;
 
-                        Node n6 = new Node(6, nodes[j + 1 + nu * nv].GlobalId, ptsTop[j + 1], nodes[j + 1 + nu * nv].BC_U, nodes[j + 1 + nu * nv].BC_V, nodes[j + 1 + nu * nv].BC_W);
+                        Node n6 = new Node(6, nodes[counter + 1 + nu * nv].GlobalId, ptsTop[j + 1], nodes[counter + 1 + nu * nv].BC_U, nodes[counter + 1 + nu * nv].BC_V, nodes[counter + 1 + nu * nv].BC_W);
                         e.Node6 = n6;
 
-                        Node n7 = new Node(7, nodes[j + nu + 1 + nu * nv].GlobalId, ptsTop[j + nu + 1], nodes[j + nu + 1 + nu * nv].BC_U, nodes[j + nu + 1 + nu * nv].BC_V, nodes[j + nu + 1 + nu * nv].BC_W);
+                        Node n7 = new Node(7, nodes[counter + nu + 1 + nu * nv].GlobalId, ptsTop[j + nu + 1], nodes[counter + nu + 1 + nu * nv].BC_U, nodes[counter + nu + 1 + nu * nv].BC_V, nodes[counter + nu + 1 + nu * nv].BC_W);
                         e.Node7 = n7;
 
-                        Node n8 = new Node(8, nodes[j + nu + nu * nv].GlobalId, ptsTop[j + nu], nodes[j + nu + nu * nv].BC_U, nodes[j + nu + nu * nv].BC_V, nodes[j + nu + nu * nv].BC_W);
+                        Node n8 = new Node(8, nodes[counter + nu + nu * nv].GlobalId, ptsTop[j + nu], nodes[counter + nu + nu * nv].BC_U, nodes[counter + nu + nu * nv].BC_V, nodes[counter + nu + nu * nv].BC_W);
                         e.Node8 = n8;
 
-                        Mesh mesh = new Mesh();
+                        
                         mesh.Vertices.Add(e.Node1.Coordinate); //0
                         mesh.Vertices.Add(e.Node2.Coordinate); //1
                         mesh.Vertices.Add(e.Node3.Coordinate); //2
