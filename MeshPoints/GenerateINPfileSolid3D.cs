@@ -6,13 +6,13 @@ using MeshPoints.Classes;
 
 namespace MeshPoints
 {
-    public class GenerateINPfile : GH_Component
+    public class GenerateINPfileSolid3D : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the GenerateINPfile class.
         /// </summary>
-        public GenerateINPfile()
-          : base("Generate inp-file", "inp",
+        public GenerateINPfileSolid3D()
+          : base("Generate inp-file (Solid 3D)", "inp",
               "Generate inp-file for 3D-models. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
               "MyPlugIn", "inp-file")
         {

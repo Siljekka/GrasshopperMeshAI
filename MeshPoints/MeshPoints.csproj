@@ -78,7 +78,7 @@
     <Compile Include="Galapagos\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
-    <Compile Include="GenerateINPfile.cs" />
+    <Compile Include="GenerateINPfileSolid3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh_outdated\MeshFlattenPoints.cs" />
     <Compile Include="CreateMesh\CreateMesh2D.cs" />
