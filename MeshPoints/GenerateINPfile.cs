@@ -13,7 +13,7 @@ namespace MeshPoints
         /// </summary>
         public GenerateINPfile()
           : base("Generate inp-file", "inp",
-              "Generate inp-file for Solid3D and ... models. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
+              "Generate inp-file for Solid and ... models. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
               "MyPlugIn", "inp-file")
         {
         }
@@ -77,7 +77,7 @@ namespace MeshPoints
             // 3. Generate inp-file
             if (DA.GetData(0, ref solidMesh))
             { 
-                inpText = GenerateSolid3Dfile(solidMesh, elementType, Emodul, nu, partName, sectionName, materialName); 
+                inpText = GenerateSolidfile(solidMesh, elementType, Emodul, nu, partName, sectionName, materialName); 
             }
             else if (DA.GetData(0, ref surfaceMesh))
             { 
@@ -90,7 +90,7 @@ namespace MeshPoints
         }
 
         #region Methods
-        private List<string> GenerateSolid3Dfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
+        private List<string> GenerateSolidfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
             List<string> inpText = new List<string>();
             List<Node> nodes = solidMesh.Nodes;
