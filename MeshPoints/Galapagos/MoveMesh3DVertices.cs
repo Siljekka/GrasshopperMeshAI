@@ -51,14 +51,14 @@ namespace MeshPoints.Galapagos
         {
             #region Input
             // Input
-            Mesh3D m = new Mesh3D();
+            Mesh3D inputMesh = new Mesh3D();
             Brep brep = new Brep();
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
             List<double> genesW = new List<double>();
 
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref m);
+            DA.GetData(1, ref inputMesh);
             DA.GetDataList(2, genesU);
             DA.GetDataList(3, genesV);
             DA.GetDataList(4, genesW);
@@ -81,30 +81,30 @@ namespace MeshPoints.Galapagos
 
             // 1. Write warning and error if wrong input
             if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
-            if (m == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mesh3D input is not valid."); return; }
-            if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } //todo: add warning message
+            if (inputMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mesh3D input is not valid."); return; }
+            if ((genesU.Count < inputMesh.Nodes.Count) | (genesV.Count < inputMesh.Nodes.Count) | (genesW.Count < inputMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } //todo: add warning message
 
 
             // 2. Move and make new nodes
-            for (int i = 0; i < m.Nodes.Count; i++)
+            for (int i = 0; i < inputMesh.Nodes.Count; i++)
             {
                 // a. Check if node is on face or edge.
                 //    if node is on face: true and face is output
                 //    if node is on edge: true and edge is output
-                Tuple<bool, BrepFace> pointFace = PointOnFace(i, m.Nodes, brep); // Item1: IsOnFace, Item2: face
-                Tuple<bool, BrepEdge> pointEdge = PointOnEdge(i, m.Nodes, brep); // Item1: IsOnEdge, Item2: edge
+                Tuple<bool, BrepFace> pointFace = PointOnFace(i, inputMesh.Nodes, brep); // Item1: IsOnFace, Item2: face
+                Tuple<bool, BrepEdge> pointEdge = PointOnEdge(i, inputMesh.Nodes, brep); // Item1: IsOnEdge, Item2: edge
 
                 // b. Get coordinates of the moved node.
-                Point3d meshPoint = GetMovedNode(i, pointFace, pointEdge, m, genesU, genesV, genesW);
+                Point3d meshPoint = GetMovedNode(i, pointFace, pointEdge, inputMesh, genesU, genesV, genesW);
 
                 // c. Make new node from moved node.
-                n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W); // todo: fix local id;
+                n = new Node(i, meshPoint, inputMesh.Nodes[i].BC_U, inputMesh.Nodes[i].BC_V, inputMesh.Nodes[i].BC_W); // todo: fix local id;
                 nodes.Add(n);
                 //globalMesh.Vertices.Add(meshPoint); old line
             }
 
             // 3. Make elements from moved nodes
-            elements = CreateHexElements(nodes, m.nu, m.nv, m.nw);
+            elements = CreateHexElements(nodes, inputMesh.nu, inputMesh.nv, inputMesh.nw);
 
             //4. Create global mesh 
             allMesh = CreateGlobalMesh(elements); //todo: do this without using weld!
