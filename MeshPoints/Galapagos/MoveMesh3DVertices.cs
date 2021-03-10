@@ -40,7 +40,7 @@ namespace MeshPoints.Galapagos
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3d", "Updated mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
+            //pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -66,17 +66,17 @@ namespace MeshPoints.Galapagos
 
             #region Variables
             // Variables
-            int newRow = 0;
-            int counter = 0;
             Mesh3D solidMesh = new Mesh3D();
             Mesh allMesh = new Mesh();
             Node n = new Node();
-            Element e = new Element();
-            Mesh mesh = new Mesh();
-            Mesh globalMesh = new Mesh();
-            Mesh3D meshUpdated = new Mesh3D();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
+            //int newRow = 0; old variable
+            //int counter = 0; old variable
+            //Element e = new Element(); old variable
+            //Mesh mesh = new Mesh(); old variable
+            //Mesh globalMesh = new Mesh(); old variable
+            //Mesh3D meshUpdated = new Mesh3D(); old variable
             #endregion
 
             // 1. Write warning and error if wrong input
@@ -85,31 +85,31 @@ namespace MeshPoints.Galapagos
             if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } //todo: add warning message
 
 
-            // Update nodes
+            // 2. Move and make new nodes
             for (int i = 0; i < m.Nodes.Count; i++)
             {
-                // 1. Check if node is on face or edge.
+                // a. Check if node is on face or edge.
                 //    if node is on face: true and face is output
                 //    if node is on edge: true and edge is output
                 Tuple<bool, BrepFace> pointFace = PointOnFace(i, m.Nodes, brep); // Item1: IsOnFace, Item2: face
                 Tuple<bool, BrepEdge> pointEdge = PointOnEdge(i, m.Nodes, brep); // Item1: IsOnEdge, Item2: edge
-                //tup.Add(pointEdge);
 
-                // 2. Get coordinates of the moved node.
+                // b. Get coordinates of the moved node.
                 Point3d meshPoint = GetMovedNode(i, pointFace, pointEdge, m, genesU, genesV, genesW);
 
-                // 3. Make new node from moved node.
+                // c. Make new node from moved node.
                 n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W); // todo: fix local id;
                 nodes.Add(n);
-                globalMesh.Vertices.Add(meshPoint);
+                //globalMesh.Vertices.Add(meshPoint); old line
             }
 
+            // 3. Make elements from moved nodes
             elements = CreateHexElements(nodes, m.nu, m.nv, m.nw);
 
-            //6. Create global mesh
-            allMesh = CreateGlobalMesh(elements);
+            //4. Create global mesh 
+            allMesh = CreateGlobalMesh(elements); //todo: do this without using weld!
 
-            //7. Add properties to Mesh3D
+            //5. Add properties to Mesh3D
             solidMesh.Nodes = nodes;
             solidMesh.Elements = elements;
             solidMesh.mesh = allMesh;
@@ -143,16 +143,15 @@ namespace MeshPoints.Galapagos
                 }
             }*/
             #endregion
-            // todo: should find a better way to mesh
-            //globalMesh = MakeConsistent(globalMesh);
-            //meshUpdated = new Mesh3D(m.nu, m.nv, m.nw, nodes, elements, globalMesh);
 
             // Output
             DA.SetData(0, solidMesh);
-            //DA.SetDataList(1, tup);
         }
         #region Methods
-
+        /// <summary>
+        /// Create Elements: assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
+        /// </summary>
+        /// <returns>List with elements incl properties</returns>
         private List<Element> CreateHexElements(List<Node> nodes, int nu, int nv, int nw)
         {
             Element e = new Element();
@@ -237,8 +236,12 @@ namespace MeshPoints.Galapagos
             return elements;
         }
 
+        /// <summary>
+        /// Create Global mesh. todo: make without weld
+        /// </summary>
+        /// <returns>Global mesh</returns>
         private Mesh CreateGlobalMesh(List<Element> elements)
-        {
+        {   //todo: make this without weld
             Mesh allMesh = new Mesh();
             foreach (Element el in elements)
             {
@@ -253,7 +256,7 @@ namespace MeshPoints.Galapagos
         /// </summary>
         /// <returns> todo: write description of output.</returns>
         private Mesh MakeConsistent(Mesh mesh)
-        {
+        {   //todo: code used before - remove?
             mesh.Normals.ComputeNormals();  // todo: control if needed
             mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
             mesh.Compact(); // to ensure that it calculate
@@ -265,7 +268,7 @@ namespace MeshPoints.Galapagos
         /// </summary>
         /// <returns>todo: write description of output.</returns>
         private Mesh CreateGlobalMesh(Mesh m, int counter, int nu, int nv)
-        {   //todo: old code - remove?
+        {   //todo: code used before - remove?
             int meshPtsAtLevel = nu * nv;
             m.Faces.AddFace(counter, counter + 1, counter + meshPtsAtLevel + 1, counter + meshPtsAtLevel);
             m.Faces.AddFace(counter + 1, counter + nu + 1, counter + meshPtsAtLevel + nu + 1, counter + meshPtsAtLevel + 1);
@@ -281,7 +284,7 @@ namespace MeshPoints.Galapagos
         /// </summary>
         /// <returns> todo: write description of output.</returns>
         private Element CreateElement(int id, List<Node> nodes, int counter, int nu, int nv)
-        {   //todo: old code - remove?
+        {   //todo: code used before - remove?
             Element e = new Element();
             int meshPtsAtLevel = nu * nv;
 
