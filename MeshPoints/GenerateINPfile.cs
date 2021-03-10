@@ -6,14 +6,14 @@ using MeshPoints.Classes;
 
 namespace MeshPoints
 {
-    public class GenerateINPfileSolid3D : GH_Component
+    public class GenerateINPfile : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the GenerateINPfile class.
         /// </summary>
-        public GenerateINPfileSolid3D()
-          : base("Generate inp-file (Solid 3D)", "inp",
-              "Generate inp-file for 3D-models. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
+        public GenerateINPfile()
+          : base("Generate inp-file", "inp",
+              "Generate inp-file for Solid3D and ... models. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
               "MyPlugIn", "inp-file")
         {
         }
@@ -24,10 +24,14 @@ namespace MeshPoints
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SolidMesh", "solid", "Solid mesh", GH_ParamAccess.item);
-            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I", GH_ParamAccess.item, "C3D8I");
+            pManager.AddGenericParameter("SurfaceMesh", "surface", "Surface mesh", GH_ParamAccess.item);
+            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I or ... (Solid, surface)", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item, 210000);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item, 0.3);
             //pManager.AddGenericParameter("Material (string)", "material", "String with material from Abaqus", GH_ParamAccess.item);
+            pManager[0].Optional = true; // SolidMesh is optional
+            pManager[1].Optional = true; // SurfaceMesh is optional
+            pManager[2].Optional = true; // ElementType is optional
         }
 
         /// <summary>
