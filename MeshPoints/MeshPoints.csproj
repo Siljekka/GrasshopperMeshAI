@@ -107,6 +107,7 @@
     <EmbeddedResource Include="Properties\Resources\test.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Properties\Resources\Abaqus.png" />
     <Content Include="Properties\Resources\MeshQuality.png" />
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>

@@ -25,10 +25,10 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("SolidMesh", "solid", "Solid mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("SurfaceMesh", "surface", "Surface mesh", GH_ParamAccess.item);
-            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I or ... (Solid, surface)", GH_ParamAccess.item);
+            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I, ... (Solid, Surface)", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item, 210000);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item, 0.3);
-            //pManager.AddGenericParameter("Material (string)", "material", "String with material from Abaqus", GH_ParamAccess.item);
+
             pManager[0].Optional = true; // SolidMesh is optional
             pManager[1].Optional = true; // SurfaceMesh is optional
             pManager[2].Optional = true; // ElementType is optional
@@ -71,25 +71,30 @@ namespace MeshPoints
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
 
             // 2. Set element type dependent on solid or surface mesh
-            if (DA.GetData(0, ref solidMesh) & elementType != "Empty") { elementType = "C3D8I"; }
-            if (DA.GetData(0, ref surfaceMesh) & elementType != "Empty") { elementType = "todo: choose type"; }
+            if (DA.GetData(0, ref solidMesh) & elementType == "Empty") { elementType = "C3D8I"; }
+            if (DA.GetData(1, ref surfaceMesh) & elementType == "Empty") { elementType = "todo: choose type"; }
 
             // 3. Generate inp-file
             if (DA.GetData(0, ref solidMesh))
             { 
                 inpText = GenerateSolidfile(solidMesh, elementType, Emodul, nu, partName, sectionName, materialName); 
             }
-            else if (DA.GetData(0, ref surfaceMesh))
+            else if (DA.GetData(1, ref surfaceMesh))
             { 
                 inpText = GenerateSurfacefile(surfaceMesh, elementType, Emodul, nu, partName, sectionName, materialName); 
             }
 
 
             // Output
-            DA.GetDataList(0, inpText);
+            DA.SetDataList(0, inpText);
         }
 
         #region Methods
+
+        /// <summary>
+        /// Generate inp file for solid models.
+        /// </summary>
+        /// <returns> inp text file </returns>
         private List<string> GenerateSolidfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
             List<string> inpText = new List<string>();
@@ -113,7 +118,7 @@ namespace MeshPoints
             inpText.Add("*Node");
             foreach (Node node in nodes)
             {
-                int globalId = node.GlobalId;
+                int globalId = node.GlobalId+1;
                 double nodeX = node.Coordinate.X;
                 double nodeY = node.Coordinate.Y;
                 double nodeZ = node.Coordinate.Z;
@@ -125,7 +130,7 @@ namespace MeshPoints
             inpText.Add(String.Format("*Element, type={0}", elementType));
             foreach (Element e in elements)
             {
-                int elementId = e.Id;
+                int elementId = e.Id+1;
                 int n1 = e.Node1.GlobalId;
                 int n2 = e.Node2.GlobalId;
                 int n3 = e.Node3.GlobalId;
@@ -226,10 +231,21 @@ namespace MeshPoints
             return inpText;
         }
 
+        /// <summary>
+        /// Generate inp file for surface models.
+        /// </summary>
+        /// <returns> inp text file </returns>
         private List<string> GenerateSurfacefile(Mesh2D surfaceMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
-            return null;
+            List<string> inpText = new List<string>();
+            List<Node> nodes = surfaceMesh.Nodes;
+            List<Element> elements = surfaceMesh.Elements;
+
+            inpText.Add("Not finished.");
+            return inpText;
         }
+       
+        
         #endregion
             /// <summary>
             /// Provides an Icon for the component.
@@ -240,7 +256,7 @@ namespace MeshPoints
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Abaqus;
             }
         }
 
