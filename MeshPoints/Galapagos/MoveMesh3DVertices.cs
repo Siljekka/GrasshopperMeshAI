@@ -40,7 +40,7 @@ namespace MeshPoints.Galapagos
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3d", "Updated mesh", GH_ParamAccess.item);
-
+            pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -68,6 +68,8 @@ namespace MeshPoints.Galapagos
             // Variables
             int newRow = 0;
             int counter = 0;
+            Mesh3D solidMesh = new Mesh3D();
+            Mesh allMesh = new Mesh();
             Node n = new Node();
             Element e = new Element();
             Mesh mesh = new Mesh();
@@ -77,11 +79,11 @@ namespace MeshPoints.Galapagos
             List<Element> elements = new List<Element>();
             #endregion
 
+            // 1. Write warning and error if wrong input
             if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
             if (m == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mesh3D input is not valid."); return; }
-            if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { return; } //todo: add warning message
+            if ((genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count) | (genesW.Count < m.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } //todo: add warning message
 
-            
 
             // Update nodes
             for (int i = 0; i < m.Nodes.Count; i++)
@@ -91,6 +93,7 @@ namespace MeshPoints.Galapagos
                 //    if node is on edge: true and edge is output
                 Tuple<bool, BrepFace> pointFace = PointOnFace(i, m.Nodes, brep); // Item1: IsOnFace, Item2: face
                 Tuple<bool, BrepEdge> pointEdge = PointOnEdge(i, m.Nodes, brep); // Item1: IsOnEdge, Item2: edge
+                //tup.Add(pointEdge);
 
                 // 2. Get coordinates of the moved node.
                 Point3d meshPoint = GetMovedNode(i, pointFace, pointEdge, m, genesU, genesV, genesW);
@@ -101,156 +104,23 @@ namespace MeshPoints.Galapagos
                 globalMesh.Vertices.Add(meshPoint);
             }
 
+            elements = CreateHexElements(nodes, m.nu, m.nv, m.nw);
 
-            #region Old Code
-            /*
-                bool IsOnFace = false;
-                bool IsOnEdge = false;
-                foreach (BrepFace bFace in brepFace) // check if node is on edge
-                {
-                    bFace.ClosestPoint(m.Nodes[i].Coordinate, out double PointOnCurveU, out double PointOnCurveV);
-                    testPoint = bFace.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
-                    distanceToFace = testPoint.DistanceTo(m.Nodes[i].Coordinate); // calculate distance between testPoint and node
-                    if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
-                    {
-                        if (m.Nodes[i].BC_U & m.Nodes[i].BC_V & m.Nodes[i].BC_W) // cornerpoints
-                        {
-                            IsOnFace = false;
-                            IsOnEdge = false;
-                        }
-                        else if ((!m.Nodes[i].BC_U & !m.Nodes[i].BC_V) | (!m.Nodes[i].BC_U & !m.Nodes[i].BC_W) | (!m.Nodes[i].BC_V & !m.Nodes[i].BC_W))
-                        {
-                            IsOnFace = true;
-                            IsOnEdge = false;
-                            face = bFace;
-                        }
-                        else if ((m.Nodes[i].BC_U & m.Nodes[i].BC_V) | (m.Nodes[i].BC_U & m.Nodes[i].BC_W) | (m.Nodes[i].BC_V & m.Nodes[i].BC_W))
-                        {
-                            IsOnFace = false;
-                            IsOnEdge = true;
-                            foreach (BrepEdge bEdge in brepEdge) // check if node is on edge
-                            {
-                                bEdge.ClosestPoint(m.Nodes[i].Coordinate, out double PointOnCurve);
-                                testPoint = bEdge.PointAt(PointOnCurve);  // make test point 
-                                distanceToCurve = testPoint.DistanceTo(m.Nodes[i].Coordinate); // calculate distance between testPoint and node
-                                if (distanceToCurve <= 0.0001 & distanceToCurve >= -0.0001) { edge = bEdge; } // if distance = 0: node is on edge
-                            }
-                        }
-                    }
-                }*/
-            #endregion
-            
-            #region Old code
-            /*for (int i = 0; i < m.Nodes.Count; i++)
-            {
-                // translation in u direction
-                if (genesU[i] >= 0 & !m.Nodes[i].BC_U) // not restrained in U
-                {
-                    translationVectorUDirection = 0.5 * (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) * genesU[i];
-                    if (IsOnEdge)
-                    {
-                        edgeCurve = edge.DuplicateCurve();
-                        edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                        edgeCurve.SetEndPoint(m.Nodes[i + 1].Coordinate); //forces end point of edgeCurve
-                        meshPoint = edgeCurve.PointAtNormalizedLength(0.49 * genesU[i]); // move node along edgeCurve
-                    }
+            //6. Create global mesh
+            allMesh = CreateGlobalMesh(elements);
 
+            //7. Add properties to Mesh3D
+            solidMesh.Nodes = nodes;
+            solidMesh.Elements = elements;
+            solidMesh.mesh = allMesh;
 
-                }
-                else if (genesU[i] <= 0 & !m.Nodes[i].BC_U)
-                {
-                    translationVectorUDirection = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - 1].Coordinate) * genesU[i];
-                    if (IsOnEdge)
-                    {
-                        edgeCurve = edge.DuplicateCurve();
-                        edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                        edgeCurve.SetEndPoint(m.Nodes[i - 1].Coordinate); //forces end point of edgeCurve
-                        meshPoint = edgeCurve.PointAtNormalizedLength(-0.49 * genesU[i]); // move node along edgeCurve
-                    }
-                }
-                else { translationVectorUDirection = translationVectorUDirection * 0; } // restrained in U
-
-                // translation in v direction
-                if (genesV[i] >= 0 & !m.Nodes[i].BC_V) // not restrained in V
-                {
-                    translationVectorVDirection = 0.5 * (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate) * genesV[i];
-                    if (IsOnEdge)
-                    {
-                        edgeCurve = edge.DuplicateCurve();
-                        edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                        edgeCurve.SetEndPoint(m.Nodes[i + m.nu].Coordinate); //forces end point of edgeCurve
-                        meshPoint = edgeCurve.PointAtNormalizedLength(0.49 * genesV[i]); // move node along edgeCurve
-                    }
-                }
-                else if (genesV[i] <= 0 & !m.Nodes[i].BC_V)
-                {
-                    translationVectorVDirection = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - m.nu].Coordinate) * genesV[i];
-                    if (IsOnEdge)
-                    {
-                        edgeCurve = edge.DuplicateCurve();
-                        edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                        edgeCurve.SetEndPoint(m.Nodes[i - m.nu].Coordinate); //forces end point of edgeCurve
-                        meshPoint = edgeCurve.PointAtNormalizedLength(-0.49 * genesV[i]); // move node along edgeCurve
-                    }
-                }
-                else { translationVectorVDirection = translationVectorVDirection * 0; } // restrained in V
-
-                // translation in w direction
-                if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // not restrained in W
-                {
-                    translationVectorWDirection = 0.5 * (m.Nodes[i + m.nu * m.nv].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
-                    if (IsOnEdge)
-                    {
-                        edgeCurve = edge.DuplicateCurve();
-                        edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                        edgeCurve.SetEndPoint(m.Nodes[i + m.nu * m.nv].Coordinate); //forces end point of edgeCurve
-                        meshPoint = edgeCurve.PointAtNormalizedLength(0.49 * genesW[i]); // move node along edgeCurve
-                    }
-                }
-                else if (genesW[i] <= 0 & !m.Nodes[i].BC_W)
-                {
-                    translationVectorWDirection = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - m.nu * m.nv].Coordinate) * genesW[i];
-                    if (IsOnEdge)
-                    {
-                        edgeCurve = edge.DuplicateCurve();
-                        edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                        edgeCurve.SetEndPoint(m.Nodes[i - m.nu * m.nv].Coordinate); //forces end point of edgeCurve
-                        meshPoint = edgeCurve.PointAtNormalizedLength(-0.49 * genesW[i]); // move node along edgeCurve
-                    }
-                }
-                else { translationVectorWDirection = translationVectorWDirection * 0; } // restrained in W
-
-                if (IsOnFace)
-                {
-                    meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorUDirection.X + translationVectorVDirection.X + translationVectorWDirection.X) * overlapTolerance,
-                        m.Nodes[i].Coordinate.Y + (translationVectorUDirection.Y + translationVectorVDirection.Y + translationVectorWDirection.Y) * overlapTolerance,
-                        m.Nodes[i].Coordinate.Z + (translationVectorUDirection.Z + translationVectorVDirection.Z + translationVectorWDirection.Z) * overlapTolerance);
-
-                    Brep srf = face.DuplicateFace(false);
-                    meshPoint = srf.ClosestPoint(meshPoint); // "Project" meshPoint to surface.
-                }
-
-                if (!IsOnEdge & !IsOnFace)
-                {
-                    meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorUDirection.X + translationVectorVDirection.X + translationVectorWDirection.X) * overlapTolerance,
-                        m.Nodes[i].Coordinate.Y + (translationVectorUDirection.Y + translationVectorVDirection.Y + translationVectorWDirection.Y) * overlapTolerance,
-                        m.Nodes[i].Coordinate.Z + (translationVectorUDirection.Z + translationVectorVDirection.Z + translationVectorWDirection.Z) * overlapTolerance);
-                }
-
-               
-
-                n = new Node(i, meshPoint, m.Nodes[i].BC_U, m.Nodes[i].BC_V, m.Nodes[i].BC_W); // todo: fix local id;
-                nodes.Add(n);
-                globalMesh.Vertices.Add(meshPoint);
-            }*/
-            #endregion
-            
-
-            #region Element and mesh3D
+            #region Old code: Make Element and mesh3D
+            /*m.nu = m.nu + 1;
+            m.nv = m.nv + 1;
             counter = 0;
-            for (int j = 0; j < m.nw ; j++) // loop trough levels
+            for (int j = 0; j < m.nw; j++) // loop trough levels
             {
-                counter = m.nu * m.nv*j;
+                counter = m.nu * m.nv * j;
                 for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++) // mesh a level
                 {
                     int id = i * (j + 1); // element id
@@ -271,17 +141,113 @@ namespace MeshPoints.Galapagos
                         newRow = 0;
                     }
                 }
-            }
+            }*/
             #endregion
             // todo: should find a better way to mesh
-            globalMesh = MakeConsistent(globalMesh);
-            meshUpdated = new Mesh3D(m.nu, m.nv, m.nw, nodes, elements, globalMesh);
+            //globalMesh = MakeConsistent(globalMesh);
+            //meshUpdated = new Mesh3D(m.nu, m.nv, m.nw, nodes, elements, globalMesh);
 
             // Output
-            DA.SetData(0, meshUpdated);
+            DA.SetData(0, solidMesh);
+            //DA.SetDataList(1, tup);
         }
         #region Methods
 
+        private List<Element> CreateHexElements(List<Node> nodes, int nu, int nv, int nw)
+        {
+            Element e = new Element();
+            Mesh mesh = new Mesh();
+            List<Element> elements = new List<Element>();
+            int elemId = 0;
+
+            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
+            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
+            nw = nw + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
+
+            for (int i = 0; i < nw - 1; i++)  // loop levels
+            {
+                int count2 = 0;
+                int counter = (nu * nv) * i;
+
+                for (int j = 0; j < (nu * nv) - nu - 1; j++) // loop elements in a level
+                {
+                    e.Id = elemId;
+                    e.IsCube = true;
+                    if (count2 < nu - 1)
+                    {
+                        Node n1 = new Node(1, nodes[counter].GlobalId, nodes[counter].Coordinate, nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
+                        e.Node1 = n1;
+
+                        Node n2 = new Node(2, nodes[counter + 1].GlobalId, nodes[counter + 1].Coordinate, nodes[counter + 1].BC_U, nodes[counter + 1].BC_V, nodes[counter + 1].BC_W);
+                        e.Node2 = n2;
+
+                        Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, nodes[counter + nu + 1].Coordinate, nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V, nodes[counter + nu + 1].BC_W);
+                        e.Node3 = n3;
+
+                        Node n4 = new Node(4, nodes[counter + nu].GlobalId, nodes[counter + nu].Coordinate, nodes[counter + nu].BC_U, nodes[counter + nu].BC_V, nodes[counter + nu].BC_W);
+                        e.Node4 = n4;
+
+                        Node n5 = new Node(5, nodes[counter + nu * nv].GlobalId, nodes[counter + nu*nv].Coordinate, nodes[counter + nu * nv].BC_U, nodes[counter + nu * nv].BC_V, nodes[counter + nu * nv].BC_W);
+                        e.Node5 = n5;
+
+                        Node n6 = new Node(6, nodes[counter + 1 + nu * nv].GlobalId, nodes[counter + 1 + nu*nv].Coordinate, nodes[counter + 1 + nu * nv].BC_U, nodes[counter + 1 + nu * nv].BC_V, nodes[counter + 1 + nu * nv].BC_W);
+                        e.Node6 = n6;
+
+                        Node n7 = new Node(7, nodes[counter + nu + 1 + nu * nv].GlobalId, nodes[counter + nu + 1 + nu*nv].Coordinate, nodes[counter + nu + 1 + nu * nv].BC_U, nodes[counter + nu + 1 + nu * nv].BC_V, nodes[counter + nu + 1 + nu * nv].BC_W);
+                        e.Node7 = n7;
+
+                        Node n8 = new Node(8, nodes[counter + nu + nu * nv].GlobalId, nodes[counter + nu + nu*nv].Coordinate, nodes[counter + nu + nu * nv].BC_U, nodes[counter + nu + nu * nv].BC_V, nodes[counter + nu + nu * nv].BC_W);
+                        e.Node8 = n8;
+
+                        mesh.Vertices.Add(e.Node1.Coordinate); //0
+                        mesh.Vertices.Add(e.Node2.Coordinate); //1
+                        mesh.Vertices.Add(e.Node3.Coordinate); //2
+                        mesh.Vertices.Add(e.Node4.Coordinate); //3
+                        mesh.Vertices.Add(e.Node5.Coordinate); //4
+                        mesh.Vertices.Add(e.Node6.Coordinate); //5
+                        mesh.Vertices.Add(e.Node7.Coordinate); //6
+                        mesh.Vertices.Add(e.Node8.Coordinate); //7
+
+                        mesh.Faces.AddFace(0, 1, 5, 4);
+                        mesh.Faces.AddFace(1, 2, 6, 5);
+                        mesh.Faces.AddFace(2, 3, 7, 6);
+                        mesh.Faces.AddFace(3, 0, 4, 7);
+                        mesh.Faces.AddFace(0, 1, 2, 3);
+                        mesh.Faces.AddFace(4, 5, 6, 7);
+
+                        mesh.Normals.ComputeNormals();  //Control if needed
+                        mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                        mesh.Compact(); //to ensure that it calculate
+                        e.mesh = mesh;
+
+                        //add element and mesh to element list
+                        elements.Add(e);
+
+                        //clear
+                        e = new Element();
+                        mesh = new Mesh();
+
+                        count2++;
+                        elemId++;
+                        counter++;
+                    }
+                    else { count2 = 0; counter++; }
+                }
+            }
+            return elements;
+        }
+
+        private Mesh CreateGlobalMesh(List<Element> elements)
+        {
+            Mesh allMesh = new Mesh();
+            foreach (Element el in elements)
+            {
+                allMesh.Append(el.mesh);
+            }
+            allMesh.Weld(0.01);
+
+            return allMesh;
+        }
         /// <summary>
         /// todo: write description of method
         /// </summary>
@@ -299,7 +265,7 @@ namespace MeshPoints.Galapagos
         /// </summary>
         /// <returns>todo: write description of output.</returns>
         private Mesh CreateGlobalMesh(Mesh m, int counter, int nu, int nv)
-        {
+        {   //todo: old code - remove?
             int meshPtsAtLevel = nu * nv;
             m.Faces.AddFace(counter, counter + 1, counter + meshPtsAtLevel + 1, counter + meshPtsAtLevel);
             m.Faces.AddFace(counter + 1, counter + nu + 1, counter + meshPtsAtLevel + nu + 1, counter + meshPtsAtLevel + 1);
@@ -315,10 +281,10 @@ namespace MeshPoints.Galapagos
         /// </summary>
         /// <returns> todo: write description of output.</returns>
         private Element CreateElement(int id, List<Node> nodes, int counter, int nu, int nv)
-        {
+        {   //todo: old code - remove?
             Element e = new Element();
             int meshPtsAtLevel = nu * nv;
-            
+
             e.Id = id;
             e.Node1 = nodes[counter];
             e.Node1.LocalId = 1;
@@ -368,7 +334,6 @@ namespace MeshPoints.Galapagos
             BrepFace face = null;
             BrepFaceList brepFace = brep.Faces;
 
-            IsOnFace = false;
             foreach (BrepFace bFace in brepFace) // check if node is on edge
             {
                 bFace.ClosestPoint(nodes[i].Coordinate, out double PointOnCurveU, out double PointOnCurveV);
@@ -377,14 +342,14 @@ namespace MeshPoints.Galapagos
                 if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
                 {
                     if (nodes[i].BC_U & nodes[i].BC_V & nodes[i].BC_W) { IsOnFace = false; } // cornerpoints
-                    else if ((!nodes[i].BC_U & nodes[i].BC_V) | (!nodes[i].BC_U & !nodes[i].BC_W) | (!nodes[i].BC_V & !nodes[i].BC_W))
+                    else if ((!nodes[i].BC_U & !nodes[i].BC_V) | (!nodes[i].BC_U & !nodes[i].BC_W) | (!nodes[i].BC_V & !nodes[i].BC_W))
                     {
                         IsOnFace = true;
                         face = bFace;
-                    }                    
+                    }
                 }
-            }               
-            
+            }
+
             return new Tuple<bool, BrepFace>(IsOnFace, face);
         }
 
@@ -406,11 +371,11 @@ namespace MeshPoints.Galapagos
                 double distanceToEdge = testPoint.DistanceTo(nodes[i].Coordinate); // calculate distance between testPoint and node
                 if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
                 {
-                    if (nodes[i].BC_U & nodes[i].BC_V) { IsOnEdge = false; } // cornerpoints: IsOnCurve must be false
+                    if (nodes[i].BC_U & nodes[i].BC_V & nodes[i].BC_W) { IsOnEdge = false; } // cornerpoints: IsOnCurve must be false
                     else if ((nodes[i].BC_U & nodes[i].BC_V) | (nodes[i].BC_U & nodes[i].BC_W) | (nodes[i].BC_V & nodes[i].BC_W))
-                    { 
-                        IsOnEdge = true; 
-                        edge = bEdge; 
+                    {
+                        IsOnEdge = true;
+                        edge = bEdge;
                     }
                 }
             }
@@ -423,7 +388,7 @@ namespace MeshPoints.Galapagos
         /// <returns> Returns coordinates of moved node.</returns>
         private Point3d GetMovedNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, Mesh3D m, List<double> genesU, List<double> genesV, List<double> genesW)
         {
-            Point3d meshPoint = new Point3d();
+            Point3d movedNode = new Point3d();
             bool IsOnEdge = pointEdge.Item1;
             bool IsOnFace = pointFace.Item1;
             BrepEdge edge = pointEdge.Item2;
@@ -433,106 +398,116 @@ namespace MeshPoints.Galapagos
             Vector3d translationVectorV = Vector3d.Zero;
             Vector3d translationVectorW = Vector3d.Zero;
 
-            // translation in u direction
-            if (genesU[i] >= 0 & !m.Nodes[i].BC_U) // not restrained in U
+            // Translation in U direction
+            // 1. if: Node not restrained in U direction and genes positive.
+            // 2. if: Node not restrained in U direction and genes negative.
+            // 3. if: Node restrained in U direction.
+            // Note: if point is on edge not restrained in U direction - meshPoint is made
+            if (genesU[i] >= 0 & !m.Nodes[i].BC_U) // 1. if
             {
-                translationVectorU = 0.5 * (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) * genesU[i];
-                if (IsOnEdge)
-                {
-                    Curve edgeCurve = edge.DuplicateCurve();
-                    edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                    edgeCurve.SetEndPoint(m.Nodes[i + 1].Coordinate); //forces end point of edgeCurve
-                    meshPoint = edgeCurve.PointAtNormalizedLength(0.49 * genesU[i]); // move node along edgeCurve: 0.49 to ensure no collision of nodes
-                }
+                translationVectorU = 0.5 * (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) * genesU[i]; // make vector translating node in U-direction
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesU[i], i, i + 1); } // make meshPoint
             }
-            else if (genesU[i] <= 0 & !m.Nodes[i].BC_U)
+            else if (genesU[i] <= 0 & !m.Nodes[i].BC_U)  // 2. if
             {
                 translationVectorU = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - 1].Coordinate) * genesU[i];
-                if (IsOnEdge)
-                {
-                    Curve edgeCurve = edge.DuplicateCurve();
-                    edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                    edgeCurve.SetEndPoint(m.Nodes[i - 1].Coordinate); //forces end point of edgeCurve
-                    meshPoint = edgeCurve.PointAtNormalizedLength(-0.49 * genesU[i]); // move node along edgeCurve: 0.49 to ensure no collision of nodes
-                }
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesU[i], i, i - 1); } // make meshPoint
             }
-            else { translationVectorU = translationVectorU * 0; } // restrained in U
+            else { translationVectorU = translationVectorU * 0; }  // 3. if
 
-            // translation in v direction
-            if (genesV[i] >= 0 & !m.Nodes[i].BC_V) // not restrained in V
+            // Translation in V direction
+            // 1. if: Node not restrained in V direction and genes positive.
+            // 2. if: Node not restrained in V direction and genes negative.
+            // 3. if: Node restrained in V direction.
+            // Note: if point is on edge not restrained in V direction - meshPoint is made
+            if (genesV[i] >= 0 & !m.Nodes[i].BC_V) // 1. if
             {
-                translationVectorV = 0.5 * (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate) * genesV[i];
-                if (IsOnEdge)
-                {
-                    Curve edgeCurve = edge.DuplicateCurve();
-                    edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                    edgeCurve.SetEndPoint(m.Nodes[i + m.nu].Coordinate); //forces end point of edgeCurve
-                    meshPoint = edgeCurve.PointAtNormalizedLength(0.49 * genesV[i]); // move node along edgeCurve: 0.49 to ensure no collision of nodes
-                }
+                translationVectorV = 0.5 * (m.Nodes[i + (m.nu + 1)].Coordinate - m.Nodes[i].Coordinate) * genesV[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesV[i], i, i + (m.nu + 1)); } // make meshPoint
             }
-            else if (genesV[i] <= 0 & !m.Nodes[i].BC_V)
+            else if (genesV[i] <= 0 & !m.Nodes[i].BC_V) // 2. if
             {
-                translationVectorV = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - m.nu].Coordinate) * genesV[i];
-                if (IsOnEdge)
-                {
-                    Curve edgeCurve = edge.DuplicateCurve();
-                    edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                    edgeCurve.SetEndPoint(m.Nodes[i - m.nu].Coordinate); //forces end point of edgeCurve
-                    meshPoint = edgeCurve.PointAtNormalizedLength(-0.49 * genesV[i]); // move node along edgeCurve: 0.49 to ensure no collision of nodes
-                }
+                translationVectorV = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu + 1)].Coordinate) * genesV[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesV[i], i, i - (m.nu + 1)); } // make meshPoint
             }
-            else { translationVectorV = translationVectorV * 0; } // restrained in V
+            else { translationVectorV = translationVectorV * 0; } // 3. if
 
-            // translation in w direction
-            if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // not restrained in W
+            // Translation in W direction
+            // 1. if: Node not restrained in W direction and genes positive.
+            // 2. if: Node not restrained in W direction and genes negative.
+            // 3. if: Node restrained in W direction.
+            // Note: if point is on edge not restrained in W direction - meshPoint is made
+            if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
             {
-                translationVectorW = 0.5 * (m.Nodes[i + m.nu * m.nv].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
-                if (IsOnEdge)
-                {
-                    Curve edgeCurve = edge.DuplicateCurve();
-                    edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                    edgeCurve.SetEndPoint(m.Nodes[i + m.nu * m.nv].Coordinate); //forces end point of edgeCurve
-                    meshPoint = edgeCurve.PointAtNormalizedLength(0.49 * genesW[i]); // move node along edgeCurve: 0.49 to ensure no collision of nodes
-                }
+                translationVectorW = 0.5 * (m.Nodes[i + (m.nu + 1) * (m.nv + 1)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu + 1) * (m.nv + 1)); } // make meshPoint
             }
-            else if (genesW[i] <= 0 & !m.Nodes[i].BC_W)
+            else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
             {
-                translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - m.nu * m.nv].Coordinate) * genesW[i];
-                if (IsOnEdge)
-                {
-                    Curve edgeCurve = edge.DuplicateCurve();
-                    edgeCurve.SetStartPoint(m.Nodes[i].Coordinate); //forces start point of edgeCurve
-                    edgeCurve.SetEndPoint(m.Nodes[i - m.nu * m.nv].Coordinate); //forces end point of edgeCurve
-                    meshPoint = edgeCurve.PointAtNormalizedLength(-0.49 * genesW[i]); // move node along edgeCurve: 0.49 to ensure no collision of nodes
-                }
+                translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu + 1) * (m.nv + 1)].Coordinate ) * genesW[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu + 1) * (m.nv + 1)); } // make meshPoint
             }
-            else { translationVectorW = translationVectorW * 0; } // restrained in W
+            else { translationVectorW = translationVectorW * 0; } // 3. if
 
-
-            if ((IsOnFace) | (!IsOnEdge & !IsOnFace))
+            // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
+            if (IsOnFace | !IsOnEdge)
             {
                 double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
-                meshPoint = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
+                movedNode = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
                     m.Nodes[i].Coordinate.Y + (translationVectorU.Y + translationVectorV.Y + translationVectorW.Y) * overlapTolerance,
                     m.Nodes[i].Coordinate.Z + (translationVectorU.Z + translationVectorV.Z + translationVectorW.Z) * overlapTolerance);
                 
-                if (IsOnFace)
+                if (IsOnFace) // If node is on face: ensure it stays on face
                 {
                     Brep srf = face.DuplicateFace(false);
-                    meshPoint = srf.ClosestPoint(meshPoint); // "Project" meshPoint to surface.
+                    movedNode = srf.ClosestPoint(movedNode); // "Project" meshPoint to surface.
                 }
             }
+            return movedNode;
 
-            return meshPoint;
+        }
+
+        /// <summary>
+        /// Make new node if point is on edge.
+        /// </summary>
+        /// <returns> Returns coordinates of moved node on edge.</returns>
+        private Point3d EdgeNode(BrepEdge edge, Mesh3D m, double genes, int start, int stop)
+        {
+            Point3d movedNode = new Point3d();
+            Curve edgeCurve1;
+            Curve edgeCurve2;
+            edgeCurve1 = edge.DuplicateCurve();
+            edgeCurve2 = edge.DuplicateCurve();
+
+            edgeCurve1.SetStartPoint(m.Nodes[start].Coordinate); //forces start point of edgeCurve
+            edgeCurve1.SetEndPoint(m.Nodes[stop].Coordinate); //forces end point of edgeCurve
+
+            edgeCurve2.SetStartPoint(m.Nodes[stop].Coordinate); //forces start point of edgeCurve
+            edgeCurve2.SetEndPoint(m.Nodes[start].Coordinate); //forces end point of edgeCurve
+            
+            if (genes >= 0)
+            {
+                if (edgeCurve1.GetLength() > edgeCurve2.GetLength()) 
+                {
+                    edgeCurve2.Reverse();
+                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes));
+                }
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve}
+            }
+            else if (genes <= 0)
+            {
+                if (edgeCurve1.GetLength() > edgeCurve2.GetLength())
+                {
+                    edgeCurve2.Reverse();
+                    movedNode = edgeCurve2.PointAtNormalizedLength(-(0.49 * genes));
+                }
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.49 * genes)); } // move node along edgeCurve
+            }
+            return movedNode;
         }
 
 
-
-
-
-
-
-        #endregion 
+        #endregion
 
         /// <summary>
         /// Provides an Icon for the component.
