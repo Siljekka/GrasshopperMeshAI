@@ -50,40 +50,65 @@ namespace MeshPoints
         {
             #region Input
             Mesh3D solidMesh = new Mesh3D();
-            string elementType = "C3D8I";
+            Mesh2D surfaceMesh = new Mesh2D();
+            string elementType = "Empty";
             double Emodul = 210000;
             double nu = 0.3;
             DA.GetData(0, ref solidMesh);
-            DA.GetData(1, ref elementType);
-            DA.GetData(2, ref Emodul);
-            DA.GetData(3, ref nu);
+            DA.GetData(1, ref surfaceMesh);
+            DA.GetData(2, ref elementType);
+            DA.GetData(3, ref Emodul);
+            DA.GetData(4, ref nu);
             #endregion
-
-            List<string> inpText = new List<string>();
-            List<Node> nodes = solidMesh.Nodes;
-            List<Element> elements = solidMesh.Elements;
 
             string partName = "Geometry"; //todo: fix name
             string sectionName = "Section"; //todo: fix name
             string materialName = "Steel";
+            List<string> inpText = new List<string>();
             
-            
+
+            // 1. Set material properties
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
 
+            // 2. Set element type dependent on solid or surface mesh
+            if (DA.GetData(0, ref solidMesh) & elementType != "Empty") { elementType = "C3D8I"; }
+            if (DA.GetData(0, ref surfaceMesh) & elementType != "Empty") { elementType = "todo: choose type"; }
+
+            // 3. Generate inp-file
+            if (DA.GetData(0, ref solidMesh))
+            { 
+                inpText = GenerateSolid3Dfile(solidMesh, elementType, Emodul, nu, partName, sectionName, materialName); 
+            }
+            else if (DA.GetData(0, ref surfaceMesh))
+            { 
+                inpText = GenerateSurfacefile(surfaceMesh, elementType, Emodul, nu, partName, sectionName, materialName); 
+            }
+
+
+            // Output
+            DA.GetDataList(0, inpText);
+        }
+
+        #region Methods
+        private List<string> GenerateSolid3Dfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
+        {
+            List<string> inpText = new List<string>();
+            List<Node> nodes = solidMesh.Nodes;
+            List<Element> elements = solidMesh.Elements;
 
             inpText.Add("*Heading");
             inpText.Add("**< text describing the problem being simulated.>"); //todo: fix description
             inpText.Add("**SI Units");
             inpText.Add("**x1=x, x2=y, x3=z");
             inpText.Add("*Preprint, echo = YES, model = YES, history = YES"); //recomended. Gives printout of the input file and of the model and history definition data
-            
+
             // Start of part
             inpText.Add("**");
             inpText.Add("PARTS");
             inpText.Add("**");
             inpText.Add(String.Format("*Part, name={0}", partName)); //clean to have parts included, but not needed.
             inpText.Add("**");
-             
+
             // Nodes
             inpText.Add("*Node");
             foreach (Node node in nodes)
@@ -197,14 +222,18 @@ namespace MeshPoints
             inpText.Add("*Output, history");
             inpText.Add("*Energy Output, elset = BeamInstance.Fixed, variable = PRESELECT");
             inpText.Add("*End Step");
-
-
-            DA.GetDataList(0, inpText);
+            
+            return inpText;
         }
 
-        /// <summary>
-        /// Provides an Icon for the component.
-        /// </summary>
+        private List<string> GenerateSurfacefile(Mesh2D surfaceMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
+        {
+            return null;
+        }
+        #endregion
+            /// <summary>
+            /// Provides an Icon for the component.
+            /// </summary>
         protected override System.Drawing.Bitmap Icon
         {
             get
