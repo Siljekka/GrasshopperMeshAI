@@ -16,7 +16,7 @@ namespace MeshPoints.Galapagos
         /// Initializes a new instance of the MoveMesh3DVertices class.
         /// </summary>
         public GalapagosMesh()
-          : base("Move Mesh3D Vertices", "m3dv",
+          : base("Move SolidMesh Vertices", "m3dv",
               "Move mesh vertices with gene pools",
               "MyPlugIn", "Modify Mesh")
         {
@@ -39,7 +39,7 @@ namespace MeshPoints.Galapagos
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh3D", "m3d", "Updated mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh3D", "m3D", "Updated solid mesh", GH_ParamAccess.item);
             //pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
         }
 
