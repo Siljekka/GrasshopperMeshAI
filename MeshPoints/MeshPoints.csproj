@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="BrepPoints.cs" />
     <Compile Include="Classes\Node.cs" />
+    <Compile Include="Classes\qNode.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
@@ -79,14 +80,9 @@
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
-    <Compile Include="Mesh_outdated\MeshFlattenPoints.cs" />
     <Compile Include="CreateMesh\CreateMesh2D.cs" />
-    <Compile Include="Mesh_outdated\MeshPoints3D_outdated.cs" />
     <Compile Include="Classes\MeshQualityOLD.cs" />
-    <Compile Include="Mesh_outdated\DeconstructMesh.cs" />
     <Compile Include="MeshPointsInfo.cs" />
-    <Compile Include="Mesh_outdated\MeshPointsComponentVer2.cs" />
-    <Compile Include="Mesh_outdated\MeshPointsComponentVer1.cs" />
     <Compile Include="IsSweepable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -94,6 +90,12 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Classes\qEdge.cs" />
+    <Compile Include="Classes\qElement.cs" />
+    <Compile Include="QuadRemesh\AnalyzeTriangleMesh.cs" />
+    <Compile Include="QuadRemesh\DeconstructQEdge.cs" />
+    <Compile Include="QuadRemesh\DeconstructQElement.cs" />
+    <Compile Include="QuadRemesh\DeconstructQNode.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
