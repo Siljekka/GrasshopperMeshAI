@@ -77,6 +77,8 @@ namespace MeshPoints.CreateMesh
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
 
+            
+
             // 1. Assign properties to mesh3D
             m3D.nu = nu;
             m3D.nv = nv;
@@ -89,6 +91,15 @@ namespace MeshPoints.CreateMesh
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item1;
             planes = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item2;
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
+
+            // Check if brep can be interpret by Abaqus
+            //IsBrepCompatibleWithAbaqus(intersectionCurve, planes);
+            Vector3d vector = railPoints.Branch(1)[0] - railPoints.Branch(0)[0];
+            string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(vector).ToString();
+            if (curveOrientation == "Clockwise")
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Surface must have normal pointing in different direction than rail. Abaqus can not interpret order of nodes. ");
+            }
 
             //4. Make grid of points in u and v direction at leven nw
             meshPoints = CreateGridOfPointsAtEachFloor(m3D.nu, m3D.nv, surfaceAtNw, intersectionCurve, planes);
@@ -106,18 +117,27 @@ namespace MeshPoints.CreateMesh
             m3D.mesh = allMesh;
             // Find edges composing the rails and add into list
 
-
-
             // Output
             DA.SetData(0, m3D);
         }
 
         #region Methods
 
+        private void IsBrepCompatibleWithAbaqus(DataTree<Curve> intersectionCurve, List<Plane> planes)
+        {
+            string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(planes[0]).ToString();
+            if (curveOrientation == "Clockwise")
+            {
+               AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Surface must have normal pointing in different direction than rail. Abaqus can not interpret order of nodes. ");
+            }
+         }
+
+
         /// <summary>
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
+        /// 
         private DataTree<Point3d> DivideRailIntoNwPoints(Brep brep, int nw)
         {
             Point3d[] nwPt;
@@ -159,7 +179,7 @@ namespace MeshPoints.CreateMesh
             for (int i = 0; i < railPoints.BranchCount; i++)
             {
                 Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
-                Vector3d vec2 = railPoints.Branch(i)[1] - railPoints.Branch(i)[3];
+                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[1];
                 Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
                 Plane plane = new Plane(railPoints.Branch(i)[0], normal);
                 //Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane); // make plane on floor i
