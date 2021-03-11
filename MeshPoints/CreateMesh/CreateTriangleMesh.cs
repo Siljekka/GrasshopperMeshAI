@@ -35,8 +35,6 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddMeshParameter("Triangle Mesh", "m", "Triangle mesh (Delauney)", GH_ParamAccess.item);
-            //pManager.AddGenericParameter("Edge Nodes", "e", "Edge nodes of triangle mesh", GH_ParamAccess.list);
-            //pManager.AddGenericParameter("Inner Nodes", "i", "Inner nodes of triangle mesh", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -58,13 +56,13 @@ namespace MeshPoints.CreateMesh
             List<List<Point3d>> edgeNodesSurface = CreateEdgePointsByCount(meshSurface, totalEdgeNodeCount);
 
             // 2. Create points inside the surface by creating a bounding box, populating it with points, and culling all points not inside the surface.
-            Brep boundingBoxSurface = CreateBoundingBoxBrep(meshSurface);
-            List<Point3d> nodeGridBoundingBox = CreatePointGridRectangle(boundingBoxSurface, meshSurface, totalInnerNodeCount);
+            Brep boundingBoxSurface = CreateBoundingBoxFromBrep(meshSurface);
+            List<Point3d> nodeGridBoundingBox = CreatePointGridInBoundingBox(boundingBoxSurface, meshSurface, totalInnerNodeCount);
             List<Point3d> nodesInsideSurface = CullPointsOutsideSurface(nodeGridBoundingBox, meshSurface);
 
             // 3. Flatten list of points to use for triangle meshing and cast to compatible data structure (Node2List) for Delaunay method.
             List<Point3d> nodeCollection = new List<Point3d>();
-            List<Point3d> flattenedEdgeNodes = new List<Point3d>(); // collect separately for output
+            List<Point3d> flattenedEdgeNodes = new List<Point3d>();
             foreach(var list in edgeNodesSurface)
             {
                 flattenedEdgeNodes.AddRange(list);
@@ -83,8 +81,7 @@ namespace MeshPoints.CreateMesh
 
             // Outputs
             DA.SetData(0, culledTriangleMesh);
-            //DA.SetDataList(1, flattenedEdgeNodes);
-            //DA.SetDataList(2, nodesInsideSurface);
+
 
         }
         #region Methods
@@ -145,14 +142,15 @@ namespace MeshPoints.CreateMesh
         /// <summary>
         /// Creates a <see cref="Brep"/> rectangle around an arbitrary plane <see cref="Brep"/> geometry and fills it with points.
         /// </summary>
-        private Brep CreateBoundingBoxBrep(Brep meshSurface)
+        private Brep CreateBoundingBoxFromBrep(Brep meshSurface)
         {
+            double zAxis = 0.0; // double representing the point's placement on the z-axis 
             BoundingBox boundingBox = meshSurface.GetBoundingBox(false);
             Brep boundingBoxBrep = Brep.CreateFromCornerPoints(
-                new Point3d(boundingBox.Min.X, boundingBox.Min.Y, 0),
-                new Point3d(boundingBox.Max.X, boundingBox.Min.Y, 0),
-                new Point3d(boundingBox.Max.X, boundingBox.Max.Y, 0),
-                new Point3d(boundingBox.Min.X, boundingBox.Max.Y, 0),
+                new Point3d(boundingBox.Min.X, boundingBox.Min.Y, zAxis),
+                new Point3d(boundingBox.Max.X, boundingBox.Min.Y, zAxis),
+                new Point3d(boundingBox.Max.X, boundingBox.Max.Y, zAxis),
+                new Point3d(boundingBox.Min.X, boundingBox.Max.Y, zAxis),
                 RhinoMath.ZeroTolerance
                 );
 
@@ -166,6 +164,7 @@ namespace MeshPoints.CreateMesh
         private List<List<Point3d>> CreateEdgePointsByCount(Brep meshSurface, double totalEdgeNodeCount)
         {
             var edgePoints = new List<List<Point3d>>();
+
             double totalEdgeLength = 0;
             foreach (Curve edge in meshSurface.Edges)
             {
@@ -179,9 +178,10 @@ namespace MeshPoints.CreateMesh
                 var edgeNodeCount = Convert.ToInt32(totalEdgeNodeCount * (edgeLength / totalEdgeLength) + 1);
                 
                 tValues = edge.DivideByCount(edgeNodeCount, true);
-                foreach (double t in tValues)
+                // To avoid duplicate nodes, we do not add the last element of each edge
+                for (int i = 0; i<tValues.Count() - 1; i++)
                 {
-                    innerEdgePoints.Add(edge.PointAt(t));
+                    innerEdgePoints.Add(edge.PointAt(tValues[i]));
                 }
                 edgePoints.Add(innerEdgePoints);
             }
@@ -192,7 +192,7 @@ namespace MeshPoints.CreateMesh
         /// Creates a grid of points in a bounding box <see cref="Brep"/> based on a given number of wanted internal nodes in a surface.
         /// </summary>
         /// <returns>A List of <see cref="Point3d"/> describing a grid of points in a rectangle.</returns>
-        private List<Point3d> CreatePointGridRectangle(Brep boundingBox, Brep meshSurface, double nodeCount)
+        private List<Point3d> CreatePointGridInBoundingBox(Brep boundingBox, Brep meshSurface, double nodeCount)
         {
             var gridPoints = new List<Point3d>(); // output
 
