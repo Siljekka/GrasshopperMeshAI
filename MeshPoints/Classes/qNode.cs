@@ -12,7 +12,7 @@ namespace MeshPoints.Classes
         public Point3d Coordinate { get; set; }
         public int TopologyVertexIndex { get; set; } // vertex index in topology
         public int MeshVertexIndex { get; set; } // vertex index in mesh
-        public int[] AdjacentEdges { get; set; } // index of adjacent edges
+        public int[] ConnectedEdges { get; set; } // index of connected edges
 
         public qNode()
         {
