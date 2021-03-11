@@ -39,7 +39,8 @@ namespace MeshPoints.QuadRemesh
             pManager.AddGenericParameter("List 0-1", "01", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("List 0-0", "00", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("qElements", "element", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("item", "element", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("E_1", "element", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("E_2", "element", "", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -50,7 +51,7 @@ namespace MeshPoints.QuadRemesh
         {
             // variables
             Mesh mesh = new Mesh();
-            List < qElement > elementList = new List<qElement>();
+            List<qElement> elementList = new List<qElement>();
             List<qEdge> edgeList = new List<qEdge>();
             qElement element = new qElement();
             List<qEdge> frontEdges = new List<qEdge>();
@@ -65,92 +66,123 @@ namespace MeshPoints.QuadRemesh
             SetNeighborElements(mesh, elementList, edgeList);
             frontEdges = GetFrontEdges(mesh, edgeList);
             SetNeighorFrontEdges(mesh, frontEdges);
-            var edgeStates = CreateEdgeStateList(frontEdges); // todo: check bug. Angles...
+            var edgeStates = CreateEdgeStateList(frontEdges); // todo: check bug. Angles.
             var list11 = edgeStates.Item1;
             var list10 = edgeStates.Item2;
             var list01 = edgeStates.Item3;
             var list00 = edgeStates.Item4;
-            /*
-            
+
+
             //-----side edge definiton-------
-            qEdge choosenEdge = new qEdge();
+            qEdge E_front = new qEdge();
             int edgeState = 0;
-            
-            // get edge
-            if (list11.Count != 0) { choosenEdge = list11[0]; edgeState = 11; }
-            else if (list10.Count != 0) { choosenEdge = list10[0]; edgeState = 10; }
-            else if (list01.Count != 0) { choosenEdge = list01[0]; edgeState = 01; }
-            else { choosenEdge = list00[0]; edgeState = 00; }
+            double thetaTolerance = 0.16667 * Math.PI;
 
-            // delete: temporary
-            choosenEdge = list01[0]; 
-            edgeState = 01;
+            // get E_front
+            if (list11.Count != 0) { E_front = list11[0]; edgeState = 11; }
+            else if (list10.Count != 0) { E_front = list10[0]; edgeState = 10; }
+            else if (list01.Count != 0) { E_front = list01[0]; edgeState = 01; }
+            else { E_front = list00[0]; edgeState = 00; }
 
-            // get node, if not edgestate == 11
-            qNode rightNode = GetRightNode(choosenEdge);
-            qNode leftNode = GetLeftNode(choosenEdge);
+            E_front = list00[1]; //-------------- only temporary
+            edgeState = 01; //----------- only temporary
+            int nodeToEvaluate = 0; // 0=left, 1=right //
 
-            // fix sides
-            // if edgestate 10: fix rightSide
-            // if edgestate 01: fix leftSide
-            // if edgestate 00: fix first leftSiden and then rightSide
-
-            //__fix leffSide:
-            qEdge E_fl = choosenEdge.LeftFrontNeighbor;
-            qEdge E_fr = choosenEdge.RightFrontNeighbor;
-            qEdge E_f = choosenEdge;
-            Vector3d vec1 = Vector3d.Zero;
-            Vector3d vec2 = Vector3d.Zero;
-
-            // leftSide
-            if (leftNode == E_fl.StartNode) // for left side
-            {
-                vec1 = rightNode.Coordinate - leftNode.Coordinate;
-                vec2 = E_fl.EndNode.Coordinate - E_fl.StartNode.Coordinate;
-            }
-            else if (leftNode == E_fl.EndNode) // for left side
-            {
-                vec1 = rightNode.Coordinate - leftNode.Coordinate;
-                vec2 = E_fl.StartNode.Coordinate - E_fl.EndNode.Coordinate;
-            }
-            qNode N_k = leftNode;
-            Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
+            qEdge E_leftFront = E_front.LeftFrontNeighbor;
+            qEdge E_rightFront = E_front.RightFrontNeighbor;
+            qEdge E_neighborFront = new qEdge();
             qEdge E_1 = new qEdge();
             qEdge E_2 = new qEdge();
 
-            int[] adjecentEdges = N_k.AdjacentEdges;
+            // get node, if not edgestate == 11
+            qNode rightNode = GetRightNode(E_front);
+            qNode leftNode = GetLeftNode(E_front);
 
-            foreach (int i in adjecentEdges) // loop adjacent edges to N_k
+            if (nodeToEvaluate == 0) { E_neighborFront = E_leftFront; }
+            else { E_neighborFront = E_rightFront; }
+
+            var vectorsAndSharedNode = CalculateVectorsFromSharedNode(E_front, E_neighborFront);
+            Vector3d vec1 = vectorsAndSharedNode.Item1; // get vector for E_front
+            Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
+            Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
+            // todo: fix if V_k == 0
+            /*if (V_k == Vector3d.Zero) 
+            { if (nodeToEvaluate == 0)
+                { V_k = vec1.Rotate( 1.570795, Vector3d.ZAxis);}
+                else 
+                { V_k = vec2.Rotate( (0.5 * Math.PI), - Vector3d.ZAxis);}
+            }*/
+                qNode N_k = vectorsAndSharedNode.Item3; // shared node
+            int[] connectedEdgesIndex = N_k.ConnectedEdges; // get connected edges indices of shared node
+
+            #region Get E_i
+            List<qEdge> E_i_list = new List<qEdge>();
+            foreach (int edgIndex in connectedEdgesIndex) // loop connected edges
             {
-                int[] adjacentElements = mesh.TopologyEdges.GetConnectedFaces(i); 
-                foreach (int j in adjacentElements) // loop adjacent elements to adjacent edges
-                {
-                    // check if element !IsQuad
-                    // check if element is equal to E_f element 1 or 2
-                    // check if element is equal to E_fl element 1 or 2
+                if ((edgIndex == E_front.Index) | (edgIndex == E_neighborFront.Index)) { continue; } // continue if connected edge is E_frontEdge or E_neighborFront 
+                int[] connectedElements = mesh.TopologyEdges.GetConnectedFaces(edgIndex); // get connected element indices of edge
 
-                }
-
-                List<int> sharedEdges = new List<int>();
-                if (!edgeList[i].Element1.IsQuad) // if triangles elements on both sides (i.e. not front edges or quads)
+                foreach (int elemIndex in connectedElements) // loop connected elements
                 {
-                    for (int j = 0; j < choosenEdge.Element1.EdgeList.Count; j++) // loop element 1
+                    qElement connectedElement = elementList[elemIndex];
+                    if (!connectedElement.IsQuad)
                     {
-                        if (edgeList[i] == E_f.Element1.EdgeList[j]) { E_1 = edgeList[i]; }
-                        else if (edgeList[i] == E_fl.Element1.EdgeList[j]) { E_2 = edgeList[i]; }
+                        E_i_list.Add(edgeList[edgIndex]);
                     }
-
                 }
             }
+            #endregion
+
+            // calcualte thetas 
+            List<double> theta_i_list = new List<double>();
+            foreach (qEdge E_i in E_i_list)
+            {
+                Vector3d E_i_vec = GetVectorOfEdgeFromNode(E_i, N_k);
+                double theta_i = Vector3d.VectorAngle(V_k, E_i_vec);
+                theta_i_list.Add(theta_i);
+            }
+
+            // get E_k
+            qEdge E_k = new qEdge();
+            qEdge E_0 = new qEdge();
+
+            // find smallest theta
+            double min = theta_i_list[0];
+            int minIndex = 0;
+            for (int i = 1; i < theta_i_list.Count; ++i)
+            {
+                if (theta_i_list[i] < min)
+                {
+                    min = theta_i_list[i];
+                    minIndex = i;
+                }
+            }
+
+            if (theta_i_list[minIndex] < thetaTolerance) { E_k = E_i_list[minIndex]; } // todo: when e_1 = e_2, what to do?
+            // next: FindEdge(node1, node2)
+            // swap this edge...
+            /*
+            qElement sharedElement = new qElement();
+            if (E_1.Element1 == E_2.Element1) { sharedElement = E_1.Element1; }
+            else if (E_1.Element1 == E_2.Element2) { sharedElement = E_1.Element1; }
+            else if (E_1.Element2 == E_2.Element1) { sharedElement = E_1.Element2; }
+            else if (E_1.Element2 == E_2.Element2) { sharedElement = E_1.Element2; }
+
+            foreach (qEdge edge in sharedElement.EdgeList)
+            { if (edge != E_1 & edge != E_2) { E_0 = edge; } }
+            
             */
+
+
             // output
-            DA.SetDataList(0, edgeList);
+            DA.SetDataList(0, E_i_list);
             DA.SetDataList(1, list11);
             DA.SetDataList(2, list10);
             DA.SetDataList(3, list01);
             DA.SetDataList(4, list00);
-            DA.SetDataList(5, elementList);
-            DA.SetData(6,1);
+            DA.SetDataList(5, theta_i_list);
+            DA.SetData(6,minIndex); 
+            DA.SetData(7, E_k);
         }
         #region Methods
         private List<qNode> CreateNodes(Mesh mesh)
@@ -163,7 +195,7 @@ namespace MeshPoints.QuadRemesh
                 node.TopologyVertexIndex = i;
                 node.MeshVertexIndex = topologyVertexList.MeshVertexIndices(i)[0]; // todo: check if ok
                 node.Coordinate = mesh.Vertices.Point3dAt(node.MeshVertexIndex);
-                node.AdjacentEdges = mesh.TopologyVertices.ConnectedEdges(node.TopologyVertexIndex);
+                node.ConnectedEdges = mesh.TopologyVertices.ConnectedEdges(node.TopologyVertexIndex);
                 nodeList.Add(node);
             }
             return nodeList;
@@ -331,51 +363,20 @@ namespace MeshPoints.QuadRemesh
             // Calculate the angle between vector shared point --> other edgPoint and shared point --> other neigbor point.
             // Angles less than zero are to the left. Angles greater than
             // zero are to the right.
-            qNode edgeStartNode = new qNode();
-            qNode edgeEndNode = new qNode();
-            qNode neighborStartNode = new qNode();
-            qNode neighborEndNode = new qNode();
 
+            qEdge edgeNeighbor = new qEdge();
             Vector3d vec1 = Vector3d.Zero;
             Vector3d vec2 = Vector3d.Zero;
             double angle = 0;
 
-            edgeStartNode = edge.StartNode;
-            edgeEndNode = edge.EndNode;
-
             // Get neighbor nodes
-            if (nodeToCalculate == 0)
-            {
-                neighborStartNode = edge.LeftFrontNeighbor.StartNode;
-                neighborEndNode = edge.LeftFrontNeighbor.EndNode;
-            }
-            else
-            {
-                neighborStartNode = edge.RightFrontNeighbor.StartNode;
-                neighborEndNode = edge.RightFrontNeighbor.EndNode;
-            }
+            if (nodeToCalculate == 0) { edgeNeighbor = edge.LeftFrontNeighbor; }
+            else { edgeNeighbor = edge.RightFrontNeighbor; }
 
             // Create vectors from shared node
-            if (neighborStartNode == edgeStartNode)
-            {
-                vec1 = edgeEndNode.Coordinate - edgeStartNode.Coordinate;
-                vec2 = neighborEndNode.Coordinate - neighborStartNode.Coordinate;
-            }
-            else if (neighborStartNode == edgeEndNode)
-            {
-                vec1 = edgeStartNode.Coordinate - edgeEndNode.Coordinate;
-                vec2 = neighborEndNode.Coordinate - neighborStartNode.Coordinate;
-            }
-            else if (neighborEndNode == edgeStartNode)
-            {
-                vec1 = edgeEndNode.Coordinate - edgeStartNode.Coordinate;
-                vec2 = neighborStartNode.Coordinate - neighborEndNode.Coordinate;
-            }
-            else
-            {
-                vec1 = edgeStartNode.Coordinate - edgeEndNode.Coordinate;
-                vec2 = neighborStartNode.Coordinate - neighborEndNode.Coordinate;
-            }
+            var vectors = CalculateVectorsFromSharedNode(edge, edgeNeighbor);
+            vec1 = vectors.Item1;
+            vec2 = vectors.Item2;
 
             // Change vectors to 2d
             Vector2d ve1 = new Vector2d(vec1.X, vec1.Y); // todo 3d: calculate angles differently in 3d
@@ -423,7 +424,44 @@ namespace MeshPoints.QuadRemesh
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No shared nodes"); }
             return sharedNode;
         }
-
+        private Tuple<Vector3d, Vector3d, qNode> CalculateVectorsFromSharedNode(qEdge edge1, qEdge edge2)
+        {
+            Vector3d vec1 = Vector3d.Zero;
+            Vector3d vec2 = Vector3d.Zero;
+            qNode sharedNode = new qNode();
+            if (edge1.StartNode == edge2.StartNode)
+            {
+                sharedNode = edge1.StartNode;
+                vec1 = edge1.EndNode.Coordinate - edge1.StartNode.Coordinate;
+                vec2 = edge2.EndNode.Coordinate - edge2.StartNode.Coordinate;
+            }
+            else if (edge1.StartNode == edge2.EndNode)
+            {
+                sharedNode = edge1.StartNode;
+                vec1 = edge1.EndNode.Coordinate - edge1.StartNode.Coordinate;
+                vec2 = edge2.StartNode.Coordinate - edge2.EndNode.Coordinate;
+            }
+            else if (edge1.EndNode == edge2.StartNode)
+            {
+                sharedNode = edge1.EndNode;
+                vec1 = edge1.StartNode.Coordinate - edge1.EndNode.Coordinate;
+                vec2 = edge2.EndNode.Coordinate - edge2.StartNode.Coordinate;
+            }
+            else if (edge1.EndNode == edge2.EndNode)
+            {
+                sharedNode = edge1.EndNode;
+                vec1 = edge1.StartNode.Coordinate - edge1.EndNode.Coordinate;
+                vec2 = edge2.StartNode.Coordinate - edge2.EndNode.Coordinate;
+            }
+            return Tuple.Create(vec1, vec2, sharedNode);
+        }
+        private Vector3d GetVectorOfEdgeFromNode(qEdge edge, qNode node)
+        {
+            Vector3d vec = Vector3d.Zero;
+            if (edge.StartNode == node) { vec = edge.EndNode.Coordinate - node.Coordinate; }
+            else if (edge.EndNode == node) { vec = edge.StartNode.Coordinate - node.Coordinate; }
+            return vec;
+        }
         #endregion
 
         /// <summary>
