@@ -63,9 +63,13 @@ namespace MeshPoints.CreateMesh
             // 3. Flatten list of points to use for triangle meshing and cast to compatible data structure (Node2List) for Delaunay method.
             List<Point3d> nodeCollection = new List<Point3d>();
             List<Point3d> flattenedEdgeNodes = new List<Point3d>();
-            foreach(var list in edgeNodesSurface)
+            foreach(List<Point3d> edge in edgeNodesSurface)
             {
-                flattenedEdgeNodes.AddRange(list);
+                // Do not add endnode of edge as this is duplicate of startnode of next edge
+                for ( int i = 0; i<edge.Count() - 1; i++)
+                {
+                    flattenedEdgeNodes.Add(edge[i]);
+                }
             }
             nodeCollection.AddRange(flattenedEdgeNodes);
             nodeCollection.AddRange(nodesInsideSurface);
@@ -81,8 +85,6 @@ namespace MeshPoints.CreateMesh
 
             // Outputs
             DA.SetData(0, culledTriangleMesh);
-
-
         }
         #region Methods
         /// <summary>
@@ -144,7 +146,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         private Brep CreateBoundingBoxFromBrep(Brep meshSurface)
         {
-            double zAxis = 0.0; // double representing the point's placement on the z-axis 
+            double zAxis = 0.0; // double representing the points' placement on the z-axis 
             BoundingBox boundingBox = meshSurface.GetBoundingBox(false);
             Brep boundingBoxBrep = Brep.CreateFromCornerPoints(
                 new Point3d(boundingBox.Min.X, boundingBox.Min.Y, zAxis),
@@ -178,10 +180,9 @@ namespace MeshPoints.CreateMesh
                 var edgeNodeCount = Convert.ToInt32(totalEdgeNodeCount * (edgeLength / totalEdgeLength) + 1);
                 
                 tValues = edge.DivideByCount(edgeNodeCount, true);
-                // To avoid duplicate nodes, we do not add the last element of each edge
-                for (int i = 0; i<tValues.Count() - 1; i++)
+                foreach ( var t in tValues)
                 {
-                    innerEdgePoints.Add(edge.PointAt(tValues[i]));
+                    innerEdgePoints.Add(edge.PointAt(t));
                 }
                 edgePoints.Add(innerEdgePoints);
             }
