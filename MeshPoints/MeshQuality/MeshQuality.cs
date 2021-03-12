@@ -6,8 +6,9 @@ using System.Linq;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Drawing;
+using MathNet.Numerics.LinearAlgebra;
 
-namespace MeshPoints
+namespace MeshPoints.MeshQuality
 {
     public class MeshQuality : GH_Component
     {
@@ -90,7 +91,7 @@ namespace MeshPoints
                 {
                     elementQuality.AspectRatio = CalculateAspectRatio(e);
                     elementQuality.Skewness = CalculateSkewness(e);
-                    elementQuality.JacobianRatio = CalculateJacobianRatioOfQuadElement(e);
+                    elementQuality.JacobianRatio = CalculateJacobianRatio(e);
 
                     elementQuality.element = e;
                     e.MeshQuality = elementQuality;
@@ -241,6 +242,25 @@ namespace MeshPoints
         }
 
         /// <summary>
+        /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="Mesh3D"/>.
+        /// </summary>
+        /// <param name="e">A single <see cref="Element"/> object from a mesh.</param>
+        /// <returns>A <see cref="double"/> between 0.0 and 1.0 describing the ratio between the min and max values of the determinants of the Jacobian matrix of the element, evaluated in the corner nodes.</returns>
+        private double CalculateJacobianRatio(Element e)
+        {
+            double jacobian;
+            if (e.IsCube) // returns true if the Element e stems from a Mesh3D.
+            {
+                jacobian = CalculateJacobianOf8NodeElement(e);
+            }
+            else
+            {
+                jacobian = CalculateJacobianOfQuadElement(e);
+            }
+            return jacobian;
+        }
+
+        /// <summary>
         /// Returns a list of node coordinated that is dublicate.
         /// </summary>
         List<Point3d> GetCoordinatesOfNodesDublicated(Element e)
@@ -306,11 +326,139 @@ namespace MeshPoints
         }
 
         /// <summary>
+        /// Calculates the Jacobian Ratio of a hexahedral 8-node 3D element.
+        /// </summary>
+        /// <param name="e">An 8 node <see cref="Element"/> that is part of a <see cref="Mesh3D"/></param>
+        /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
+        private double CalculateJacobianOf8NodeElement(Element e)
+        {
+            var naturalNodes = new List<List<Double>>
+            {
+                new List<double> { -1, -1, -1 }, new List<double> { 1, -1, -1}, new List<double> { 1, 1, -1 }, new List<double> { -1, 1, -1 },
+                new List<double> { -1, -1, 1 }, new List<double> { 1, -1, 1 }, new List<double> { 1, 1, 1 }, new List<double> { -1, 1, 1 }
+            };
+
+            // Global X, Y, and Z-coordinates of the corner nodes of the actual element
+            List<double> gX = new List<double>()
+                {
+                    e.Node1.Coordinate.X, e.Node2.Coordinate.X, e.Node3.Coordinate.X, e.Node4.Coordinate.X,
+                    e.Node5.Coordinate.X, e.Node6.Coordinate.X, e.Node7.Coordinate.X, e.Node8.Coordinate.X
+                };
+            List<double> gY = new List<double>()
+                {
+                    e.Node1.Coordinate.Y, e.Node2.Coordinate.Y, e.Node3.Coordinate.Y, e.Node4.Coordinate.Y,
+                    e.Node5.Coordinate.Y, e.Node6.Coordinate.Y, e.Node7.Coordinate.Y, e.Node8.Coordinate.Y
+                };
+            List<double> gZ = new List<double>()
+                {
+                    e.Node1.Coordinate.Z, e.Node2.Coordinate.Z, e.Node3.Coordinate.Z, e.Node4.Coordinate.Z,
+                    e.Node5.Coordinate.Z, e.Node6.Coordinate.Z, e.Node7.Coordinate.Z, e.Node8.Coordinate.Z
+                };
+
+            // Evaluate in each of the corner nodes.
+            List<double> jacobiansOfElement = new List<double>();
+            foreach (List<Double> node in naturalNodes)
+            {
+                // Substitute the natural coordinates into the symbolic expression
+                var r = node[0];
+                var s = node[1];
+                var t = node[2];
+
+                // Partial derivatives of the shape functions
+                var N1Dr = -0.125 * (s - 1) * (t - 1);
+                var N1Ds = -0.125 * (r - 1) * (t - 1);
+                var N1Dt = -0.125 * (r - 1) * (s - 1);
+                var N2Dr = 0.125 * (s - 1) * (t - 1);
+                var N2Ds = 0.125 * (r + 1) * (t - 1);
+                var N2Dt = 0.125 * (r + 1) * (s - 1);
+                var N3Dr = -0.125 * (s + 1) * (t - 1);
+                var N3Ds = -0.125 * (r + 1) * (t - 1);
+                var N3Dt = -0.125 * (r + 1) * (s + 1);
+                var N4Dr = 0.125 * (s + 1) * (t - 1);
+                var N4Ds = 0.125 * (r - 1) * (t - 1);
+                var N4Dt = 0.125 * (r - 1) * (s + 1);
+                var N5Dr = 0.125 * (s - 1) * (t + 1);
+                var N5Ds = 0.125 * (r - 1) * (t + 1);
+                var N5Dt = 0.125 * (r - 1) * (s - 1);
+                var N6Dr = -0.125 * (s - 1) * (t + 1);
+                var N6Ds = -0.125 * (r + 1) * (t + 1);
+                var N6Dt = -0.125 * (r + 1) * (s - 1);
+                var N7Dr = 0.125 * (s + 1) * (t + 1);
+                var N7Ds = 0.125 * (r + 1) * (t + 1);
+                var N7Dt = 0.125 * (r + 1) * (s + 1);
+                var N8Dr = -0.125 * (s + 1) * (t + 1);
+                var N8Ds = -0.125 * (r - 1) * (t + 1);
+                var N8Dt = -0.125 * (r - 1) * (s + 1);
+
+                var sfDr = new List<double> // shape functions differentiated on r
+                    {
+                        N1Dr, N2Dr, N3Dr, N4Dr, N5Dr, N6Dr, N7Dr, N8Dr
+                    };
+                var sfDs = new List<double>
+                    {
+                        N1Ds, N2Ds, N3Ds, N4Ds, N5Ds, N6Ds, N7Ds, N8Ds
+                    };
+                var sfDt = new List<double>
+                    {
+                        N1Dt, N2Dt, N3Dt, N4Dt, N5Dt, N6Dt, N7Dt, N8Dt
+                    };
+
+                // Evaluates each partial derivative in the isoparametric node
+                var calcDerivs = new List<Double>
+                    {
+                        MultiplyLists(gX, sfDr),
+                        MultiplyLists(gX, sfDs),
+                        MultiplyLists(gX, sfDt),
+
+                        MultiplyLists(gY, sfDr),
+                        MultiplyLists(gY, sfDs),
+                        MultiplyLists(gY, sfDt),
+
+                        MultiplyLists(gZ, sfDr),
+                        MultiplyLists(gZ, sfDs),
+                        MultiplyLists(gZ, sfDt)
+                    };
+
+                // Helper function to piecewise multiply elements of two lists of length 8 and add them together
+                double MultiplyLists(List<double> a, List<double> b)
+                {
+                    double sum = 0.0;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        sum += (a[i] * b[i]);
+                    }
+                    return sum;
+                }
+
+                // Structure data in the form of a Jacobian matrix
+                Matrix<double> jacobianMatrix = DenseMatrixModule.ofArray2(new double[,]
+                {
+                        {calcDerivs[0], calcDerivs[3], calcDerivs[6] },
+                        {calcDerivs[1], calcDerivs[4], calcDerivs[7] },
+                        {calcDerivs[2], calcDerivs[5], calcDerivs[8] },
+                });
+
+                var jacobianDeterminant = jacobianMatrix.Determinant();
+                jacobiansOfElement.Add(Math.Abs(jacobianDeterminant));
+
+                // This might indicate something wrong with the ordering of nodes in elements (???)
+                if (jacobianDeterminant < 0)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "The Jacobian is negative.");
+                }
+            }
+            // A value of 1 denotes a cuboid element.
+            double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
+
+            return jacobianRatio;
+        }
+
+        /// <summary>
         /// Calculates the Jacobian ratio of a simple quadrilateral mesh element.
         /// </summary>
-        /// <param name="meshFace">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
-        /// <returns>A <see cref="double"/> between 0.0 and 1.0. A negative Jacobian might indicate a self-intersecting element.</returns>
-        double CalculateJacobianRatioOfQuadElement(Element meshFace)
+        /// <param name="e">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
+        /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
+        double CalculateJacobianOfQuadElement(Element e)
         {
             /*
              * This method uses the idea of shape functions and natural coordinate system to 
@@ -324,7 +472,7 @@ namespace MeshPoints
              *    A negative Jacobian indicates a self-intersecting or convex element and should not happen.
                 */
             List<Point3d> cornerPoints = new List<Point3d>(){
-                meshFace.Node1.Coordinate, meshFace.Node2.Coordinate, meshFace.Node3.Coordinate, meshFace.Node4.Coordinate
+                e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate
             };
             List<Point3d> localPoints = TransformQuadSurfaceTo2DPoints(cornerPoints);
 
