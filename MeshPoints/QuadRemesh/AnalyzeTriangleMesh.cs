@@ -66,7 +66,7 @@ namespace MeshPoints.QuadRemesh
             SetNeighborElements(mesh, elementList, edgeList);
             frontEdges = GetFrontEdges(mesh, edgeList);
             SetNeighorFrontEdges(mesh, frontEdges);
-            var edgeStates = CreateEdgeStateList(frontEdges); // todo: check bug. Angles.
+            var edgeStates = CreateEdgeStateList(mesh, frontEdges); // todo: check bug. Angles.
             var list11 = edgeStates.Item1;
             var list10 = edgeStates.Item2;
             var list01 = edgeStates.Item3;
@@ -84,8 +84,9 @@ namespace MeshPoints.QuadRemesh
             else if (list01.Count != 0) { E_front = list01[0]; edgeState = 01; }
             else { E_front = list00[0]; edgeState = 00; }
 
-            E_front = list00[1]; //-------------- only temporary
+            E_front = list01[0]; //-------------- only temporary
             edgeState = 01; //----------- only temporary
+
             int nodeToEvaluate = 0; // 0=left, 1=right //
 
             qEdge E_leftFront = E_front.LeftFrontNeighbor;
@@ -105,14 +106,16 @@ namespace MeshPoints.QuadRemesh
             Vector3d vec1 = vectorsAndSharedNode.Item1; // get vector for E_front
             Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
             Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
-            // todo: fix if V_k == 0
-            /*if (V_k == Vector3d.Zero) 
-            { if (nodeToEvaluate == 0)
-                { V_k = vec1.Rotate( 1.570795, Vector3d.ZAxis);}
-                else 
-                { V_k = vec2.Rotate( (0.5 * Math.PI), - Vector3d.ZAxis);}
-            }*/
-                qNode N_k = vectorsAndSharedNode.Item3; // shared node
+
+            if (V_k == Vector3d.Zero)
+            {
+                if (nodeToEvaluate == 0) { V_k = vec1; }
+                else { V_k = vec2; }
+                Vector3d rotationAxis = Vector3d.CrossProduct(vec1, vec2);
+                V_k.Rotate(0.5 * Math.PI, rotationAxis);
+            }
+
+            qNode N_k = vectorsAndSharedNode.Item3; // shared node
             int[] connectedEdgesIndex = N_k.ConnectedEdges; // get connected edges indices of shared node
 
             #region Get E_i
@@ -175,7 +178,7 @@ namespace MeshPoints.QuadRemesh
 
 
             // output
-            DA.SetDataList(0, E_i_list);
+            DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, list11);
             DA.SetDataList(2, list10);
             DA.SetDataList(3, list01);
@@ -308,7 +311,7 @@ namespace MeshPoints.QuadRemesh
             }
             return;
         }
-        Tuple<List<qEdge>, List<qEdge>, List<qEdge>, List<qEdge>> CreateEdgeStateList(List<qEdge> frontEdges)
+        Tuple<List<qEdge>, List<qEdge>, List<qEdge>, List<qEdge>> CreateEdgeStateList(Mesh mesh, List<qEdge> frontEdges)
         {
             // Return the EdgeStates in the format of the list: list11, list01, list10, andlist00.
             List<qEdge> list11 = new List<qEdge>();
@@ -327,11 +330,11 @@ namespace MeshPoints.QuadRemesh
                 {
                     if (nodeToCalculate == 0)
                     {
-                        leftAngle = CalculateAngleOfAdjecentEdges(nodeToCalculate, frontEdges[i]);
+                        leftAngle = CalculateAngleOfAdjecentEdges(mesh, nodeToCalculate, frontEdges[i]);
                     }
                     else
                     {
-                        rightAngle = CalculateAngleOfAdjecentEdges(nodeToCalculate, frontEdges[i]);
+                        rightAngle = CalculateAngleOfAdjecentEdges(mesh, nodeToCalculate, frontEdges[i]);
                     }
 
                     if (leftAngle < angleTolerance & rightAngle < angleTolerance) { edgeState = 11; }
@@ -358,11 +361,13 @@ namespace MeshPoints.QuadRemesh
             }
             return Tuple.Create(list11, list10, list01, list00);
         }
-        private double CalculateAngleOfAdjecentEdges(int nodeToCalculate, qEdge edge)
+        private double CalculateAngleOfAdjecentEdges(Mesh mesh, int nodeToCalculate, qEdge edge)
         {
-            // Calculate the angle between vector shared point --> other edgPoint and shared point --> other neigbor point.
-            // Angles less than zero are to the left. Angles greater than
-            // zero are to the right.
+            // Calculate the angle between front edges with a shared point, i.e. neighbor front edges.
+
+            int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(edge.Index);
+            if (!((connectedElementsIndex.Length == 1) & !edge.Element1.IsQuad))
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The edge is not a front edge.");}
 
             qEdge edgeNeighbor = new qEdge();
             Vector3d vec1 = Vector3d.Zero;
@@ -377,28 +382,42 @@ namespace MeshPoints.QuadRemesh
             var vectors = CalculateVectorsFromSharedNode(edge, edgeNeighbor);
             vec1 = vectors.Item1;
             vec2 = vectors.Item2;
-
-            // Change vectors to 2d
-            Vector2d ve1 = new Vector2d(vec1.X, vec1.Y); // todo 3d: calculate angles differently in 3d
-            Vector2d ve2 = new Vector2d(vec2.X, vec2.Y);
-
-            // Calculate lengths
-            double len1 = Math.Sqrt(ve1.X * ve1.X + ve1.Y * ve1.Y);
-            double len2 = Math.Sqrt(ve2.X * ve2.X + ve2.Y * ve2.Y);
-
-            // Use the dot product to get the cosine.
-            double dot_product = ve1.X * ve2.X + ve1.Y * ve2.Y;
-            double cos = dot_product / len1 / len2;
-
-            // Use the cross product to get the sine.
-            double cross_product = ve1.X * ve2.Y - ve1.Y * ve2.X;
-            double sin = cross_product / len1 / len2;
-
-            // Find the angle.
-            angle = Math.Acos(cos);
-            if (sin < 0 & nodeToCalculate == 0)
+            qNode sharedNode= vectors.Item3;
+            Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
+            if (V_k == Vector3d.Zero) // create V_k if zero vector
             {
-                angle = -angle;
+                if (nodeToCalculate == 0) { V_k = vec1; }
+                else { V_k = vec2; }
+
+                Vector3d rotationAxis = Vector3d.CrossProduct(vec1, vec2);
+                V_k.Rotate(0.5 * Math.PI, rotationAxis);
+            }
+            V_k = V_k / V_k.Length; // normalize
+
+            // check with domain
+            Point3d endPointV_k = Point3d.Add(sharedNode.Coordinate, V_k); // endpoint of V_k from sharedNode
+            Point3d endPointV_kNegative = Point3d.Add(sharedNode.Coordinate, -V_k); // endpoint of -V_k from sharedNode
+
+            // distance to domain
+            int edgeElementFaceId = edge.Element1.FaceIndex;
+            int edgeNeighborElementFaceId = edgeNeighbor.Element1.FaceIndex;
+            Point3d edgeFaceCenter = mesh.Faces.GetFaceCenter(edge.Element1.FaceIndex);
+            Point3d edgeNeighborFaceCenter = mesh.Faces.GetFaceCenter(edgeNeighbor.Element1.FaceIndex);
+            Point3d midFaceCenter = (edgeFaceCenter + edgeNeighborFaceCenter) / 2; // mid face center
+
+            double distanceEndPoint = midFaceCenter.DistanceTo(endPointV_k); // todo: ok for all cases?
+            double distanceEndPointNegative = midFaceCenter.DistanceTo(endPointV_kNegative); // todo: ok for all cases?
+            double alpha = Vector3d.VectorAngle(vec1, vec2);
+
+            if (distanceEndPoint < distanceEndPointNegative)
+            {
+                // V_k is inside domain
+                angle = alpha;
+            }
+            else 
+            {
+                // V_k is outside domain
+                angle = 2 * Math.PI - alpha;
             }
             return angle;
         }
