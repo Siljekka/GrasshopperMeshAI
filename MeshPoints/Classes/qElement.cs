@@ -11,8 +11,7 @@ namespace MeshPoints.Classes
     {
         public int FaceIndex { get; set; }
         public List<qEdge> EdgeList { get; set; }
-        //public List<double> AngleList { get; }
-        
+        public List<double> AngleList { get; } // todo: when angle is larger than pi it does not work..
         public bool IsQuad { get; }
 
 
@@ -27,14 +26,14 @@ namespace MeshPoints.Classes
         {
             FaceIndex = _faceIndex;
             EdgeList = _edgeList;
-            //AngleList = CalculateAngles(_edgeList);
+            AngleList = CalculateAngles(_edgeList);
 
             if (_edgeList.Count == 4) { IsQuad = true; }
             else { IsQuad = false; }
         }
 
         // Methods
-        /*
+        
         private List<double> CalculateAngles(List<qEdge> _edgeList)
         {
             Vector3d vec1 = Vector3d.Zero;
@@ -61,6 +60,6 @@ namespace MeshPoints.Classes
             return angList;
         
         }
-        */
+        
     }
 }
