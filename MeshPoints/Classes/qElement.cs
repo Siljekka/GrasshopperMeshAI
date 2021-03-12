@@ -9,7 +9,7 @@ namespace MeshPoints.Classes
 {
     class qElement
     {
-        int FaceIndex { get; set; }
+        public int FaceIndex { get; set; }
         public List<qEdge> EdgeList { get; set; }
         public List<double> AngleList { get; }
         
