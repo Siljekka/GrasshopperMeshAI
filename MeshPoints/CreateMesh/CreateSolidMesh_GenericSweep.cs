@@ -93,13 +93,7 @@ namespace MeshPoints.CreateMesh
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
 
             // Check if brep can be interpret by Abaqus
-            //IsBrepCompatibleWithAbaqus(intersectionCurve, planes);
-            Vector3d vector = railPoints.Branch(1)[0] - railPoints.Branch(0)[0];
-            string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(vector).ToString();
-            if (curveOrientation == "Clockwise")
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Surface must have normal pointing in different direction than rail. Abaqus can not interpret order of nodes. ");
-            }
+            IsBrepCompatibleWithAbaqus(railPoints, intersectionCurve, m3D);
 
             //4. Make grid of points in u and v direction at leven nw
             meshPoints = CreateGridOfPointsAtEachFloor(m3D.nu, m3D.nv, surfaceAtNw, intersectionCurve, planes);
@@ -123,13 +117,16 @@ namespace MeshPoints.CreateMesh
 
         #region Methods
 
-        private void IsBrepCompatibleWithAbaqus(DataTree<Curve> intersectionCurve, List<Plane> planes)
+        private void IsBrepCompatibleWithAbaqus(DataTree<Point3d> railPoints, DataTree<Curve> intersectionCurve, Mesh3D solidMesh)
         {
-            string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(planes[0]).ToString();
+            Vector3d vector = railPoints.Branch(1)[0] - railPoints.Branch(0)[0];
+            string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(vector).ToString();
             if (curveOrientation == "Clockwise")
             {
-               AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Surface must have normal pointing in different direction than rail. Abaqus can not interpret order of nodes. ");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Surface must have normal pointing in different direction than rail. Abaqus can not interpret order of nodes. ");
+                solidMesh.inp = false;
             }
+            else { solidMesh.inp = true; }
          }
 
 
