@@ -439,16 +439,26 @@ namespace MeshPoints.MeshQuality
                 });
 
                 var jacobianDeterminant = jacobianMatrix.Determinant();
-                jacobiansOfElement.Add(Math.Abs(jacobianDeterminant));
+                jacobiansOfElement.Add(jacobianDeterminant);
+                
+            }
+            
+            double jacobianRatio = 0;
+            // If any of the determinants are negative, we have to divide the maximum with the minimum
+            if (jacobiansOfElement.Any(x => x < 0))
+            {
+                jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
 
-                // This might indicate something wrong with the ordering of nodes in elements (???)
-                if (jacobianDeterminant < 0)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {e.Id} is negative.");
+                if (jacobianRatio < 0)
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "The Jacobian is negative.");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {e.Id} is negative.");
                 }
             }
-            // A value of 1 denotes a cuboid element.
-            double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
+            else
+            {
+                jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
+            }
 
             return jacobianRatio;
         }
