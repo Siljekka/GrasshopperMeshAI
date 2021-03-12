@@ -11,7 +11,7 @@ namespace MeshPoints.Classes
     {
         public int FaceIndex { get; set; }
         public List<qEdge> EdgeList { get; set; }
-        public List<double> AngleList { get; }
+        //public List<double> AngleList { get; }
         
         public bool IsQuad { get; }
 
@@ -27,13 +27,14 @@ namespace MeshPoints.Classes
         {
             FaceIndex = _faceIndex;
             EdgeList = _edgeList;
-            AngleList = CalculateAngles(_edgeList);
+            //AngleList = CalculateAngles(_edgeList);
 
             if (_edgeList.Count == 4) { IsQuad = true; }
             else { IsQuad = false; }
         }
 
         // Methods
+        /*
         private List<double> CalculateAngles(List<qEdge> _edgeList)
         {
             Vector3d vec1 = Vector3d.Zero;
@@ -58,7 +59,8 @@ namespace MeshPoints.Classes
                 angList.Add(ang);
             }
             return angList;
+        
         }
-
+        */
     }
 }
