@@ -84,7 +84,7 @@ namespace MeshPoints.QuadRemesh
             else if (list01.Count != 0) { E_front = list01[0]; edgeState = 01; }
             else { E_front = list00[0]; edgeState = 00; }
 
-            E_front = list01[0]; //-------------- only temporary
+            E_front = frontEdges[3]; //-------------- only temporary
             edgeState = 01; //----------- only temporary
 
             int nodeToEvaluate = 0; // 0=left, 1=right //
@@ -96,8 +96,8 @@ namespace MeshPoints.QuadRemesh
             qEdge E_2 = new qEdge();
 
             // get node, if not edgestate == 11
-            qNode rightNode = GetRightNode(E_front);
-            qNode leftNode = GetLeftNode(E_front);
+            qNode rightNode = GetRightNodeOfFrontEdge(E_front);
+            qNode leftNode = GetLeftNodeOfFrontEdge(E_front);
 
             if (nodeToEvaluate == 0) { E_neighborFront = E_leftFront; }
             else { E_neighborFront = E_rightFront; }
@@ -107,12 +107,13 @@ namespace MeshPoints.QuadRemesh
             Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
             Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
 
-            if (V_k == Vector3d.Zero)
+            
+            if (Math.Round(V_k.Length,2) == 0)
             {
                 if (nodeToEvaluate == 0) { V_k = vec1; }
                 else { V_k = vec2; }
-                Vector3d rotationAxis = Vector3d.CrossProduct(vec1, vec2);
-                V_k.Rotate(0.5 * Math.PI, rotationAxis);
+                //Vector3d rotationAxis = Vector3d.CrossProduct(vec1, vec2);
+                V_k.Rotate(0.5 * Math.PI, Vector3d.ZAxis); // todo: not for 3d surface
             }
 
             qNode N_k = vectorsAndSharedNode.Item3; // shared node
@@ -123,16 +124,21 @@ namespace MeshPoints.QuadRemesh
             foreach (int edgIndex in connectedEdgesIndex) // loop connected edges
             {
                 if ((edgIndex == E_front.Index) | (edgIndex == E_neighborFront.Index)) { continue; } // continue if connected edge is E_frontEdge or E_neighborFront 
+                
+                // check if edge is connected with quad element
                 int[] connectedElements = mesh.TopologyEdges.GetConnectedFaces(edgIndex); // get connected element indices of edge
-
+                bool connectedToQuadElement = false;
                 foreach (int elemIndex in connectedElements) // loop connected elements
                 {
-                    qElement connectedElement = elementList[elemIndex];
-                    if (!connectedElement.IsQuad)
-                    {
-                        E_i_list.Add(edgeList[edgIndex]);
-                    }
+                   qElement connectedElement = elementList[elemIndex];
+                   if (connectedElement.IsQuad)
+                   {
+                        connectedToQuadElement = true;
+                   }
                 }
+
+                if (!connectedToQuadElement) { E_i_list.Add(edgeList[edgIndex]); } // add edge if not connected with quad
+                
             }
             #endregion
 
@@ -161,31 +167,50 @@ namespace MeshPoints.QuadRemesh
                 }
             }
 
-            if (theta_i_list[minIndex] < thetaTolerance) { E_k = E_i_list[minIndex]; } // todo: when e_1 = e_2, what to do?
-            // next: FindEdge(node1, node2)
-            // swap this edge...
-            /*
-            qElement sharedElement = new qElement();
-            if (E_1.Element1 == E_2.Element1) { sharedElement = E_1.Element1; }
-            else if (E_1.Element1 == E_2.Element2) { sharedElement = E_1.Element1; }
-            else if (E_1.Element2 == E_2.Element1) { sharedElement = E_1.Element2; }
-            else if (E_1.Element2 == E_2.Element2) { sharedElement = E_1.Element2; }
+            if (theta_i_list[minIndex] < thetaTolerance) { E_k = E_i_list[minIndex]; } // assume will always work for E_i_list.Count >2
 
-            foreach (qEdge edge in sharedElement.EdgeList)
-            { if (edge != E_1 & edge != E_2) { E_0 = edge; } }
-            
+            // find not share noded of E_i, assume only 2 E_i
+            else
+            {
+                if (E_i_list.Count != 2) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Assumption of E_i_list.Count = 2 is wrong."); }
+                
+                // find nodes for E_0
+                qNode E_1_NotSharedNode = new qNode();
+                qNode E_2_NotSharedNode = new qNode();
+                if (E_i_list[0].StartNode == N_k) { E_1_NotSharedNode = E_i_list[0].EndNode; }
+                else { E_1_NotSharedNode = E_i_list[0].StartNode; }
+                if (E_i_list[1].StartNode == N_k) { E_2_NotSharedNode = E_i_list[1].EndNode; }
+                else { E_2_NotSharedNode = E_i_list[1].StartNode; }
+
+                E_0 = FindEdge(edgeList, E_1_NotSharedNode, E_2_NotSharedNode); // find edge
+            }
+            SwapEdge(mesh, E_0, edgeList, elementList, N_k);
+
+
+
+            /*
+            //bool swaped = mesh.TopologyEdges.SwapEdge(E_0.Index);
+            //Line swapedEdge = mesh.TopologyEdges.EdgeLine(E_0.Index);
+            //MeshTopologyEdgeList topologyEdges = mesh.TopologyEdges;
+
+            List<Line> edgeLines = new List<Line>();
+            for (int i = 0; i < topologyEdges.Count; i++)
+            {
+                Line l = topologyEdges.EdgeLine(i);
+                edgeLines.Add(l);
+            }
             */
 
 
             // output
-            DA.SetDataList(0, frontEdges);
+            DA.SetDataList(0, edgeList);
             DA.SetDataList(1, list11);
             DA.SetDataList(2, list10);
             DA.SetDataList(3, list01);
             DA.SetDataList(4, list00);
-            DA.SetDataList(5, theta_i_list);
-            DA.SetData(6,minIndex); 
-            DA.SetData(7, E_k);
+            DA.SetDataList(5, edgeList);
+            DA.SetData(6,E_0); 
+            DA.SetData(7, mesh);
         }
         #region Methods
         private List<qNode> CreateNodes(Mesh mesh)
@@ -330,11 +355,11 @@ namespace MeshPoints.QuadRemesh
                 {
                     if (nodeToCalculate == 0)
                     {
-                        leftAngle = CalculateAngleOfAdjecentEdges(mesh, nodeToCalculate, frontEdges[i]);
+                        leftAngle = CalculateAngleOfAdjecentFrontEdges(mesh, nodeToCalculate, frontEdges[i]);
                     }
                     else
                     {
-                        rightAngle = CalculateAngleOfAdjecentEdges(mesh, nodeToCalculate, frontEdges[i]);
+                        rightAngle = CalculateAngleOfAdjecentFrontEdges(mesh, nodeToCalculate, frontEdges[i]);
                     }
 
                     if (leftAngle < angleTolerance & rightAngle < angleTolerance) { edgeState = 11; }
@@ -361,7 +386,7 @@ namespace MeshPoints.QuadRemesh
             }
             return Tuple.Create(list11, list10, list01, list00);
         }
-        private double CalculateAngleOfAdjecentEdges(Mesh mesh, int nodeToCalculate, qEdge edge)
+        private double CalculateAngleOfAdjecentFrontEdges(Mesh mesh, int nodeToCalculate, qEdge edge)
         {
             // Calculate the angle between front edges with a shared point, i.e. neighbor front edges.
 
@@ -421,7 +446,7 @@ namespace MeshPoints.QuadRemesh
             }
             return angle;
         }
-        private qNode GetRightNode(qEdge edge)
+        private qNode GetRightNodeOfFrontEdge(qEdge edge)
         {
             // get the right node of a front edge
             qNode sharedNode = new qNode();
@@ -432,7 +457,7 @@ namespace MeshPoints.QuadRemesh
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No shared nodes"); }
             return sharedNode;
         }
-        private qNode GetLeftNode(qEdge edge)
+        private qNode GetLeftNodeOfFrontEdge(qEdge edge)
         {
             // get the right node of a front edge
             qNode sharedNode = new qNode();
@@ -480,6 +505,53 @@ namespace MeshPoints.QuadRemesh
             if (edge.StartNode == node) { vec = edge.EndNode.Coordinate - node.Coordinate; }
             else if (edge.EndNode == node) { vec = edge.StartNode.Coordinate - node.Coordinate; }
             return vec;
+        }
+        private qEdge FindEdge(List<qEdge> edgeList, qNode node1, qNode node2)
+        {
+            qEdge foundEdge = new qEdge();
+            foreach (qEdge edge in edgeList)
+            {
+                if (edge.StartNode == node1 | edge.EndNode == node1)
+                {
+                    if (edge.StartNode == node2 | edge.EndNode == node2)
+                    { foundEdge = edge; } // todo: break?
+
+                }
+            }
+            if (foundEdge == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No edge contains the given nodes."); }
+            return foundEdge;
+        }
+
+        private void SwapEdge(Mesh mesh, qEdge edge, List<qEdge> edgeList, List<qElement> elementList, qNode N_k)
+        {
+            if (!mesh.TopologyEdges.IsSwappableEdge(edge.Index))
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable."); return; }
+
+            qNode N_m = new qNode(); // new node
+            List<qNode> nodeCandidates = new List<qNode>(); // list of node candidates
+            List<qNode> nodeKnow = new List<qNode>() { edge.StartNode, edge.EndNode, N_k }; // known nodes
+
+            // find connected elements
+            int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(edge.Index);
+            List<qElement> connectedElements = new List<qElement>()
+                { elementList[connectedElementsIndex[0]] , elementList[connectedElementsIndex[1]] };
+            
+            for (int i = 0; i < 2; i++) // loop elements
+            {
+                foreach (qEdge elementEdge in elementList[i].EdgeList) // loop edges of elements
+                {
+                    nodeCandidates.Add(elementEdge.StartNode);
+                    nodeCandidates.Add(elementEdge.EndNode);
+                }
+            }
+            foreach (qNode node in nodeCandidates)
+            {
+                if (!nodeKnow.Contains(node)) { N_m = node; break; };
+            }
+
+            // update edge
+            edge.StartNode = N_k;
+            edge.EndNode = N_m;
         }
         #endregion
 
