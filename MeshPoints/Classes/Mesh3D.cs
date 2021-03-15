@@ -15,6 +15,7 @@ namespace MeshPoints.Classes
         public int nu { get; set; } //number of nodes in x-dir
         public int nv { get; set; } //number of nodes in y-dir
         public int nw { get; set; } //number of nodes in z-dir
+        public bool inp { get; set; }
         public Mesh3D()
         {
             //Empty constructor
