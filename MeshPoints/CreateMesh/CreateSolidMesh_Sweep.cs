@@ -2,7 +2,6 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
-using Rhino.Geometry.Collections;
 using MeshPoints.Classes;
 using System.Linq;
 using Grasshopper;
@@ -11,14 +10,14 @@ using Rhino.Geometry.Intersect;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateSolidMesh_GenericSweep : GH_Component
+    public class CreateSolidMesh_Sweep : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the MyComponent1 class.
+        /// Initializes a new instance of the CreateSolidMesh_Sweep class.
         /// </summary>
-        public CreateSolidMesh_GenericSweep()
-          : base("Create SolidMesh (Sweep)", "mesh3DG",
-              "Creates a solid mesh (brep can not be made from box",
+        public CreateSolidMesh_Sweep()
+          : base("CreateSolidMesh_Sweep", "sM",
+              "Generate solid mesh. Independent on how surface composing the brep is made.",
               "MyPlugIn", "Mesh")
         {
         }
@@ -130,7 +129,7 @@ namespace MeshPoints.CreateMesh
                 solidMesh.inp = false;
             }
             else { solidMesh.inp = true; }
-         }
+        }
 
 
         /// <summary>
@@ -306,7 +305,7 @@ namespace MeshPoints.CreateMesh
             nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
             nw = nw + 1; //input nw = nw - 1. Exs: nw = 3, total points in w-direction is 4;
 
-            for (int i = 0; i < nw ; i++)
+            for (int i = 0; i < nw; i++)
             {
                 int row = 0;
                 int column = 0;
@@ -317,7 +316,7 @@ namespace MeshPoints.CreateMesh
 
                     if (column == 0 | column == nu - 1) { node.BC_U = true; } // assign BCU
                     if (row == 0 | row == nv - 1) { node.BC_V = true; } // assign BCV
-                    if (i == 0 | i == nw - 1 ) { node.BC_W = true; } // assign BCW
+                    if (i == 0 | i == nw - 1) { node.BC_W = true; } // assign BCW
 
                     column++;
                     if (column == nu)
@@ -384,7 +383,7 @@ namespace MeshPoints.CreateMesh
                         Node n8 = new Node(8, nodes[counter + nu + nu * nv].GlobalId, ptsTop[j + nu], nodes[counter + nu + nu * nv].BC_U, nodes[counter + nu + nu * nv].BC_V, nodes[counter + nu + nu * nv].BC_W);
                         e.Node8 = n8;
 
-                        
+
                         mesh.Vertices.Add(e.Node1.Coordinate); //0
                         mesh.Vertices.Add(e.Node2.Coordinate); //1
                         mesh.Vertices.Add(e.Node3.Coordinate); //2
@@ -440,8 +439,6 @@ namespace MeshPoints.CreateMesh
         }
 
         #endregion
-
-
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
@@ -460,7 +457,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("bf8907fb-fb39-41c7-aa44-c0af8111dccb"); }
+            get { return new Guid("c7862868-a0a6-46f7-bb93-88c7ab55e3fb"); }
         }
     }
 }
