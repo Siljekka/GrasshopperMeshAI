@@ -84,7 +84,7 @@ namespace MeshPoints.QuadRemesh
             else if (list01.Count != 0) { E_front = list01[0]; edgeState = 01; }
             else { E_front = list00[0]; edgeState = 00; }
 
-            E_front = frontEdges[3]; //-------------- only temporary
+            E_front = frontEdges[5]; //-------------- only temporary
             edgeState = 01; //----------- only temporary
 
             int nodeToEvaluate = 0; // 0=left, 1=right //
@@ -183,13 +183,20 @@ namespace MeshPoints.QuadRemesh
                 else { E_2_NotSharedNode = E_i_list[1].StartNode; }
 
                 E_0 = FindEdge(edgeList, E_1_NotSharedNode, E_2_NotSharedNode); // find edge
+                //SwapEdge(mesh, E_0, edgeList, elementList, N_k); 
+                //E_k = E_0;
+                
+                // split:
+
+
+                
+
+
+
             }
-            SwapEdge(mesh, E_0, edgeList, elementList, N_k); // todo: får feil N_k.
+            
 
-            // todo:
-            //-split
-            //add loop to go through all front edges? see if side edge works. Use edgeState.
-
+           
 
 
 
@@ -209,7 +216,7 @@ namespace MeshPoints.QuadRemesh
 
             #endregion
             // output
-            DA.SetDataList(0, edgeList);
+            DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, list11);
             DA.SetDataList(2, list10);
             DA.SetDataList(3, list01);
@@ -544,7 +551,7 @@ namespace MeshPoints.QuadRemesh
             
             for (int i = 0; i < 2; i++) // loop elements
             {
-                foreach (qEdge elementEdge in elementList[i].EdgeList) // loop edges of elements
+                foreach (qEdge elementEdge in connectedElements[i].EdgeList) // loop edges of elements
                 {
                     nodeCandidates.Add(elementEdge.StartNode);
                     nodeCandidates.Add(elementEdge.EndNode);
@@ -558,6 +565,9 @@ namespace MeshPoints.QuadRemesh
             // update edge
             edge.StartNode = N_k;
             edge.EndNode = N_m;
+            edge.EdgeLine = edge.VisualizeLine(edge.StartNode, edge.EndNode);
+            edge.Length = edge.CalculateLength(edge.StartNode, edge.EndNode);
+
         }
         #endregion
 
