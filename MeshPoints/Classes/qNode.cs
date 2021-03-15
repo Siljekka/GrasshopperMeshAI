@@ -18,7 +18,5 @@ namespace MeshPoints.Classes
         {
             // empty constructor
         }
-
-        // contains only a coordinate. Use Point3d class.
     }
 }

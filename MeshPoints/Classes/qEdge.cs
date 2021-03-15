@@ -30,7 +30,7 @@ namespace MeshPoints.Classes
 
         public qEdge(int _index, qNode _startNode, qNode _endNode)
         {
-            Index = _index; //sjekk om nødvendig å ha
+            Index = _index;
             StartNode = _startNode;
             EndNode = _endNode;
             Length = CalculateLength(_startNode, _endNode);
