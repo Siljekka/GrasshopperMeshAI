@@ -72,8 +72,8 @@ namespace MeshPoints.QuadRemesh
             var list01 = edgeStates.Item3;
             var list00 = edgeStates.Item4;
 
-
-            //-----side edge definiton-------
+            #region Side edge definition
+            // Gonna change the region into methods later.
             qEdge E_front = new qEdge();
             int edgeState = 0;
             double thetaTolerance = 0.16667 * Math.PI;
@@ -184,7 +184,13 @@ namespace MeshPoints.QuadRemesh
 
                 E_0 = FindEdge(edgeList, E_1_NotSharedNode, E_2_NotSharedNode); // find edge
             }
-            SwapEdge(mesh, E_0, edgeList, elementList, N_k);
+            SwapEdge(mesh, E_0, edgeList, elementList, N_k); // todo: får feil N_k.
+
+            // todo:
+            //-split
+            //add loop to go through all front edges? see if side edge works. Use edgeState.
+
+
 
 
 
@@ -201,7 +207,7 @@ namespace MeshPoints.QuadRemesh
             }
             */
 
-
+            #endregion
             // output
             DA.SetDataList(0, edgeList);
             DA.SetDataList(1, list11);
