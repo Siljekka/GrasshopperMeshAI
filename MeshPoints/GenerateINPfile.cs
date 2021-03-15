@@ -25,7 +25,7 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("SolidMesh", "solid", "Solid mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
             pManager.AddGenericParameter("SurfaceMesh", "surface", "Surface mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
-            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I, ... (Solid, Shell)", GH_ParamAccess.item);
+            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I, S4 (Solid, Shell)", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item);
             pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 1 mm", GH_ParamAccess.item);
@@ -73,15 +73,17 @@ namespace MeshPoints
             string partName = "Geometry"; //todo: fix name
             string sectionName = "Section"; //todo: fix name
             string materialName = "Steel";
-            
-            
+
+            // 0. Check if inp-file can be made. 
+            if (!solidMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
+
 
             // 1. Set material properties
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
 
             // 2. Set element type dependent on solid or surface mesh
             if (DA.GetData(0, ref solidMesh) & elementType == "Empty") { elementType = "C3D8I"; }
-            if (DA.GetData(1, ref surfaceMesh) & elementType == "Empty") { elementType = "todo: choose type"; }
+            if (DA.GetData(1, ref surfaceMesh) & elementType == "Empty") { elementType = "S4"; }
 
             // 3. Generate inp-file
             if (DA.GetData(0, ref solidMesh) & !DA.GetData(1, ref surfaceMesh))
@@ -115,7 +117,7 @@ namespace MeshPoints
             inpText.Add("**<Input: text describing the problem being simulated.>"); //todo: fix description
             inpText.Add("**SI Units");
             inpText.Add("**x1=x, x2=y, x3=z");
-            inpText.Add("*Preprint, echo = YES, model = YES, history = YES"); //recomended. Gives printout of the input file and of the model and history definition data
+            inpText.Add("*Preprint, echo=YES, model=YES, history=YES"); //recomended. Gives printout of the input file and of the model and history definition data
 
             // Start of part
             inpText.Add("**");
@@ -139,14 +141,14 @@ namespace MeshPoints
             foreach (Element e in elements)
             {
                 int elementId = e.Id+1;
-                int n1 = e.Node1.GlobalId;
-                int n2 = e.Node2.GlobalId;
-                int n3 = e.Node3.GlobalId;
-                int n4 = e.Node4.GlobalId;
-                int n5 = e.Node5.GlobalId;
-                int n6 = e.Node6.GlobalId;
-                int n7 = e.Node7.GlobalId;
-                int n8 = e.Node8.GlobalId;
+                int n1 = e.Node1.GlobalId + 1;
+                int n2 = e.Node2.GlobalId + 1;
+                int n3 = e.Node3.GlobalId + 1;
+                int n4 = e.Node4.GlobalId + 1;
+                int n5 = e.Node5.GlobalId + 1;
+                int n6 = e.Node6.GlobalId + 1;
+                int n7 = e.Node7.GlobalId + 1;
+                int n8 = e.Node8.GlobalId + 1;
                 inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", elementId, n1, n2, n3, n4, n5, n6, n7, n8)); //ElementId, n1, n2, n3, n4, n5, n6, n7, n8
             }
             inpText.Add("**");
@@ -259,7 +261,7 @@ namespace MeshPoints
             inpText.Add("**< text describing the problem being simulated.>"); //todo: fix description
             inpText.Add("**SI Units");
             inpText.Add("**x1=x, x2=y, x3=z");
-            inpText.Add("*Preprint, echo = YES, model = YES, history = YES"); //recomended. Gives printout of the input file and of the model and history definition data
+            inpText.Add("*Preprint, echo=YES, model=YES, history=YES"); //recomended. Gives printout of the input file and of the model and history definition data
 
             // Start of part
             inpText.Add("**");
