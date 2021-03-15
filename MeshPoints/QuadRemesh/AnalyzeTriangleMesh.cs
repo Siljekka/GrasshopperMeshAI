@@ -25,7 +25,7 @@ namespace MeshPoints.QuadRemesh
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Triangle mesh", "trimesh", "Input a trinagle mesh", GH_ParamAccess.item);
-
+            pManager.AddNumberParameter("# elements to remesh", "number", "Input an integer", GH_ParamAccess.item, 1);
         }
 
         /// <summary>
@@ -39,8 +39,10 @@ namespace MeshPoints.QuadRemesh
             pManager.AddGenericParameter("List 0-1", "01", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("List 0-0", "00", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("qElements", "element", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("E_1", "element", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("E_2", "element", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("E_front", "element", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("E_k_left", "element", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("E_k_right ", "element", "", GH_ParamAccess.item);
+
         }
 
         /// <summary>
@@ -51,6 +53,7 @@ namespace MeshPoints.QuadRemesh
         {
             // variables
             Mesh mesh = new Mesh();
+            double numberElementsToRemesh = 0;
             List<qElement> elementList = new List<qElement>();
             List<qEdge> edgeList = new List<qEdge>();
             qElement element = new qElement();
@@ -59,6 +62,7 @@ namespace MeshPoints.QuadRemesh
 
             // input
             DA.GetData(0, ref mesh);
+            DA.GetData(1, ref numberElementsToRemesh);
 
             // NOTE: Topological vertices and vertices are not sorted the same way. Make use to topological vertices in these codes.
             edgeList = CreateEdges(mesh);
@@ -72,134 +76,50 @@ namespace MeshPoints.QuadRemesh
             var list01 = edgeStates.Item3;
             var list00 = edgeStates.Item4;
 
-            #region Side edge definition
-            // Gonna change the region into methods later.
-            qEdge E_front = new qEdge();
-            int edgeState = 0;
-            double thetaTolerance = 0.16667 * Math.PI;
+            qEdge E_k_left = new qEdge(); // left side edge of quad
+            qEdge E_k_right = new qEdge(); // right side edge of quad
+            qEdge E_front = new qEdge(); // bottom of quad
 
-            // get E_front
-            if (list11.Count != 0) { E_front = list11[0]; edgeState = 11; }
-            else if (list10.Count != 0) { E_front = list10[0]; edgeState = 10; }
-            else if (list01.Count != 0) { E_front = list01[0]; edgeState = 01; }
-            else { E_front = list00[0]; edgeState = 00; }
-
-            E_front = frontEdges[5]; //-------------- only temporary
-            edgeState = 01; //----------- only temporary
-
-            int nodeToEvaluate = 0; // 0=left, 1=right //
-
-            qEdge E_leftFront = E_front.LeftFrontNeighbor;
-            qEdge E_rightFront = E_front.RightFrontNeighbor;
-            qEdge E_neighborFront = new qEdge();
-            qEdge E_1 = new qEdge();
-            qEdge E_2 = new qEdge();
-
-            // get node, if not edgestate == 11
-            qNode rightNode = GetRightNodeOfFrontEdge(E_front);
-            qNode leftNode = GetLeftNodeOfFrontEdge(E_front);
-
-            if (nodeToEvaluate == 0) { E_neighborFront = E_leftFront; }
-            else { E_neighborFront = E_rightFront; }
-
-            var vectorsAndSharedNode = CalculateVectorsFromSharedNode(E_front, E_neighborFront);
-            Vector3d vec1 = vectorsAndSharedNode.Item1; // get vector for E_front
-            Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
-            Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
-            
-            if (Math.Round(V_k.Length,2) == 0)
+            for (int i = 0; i < numberElementsToRemesh; i++)
             {
-                if (nodeToEvaluate == 0) { V_k = vec1; }
-                else { V_k = vec2; }
-                V_k.Rotate(0.5 * Math.PI, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
-            }
+                // get E_front
+                // todo: extand the hieraki
+                int edgeState = 0;
+                if (list11.Count != 0) { E_front = list11[0]; edgeState = 11; list11.RemoveAt(0); }
+                else if (list01.Count != 0) { E_front = list01[0]; edgeState = 01; list01.RemoveAt(0); }
+                else if (list10.Count != 0) { E_front = list10[0]; edgeState = 10; list10.RemoveAt(0); }
+                else { E_front = list00[0]; edgeState = 00; list00.RemoveAt(0); }
 
-            qNode N_k = vectorsAndSharedNode.Item3; // shared node
-            int[] connectedEdgesIndex = N_k.ConnectedEdges; // get connected edges indices of shared node
-
-            #region Get E_i
-            List<qEdge> E_i_list = new List<qEdge>();
-            foreach (int edgIndex in connectedEdgesIndex) // loop connected edges
-            {
-                if ((edgIndex == E_front.Index) | (edgIndex == E_neighborFront.Index)) { continue; } // continue if connected edge is E_frontEdge or E_neighborFront 
-                
-                // check if edge is connected with quad element
-                int[] connectedElements = mesh.TopologyEdges.GetConnectedFaces(edgIndex); // get connected element indices of edge
-                bool connectedToQuadElement = false;
-                foreach (int elemIndex in connectedElements) // loop connected elements
+                // get E_k
+                if (edgeState == 11)
                 {
-                   qElement connectedElement = elementList[elemIndex];
-                   if (connectedElement.IsQuad)
-                   {
-                        connectedToQuadElement = true;
-                   }
+                    E_k_left = E_front.LeftFrontNeighbor;
+                    E_k_right = E_front.RightFrontNeighbor;
+                }
+                else if (edgeState == 01 | edgeState == 00) 
+                {
+                    int nodeToEvaluate = 0; // evaluate left node
+                    E_k_left = GetSideEdge(mesh, elementList, edgeList, nodeToEvaluate, E_front);
+                    E_k_right = E_front.RightFrontNeighbor;
+                }
+                else
+                {
+                    int nodeToEvaluate = 1; // evaluate right node
+                    E_k_right = GetSideEdge(mesh, elementList, edgeList, nodeToEvaluate, E_front);
+                    E_k_left = E_front.LeftFrontNeighbor;
                 }
 
-                if (!connectedToQuadElement) { E_i_list.Add(edgeList[edgIndex]); } // add edge if not connected with quad
-                
-            }
-            #endregion
+                // todo: update edgestate list after top recovery
+                /*
+                #region top recovery:
+                leftNode =GetNodeOfFrontEdge(0, E_front)
+                Line S = new Line(N_c.coordinate, N_coordinate)
 
-            // calcualte thetas 
-            List<double> theta_i_list = new List<double>();
-            foreach (qEdge E_i in E_i_list)
-            {
-                Vector3d E_i_vec = GetVectorOfEdgeFromNode(E_i, N_k);
-                double theta_i = Vector3d.VectorAngle(V_k, E_i_vec);
-                theta_i_list.Add(theta_i);
+
+               #endregion*/
+
             }
 
-            // get E_k
-            qEdge E_k = new qEdge();
-            qEdge E_0 = new qEdge();
-            qEdge E_m = new qEdge();
-
-            // find smallest theta
-            double min = theta_i_list[0];
-            int minIndex = 0;
-            for (int i = 1; i < theta_i_list.Count; ++i)
-            {
-                if (theta_i_list[i] < min)
-                {
-                    min = theta_i_list[i];
-                    minIndex = i;
-                }
-            }
-
-            if (theta_i_list[minIndex] < thetaTolerance) { E_k = E_i_list[minIndex]; } // assume will always work for E_i_list.Count >2
-
-            // find not share noded of E_i, assume only 2 E_i
-            else
-            {
-                if (E_i_list.Count != 2) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Assumption of E_i_list.Count = 2 is wrong."); }
-                
-                // find nodes for E_0
-                qNode E_1_NotSharedNode = new qNode();
-                qNode E_2_NotSharedNode = new qNode();
-                if (E_i_list[0].StartNode == N_k) { E_1_NotSharedNode = E_i_list[0].EndNode; }
-                else { E_1_NotSharedNode = E_i_list[0].StartNode; }
-                if (E_i_list[1].StartNode == N_k) { E_2_NotSharedNode = E_i_list[1].EndNode; }
-                else { E_2_NotSharedNode = E_i_list[1].StartNode; }
-
-                E_0 = FindEdge(edgeList, E_1_NotSharedNode, E_2_NotSharedNode); // find edge
-                qNode N_m = GetN_m(mesh, E_0, edgeList, elementList, N_k);
-
-
-                double lengthN_kN_m = N_k.Coordinate.DistanceTo(N_m.Coordinate);
-                if (lengthN_kN_m < Math.Sqrt(3) * (E_front.Length + E_neighborFront.Length) * 0.5) //todo: add beta > eps
-                {
-                    SwapEdge(E_0, N_m, N_k);
-                    E_k = E_0;
-                }
-                else 
-                {
-                    var E_kAndE_m = SplitEdge(E_0, V_k, N_k, N_m);
-                    E_k = E_kAndE_m.Item1;
-                    E_m = E_kAndE_m.Item2;
-                }
-            }
-
-            #endregion
             // output
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, list11);
@@ -207,8 +127,9 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(3, list01);
             DA.SetDataList(4, list00);
             DA.SetDataList(5, edgeList);
-            DA.SetData(6, E_m); 
-            DA.SetData(7, E_k);
+            DA.SetData(6, E_front); 
+            DA.SetData(7, E_k_left);
+            DA.SetData(8, E_k_right);
         }
         #region Methods
         private List<qNode> CreateNodes(Mesh mesh)
@@ -529,35 +450,6 @@ namespace MeshPoints.QuadRemesh
             edge.Length = edge.CalculateLength(edge.StartNode, edge.EndNode);
         }
 
-        private qNode GetN_m(Mesh mesh, qEdge edge, List<qEdge> edgeList, List<qElement> elementList, qNode N_k)
-        {
-            if (!mesh.TopologyEdges.IsSwappableEdge(edge.Index))
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable.");}
-
-            qNode N_m = new qNode(); // new node
-            List<qNode> nodeCandidates = new List<qNode>(); // list of node candidates
-            List<qNode> nodeKnow = new List<qNode>() { edge.StartNode, edge.EndNode, N_k }; // known nodes
-
-            // find connected elements
-            int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(edge.Index);
-            List<qElement> connectedElements = new List<qElement>()
-                { elementList[connectedElementsIndex[0]] , elementList[connectedElementsIndex[1]] };
-
-            for (int i = 0; i < 2; i++) // loop elements
-            {
-                foreach (qEdge elementEdge in connectedElements[i].EdgeList) // loop edges of elements
-                {
-                    nodeCandidates.Add(elementEdge.StartNode);
-                    nodeCandidates.Add(elementEdge.EndNode);
-                }
-            }
-            foreach (qNode node in nodeCandidates)
-            {
-                if (!nodeKnow.Contains(node)) { N_m = node; break; };
-            }
-            return N_m;
-        }
-
         private Tuple<qEdge, qEdge> SplitEdge(qEdge E_0, Vector3d V_k, qNode N_k, qNode N_m)
         {
             qEdge E_k = new qEdge();
@@ -599,6 +491,148 @@ namespace MeshPoints.QuadRemesh
             return Tuple.Create(E_k, E_m);
 
         }
+
+        private qEdge GetSideEdge(Mesh mesh, List<qElement> elementList, List<qEdge> edgeList, double nodeToEvaluate, qEdge E_front)
+        {
+            // todo: update new elements, new nodes, new connections etc. Might be done later. Have not used N_n and E_m.
+
+            double thetaTolerance = 0.16667 * Math.PI; // todo: an assumption
+            qEdge E_neighborFront = new qEdge();
+            if (nodeToEvaluate == 0) { E_neighborFront = E_front.LeftFrontNeighbor; ; }
+            else { E_neighborFront = E_front.RightFrontNeighbor; }
+
+            #region Get V_k
+            var vectorsAndSharedNode = CalculateVectorsFromSharedNode(E_front, E_neighborFront);
+            Vector3d vec1 = vectorsAndSharedNode.Item1; // get vector for E_front
+            Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
+            qNode N_k = vectorsAndSharedNode.Item3; // shared node
+            Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
+            if (Math.Round(V_k.Length, 2) == 0)
+            {
+                if (nodeToEvaluate == 0) { V_k = vec1; }
+                else { V_k = vec2; }
+                V_k.Rotate(0.5 * Math.PI, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
+            }
+            #endregion
+
+            #region Get E_i (connected edges to shared node)
+            int[] connectedEdgesIndex = N_k.ConnectedEdges; // get connected edges indices of shared node
+
+            // get E_i
+            List<qEdge> E_i_list = new List<qEdge>();
+            foreach (int edgIndex in connectedEdgesIndex) // loop connected edges
+            {
+                if ((edgIndex == E_front.Index) | (edgIndex == E_neighborFront.Index)) { continue; } // continue if connected edge is E_frontEdge or E_neighborFront 
+
+                // check if edge is only connected with triangle element
+                int[] connectedElements = mesh.TopologyEdges.GetConnectedFaces(edgIndex); // get connected element indices of edge
+                bool connectedToQuadElement = false;
+                foreach (int elemIndex in connectedElements) // loop connected elements
+                {
+                    qElement connectedElement = elementList[elemIndex];
+                    if (connectedElement.IsQuad)
+                    {
+                        connectedToQuadElement = true;
+                    }
+                }
+                if (!connectedToQuadElement) { E_i_list.Add(edgeList[edgIndex]); } // add edge if not connected with quad
+            }
+            #endregion
+
+            #region Find smallest theta to edge
+            // calcualte thetas 
+            List<double> theta_i_list = new List<double>();
+            foreach (qEdge E_i in E_i_list)
+            {
+                Vector3d E_i_vec = GetVectorOfEdgeFromNode(E_i, N_k);
+                double theta_i = Vector3d.VectorAngle(V_k, E_i_vec);
+                theta_i_list.Add(theta_i);
+            }
+
+            // find smallest theta
+            double minTheta = theta_i_list[0];
+            int minThetaIndex = 0;
+            for (int i = 1; i < theta_i_list.Count; ++i)
+            {
+                if (theta_i_list[i] < minTheta)
+                {
+                    minTheta = theta_i_list[i];
+                    minThetaIndex = i;
+                }
+            }
+            #endregion
+
+            #region Get E_k
+            qEdge E_k = new qEdge();
+            qEdge E_0 = new qEdge();
+            qEdge E_m = new qEdge();
+
+            if (minTheta < thetaTolerance) // use existing edge
+            {
+                E_k = E_i_list[minThetaIndex];
+            }
+            else // swap or split
+            {
+                if (E_i_list.Count != 2) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Assumption of E_i_list.Count = 2 is wrong."); }
+
+                #region Find E_0
+                // find shared node and connected egdes
+                qNode E_1_NotSharedNode = new qNode();
+                qNode E_2_NotSharedNode = new qNode();
+                if (E_i_list[0].StartNode == N_k) { E_1_NotSharedNode = E_i_list[0].EndNode; }
+                else { E_1_NotSharedNode = E_i_list[0].StartNode; }
+                if (E_i_list[1].StartNode == N_k) { E_2_NotSharedNode = E_i_list[1].EndNode; }
+                else { E_2_NotSharedNode = E_i_list[1].StartNode; }
+
+                E_0 = FindEdge(edgeList, E_1_NotSharedNode, E_2_NotSharedNode); // find edge
+                #endregion
+
+                #region Find N_m
+                if (!mesh.TopologyEdges.IsSwappableEdge(E_0.Index))
+                { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable."); }
+
+                qNode N_m = new qNode(); // new node
+                List<qNode> nodeCandidates = new List<qNode>(); // list of node candidates
+                List<qNode> nodeKnow = new List<qNode>() { E_0.StartNode, E_0.EndNode, N_k }; // known nodes
+
+                int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(E_0.Index);
+                List<qElement> connectedElements = new List<qElement>()
+                { elementList[connectedElementsIndex[0]] , elementList[connectedElementsIndex[1]] };
+
+                for (int i = 0; i < 2; i++) // loop elements
+                {
+                    foreach (qEdge elementEdge in connectedElements[i].EdgeList) // loop edges of elements
+                    {
+                        nodeCandidates.Add(elementEdge.StartNode);
+                        nodeCandidates.Add(elementEdge.EndNode);
+                    }
+                }
+                foreach (qNode node in nodeCandidates)
+                {
+                    if (!nodeKnow.Contains(node)) { N_m = node; break; };
+                }
+                #endregion
+
+                double lengthN_kN_m = N_k.Coordinate.DistanceTo(N_m.Coordinate);
+                double beta = Vector3d.VectorAngle(V_k, N_m.Coordinate - N_k.Coordinate);
+                if ((lengthN_kN_m < Math.Sqrt(3) * (E_front.Length + E_neighborFront.Length) * 0.5) & beta < thetaTolerance)
+                {
+                    SwapEdge(E_0, N_m, N_k);
+                    E_k = E_0;
+                }
+                else
+                {
+                    var E_kAndE_m = SplitEdge(E_0, V_k, N_k, N_m);
+                    E_k = E_kAndE_m.Item1;
+                    E_m = E_kAndE_m.Item2;
+                }
+            }
+            #endregion
+
+            return E_k;
+
+        }
+
         #endregion
 
         /// <summary>
