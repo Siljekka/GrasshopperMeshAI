@@ -106,14 +106,12 @@ namespace MeshPoints.QuadRemesh
             Vector3d vec1 = vectorsAndSharedNode.Item1; // get vector for E_front
             Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
             Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
-
             
             if (Math.Round(V_k.Length,2) == 0)
             {
                 if (nodeToEvaluate == 0) { V_k = vec1; }
                 else { V_k = vec2; }
-                //Vector3d rotationAxis = Vector3d.CrossProduct(vec1, vec2);
-                V_k.Rotate(0.5 * Math.PI, Vector3d.ZAxis); // todo: not for 3d surface
+                V_k.Rotate(0.5 * Math.PI, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
             }
 
             qNode N_k = vectorsAndSharedNode.Item3; // shared node
@@ -154,6 +152,7 @@ namespace MeshPoints.QuadRemesh
             // get E_k
             qEdge E_k = new qEdge();
             qEdge E_0 = new qEdge();
+            qEdge E_m = new qEdge();
 
             // find smallest theta
             double min = theta_i_list[0];
@@ -183,36 +182,22 @@ namespace MeshPoints.QuadRemesh
                 else { E_2_NotSharedNode = E_i_list[1].StartNode; }
 
                 E_0 = FindEdge(edgeList, E_1_NotSharedNode, E_2_NotSharedNode); // find edge
-                //SwapEdge(mesh, E_0, edgeList, elementList, N_k); 
-                //E_k = E_0;
-                
-                // split:
+                qNode N_m = GetN_m(mesh, E_0, edgeList, elementList, N_k);
 
 
-                
-
-
-
+                double lengthN_kN_m = N_k.Coordinate.DistanceTo(N_m.Coordinate);
+                if (lengthN_kN_m < Math.Sqrt(3) * (E_front.Length + E_neighborFront.Length) * 0.5) //todo: add beta > eps
+                {
+                    SwapEdge(E_0, N_m, N_k);
+                    E_k = E_0;
+                }
+                else 
+                {
+                    var E_kAndE_m = SplitEdge(E_0, V_k, N_k, N_m);
+                    E_k = E_kAndE_m.Item1;
+                    E_m = E_kAndE_m.Item2;
+                }
             }
-            
-
-           
-
-
-
-
-            /*
-            //bool swaped = mesh.TopologyEdges.SwapEdge(E_0.Index);
-            //Line swapedEdge = mesh.TopologyEdges.EdgeLine(E_0.Index);
-            //MeshTopologyEdgeList topologyEdges = mesh.TopologyEdges;
-
-            List<Line> edgeLines = new List<Line>();
-            for (int i = 0; i < topologyEdges.Count; i++)
-            {
-                Line l = topologyEdges.EdgeLine(i);
-                edgeLines.Add(l);
-            }
-            */
 
             #endregion
             // output
@@ -222,8 +207,8 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(3, list01);
             DA.SetDataList(4, list00);
             DA.SetDataList(5, edgeList);
-            DA.SetData(6,E_0); 
-            DA.SetData(7, mesh);
+            DA.SetData(6, E_m); 
+            DA.SetData(7, E_k);
         }
         #region Methods
         private List<qNode> CreateNodes(Mesh mesh)
@@ -535,10 +520,19 @@ namespace MeshPoints.QuadRemesh
             return foundEdge;
         }
 
-        private void SwapEdge(Mesh mesh, qEdge edge, List<qEdge> edgeList, List<qElement> elementList, qNode N_k)
+        private void SwapEdge(qEdge edge, qNode N_m, qNode N_k)
+        {
+            // update edge
+            edge.StartNode = N_k;
+            edge.EndNode = N_m;
+            edge.EdgeLine = edge.VisualizeLine(edge.StartNode, edge.EndNode);
+            edge.Length = edge.CalculateLength(edge.StartNode, edge.EndNode);
+        }
+
+        private qNode GetN_m(Mesh mesh, qEdge edge, List<qEdge> edgeList, List<qElement> elementList, qNode N_k)
         {
             if (!mesh.TopologyEdges.IsSwappableEdge(edge.Index))
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable."); return; }
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable.");}
 
             qNode N_m = new qNode(); // new node
             List<qNode> nodeCandidates = new List<qNode>(); // list of node candidates
@@ -548,7 +542,7 @@ namespace MeshPoints.QuadRemesh
             int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(edge.Index);
             List<qElement> connectedElements = new List<qElement>()
                 { elementList[connectedElementsIndex[0]] , elementList[connectedElementsIndex[1]] };
-            
+
             for (int i = 0; i < 2; i++) // loop elements
             {
                 foreach (qEdge elementEdge in connectedElements[i].EdgeList) // loop edges of elements
@@ -561,12 +555,48 @@ namespace MeshPoints.QuadRemesh
             {
                 if (!nodeKnow.Contains(node)) { N_m = node; break; };
             }
+            return N_m;
+        }
 
-            // update edge
-            edge.StartNode = N_k;
-            edge.EndNode = N_m;
-            edge.EdgeLine = edge.VisualizeLine(edge.StartNode, edge.EndNode);
-            edge.Length = edge.CalculateLength(edge.StartNode, edge.EndNode);
+        private Tuple<qEdge, qEdge> SplitEdge(qEdge E_0, Vector3d V_k, qNode N_k, qNode N_m)
+        {
+            qEdge E_k = new qEdge();
+            qEdge E_m = new qEdge();
+            qNode N_n = new qNode();
+
+            Line V_k_line = new Line(N_k.Coordinate, V_k);
+            Line E_0_line = E_0.EdgeLine;
+            NurbsCurve V_k_curve = V_k_line.ToNurbsCurve();
+            NurbsCurve E_0_curve = E_0_line.ToNurbsCurve();
+            double[] V_k_param = V_k_curve.DivideByCount(100, true);
+            Point3d testPoint = new Point3d();
+            Point3d V_k_point = new Point3d();
+            double distanceToCurve = 100;
+            double minDistance = 100;
+            double minDistanceParam = 0;
+            foreach (double n in V_k_param)
+            {
+                V_k_point = V_k_curve.PointAt(n);
+                E_0_curve.ClosestPoint(V_k_point, out double pointParamOnCurve); // closest parameter on curve
+                testPoint = E_0_curve.PointAt(pointParamOnCurve);  // make test point 
+                distanceToCurve = testPoint.DistanceTo(V_k_point);
+
+                if (distanceToCurve < minDistance)
+                {
+                    minDistance = distanceToCurve;
+                    minDistanceParam = pointParamOnCurve;
+                }
+            }
+
+            Point3d N_n_coordinate = E_0_curve.PointAt(minDistanceParam);
+            N_n = new qNode() { Coordinate = N_n_coordinate }; // todo: indexing
+
+            E_k = new qEdge(0, N_n, N_m); // todo: indexing
+            E_m = new qEdge(0, N_k, N_n); // todo: indexing
+            
+            // todo: divide E_0 into two edges... 
+
+            return Tuple.Create(E_k, E_m);
 
         }
         #endregion
