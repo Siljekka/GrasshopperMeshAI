@@ -9,7 +9,6 @@ namespace MeshPoints.Classes
 {
     class qElement
     {
-        public int FaceIndex { get; set; }
         public List<qEdge> EdgeList { get; set; }
         public List<double> AngleList { get; } // todo: when angle is larger than pi it does not work..
         public bool IsQuad { get; }
@@ -22,9 +21,8 @@ namespace MeshPoints.Classes
             // empty constructor
         }
 
-        public qElement(int _faceIndex, List<qEdge> _edgeList)
+        public qElement(List<qEdge> _edgeList)
         {
-            FaceIndex = _faceIndex;
             EdgeList = _edgeList;
             AngleList = CalculateAngles(_edgeList);
 

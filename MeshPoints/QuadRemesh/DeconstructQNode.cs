@@ -32,10 +32,6 @@ namespace MeshPoints.QuadRemesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Point","pt","Coordinate of node", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Topology vertex index", "tv", "Vertex index in topology", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh vertex index", "mv", "Vertex index in mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Adjacent edges", "ae", "Index of adjacent edges to the node", GH_ParamAccess.list);
-
         }
 
         /// <summary>
@@ -47,8 +43,6 @@ namespace MeshPoints.QuadRemesh
             qNode node = new qNode();
             DA.GetData(0, ref node);
             DA.SetData(0, node.Coordinate);
-            DA.SetData(1, node.TopologyVertexIndex);
-            DA.SetData(2, node.MeshVertexIndex);
         }
 
         /// <summary>

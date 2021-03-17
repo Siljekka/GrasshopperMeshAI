@@ -14,7 +14,7 @@ namespace MeshPoints.Classes
         public qNode StartNode { get; set; }
         public qNode EndNode { get; set; }
         public double Length { get; set; }
-        public Line EdgeLine { get; set; } // makes the user see the edge, might delete?
+        public Line EdgeLine { get; set; } // for visualization
         public qElement Element1 { get; set; }
         public qElement Element2 { get; set; }
         public qEdge LeftFrontNeighbor { get; set; }
