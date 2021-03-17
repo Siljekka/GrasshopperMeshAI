@@ -11,7 +11,6 @@ namespace MeshPoints.Classes
 {
     class qEdge
     {
-        public int Index { get; set; }
         public qNode StartNode { get; set; }
         public qNode EndNode { get; set; }
         public double Length { get; set; }
@@ -28,9 +27,8 @@ namespace MeshPoints.Classes
             // empty constructor
         }
 
-        public qEdge(int _index, qNode _startNode, qNode _endNode)
+        public qEdge(qNode _startNode, qNode _endNode)
         {
-            Index = _index;
             StartNode = _startNode;
             EndNode = _endNode;
             Length = CalculateLength(_startNode, _endNode);

@@ -69,7 +69,7 @@ namespace MeshPoints.QuadRemesh
             elementList = CreateElements(mesh, edgeList);
             SetNeighborElements(mesh, elementList, edgeList);
             frontEdges = GetFrontEdges(mesh, edgeList);
-            SetNeighorFrontEdges(mesh, frontEdges);
+            SetNeighorFrontEdges(frontEdges);
             var edgeStates = CreateEdgeStateList(mesh, frontEdges); // todo: check bug. Angles.
             var list11 = edgeStates.Item1;
             var list10 = edgeStates.Item2;
@@ -145,14 +145,9 @@ namespace MeshPoints.QuadRemesh
 
                 // Get connected elements
                 connectedElements = new List<qElement>();
-                List<qEdge> connectedEdges = new List<qEdge>();
-                //int[] connectedEdgesIndex = N_c.ConnectedEdges;
-                connectedEdges = GetConnectedEdges(N_c, edgeList);
+                List<qEdge> connectedEdges = GetConnectedEdges(N_c, edgeList);
                 foreach (qEdge connectedEdge in connectedEdges)
                 {
-                    //qEdge connectedEdge = edgeList[index];
-
-                    connectedEdges.Add(connectedEdge);
                     if (!connectedElements.Contains(connectedEdge.Element1)) 
                     {
                         connectedElements.Add(connectedEdge.Element1);
@@ -392,7 +387,6 @@ namespace MeshPoints.QuadRemesh
                 node.TopologyVertexIndex = i; // todo: delete
                 node.MeshVertexIndex = topologyVertexList.MeshVertexIndices(i)[0]; // todo: delete
                 node.Coordinate = mesh.Vertices.Point3dAt(node.MeshVertexIndex);
-                //node.ConnectedEdges = mesh.TopologyVertices.ConnectedEdges(node.TopologyVertexIndex); // todo: delete
                 nodeList.Add(node);
             }
             return nodeList;
@@ -410,12 +404,22 @@ namespace MeshPoints.QuadRemesh
             }
             return connectedEdges;
         }
-
+        private List<qElement> GetConnectedElements(qEdge edge)
+        {
+            List<qElement> connectedElements = new List<qElement>();
+            connectedElements.Add(edge.Element1);
+            if (edge.Element2 != null)
+            {
+                connectedElements.Add(edge.Element2);
+            }
+            return connectedElements;
+        }
         private List<qEdge> CreateEdges(Mesh mesh)
         {
+            // summary: create edges from intial mesh
+
             List<qEdge> edgeList = new List<qEdge>();
             MeshTopologyEdgeList topologyEdgeList = mesh.TopologyEdges;
-            MeshTopologyVertexList topologyVertexList = mesh.TopologyVertices;
             List<qNode> nodeList = CreateNodes(mesh);
 
             for (int i = 0; i < topologyEdgeList.Count; i++)
@@ -424,7 +428,7 @@ namespace MeshPoints.QuadRemesh
                 qNode startNode = nodeList[edgeTopoVerticesIndex[0]];
                 qNode endNode = nodeList[edgeTopoVerticesIndex[1]];
 
-                qEdge edge = new qEdge(i, startNode, endNode); //sjekk om i er nødvendig
+                qEdge edge = new qEdge(startNode, endNode); //sjekk om i er nødvendig
                 edgeList.Add(edge);
             }
             return edgeList;
@@ -453,6 +457,7 @@ namespace MeshPoints.QuadRemesh
             {
                 int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(i);
                 edgeList[i].Element1 = elementList[connectedElementsIndex[0]];
+
                 if (connectedElementsIndex.Length == 2)
                 {
                     edgeList[i].Element2 = elementList[connectedElementsIndex[1]];
@@ -473,48 +478,48 @@ namespace MeshPoints.QuadRemesh
             }
             return frontEdges;
         }
-        private void SetNeighorFrontEdges(Mesh mesh, List<qEdge> frontEdges)
+        private void SetNeighorFrontEdges(List<qEdge> frontEdges)
         {
             for (int i = 0; i < frontEdges.Count; i++)
             {
-                qEdge edg = frontEdges[i];
+                qEdge edge = frontEdges[i];
                 qEdge edg1 = new qEdge();
                 qEdge edg2 = new qEdge();
-                qNode[] edgeNodes = new qNode[] { edg.StartNode, edg.EndNode };
                 for (int j = 0; j < frontEdges.Count; j++)
                 {
+                    qEdge testEdge = frontEdges[j];
                     if (i != j)
                     {
-                        qNode[] testNodes = new qNode[] { frontEdges[j].StartNode, frontEdges[j].EndNode };
-                        if ((edgeNodes[0] == testNodes[0]) | (edgeNodes[0] == testNodes[1]))
+                        if ((edge.StartNode == testEdge.StartNode) | (edge.StartNode == testEdge.EndNode)) // check edge start node if connected
                         {
-                             edg1 = frontEdges[j];
+                            edg1 = frontEdges[j];
                         }
-                        else if ((edgeNodes[1] == testNodes[0]) | (edgeNodes[1] == testNodes[1]))
+                        else if ((edge.EndNode == testEdge.StartNode) | (edge.EndNode == testEdge.EndNode)) // check edge end point if connected
                         {
-                             edg2 = frontEdges[j];
-                        }
-                        Point3d midPointEdg = (edgeNodes[0].Coordinate + edgeNodes[1].Coordinate) / 2.0;
-
-                        int[] connectedElementsIndex1 = mesh.TopologyEdges.GetConnectedFaces(edg1.Index); // get the face index to edg1
-                        Point3d center1 = mesh.Faces.GetFaceCenter(connectedElementsIndex1[0]);           // get the facecenter of edg1
-
-                        int[] connectedElementsIndex2 = mesh.TopologyEdges.GetConnectedFaces(edg2.Index); // get the face index to edg1
-                        Point3d center2 = mesh.Faces.GetFaceCenter(connectedElementsIndex2[0]);           // get the facecenter of edg1
-
-                        Vector3d vec1 = center1 - midPointEdg;
-                        Vector3d vec2 = center2 - midPointEdg;
-                        if (Vector3d.CrossProduct(vec1, vec2).Z > 0) // todo: modify to more general relative to face normals
-                        {
-                            edg.RightFrontNeighbor = edg1;
-                            edg.LeftFrontNeighbor = edg2;
-                        }
-                        else
-                        {
-                            edg.RightFrontNeighbor = edg2;
-                            edg.LeftFrontNeighbor = edg1;
+                            edg2 = frontEdges[j];
                         }
                     }
+                }
+
+                Point3d midPointEdg = (edge.StartNode.Coordinate + edge.EndNode.Coordinate) / 2.0; // mid point of edge
+
+                Point3d center1 = GetElementCenter(edg1.Element1); // center of element to neighbor edge 1
+
+                Point3d center2 = GetElementCenter(edg2.Element1); // center of elemenet to neighbor edge 2
+
+                Vector3d vec1 = center1 - midPointEdg;
+                Vector3d vec2 = center2 - midPointEdg;
+
+                // check what is left and right neighbor for edge
+                if (Vector3d.CrossProduct(vec1, vec2).Z > 0) // todo: modify to more general relative to face normals
+                {
+                    edge.RightFrontNeighbor = edg1;
+                    edge.LeftFrontNeighbor = edg2;
+                }
+                else
+                {
+                    edge.RightFrontNeighbor = edg2;
+                    edge.LeftFrontNeighbor = edg1;
                 }
             }
             return;
@@ -538,11 +543,11 @@ namespace MeshPoints.QuadRemesh
                 {
                     if (nodeToCalculate == 0)
                     {
-                        leftAngle = CalculateAngleOfAdjecentFrontEdges(mesh, nodeToCalculate, frontEdges[i]);
+                        leftAngle = CalculateAngleOfAdjecentFrontEdges(nodeToCalculate, frontEdges[i]);
                     }
                     else
                     {
-                        rightAngle = CalculateAngleOfAdjecentFrontEdges(mesh, nodeToCalculate, frontEdges[i]);
+                        rightAngle = CalculateAngleOfAdjecentFrontEdges(nodeToCalculate, frontEdges[i]);
                     }
 
                     if (leftAngle < angleTolerance & rightAngle < angleTolerance) { edgeState = 11; }
@@ -569,17 +574,15 @@ namespace MeshPoints.QuadRemesh
             }
             return Tuple.Create(list11, list10, list01, list00);
         }
-        private double CalculateAngleOfAdjecentFrontEdges(Mesh mesh, int nodeToCalculate, qEdge edge)
+        private double CalculateAngleOfAdjecentFrontEdges(int nodeToCalculate, qEdge edge)
         {
             // Calculate the angle between front edges with a shared point, i.e. neighbor front edges.
 
-            int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(edge.Index);
-            if (!((connectedElementsIndex.Length == 1) & !edge.Element1.IsQuad))
+            List<qElement> connectedElements = GetConnectedElements(edge);
+            if ( connectedElements.Count > 1 | edge.Element1.IsQuad )
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The edge is not a front edge.");}
 
             qEdge edgeNeighbor = new qEdge();
-            Vector3d vec1 = Vector3d.Zero;
-            Vector3d vec2 = Vector3d.Zero;
             double angle = 0;
 
             // Get neighbor nodes
@@ -588,8 +591,8 @@ namespace MeshPoints.QuadRemesh
 
             // Create vectors from shared node
             var vectors = CalculateVectorsFromSharedNode(edge, edgeNeighbor);
-            vec1 = vectors.Item1;
-            vec2 = vectors.Item2;
+            Vector3d vec1 = vectors.Item1;
+            Vector3d vec2 = vectors.Item2;
             qNode sharedNode= vectors.Item3;
             Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
             if (V_k == Vector3d.Zero) // create V_k if zero vector
@@ -609,8 +612,8 @@ namespace MeshPoints.QuadRemesh
             // distance to domain
             int edgeElementFaceId = edge.Element1.FaceIndex;
             int edgeNeighborElementFaceId = edgeNeighbor.Element1.FaceIndex;
-            Point3d edgeFaceCenter = mesh.Faces.GetFaceCenter(edge.Element1.FaceIndex);
-            Point3d edgeNeighborFaceCenter = mesh.Faces.GetFaceCenter(edgeNeighbor.Element1.FaceIndex);
+            Point3d edgeFaceCenter = GetElementCenter(edge.Element1);
+            Point3d edgeNeighborFaceCenter = GetElementCenter(edgeNeighbor.Element1);
             Point3d midFaceCenter = (edgeFaceCenter + edgeNeighborFaceCenter) / 2; // mid face center
 
             double distanceEndPoint = midFaceCenter.DistanceTo(endPointV_k); // todo: ok for all cases?
@@ -691,7 +694,6 @@ namespace MeshPoints.QuadRemesh
                 {
                     if (edge.StartNode == node2 | edge.EndNode == node2)
                     { foundEdge = edge; } // todo: break?
-
                 }
             }
             if (foundEdge == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No edge contains the given nodes."); }
@@ -740,15 +742,13 @@ namespace MeshPoints.QuadRemesh
             Point3d N_n_coordinate = E_0_curve.PointAt(minDistanceParam);
             N_n = new qNode() { Coordinate = N_n_coordinate }; // todo: indexing
 
-            E_k = new qEdge(0, N_n, N_m); // todo: indexing
-            E_m = new qEdge(0, N_k, N_n); // todo: indexing
+            E_k = new qEdge(N_n, N_m); 
+            E_m = new qEdge(N_k, N_n);
             
-            // todo: divide E_0 into two edges... 
+            // todo: update mesh, divide E_0 into two edges, create new elements..
 
             return Tuple.Create(E_k, E_m);
-
         }
-
         private qEdge GetSideEdge(Mesh mesh, List<qElement> elementList, List<qEdge> edgeList, double nodeToEvaluate, qEdge E_front)
         {
             // todo: update new elements, new nodes, new connections etc. Might be done later. Have not used N_n and E_m.
@@ -785,7 +785,6 @@ namespace MeshPoints.QuadRemesh
                 List<qElement> connectedElements = new List<qElement>();// get connected element of edge
                 connectedElements.Add(edge.Element1);
                 if (edge.Element2 == null) { connectedElements.Add(edge.Element2); }
-
 
                 bool connectedToQuadElement = false;
                 foreach (qElement connectedElement in connectedElements) // loop connected elements
@@ -874,38 +873,6 @@ namespace MeshPoints.QuadRemesh
             #endregion
             return E_k;
         }
-        #region slett
-        /* private qNode FindN_m(qEdge E_0)
-         {
-             // if (!mesh.TopologyEdges.IsSwappableEdge(E_0.Index))
-             // { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable."); }
-
-             qNode N_m = new qNode(); // new node
-             List<qNode> nodeCandidates = new List<qNode>(); // list of node candidates
-             List<qNode> nodeKnow = new List<qNode>() { E_0.StartNode, E_0.EndNode, N_k }; // known nodes
-
-             int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(E_0.Index);
-             List<qElement> connectedElements = new List<qElement>()
-                 { elementList[connectedElementsIndex[0]] , elementList[connectedElementsIndex[1]] };
-
-             for (int i = 0; i < 2; i++) // loop elements
-             {
-                 foreach (qEdge elementEdge in connectedElements[i].EdgeList) // loop edges of elements
-                 {
-                     nodeCandidates.Add(elementEdge.StartNode);
-                     nodeCandidates.Add(elementEdge.EndNode);
-                 }
-             }
-             foreach (qNode node in nodeCandidates)
-             {
-                 if (!nodeKnow.Contains(node)) { N_m = node; break; };
-             }
-
-             return N_m;
-         }
-        */
-        #endregion
-
         private Point3d GetElementCenter(qElement element) // todo: if not use faces..
         {
             double sx = 0;
