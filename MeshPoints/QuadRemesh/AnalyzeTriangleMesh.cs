@@ -158,6 +158,10 @@ namespace MeshPoints.QuadRemesh
                     List<qEdge> elementEdgeCody = element.EdgeList;
                     foreach (qEdge edge in elementEdgeCody)
                     {
+
+                        if (edge.Element1 == element) { edge.Element1 = null; }
+                        else {edge.Element2 = null; }
+
                         if (!quadEdge.Contains(edge) & edgeList.Contains(edge))
                         {
 
@@ -173,7 +177,7 @@ namespace MeshPoints.QuadRemesh
                 newQuadElement = new qElement(quadEdge);
                 elementList.Add(newQuadElement);
 
-                /*
+                
                 // update connected edges
                 foreach (qEdge edge in quadEdge)
                 {
@@ -186,7 +190,7 @@ namespace MeshPoints.QuadRemesh
                         edge.Element2 = newQuadElement; 
                     }
                     else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Quadelement not assigned to edges"); }
-                }*/
+                }
 
 
 
