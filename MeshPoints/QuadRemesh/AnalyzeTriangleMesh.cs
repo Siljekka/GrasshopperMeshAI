@@ -77,7 +77,7 @@ namespace MeshPoints.QuadRemesh
             qEdge E_k_left = new qEdge(); // left side edge of quad
             qEdge E_k_right = new qEdge(); // right side edge of quad
             qEdge E_front = new qEdge(); // bottom of quad
-
+            qEdge E_top = new qEdge(); // top if quad
 
             List<qElement> sortedConnectedElements = new List<qElement>();
             List<qEdge> sortedConnectedEdges = new List<qEdge>();
@@ -86,11 +86,10 @@ namespace MeshPoints.QuadRemesh
             qEdge E_k = new qEdge();
             qEdge E_k1 = new qEdge();
             List<qEdge> intersectingS = new List<qEdge>();
-            List<qElement> connectedElements = new List<qElement>();
 
             for (int n = 0; n < numberElementsToRemesh; n++)
             {
-                // get E_front
+                // get bottom edge: E_front
                 // todo: extand the hieraki
                 int edgeState = 0;
                 if (list11.Count != 0) { E_front = list11[0]; edgeState = 11; list11.RemoveAt(0); }
@@ -98,7 +97,7 @@ namespace MeshPoints.QuadRemesh
                 else if (list10.Count != 0) { E_front = list10[0]; edgeState = 10; list10.RemoveAt(0); }
                 else { E_front = list00[0]; edgeState = 00; list00.RemoveAt(0); }
 
-                // get E_k
+                // get side edges
                 if (edgeState == 11)
                 {
                     E_k_left = E_front.LeftFrontNeighbor;
@@ -117,265 +116,31 @@ namespace MeshPoints.QuadRemesh
                     E_k_left = E_front.LeftFrontNeighbor;
                 }
 
-                // todo: update edgestate list after top recovery
-
-
-                #region top recovery:
-
-
-
-                // todo: do not work with the swap and split functions because not updated edges and surrounding objects
-                qNode leftNode = GetNodeOfFrontEdge(0, E_front);
-                qNode rightNode = GetNodeOfFrontEdge(1, E_front);
-                qNode N_d = new qNode();
-                qNode N_c = new qNode();
-
-
-                // Get N_d and N_c
-                if (E_k_left.StartNode == leftNode) { N_d = E_k_left.EndNode; }
-                else { N_d = E_k_left.StartNode; }
-
-                if (E_k_right.StartNode == rightNode) { N_c = E_k_right.EndNode; }
-                else { N_c = E_k_right.StartNode; }
-
-                Vector3d V_s = N_d.Coordinate - N_c.Coordinate;
-
-
-                // Get connected elements
-                connectedElements = new List<qElement>();
-                List<qEdge> connectedEdges = GetConnectedEdges(N_c, edgeList);
-                foreach (qEdge connectedEdge in connectedEdges)
-                {
-                    if (!connectedElements.Contains(connectedEdge.Element1))
-                    {
-                        connectedElements.Add(connectedEdge.Element1);
-                    }
-                    if (connectedEdge.Element2 != null)
-                    {
-                        if (!connectedElements.Contains(connectedEdge.Element2))
-                        {
-                            connectedElements.Add(connectedEdge.Element2);
-                        }
-                    }
-                }
-
-                #region Sort connected elements ccw
-                // create vectors from N_c to center of elements
-                List<Vector3d> vectorToCenterList = new List<Vector3d>();
-                foreach (qElement connectedElement in connectedElements)
-                {
-                    Point3d elementCenter = GetElementCenter(connectedElement);
-                    vectorToCenterList.Add(elementCenter - N_c.Coordinate);
-                }
-
-                // calculate angle between a vector and the first center-vector
-                Vector3d intialVector = vectorToCenterList[0];
-                List<double> vecAngleList = new List<double>() { 0 };
-                for (int i = 1; i < vectorToCenterList.Count; i++)
-                {
-                    double angle = Vector3d.VectorAngle(intialVector, vectorToCenterList[i], Vector3d.ZAxis); // todo: change to normal of intialface
-                    vecAngleList.Add(angle);
-                }
-
-                // sort connected elements ccw from the first element in connected element list
-                sortedConnectedElements = new List<qElement>();
-                for (int j = 0; j < vectorToCenterList.Count; j++)
-                {
-                    double minAngle = vecAngleList[0];
-                    int minAngleIndex = 0;
-                    for (int i = 1; i < vecAngleList.Count; ++i)
-                    {
-                        if (vecAngleList[i] < minAngle)
-                        {
-                            minAngle = vecAngleList[i];
-                            minAngleIndex = i;
-                        }
-                    }
-                    sortedConnectedElements.Add(connectedElements[minAngleIndex]);
-                    connectedElements.RemoveAt(minAngleIndex);
-                    vecAngleList.RemoveAt(minAngleIndex);
-                }
-                #endregion
-
-
-                #region Find intersected edges
-                qElement T_k = new qElement();
-                qElement T_k1 = new qElement();
-
-                foreach (qElement connectedElement in sortedConnectedElements)
-                {
-                    T_k = connectedElement;
-                    if (connectedElement.IsQuad)
-                    {
-                        // todo: Abort the front edge, try with a new front edge. 
-                        { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Top edge recovery fails because of intersection of quads."); }
-                    }
-
-                    // get edges
-                    E_i = new qEdge();
-                    E_k = new qEdge();
-                    E_k1 = new qEdge();
-                    Vector3d V_k = Vector3d.Zero;
-                    Vector3d V_k1 = Vector3d.Zero;
-
-                    List<qEdge> E_kCandidates = new List<qEdge>();
-                    foreach (qEdge elementEdge in connectedElement.EdgeList)
-                    {
-                        if (elementEdge.StartNode == N_c | elementEdge.EndNode == N_c) { E_kCandidates.Add(elementEdge); }
-                        else { E_i = elementEdge; }
-                    }
-
-                    var vectors = CalculateVectorsFromSharedNode(E_kCandidates[0], E_kCandidates[1]);
-                    Vector3d vec1 = vectors.Item1;
-                    Vector3d vec2 = vectors.Item2;
-                    Vector3d cros = Vector3d.CrossProduct(vec1, vec2);
-                    if (cros.Z > 0) // todo: change cros.Z > 0 to make more general
-                    {
-                        E_k = E_kCandidates[0];
-                        E_k1 = E_kCandidates[1];
-                        V_k = vec1;
-                        V_k1 = vec2;
-                    }
-                    else
-                    {
-                        E_k = E_kCandidates[1];
-                        E_k1 = E_kCandidates[0];
-                        V_k = vec2;
-                        V_k1 = vec1;
-                    }
-
-                    // check if intersection
-                    // todo: change if 3d
-                    if (Vector3d.Multiply(V_s, V_k) > 0 & Vector3d.Multiply(V_s, V_k1) > 0) // todo: check if ok with different last criterior than kok.
-                    {
-                        break;
-                    }
-                    else if (Math.Abs(V_s.IsParallelTo(V_k)) == 1 | Math.Abs(V_s.IsParallelTo(V_k1)) == 1)
-                    {
-                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "E_k or E_k1 in top edge recovery failed because V_s || V_k or V_k1.");
-                        break;
-                    }
-
-                }
-
-
-                if (!frontEdges.Contains(E_i))
-                {
-                    intersectingS.Add(E_i);
-                }
-                else
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Top edge recovery failed.");
-                    break;
-                }
-
-                bool done = false;
-                while (!done)
-                {
-                    if (E_i.Element1 != T_k)
-                    {
-                        T_k1 = E_i.Element1;
-                    }
-                    else if (E_i.Element2 != T_k)
-                    {
-                        T_k1 = E_i.Element2;
-                    }
-
-                    List<qNode> elementNodes = GetNodesOfElement(T_k1);
-                    if (elementNodes.Contains(N_d))
-                    {
-                        done = true;
-                        continue;
-                    }
-
-                    T_k = T_k1;
-
-                    qNode N_i = new qNode();
-                    foreach (qNode node in elementNodes)
-                    {
-                        if ((node != E_i.StartNode) & (node != E_i.EndNode))
-                        {
-                            N_i = node;
-                        }
-                    }
-
-                    Vector3d V_i = N_i.Coordinate - N_c.Coordinate;
-
-                    List<qEdge> E_nCandidates = new List<qEdge>();
-                    foreach (qEdge edge in T_k.EdgeList)
-                    {
-                        if (edge.StartNode == N_i | edge.EndNode == N_i) { E_nCandidates.Add(edge); }
-                    }
-
-                    var vectors = CalculateVectorsFromSharedNode(E_nCandidates[0], E_nCandidates[1]);
-                    Vector3d vec1 = vectors.Item1;
-                    Vector3d vec2 = vectors.Item2;
-                    qEdge E_n = new qEdge();
-                    qEdge E_n1 = new qEdge();
-
-                    Vector3d cros = Vector3d.CrossProduct(vec1, vec2);
-                    if (cros.Z > 0) // todo: change cros.Z > 0 to make more general
-                    {
-                        E_n = E_nCandidates[1];
-                        E_n1 = E_nCandidates[0];
-                    }
-                    else
-                    {
-                        E_n = E_nCandidates[0];
-                        E_n1 = E_nCandidates[1];
-                    }
-
-                    if (Vector3d.Multiply(V_s, V_i) < 0) // todo: change if 3d
-                    {
-                        E_i = E_n;
-                    }
-                    else
-                    {
-                        E_i = E_n1;
-                    }
-                    if (!frontEdges.Contains(E_i)) { intersectingS.Add(E_i); }
-                }
-                #endregion
-
-                // edge recovery process
-
-                while (intersectingS.Count > 0)
-                {
-                    qEdge edge = intersectingS[0];
-                    SwapEdge(edge); // swap the edge
-
-                    //List<qElement> Tswaped = new List<qElement>() { edge.Element1, edge.Element2 }; // todo: need to update mesh first
-
-                    // todo: check area of adjacent elements
-                    bool areaOK = true;
-                    if (areaOK)
-                    {
-                        intersectingS.RemoveAt(0);
-                    }
-                    else
-                    {
-                        intersectingS.Add(edge);
-                        intersectingS.RemoveAt(0);
-                    }
-                }
-                #endregion
+                // get top edge
+                E_top = GetTopEdge(E_front, E_k_left, E_k_right, edgeList, elementList, frontEdges);
 
             }
             #endregion End Code
 
+            // next: greate new elements and update neighbors with swap and split
+            // next: make quad
+            // next: local smoothing
+            // next: update front
+            // next: repeate
+
             // output
-            DA.SetDataList(0, frontEdges);
-            DA.SetDataList(1, list11);
+            DA.SetDataList(0, edgeList);
+            DA.SetDataList(1, elementList);
             DA.SetDataList(2, list10);
             DA.SetDataList(3, list01);
             DA.SetDataList(4, list00);
             DA.SetDataList(5, intersectingS);
             DA.SetData(6, E_front);
             DA.SetData(7, E_k_right);
-            DA.SetData(8, E_i);
+            DA.SetData(8, E_top);
         }
         #region Methods
-        // for ininital mesh
+        // _____________________________________ for ininital mesh _________________________________________
         private Tuple< List<qEdge>, List<qElement>> GetInitialEdgesAndElements(Mesh mesh)
         {
             // summary: create edges and elements from the initial mesh topology
@@ -453,7 +218,7 @@ namespace MeshPoints.QuadRemesh
         } // todo: if needed for more cases than initial mesh, make more general
         
 
-        // for front definiton and classification
+        // ________________________________ for front definiton and classification ___________________________________
         private List<qEdge> GetFrontEdges(List<qEdge> edgeList)
         {
             // summary: get all edges connected to a single triangle element
@@ -607,7 +372,7 @@ namespace MeshPoints.QuadRemesh
         }
 
 
-        // for topology
+        // _________________________________________ for topology  _______________________________________________
         private List<qEdge> GetConnectedEdges(qNode node, List<qEdge> edgeList)
         {
             // summary: get connected edges to a node
@@ -771,7 +536,7 @@ namespace MeshPoints.QuadRemesh
         }
 
 
-        // for mesh modification
+        // _______________________________________ for mesh modification __________________________________________________
         private qEdge GetSideEdge(List<qElement> elementList, List<qEdge> edgeList, double nodeToEvaluate, qEdge E_front)
         {
             // todo: update new elements, new nodes, new connections etc. Might be done later. Have not used N_n and E_m.
@@ -896,15 +661,99 @@ namespace MeshPoints.QuadRemesh
             #endregion
             return E_k;
         }
-        private void SwapEdge(qEdge E_0)
+        private void SwapEdge(qEdge E_0, List<qEdge> edgeList, List<qElement> elementList)
         {
-            // update edge
+            // get nodes of edge to swap
+            qNode node1 = E_0.StartNode;
+            qNode node2 = E_0.EndNode;
             List<qNode> swapedNodes = GetSwapedNodes(E_0);
+
+            // get edges of adjacent elements
+            List<qEdge> element1edges = E_0.Element1.EdgeList;
+            List<qEdge> element2edges = E_0.Element2.EdgeList;
+
+            // get list of all edges for new elements
+            List<qEdge> edgeForNewElements = new List<qEdge>();
+            element1edges.RemoveAt(element1edges.IndexOf(E_0));
+            element2edges.RemoveAt(element2edges.IndexOf(E_0));
+            for (int i = 0; i < 2; i++)
+            {
+                edgeForNewElements.Add(element1edges[i]);
+                edgeForNewElements.Add(element2edges[i]);
+            }
+
+            qElement oldElement1 = E_0.Element1;
+            qElement oldElement2 = E_0.Element2;
+
+            // update edge
             E_0.StartNode = swapedNodes[0];
             E_0.EndNode = swapedNodes[1];
             E_0.EdgeLine = E_0.VisualizeLine(E_0.StartNode, E_0.EndNode);
             E_0.Length = E_0.CalculateLength(E_0.StartNode, E_0.EndNode);
-            // todo: update mesh and neighbor elements
+            E_0.Element1 = null;
+            E_0.Element2 = null;
+
+            // create new elements
+            List<qEdge> element1edgesNew = new List<qEdge>();
+            List<qEdge> element2edgesNew = new List<qEdge>();
+            element1edgesNew.Add(E_0);
+            element2edgesNew.Add(E_0);
+
+            foreach (qEdge edge in edgeForNewElements)
+            {
+                if (edge.StartNode == node1 | edge.EndNode == node1)
+                {
+                    element1edgesNew.Add(edge);
+                }
+                else if (edge.StartNode == node2 | edge.EndNode == node2)
+                {
+                    element2edgesNew.Add(edge);
+                }
+                else
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Swaping failed.");
+                }
+            }
+
+            qElement newElement1 = new qElement(element1edgesNew);
+            qElement newElement2 = new qElement(element2edgesNew);
+            elementList.Add(newElement1);
+            elementList.Add(newElement2);
+
+            // update edge elements
+            E_0.Element1 = newElement1;
+            E_0.Element2 = newElement2;
+
+            // element update for element edges
+            foreach (qEdge edge in element1edgesNew)
+            {
+                if ((edge.Element1 == oldElement1) | (edge.Element1 == oldElement2))
+                {
+                    edge.Element1 = newElement1;
+                }
+                else if ((edge.Element2 == oldElement1) | (edge.Element2 == oldElement2))
+                {
+                    edge.Element2 = newElement1;
+
+                }
+            }
+
+            foreach (qEdge edge in element2edgesNew)
+            {
+                if ((edge.Element1 == oldElement1) | (edge.Element1 == oldElement2))
+                {
+                    edge.Element1 = newElement2;
+                }
+                else if ((edge.Element2 == oldElement1) | (edge.Element2 == oldElement2))
+                {
+                    edge.Element2 = newElement2;
+
+                }
+            }
+
+            // remove old elements from list of elements
+            elementList.RemoveAt(elementList.IndexOf(oldElement1));
+            elementList.RemoveAt(elementList.IndexOf(oldElement2));
         }
         private Tuple<qEdge, qEdge> SplitEdge(qEdge E_0, Vector3d V_k, qNode N_k, qNode N_m)
         {
@@ -946,6 +795,245 @@ namespace MeshPoints.QuadRemesh
 
             return Tuple.Create(E_k, E_m);
         }
+        private qEdge GetTopEdge(qEdge E_front, qEdge E_k_left, qEdge E_k_right, List<qEdge> edgeList, List<qElement> elementList, List<qEdge> frontEdges)
+        {
+            // todo: do not work with the split functions because not updated edges and surrounding objects
+
+            // Get N_d and N_c
+            qNode N_d = new qNode();
+            qNode N_c = new qNode();
+
+            qNode leftNode = GetNodeOfFrontEdge(0, E_front);
+            qNode rightNode = GetNodeOfFrontEdge(1, E_front);
+
+            if (E_k_left.StartNode == leftNode) { N_d = E_k_left.EndNode; }
+            else { N_d = E_k_left.StartNode; }
+
+            if (E_k_right.StartNode == rightNode) { N_c = E_k_right.EndNode; }
+            else { N_c = E_k_right.StartNode; }
+
+            Vector3d V_s = N_d.Coordinate - N_c.Coordinate;
+
+
+            // Get connected elements to node _N_c
+            List<qElement> connectedElements = new List<qElement>();
+            List<qEdge> connectedEdges = GetConnectedEdges(N_c, edgeList);
+
+            foreach (qEdge edge in connectedEdges)
+            {
+                List<qElement> edgeElements = GetConnectedElements(edge);
+                foreach (qElement element in edgeElements)
+                {
+                    if (!connectedElements.Contains(element))
+                    {
+                        connectedElements.Add(element);
+                    }
+                }
+            }
+
+            #region Sort connected elements ccw
+            // create vectors from N_c to center of elements
+            List<Vector3d> vectorToCenterList = new List<Vector3d>();
+            foreach (qElement connectedElement in connectedElements)
+            {
+                Point3d elementCenter = GetElementCenter(connectedElement);
+                vectorToCenterList.Add(elementCenter - N_c.Coordinate);
+            }
+
+            // calculate angle between a vector and the first center-vector
+            Vector3d intialVector = vectorToCenterList[0];
+            List<double> vecAngleList = new List<double>() { 0 };
+            for (int i = 1; i < vectorToCenterList.Count; i++)
+            {
+                double angle = Vector3d.VectorAngle(intialVector, vectorToCenterList[i], Vector3d.ZAxis); // todo: change to normal of intialface
+                vecAngleList.Add(angle);
+            }
+
+            // sort connected elements ccw from the first element in connected element list
+            List<qElement> sortedConnectedElements = new List<qElement>();
+            for (int j = 0; j < vectorToCenterList.Count; j++)
+            {
+                double minAngle = vecAngleList[0];
+                int minAngleIndex = 0;
+                for (int i = 1; i < vecAngleList.Count; ++i)
+                {
+                    if (vecAngleList[i] < minAngle)
+                    {
+                        minAngle = vecAngleList[i];
+                        minAngleIndex = i;
+                    }
+                }
+                sortedConnectedElements.Add(connectedElements[minAngleIndex]);
+                connectedElements.RemoveAt(minAngleIndex);
+                vecAngleList.RemoveAt(minAngleIndex);
+            }
+            #endregion
+
+
+            #region Find intersected edges of line S from N_c to N_d
+            qElement T_k = new qElement();
+            qElement T_k1 = new qElement();
+
+            qEdge E_i = new qEdge();
+            qEdge E_k = new qEdge();
+            qEdge E_k1 = new qEdge();
+            foreach (qElement connectedElement in sortedConnectedElements)
+            {
+                T_k = connectedElement;
+                if (connectedElement.IsQuad)
+                {
+                    // todo: Abort the front edge, try with a new front edge. 
+                    { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Top edge recovery fails because of intersection of quads."); }
+                }
+
+                // get edges
+                Vector3d V_k = Vector3d.Zero;
+                Vector3d V_k1 = Vector3d.Zero;
+
+                List<qEdge> E_kCandidates = new List<qEdge>();
+                foreach (qEdge elementEdge in connectedElement.EdgeList)
+                {
+                    if (elementEdge.StartNode == N_c | elementEdge.EndNode == N_c) { E_kCandidates.Add(elementEdge); }
+                    else { E_i = elementEdge; }
+                }
+
+                var vectors = CalculateVectorsFromSharedNode(E_kCandidates[0], E_kCandidates[1]);
+                Vector3d vec1 = vectors.Item1;
+                Vector3d vec2 = vectors.Item2;
+                Vector3d cros = Vector3d.CrossProduct(vec1, vec2);
+                if (cros.Z > 0) // todo: change cros.Z > 0 to make more general
+                {
+                    E_k = E_kCandidates[0];
+                    E_k1 = E_kCandidates[1];
+                    V_k = vec1;
+                    V_k1 = vec2;
+                }
+                else
+                {
+                    E_k = E_kCandidates[1];
+                    E_k1 = E_kCandidates[0];
+                    V_k = vec2;
+                    V_k1 = vec1;
+                }
+
+                // check if intersection
+                // todo: change if 3d
+                if (Vector3d.Multiply(V_s, V_k) > 0 & Vector3d.Multiply(V_s, V_k1) > 0) // todo: check if ok with different last criterior than kok.
+                {
+                    break;
+                }
+                else if (Math.Abs(V_s.IsParallelTo(V_k)) == 1 | Math.Abs(V_s.IsParallelTo(V_k1)) == 1)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "E_k or E_k1 in top edge recovery failed because V_s || V_k or V_k1.");
+                    break;
+                }
+
+            }
+
+            // add E_i to intersection of S if not a front edge
+            List<qEdge> intersectingS = new List<qEdge>();
+            if (!frontEdges.Contains(E_i))
+            {
+                intersectingS.Add(E_i);
+            }
+            else
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Top edge recovery failed.");
+            }
+
+            bool done = false;
+            while (!done) // todo: bug. E_i may only have 1 elements..
+            {
+                if (E_i.Element1 != T_k)
+                {
+                    T_k1 = E_i.Element1;
+                }
+                else if (E_i.Element2 != T_k)
+                {
+                    T_k1 = E_i.Element2;
+                }
+
+                List<qNode> elementNodes = GetNodesOfElement(T_k1);
+                if (elementNodes.Contains(N_d))
+                {
+                    done = true;
+                    continue;
+                }
+
+                T_k = T_k1;
+
+                qNode N_i = new qNode();
+                foreach (qNode node in elementNodes)
+                {
+                    if ((node != E_i.StartNode) & (node != E_i.EndNode))
+                    {
+                        N_i = node;
+                    }
+                }
+
+                Vector3d V_i = N_i.Coordinate - N_c.Coordinate;
+
+                List<qEdge> E_nCandidates = new List<qEdge>();
+                foreach (qEdge edge in T_k.EdgeList)
+                {
+                    if (edge.StartNode == N_i | edge.EndNode == N_i) { E_nCandidates.Add(edge); }
+                }
+
+                var vectors = CalculateVectorsFromSharedNode(E_nCandidates[0], E_nCandidates[1]);
+                Vector3d vec1 = vectors.Item1;
+                Vector3d vec2 = vectors.Item2;
+                qEdge E_n = new qEdge();
+                qEdge E_n1 = new qEdge();
+
+                Vector3d cros = Vector3d.CrossProduct(vec1, vec2);
+                if (cros.Z > 0) // todo: change cros.Z > 0 to make more general
+                {
+                    E_n = E_nCandidates[1];
+                    E_n1 = E_nCandidates[0];
+                }
+                else
+                {
+                    E_n = E_nCandidates[0];
+                    E_n1 = E_nCandidates[1];
+                }
+
+                if (Vector3d.Multiply(V_s, V_i) < 0) // todo: change if 3d
+                {
+                    E_i = E_n;
+                }
+                else
+                {
+                    E_i = E_n1;
+                }
+                if (!frontEdges.Contains(E_i)) { intersectingS.Add(E_i); }
+            }
+            #endregion
+
+            // edge recovery process
+
+            qEdge topEdge = intersectingS[0];
+            while (intersectingS.Count > 0)
+            {
+
+                SwapEdge(topEdge, edgeList, elementList); // swap the edge
+
+                //List<qElement> Tswaped = new List<qElement>() { edge.Element1, edge.Element2 }; // todo: need to update mesh first
+
+                // todo: check area of Tswaped
+                bool areaOK = true;
+                if (areaOK)
+                {
+                    intersectingS.RemoveAt(0);
+                }
+                else
+                {
+                    intersectingS.Add(topEdge);
+                    intersectingS.RemoveAt(0);
+                }
+            }
+            return topEdge;
+        }
+
         #endregion
 
         /// <summary>
