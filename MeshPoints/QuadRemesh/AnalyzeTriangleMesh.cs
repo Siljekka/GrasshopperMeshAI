@@ -119,7 +119,10 @@ namespace MeshPoints.QuadRemesh
                 // get top edge
                 E_top = GetTopEdge(E_front, E_k_left, E_k_right, edgeList, elementList, frontEdges);
 
+
             }
+
+
             #endregion End Code
 
             // next: greate new elements and update neighbors with swap and split
@@ -161,6 +164,11 @@ namespace MeshPoints.QuadRemesh
                 int meshVertexIndex = topologyVertexList.MeshVertexIndices(i)[0];
                 node.Coordinate = mesh.Vertices.Point3dAt(meshVertexIndex);
                 nodeList.Add(node);
+            }
+
+            foreach (qNode n in nodeList)
+            {
+                var curve = mesh.GetNakedEdges();
             }
             return nodeList;
         }
@@ -226,9 +234,17 @@ namespace MeshPoints.QuadRemesh
             foreach (qEdge edge in edgeList)
             {
                 List<qElement> connectedElements = GetConnectedElements(edge);
-                if ((connectedElements.Count == 1) & !edge.Element1.IsQuad)
+                if (connectedElements.Count == 1)
                 {
-                    frontEdges.Add(edge);
+                    if (!edge.Element1.IsQuad)
+                    {
+                        frontEdges.Add(edge);
+                    }
+                }
+                else if (connectedElements.Count != 1)
+                {
+                    if (!edge.Element1.IsQuad & edge.Element2.IsQuad) { frontEdges.Add(edge); }
+                    else if (edge.Element1.IsQuad & !edge.Element2.IsQuad) { frontEdges.Add(edge); }
                 }
             }
             SetNeighorFrontEdges(frontEdges);
@@ -1032,6 +1048,19 @@ namespace MeshPoints.QuadRemesh
                 }
             }
             return topEdge;
+        }
+
+
+        // __________________________________________ Local smoothing ______________________________________________________
+
+        private void DoLocalSmooth()
+        { 
+        }
+
+        private qNode ModifiedLengthWeightedLaplacianSmooth()
+        {
+
+            return null;
         }
 
         #endregion
