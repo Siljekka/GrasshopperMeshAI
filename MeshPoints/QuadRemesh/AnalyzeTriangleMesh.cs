@@ -122,8 +122,6 @@ namespace MeshPoints.QuadRemesh
                 E_top = GetTopEdge(E_front, E_k_left, E_k_right, edgeList, elementList, frontEdges);
 
 
-<<<<<<< HEAD
-=======
                 // quadrilateral formation
                 List<qEdge> quadEdge = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
 
@@ -190,9 +188,6 @@ namespace MeshPoints.QuadRemesh
                     else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Quadelement not assigned to edges"); }
                 }*/
 
-
-
->>>>>>> 23cbcc56402203a77d5d87fc28d8a7d627a92f46
             }
 
 
@@ -239,9 +234,11 @@ namespace MeshPoints.QuadRemesh
                 nodeList.Add(node);
             }
 
-            foreach (qNode n in nodeList)
+            bool[] meshVertexBool = mesh.GetNakedEdgePointStatus();
+            for (int i = 0; i < nodeList.Count; i++)
             {
-                var curve = mesh.GetNakedEdges();
+                if (meshVertexBool[i] == true) { nodeList[i].boundaryNode = true; }
+                else { nodeList[i].boundaryNode = false; }
             }
             return nodeList;
         }
@@ -316,13 +313,8 @@ namespace MeshPoints.QuadRemesh
                 }
                 else if (connectedElements.Count != 1)
                 {
-<<<<<<< HEAD
                     if (!edge.Element1.IsQuad & edge.Element2.IsQuad) { frontEdges.Add(edge); }
                     else if (edge.Element1.IsQuad & !edge.Element2.IsQuad) { frontEdges.Add(edge); }
-=======
-                    frontEdges.Add(edge);
-                    int a = 2;
->>>>>>> 23cbcc56402203a77d5d87fc28d8a7d627a92f46
                 }
             }
             SetNeighorFrontEdges(frontEdges);
