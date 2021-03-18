@@ -122,6 +122,8 @@ namespace MeshPoints.QuadRemesh
                 E_top = GetTopEdge(E_front, E_k_left, E_k_right, edgeList, elementList, frontEdges);
 
 
+<<<<<<< HEAD
+=======
                 // quadrilateral formation
                 List<qEdge> quadEdge = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
 
@@ -194,7 +196,10 @@ namespace MeshPoints.QuadRemesh
 
 
 
+>>>>>>> 23cbcc56402203a77d5d87fc28d8a7d627a92f46
             }
+
+
             #endregion End Code
 
             // next: greate new elements and update neighbors with swap and split
@@ -236,6 +241,11 @@ namespace MeshPoints.QuadRemesh
                 int meshVertexIndex = topologyVertexList.MeshVertexIndices(i)[0];
                 node.Coordinate = mesh.Vertices.Point3dAt(meshVertexIndex);
                 nodeList.Add(node);
+            }
+
+            foreach (qNode n in nodeList)
+            {
+                var curve = mesh.GetNakedEdges();
             }
             return nodeList;
         }
@@ -301,10 +311,22 @@ namespace MeshPoints.QuadRemesh
             foreach (qEdge edge in edgeList)
             {
                 List<qElement> connectedElements = GetConnectedElements(edge);
-                if ((connectedElements.Count == 1) & !edge.Element1.IsQuad)
+                if (connectedElements.Count == 1)
                 {
+                    if (!edge.Element1.IsQuad)
+                    {
+                        frontEdges.Add(edge);
+                    }
+                }
+                else if (connectedElements.Count != 1)
+                {
+<<<<<<< HEAD
+                    if (!edge.Element1.IsQuad & edge.Element2.IsQuad) { frontEdges.Add(edge); }
+                    else if (edge.Element1.IsQuad & !edge.Element2.IsQuad) { frontEdges.Add(edge); }
+=======
                     frontEdges.Add(edge);
                     int a = 2;
+>>>>>>> 23cbcc56402203a77d5d87fc28d8a7d627a92f46
                 }
             }
             SetNeighorFrontEdges(frontEdges);
@@ -1125,6 +1147,19 @@ namespace MeshPoints.QuadRemesh
                 }
             }
             return topEdge;
+        }
+
+
+        // __________________________________________ Local smoothing ______________________________________________________
+
+        private void DoLocalSmooth()
+        { 
+        }
+
+        private qNode ModifiedLengthWeightedLaplacianSmooth()
+        {
+
+            return null;
         }
 
         #endregion
