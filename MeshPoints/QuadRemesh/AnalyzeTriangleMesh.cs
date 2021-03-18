@@ -86,6 +86,8 @@ namespace MeshPoints.QuadRemesh
             qEdge E_k = new qEdge();
             qEdge E_k1 = new qEdge();
             List<qEdge> intersectingS = new List<qEdge>();
+            List<qElement> elementInside = new List<qElement>();
+            qElement newQuadElement = new qElement();
 
             for (int n = 0; n < numberElementsToRemesh; n++)
             {
@@ -119,6 +121,75 @@ namespace MeshPoints.QuadRemesh
                 // get top edge
                 E_top = GetTopEdge(E_front, E_k_left, E_k_right, edgeList, elementList, frontEdges);
 
+
+                // quadrilateral formation
+                List<qEdge> quadEdge = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
+
+
+                // find elements inside
+                elementInside = new List<qElement>() {E_front.Element1 };
+
+                qElement startElement = E_front.Element1;
+                bool done = false;
+                int count = 0;
+                while (!done)
+                {
+                    foreach (qEdge edge in startElement.EdgeList)
+                    {
+                        if (quadEdge.Contains(edge)) { continue; }
+                        // add element
+                        List<qElement> connectedElements = GetConnectedElements(edge);
+                        foreach (qElement element in connectedElements)
+                        {
+                            if (!elementInside.Contains(element)) { elementInside.Add(element);}
+                        }
+                    }
+                    qElement nextElement = elementInside[elementInside.Count-1];
+                    if (nextElement == startElement) { done = true; }
+                    else { startElement = nextElement; }
+
+                    if (count > 20) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Infinity loop"); break;  }
+                    count++;
+                }
+
+                // remove inside elements
+                foreach (qElement element in elementInside)
+                {
+                    List<qEdge> elementEdgeCody = element.EdgeList;
+                    foreach (qEdge edge in elementEdgeCody)
+                    {
+                        if (!quadEdge.Contains(edge) & edgeList.Contains(edge))
+                        {
+
+                            int index = edgeList.IndexOf(edge);
+
+                            edgeList.RemoveAt(index); 
+                        }
+                    }
+                    elementList.RemoveAt(elementList.IndexOf(element));
+                }
+
+                // create new element
+                newQuadElement = new qElement(quadEdge);
+                elementList.Add(newQuadElement);
+
+                /*
+                // update connected edges
+                foreach (qEdge edge in quadEdge)
+                {
+                    if (edge.Element1 == null) 
+                    { 
+                        edge.Element1 = newQuadElement; 
+                    }
+                    else if (edge.Element2 == null ) 
+                    { 
+                        edge.Element2 = newQuadElement; 
+                    }
+                    else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Quadelement not assigned to edges"); }
+                }*/
+
+
+
             }
             #endregion End Code
 
@@ -133,9 +204,9 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(1, elementList);
             DA.SetDataList(2, list10);
             DA.SetDataList(3, list01);
-            DA.SetDataList(4, list00);
-            DA.SetDataList(5, intersectingS);
-            DA.SetData(6, E_front);
+            DA.SetDataList(4, elementList);
+            DA.SetDataList(5, elementInside);
+            DA.SetData(6, newQuadElement);
             DA.SetData(7, E_k_right);
             DA.SetData(8, E_top);
         }
@@ -229,6 +300,7 @@ namespace MeshPoints.QuadRemesh
                 if ((connectedElements.Count == 1) & !edge.Element1.IsQuad)
                 {
                     frontEdges.Add(edge);
+                    int a = 2;
                 }
             }
             SetNeighorFrontEdges(frontEdges);
@@ -534,7 +606,24 @@ namespace MeshPoints.QuadRemesh
             if (foundEdge == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No edge contains the given nodes."); }
             return foundEdge;
         }
+        private List<qElement> GetNeighborElements(qElement element)
+        {
+            List<qElement> neighborElements = new List<qElement>();
 
+            foreach (qEdge edge in element.EdgeList)
+            {
+                List<qElement> connectedElements = GetConnectedElements(edge);
+                foreach (qElement elementCandidate in connectedElements)
+                {
+                    if (elementCandidate != element)
+                    {
+                        neighborElements.Add(elementCandidate);
+                    }
+                }
+            
+            }
+            return neighborElements;
+        }
 
         // _______________________________________ for mesh modification __________________________________________________
         private qEdge GetSideEdge(List<qElement> elementList, List<qEdge> edgeList, double nodeToEvaluate, qEdge E_front)
