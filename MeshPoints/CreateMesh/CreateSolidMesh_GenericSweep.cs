@@ -100,7 +100,7 @@ namespace MeshPoints.CreateMesh
             //5. Create nodes and elements
             nodes = CreateNodes(meshPoints, m3D.nu, m3D.nv, m3D.nw); // assign Coordiantes, GlobalId and Boundary Conditions
             elements = CreateHexElements(meshPoints, nodes, m3D.nu, m3D.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
-
+            
             //6. Create global mesh
             allMesh = CreateGlobalMesh(elements);
 
@@ -109,7 +109,7 @@ namespace MeshPoints.CreateMesh
             m3D.Elements = elements;
             m3D.mesh = allMesh;
             // Find edges composing the rails and add into list
-
+           
             // Output
             DA.SetData(0, m3D);
         }
@@ -126,7 +126,7 @@ namespace MeshPoints.CreateMesh
             string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(vector).ToString();
             if (curveOrientation != "Clockwise")
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Surface must have normal pointing in different direction than rail. Abaqus can not interpret order of nodes. ");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Abaqus can not interpret order of nodes. Error in brep input. ");
                 solidMesh.inp = false;
             }
             else { solidMesh.inp = true; }
@@ -149,9 +149,6 @@ namespace MeshPoints.CreateMesh
             Curve rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
             Curve rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
             Curve rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
-
-            // Find bottom surface
-            NurbsSurface bottomSurface = brep.Surfaces[5].ToNurbsSurface();
 
             List<Curve> rails = new List<Curve>() { rail1, rail2, rail3, rail4 };
             rails.Reverse();
