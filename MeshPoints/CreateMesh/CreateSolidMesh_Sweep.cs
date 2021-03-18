@@ -136,7 +136,6 @@ namespace MeshPoints.CreateMesh
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
-
         private DataTree<Point3d> DivideRailIntoNwPoints(Brep brep, int nw)
         {
             Point3d[] nwPt;
@@ -145,21 +144,30 @@ namespace MeshPoints.CreateMesh
 
             // Find edges composing the rails and add into list
             Curve rail1 = brep.Edges[0];  //get edge1 of brep = rail 1
-            Curve rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
+            Curve rail2 = brep.Edges[11];  //get edge2 of brep = rail 2
             Curve rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
-            Curve rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
+            Curve rail4 = brep.Edges[9]; //get edge4 of brep = rail 4
 
-            // Find bottom surface
+            // Check if brep must be fliped
             NurbsSurface bottomSurface = brep.Surfaces[5].ToNurbsSurface();
-
+            Vector3d vector1 = (rail1.PointAtEnd - rail1.PointAtStart);
+            Vector3d vector2 = bottomSurface.NormalAt(0, 0);
+            Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
+            double angle = Vector3d.VectorAngle(vector1, vector2, normal);
+            if (angle > Math.PI / 2) 
+            { 
+                rail1 = brep.Edges[0];  //get edge1 of brep = rail 1
+                rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
+                rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
+                rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
+            }
             List<Curve> rails = new List<Curve>() { rail1, rail2, rail3, rail4 };
-            rails.Reverse();
 
             //Divide each rail into nw points.
             for (int i = 0; i < rails.Count; i++)
             {
                 rails[i].DivideByCount(nw, true, out nwPt);  //divide each rail in nw number of points
-                nwPoints = nwPt.ToList(); //.OrderBy(f => f.Z).ToList();     //order the points according to z-value
+                nwPoints = nwPt.ToList();
                 for (int j = 0; j < nwPoints.Count; j++)
                 {
                     railPoints.Add(nwPoints[j], new GH_Path(j)); //tree with nw points on each rail. Branch: floor
@@ -252,12 +260,6 @@ namespace MeshPoints.CreateMesh
             double stepU = 1 / ((double)nu) * u.Length;
             double stepV = 1 / ((double)nv) * v.Length;
 
-
-            /*
-            surface.SetDomain(0, new Interval(0, 1)); // set domain for surface 0-direction
-            surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 1-direction
-            double stepU = 1 / ((double)nu - 1);
-            double stepV = 1 / ((double)nv - 1);*/
             string curveOrientation = (intersectionCurve[0].ToNurbsCurve()).ClosedCurveOrientation(plane).ToString();
             if (curveOrientation == "CounterClockwise")
             {
@@ -274,7 +276,7 @@ namespace MeshPoints.CreateMesh
                     pointU = 0;
                 }
             }
-            else
+            /*else
             {
                 double pointU = 0;//u.Length;
                 double pointV = v.Length;
@@ -288,7 +290,7 @@ namespace MeshPoints.CreateMesh
                     pointV = pointV - stepV;
                     pointU = 0;//u.Length;
                 }
-            }
+            }*/
             return pt;
         }
 
