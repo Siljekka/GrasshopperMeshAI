@@ -42,6 +42,8 @@ namespace MeshPoints.QuadRemesh
             pManager.AddGenericParameter("E_front", "element", "", GH_ParamAccess.item);
             pManager.AddGenericParameter("E_k_left", "element", "", GH_ParamAccess.item);
             pManager.AddGenericParameter("E_k_right ", "element", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("testList ", "tL", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("testItem ", "tI", "", GH_ParamAccess.item);
 
         }
 
@@ -190,7 +192,6 @@ namespace MeshPoints.QuadRemesh
 
             }
 
-
             #endregion End Code
 
             // next: greate new elements and update neighbors with swap and split
@@ -209,6 +210,8 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(6, newQuadElement);
             DA.SetData(7, E_k_right);
             DA.SetData(8, E_top);
+            //DA.SetDataList(9, );
+            //DA.SetData(10, );
         }
         #region Methods
         // _____________________________________ for ininital mesh _________________________________________
@@ -637,6 +640,13 @@ namespace MeshPoints.QuadRemesh
             
             }
             return neighborElements;
+        }
+        private qNode GetOppositeNode(qNode node, qEdge edge)
+        {
+            qNode oppositeNode = new qNode();
+            if (node == edge.StartNode) { oppositeNode = edge.EndNode; }
+            else if (node == edge.EndNode) { oppositeNode = edge.EndNode; }
+            return oppositeNode;
         }
 
         // _______________________________________ for mesh modification __________________________________________________
@@ -1140,14 +1150,30 @@ namespace MeshPoints.QuadRemesh
 
         // __________________________________________ Local smoothing ______________________________________________________
 
-        private void DoLocalSmooth()
-        { 
-        }
-
-        private qNode ModifiedLengthWeightedLaplacianSmooth()
+        private void DoLocalSmoothing(qNode node, qElement QuadElement, List<qEdge> edgeList)
         {
 
+        }
+
+        private qNode ModifiedLengthWeightedLaplacianSmooth(qNode Ni, List<qEdge> edgeList)
+        {
+            List<qEdge> connectedEdgesToNi = GetConnectedEdges(Ni, edgeList);
+
+            for (int i = 0; i < connectedEdgesToNi.Count; i++)
+            {
+                qEdge edge = connectedEdgesToNi[i];
+
+                qNode Nj = GetOppositeNode(Ni, edge);
+
+            }
+
+
             return null;
+        }
+
+        private Vector3d GetAngularSmoothness(qNode Nj)
+        {
+            return Vector3d.Zero;
         }
 
         #endregion
