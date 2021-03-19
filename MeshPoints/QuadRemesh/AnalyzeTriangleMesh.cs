@@ -66,7 +66,6 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> edgeList = initialEdgeAndElementList.Item1;
             List<qElement> elementList = initialEdgeAndElementList.Item2;
 
-
             qEdge E_k_left = new qEdge(); // left side edge of quad
             qEdge E_k_right = new qEdge(); // right side edge of quad
             qEdge E_front = new qEdge(); // bottom of quad
@@ -76,7 +75,6 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> intersectingS = new List<qEdge>();
             List<qElement> elementInside = new List<qElement>();
             qElement newQuadElement = new qElement();
-            double doubleTest = 0;
             List<qEdge> list00 = new List<qEdge>();
             List<qEdge> list01 = new List<qEdge>();
             List<qEdge> list10 = new List<qEdge>();
@@ -89,6 +87,7 @@ namespace MeshPoints.QuadRemesh
             {
                 // Mesh modification 
                 frontEdges = GetFrontEdges(edgeList);
+
                 if (E_frontFail != null)
                 { frontEdges.RemoveAt(frontEdges.IndexOf(E_frontFail)); } // ensure failed edge is not in lists to pick from
 
@@ -109,7 +108,6 @@ namespace MeshPoints.QuadRemesh
                     list11.RemoveAt(0);
                     E_k_left = E_front.LeftFrontNeighbor;
                     E_k_right = E_front.RightFrontNeighbor;
-                    doubleTest = CalculateAngleOfNeighborFrontEdges(1, E_front);
                 }
                 else if (list01.Count != 0)
                 {
@@ -201,7 +199,7 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(4, elementList);
             DA.SetDataList(5, test);
             DA.SetData(6, E_front);
-            DA.SetData(7, doubleTest);
+            DA.SetData(7, E_k_left);
             DA.SetData(8, E_k_right);
         }
 
