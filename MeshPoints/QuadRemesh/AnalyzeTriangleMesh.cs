@@ -688,13 +688,13 @@ namespace MeshPoints.QuadRemesh
             {
                 double angle = Vector3d.VectorAngle(vec1, vec2, Vector3d.ZAxis); // to do: make normal mor general
                 V_k = vec1;
-                V_k.Rotate(angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
+                V_k.Rotate(0.5*angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
             }
             else
             {
                 double angle = Vector3d.VectorAngle(vec2, vec1, Vector3d.ZAxis); // to do: make normal mor general
                 V_k = vec2;
-                V_k.Rotate(angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
+                V_k.Rotate(0.5*angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
             }
             #endregion
 
@@ -727,7 +727,7 @@ namespace MeshPoints.QuadRemesh
             foreach (qEdge E_i in E_i_list)
             {
                 Vector3d E_i_vec = GetVectorOfEdgeFromNode(E_i, N_k);
-                double theta_i = Vector3d.VectorAngle(V_k, E_i_vec);
+                double theta_i = Vector3d.VectorAngle(V_k, E_i_vec); // to do: make more general, assume there are edges close to V_K
                 theta_i_list.Add(theta_i);
             }
 
