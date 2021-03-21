@@ -39,7 +39,8 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3D", "Creates a Mesh3D", GH_ParamAccess.item);
-            //pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("test2", "", "", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -111,6 +112,8 @@ namespace MeshPoints.CreateMesh
 
             // Output
             DA.SetData(0, m3D);
+            DA.SetDataList(1, planes);
+            DA.SetDataTree(2, intersectionCurve);
         }
 
         #region Methods
@@ -276,7 +279,7 @@ namespace MeshPoints.CreateMesh
                     pointU = 0;
                 }
             }
-            /*else
+            else
             {
                 double pointU = 0;//u.Length;
                 double pointV = v.Length;
@@ -290,7 +293,7 @@ namespace MeshPoints.CreateMesh
                     pointV = pointV - stepV;
                     pointU = 0;//u.Length;
                 }
-            }*/
+            }
             return pt;
         }
 
