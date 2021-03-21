@@ -86,6 +86,15 @@ namespace MeshPoints.QuadRemesh
 
             for (int n = 0; n < numberElementsToRemesh; n++) // change back
             {
+                // Temporary stop
+                if (iterationCounter == iterationsToPerformBeforeStop)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Iteration stop");
+                    break;
+                }
+                iterationCounter++;
+
+
                 // Mesh modification 
                 frontEdges = GetFrontEdges(edgeList);
 
@@ -158,7 +167,6 @@ namespace MeshPoints.QuadRemesh
                     edgeList = edgeListBackUp; // reset changes made in the iteration
 
                     n--;
-                    iterationCounter++;
                     continue;
                 }
 
@@ -167,13 +175,6 @@ namespace MeshPoints.QuadRemesh
                 // quadrilateral formation
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 CreateQuadElement(quadEdges, edgeList, elementList);
-                
-               // Temporary stop
-                if (iterationCounter == iterationsToPerformBeforeStop)
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Iteration stop");
-                    break;
-                }
             }
             #endregion End Code
 
@@ -671,12 +672,29 @@ namespace MeshPoints.QuadRemesh
             Vector3d vec1 = vectorsAndSharedNode.Item1; // get vector for E_front
             Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
             qNode N_k = vectorsAndSharedNode.Item3; // shared node
+            Vector3d V_k = Vector3d.Zero;
+
+            /* Delete old method to calculate vector V_K..
             Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
             if (Math.Round(V_k.Length, 2) == 0)
             {
                 if (nodeToEvaluate == 0) { V_k = vec1; }
                 else { V_k = vec2; }
                 V_k.Rotate(0.5 * Math.PI, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
+            }
+            */
+
+            if (nodeToEvaluate == 0)
+            {
+                double angle = Vector3d.VectorAngle(vec1, vec2, Vector3d.ZAxis); // to do: make normal mor general
+                V_k = vec1;
+                V_k.Rotate(angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
+            }
+            else
+            {
+                double angle = Vector3d.VectorAngle(vec2, vec1, Vector3d.ZAxis); // to do: make normal mor general
+                V_k = vec2;
+                V_k.Rotate(angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
             }
             #endregion
 
