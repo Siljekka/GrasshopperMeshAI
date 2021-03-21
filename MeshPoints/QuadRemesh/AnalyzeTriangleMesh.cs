@@ -960,7 +960,7 @@ namespace MeshPoints.QuadRemesh
 
 
 
-            // to do: change... only temporary:If left and right edge share node
+            // to do: only temporary:If left and right edge share node, need to find a solution
             if (N_c == N_d)
             {
 
@@ -1175,11 +1175,9 @@ namespace MeshPoints.QuadRemesh
                 return Tuple.Create(E_top, performed);
             }
 
-            E_top = intersectingS[0];
-
             while (intersectingS.Count > 0)
             {
-
+                E_top = intersectingS[0];
                 SwapEdge(E_top, elementList); // swap the edge
 
                 List<qElement> Tswaped = new List<qElement>() { E_top.Element1, E_top.Element2 };
