@@ -26,14 +26,10 @@ namespace MeshPoints.QuadRemesh
         {
             pManager.AddGenericParameter("Triangle mesh", "trimesh", "Input a trinagle mesh", GH_ParamAccess.item);
             pManager.AddNumberParameter("# elements to remesh", "number", "Input an integer", GH_ParamAccess.item, 1);
-<<<<<<< HEAD
             pManager.AddNumberParameter("number iteration before stop", "temp", "Temoprary: number of iteration to perform", GH_ParamAccess.item, 2);
-
-=======
             pManager.AddGenericParameter("testList", "tL", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("testItem1", "tI", "", GH_ParamAccess.item);
             pManager.AddGenericParameter("testItem2", "tI", "", GH_ParamAccess.item);
->>>>>>> 9fd29129657df75a57daba60fdc7a344b5c011f8
         }
 
         /// <summary>
@@ -70,14 +66,12 @@ namespace MeshPoints.QuadRemesh
             // input
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref numberElementsToRemesh);
-<<<<<<< HEAD
+
             DA.GetData(2, ref iterationsToPerformBeforeStop);
-=======
             //DA.GetData(2, testList); //to test 
             //DA.GetData(2, ref testItem1); // to test
             //DA.GetData(2, ref testItem2); // to test
 
->>>>>>> 9fd29129657df75a57daba60fdc7a344b5c011f8
             #region Code
 
             // Get initial edges and elements using mesh topology properties
@@ -154,26 +148,8 @@ namespace MeshPoints.QuadRemesh
                     E_k_left = E_front.LeftFrontNeighbor;
                     E_k_right = GetSideEdge(elementList, edgeList, nodeToEvaluate, E_front);
                 }
-<<<<<<< HEAD
+
                 else if (list00.Count != 0)
-=======
-
-                // get top edge
-                E_top = GetTopEdge(E_front, E_k_left, E_k_right, edgeList, elementList, frontEdges);
-
-
-                // quadrilateral formation
-                List<qEdge> quadEdge = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
-
-
-                // find elements inside
-                elementInside = new List<qElement>() {E_front.Element1 };
-
-                qElement startElement = E_front.Element1;
-                bool done = false;
-                int count = 0;
-                while (!done)
->>>>>>> 9fd29129657df75a57daba60fdc7a344b5c011f8
                 {
                     E_front = list00[0];
                     //list00.RemoveAt(0);
@@ -201,7 +177,6 @@ namespace MeshPoints.QuadRemesh
                     elementList = elementListBackUp; // reset changes made in the iteration
                     edgeList = edgeListBackUp; // reset changes made in the iteration
 
-<<<<<<< HEAD
                     n--;
                     continue;
                 }
@@ -212,10 +187,6 @@ namespace MeshPoints.QuadRemesh
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 CreateQuadElement(quadEdges, edgeList, elementList);
             }
-=======
-            }
-
->>>>>>> 9fd29129657df75a57daba60fdc7a344b5c011f8
             #endregion End Code
 
             List<qEdge> test = new List<qEdge>() {E_front, E_k_left, E_k_right, E_top };
@@ -228,19 +199,13 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(2, list10); //list10
             DA.SetDataList(3, list01); //list01
             DA.SetDataList(4, elementList);
-<<<<<<< HEAD
             DA.SetDataList(5, test);
             DA.SetData(6, E_front);
             DA.SetData(7, E_k_left);
             DA.SetData(8, E_frontFail);
-=======
-            DA.SetDataList(5, elementInside);
-            DA.SetData(6, newQuadElement);
-            DA.SetData(7, E_k_right);
-            DA.SetData(8, E_top);
             //DA.SetDataList(9, );
             //DA.SetData(10, );
->>>>>>> 9fd29129657df75a57daba60fdc7a344b5c011f8
+
         }
 
 
@@ -740,7 +705,7 @@ namespace MeshPoints.QuadRemesh
             }
             return neighborElements;
         }
-<<<<<<< HEAD
+
         private qElement GetFrontElement(qEdge edge)
         {
             // summary: get the connected triangle element of a front edge
@@ -752,7 +717,7 @@ namespace MeshPoints.QuadRemesh
             return triangleElement;
         }
 
-=======
+
         private qNode GetOppositeNode(qNode node, qEdge edge)
         {
             qNode oppositeNode = new qNode();
@@ -760,7 +725,7 @@ namespace MeshPoints.QuadRemesh
             else if (node == edge.EndNode) { oppositeNode = edge.EndNode; }
             return oppositeNode;
         }
->>>>>>> 9fd29129657df75a57daba60fdc7a344b5c011f8
+
 
         // _______________________________________ for mesh modification __________________________________________________
         private qEdge GetSideEdge(List<qElement> elementList, List<qEdge> edgeList, double nodeToEvaluate, qEdge E_front)
