@@ -10,7 +10,7 @@ namespace MeshPoints.Classes
     class qNode
     {
         public Point3d Coordinate { get; set; }
-        public bool boundaryNode { get; set; }
+        public bool BoundaryNode { get; set; }
 
         public qNode()
         {

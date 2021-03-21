@@ -44,5 +44,6 @@ namespace MeshPoints.Classes
             return new Line(_startNode.Coordinate, _endNode.Coordinate);
         }
 
+
     }
 }
