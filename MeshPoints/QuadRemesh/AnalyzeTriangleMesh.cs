@@ -79,14 +79,6 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> edgeList = initialEdgeAndElementList.Item1;
             List<qElement> elementList = initialEdgeAndElementList.Item2;
 
-            // Mesh modification 
-            List<qEdge> frontEdges = GetFrontEdges(edgeList);
-            var edgeStates = CreateEdgeStateList(frontEdges);
-            var list11 = edgeStates.Item1;
-            var list10 = edgeStates.Item2;
-            var list01 = edgeStates.Item3;
-            var list00 = edgeStates.Item4;
-
             qEdge E_k_left = new qEdge(); // left side edge of quad
             qEdge E_k_right = new qEdge(); // right side edge of quad
             qEdge E_front = new qEdge(); // bottom of quad
