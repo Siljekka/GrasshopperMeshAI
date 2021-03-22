@@ -20,5 +20,10 @@ namespace MeshPoints.Classes
         {
             Coordinate = _coordinate;
         }
+        public qNode(Point3d _coordinate, bool _boundaryNode)
+        {
+            Coordinate = _coordinate;
+            BoundaryNode = _boundaryNode;
+        }
     }
 }
