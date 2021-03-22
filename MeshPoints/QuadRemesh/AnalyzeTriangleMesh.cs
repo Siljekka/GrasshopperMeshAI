@@ -194,14 +194,14 @@ namespace MeshPoints.QuadRemesh
 
             // output
             DA.SetDataList(0, edgeList);
-            DA.SetDataList(1, frontEdges); 
+            DA.SetDataList(1, elementList); 
             DA.SetDataList(2, list10); //list10
             DA.SetDataList(3, list01); //list01
             DA.SetDataList(4, elementList);
             DA.SetDataList(5, test);
             DA.SetData(6, E_front);
             DA.SetData(7, E_k_left);
-            DA.SetData(8, E_frontFail);
+            DA.SetData(8, E_k_right);
             
             //DA.SetDataList(9, );
             //DA.SetData(10, );
@@ -284,6 +284,13 @@ namespace MeshPoints.QuadRemesh
             for (int i = 0; i < edgeList.Count; i++)
             {
                 int[] connectedElementsIndex = mesh.TopologyEdges.GetConnectedFaces(i);
+
+                // warning message if topology is may contain an error
+                if (connectedElementsIndex.Length == 3) 
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Mesh topology may be wrong. Check corners if connected elements are correct.");
+                }
+
                 edgeList[i].Element1 = elementList[connectedElementsIndex[0]];
 
                 if (connectedElementsIndex.Length == 2)
@@ -984,8 +991,7 @@ namespace MeshPoints.QuadRemesh
                 }
             }
             Point3d N_n_coordinate = E_0_curve.PointAt(minDistanceParam);
-            qNode N_n = new qNode(N_n_coordinate);
-
+            qNode N_n = new qNode(N_n_coordinate, false);
 
             // create new edges
             qEdge E_k = new qEdge(N_n, N_m); 
