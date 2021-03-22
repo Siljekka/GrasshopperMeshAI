@@ -16,5 +16,9 @@ namespace MeshPoints.Classes
         {
             // empty constructor
         }
+        public qNode(Point3d _coordinate)
+        {
+            Coordinate = _coordinate;
+        }
     }
 }
