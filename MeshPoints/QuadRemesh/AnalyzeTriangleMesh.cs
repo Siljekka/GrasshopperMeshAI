@@ -592,13 +592,14 @@ namespace MeshPoints.QuadRemesh
                     {
                         nodeList.Add(edge.StartNode);
                     }
-                    else if (!nodeList.Contains(edge.EndNode))
+                    
+                    if (!nodeList.Contains(edge.EndNode))
                     {
                         nodeList.Add(edge.EndNode);
                     }
                 }
             }
-            else if (element.IsQuad)
+            else if (element.IsQuad) //todo: test function
             {
                 List<qEdge> quadEdges = element.EdgeList;
 
@@ -615,26 +616,26 @@ namespace MeshPoints.QuadRemesh
                 if (baseEdge.StartNode == leftEdge.StartNode || baseEdge.StartNode == leftEdge.EndNode)
                 {
                     node1 = baseEdge.StartNode;
-                    node2 = GetOppositeNode(node1, baseEdge);
+                    node2 = baseEdge.EndNode;
                 }
                 else if (baseEdge.EndNode == leftEdge.StartNode || baseEdge.EndNode == leftEdge.EndNode)
                 {
                     node1 = baseEdge.EndNode;
-                    node2 = GetOppositeNode(node1, baseEdge);
+                    node2 = baseEdge.StartNode;
                 }
 
                 if (topEdge.StartNode == leftEdge.StartNode || topEdge.StartNode == leftEdge.EndNode)
                 {
-                    node3 = baseEdge.StartNode;
-                    node4 = GetOppositeNode(node3, topEdge);
+                    node3 = topEdge.EndNode;
+                    node4 = topEdge.StartNode;
                 }
                 else if (topEdge.EndNode == leftEdge.StartNode || topEdge.EndNode == leftEdge.EndNode)
                 {
-                    node3 = baseEdge.EndNode;
-                    node4 = GetOppositeNode(node3, topEdge);
+                    node3 = topEdge.StartNode;
+                    node4 = topEdge.EndNode;
                 }
 
-                nodeList = new List<qNode> { node1, node2, node3, node4 };
+                nodeList = new List<qNode> { node1, node2, node3, node4 }; // n1: bottom left, n2: bottom right, n2: top right, n3: top left
             }
             return nodeList;
         }
@@ -705,7 +706,6 @@ namespace MeshPoints.QuadRemesh
             }
             return neighborElements;
         }
-
         private qElement GetFrontElement(qEdge edge)
         {
             // summary: get the connected triangle element of a front edge
@@ -716,15 +716,13 @@ namespace MeshPoints.QuadRemesh
 
             return triangleElement;
         }
-
-
         private qNode GetOppositeNode(qNode node, qEdge edge)
         {
             qNode oppositeNode = new qNode();
             if (node == edge.StartNode) { oppositeNode = edge.EndNode; }
-            else if (node == edge.EndNode) { oppositeNode = edge.EndNode; }
+            else if (node == edge.EndNode) { oppositeNode = edge.StartNode; }
             return oppositeNode;
-        }
+        } //todo: test if OK!
 
 
         // _______________________________________ for mesh modification __________________________________________________
@@ -1334,13 +1332,15 @@ namespace MeshPoints.QuadRemesh
 
         // __________________________________________ Local smoothing ______________________________________________________
 
-        private void DoLocalSmoothing(qNode node, qElement QuadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges)
+        private void DoLocalSmoothing(qElement QuadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges)
         {
             qNode smoothNode = new qNode();
             List<qNode> adjacentNodes = new List<qNode>();
+            List<qEdge> connectedEdges = new List<qEdge>();
 
             List<qEdge> QuadEdges = QuadElement.EdgeList;
             List<qNode> QuadNodes = GetNodesOfElement(QuadElement);
+            
 
             qEdge baseEdge = QuadEdges[0];
             qEdge rightEdge = QuadEdges[1];
@@ -1355,11 +1355,12 @@ namespace MeshPoints.QuadRemesh
             // Smooth nodes on Quad
             foreach (qNode n in QuadNodes)
             {
+                connectedEdges = GetConnectedEdges(n, globalEdgeList);
                 bool isFrontNode = IsFrontNode(n, frontEdges);
                 if (isFrontNode & !n.BoundaryNode)
                 {
                     // smooth front node
-                    smoothNode = FrontNodeSmooth(n);
+                    smoothNode = FrontNodeSmooth(n, connectedEdges);
                 }
                 else if (!isFrontNode & !n.BoundaryNode)
                 {
@@ -1372,14 +1373,16 @@ namespace MeshPoints.QuadRemesh
                 }
             }
 
-            adjacentNodes = GetNodesConnectedToElementNodes(QuadElement, globalEdgeList);
+            adjacentNodes = GetNeighborNodesToElement(QuadElement, globalEdgeList);
+                
             foreach (qNode n in adjacentNodes)
             {
+                connectedEdges = GetConnectedEdges(n, globalEdgeList);
                 bool isFrontNode = IsFrontNode(n, frontEdges);
                 if (isFrontNode & !n.BoundaryNode)
                 {
                     // smooth front node
-                    smoothNode = FrontNodeSmooth(n);
+                    smoothNode = FrontNodeSmooth(n, connectedEdges);
                 }
                 else if (!isFrontNode & !n.BoundaryNode)
                 {
@@ -1396,7 +1399,7 @@ namespace MeshPoints.QuadRemesh
 
         }
 
-        private List<qNode> GetNodesConnectedToElementNodes(qElement element, List<qEdge> globalEdgeList) // todo: check if this is OK.
+        private List<qNode> GetNeighborNodesToElement(qElement element, List<qEdge> globalEdgeList) // todo: check if this is OK.
         {
             List<qNode> adjacentNodes = new List<qNode>();
 
@@ -1473,15 +1476,207 @@ namespace MeshPoints.QuadRemesh
             return smoothNode;
         }
 
-        private qNode FrontNodeSmooth(qNode Ni)
+        private qNode FrontNodeSmooth(qNode Ni, List<qEdge> connectedEdges)
         {
+            // Find front edges connected to front node: todo: test if this works as I want.
+            List<qEdge> nodeFrontEdges = new List<qEdge>();
+            foreach (qEdge edge in connectedEdges)
+            {
+                bool isFrontEdge = IsFrontEdge(edge);
+                if (isFrontEdge)
+                {
+                    nodeFrontEdges.Add(edge);
+                }
+            }
+
+            if (nodeFrontEdges.Count != 2) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, String.Format("Node is connected to {0} front edges", nodeFrontEdges.Count)}
+            else 
+            {
+                qEdge front1 = nodeFrontEdges[0];
+                qEdge front2 = nodeFrontEdges[1];
+
+                if (front1.RightFrontNeighbor.StartNode == Ni || front1.RightFrontNeighbor.EndNode == Ni)
+                {
+                    qEdge nodeLeftFront = front1;
+                    qEdge nodeRightFront = front2;
+                }
+                else
+                {
+                    qEdge nodeLeftFront = front2;
+                    qEdge nodeRightFront = front1;
+                }
+            }
+
+
+            // Get how many quad is connected to node. Todo: check if this do what I want.
+            List<qElement> quadElements = new List<qElement>();
+            
+            foreach (qEdge edge in connectedEdges)
+            {
+                if (edge.Element1.IsQuad) { quadElements.Add(edge.Element1); }
+                if (edge.Element2.IsQuad) { quadElements.Add(edge.Element2); }
+            }
+
+            int numberOfConnectedQuads = 0;
+            if (quadElements.Count > 0)
+            {
+                foreach (qElement element in quadElements)
+                {
+                    if (quadElements.Contains(element)) { quadElements.Remove(element); }
+                }
+                numberOfConnectedQuads = quadElements.Count;
+            }
+            if (quadElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "number of connected quad-elements to frontNode is zero."); }
+
+
+            // True isoparametric smooth:
+            if (numberOfConnectedQuads != 0)
+            {
+                Vector3d Vmj = Vector3d.Zero;
+                Vector3d Vmk = Vector3d.Zero;
+                Vector3d Vml = Vector3d.Zero;
+                Vector3d vectorSum = Vector3d.Zero;
+                Point3d origo = new Point3d(0, 0, 0);
+
+                foreach (qElement quadElement in quadElements)
+                {
+                    List<qNode> quadNodes = GetNodesOfElement(quadElement);
+                    qNode node1 = quadNodes[0];
+                    qNode node2 = quadNodes[1];
+                    qNode node3 = quadNodes[2];
+                    qNode node4 = quadNodes[3];
+
+                    if (node1 == Ni)
+                    {
+                        Vmj = node2.Coordinate - origo;
+                        Vmk = node3.Coordinate - origo;
+                        Vml = node4.Coordinate - origo;
+                    }
+                    if (node2 == Ni)
+                    {
+                        Vmj = node3.Coordinate - origo;
+                        Vmk = node4.Coordinate - origo;
+                        Vml = node1.Coordinate - origo;
+                    }
+                    if (node3 == Ni)
+                    {
+                        Vmj = node4.Coordinate - origo;
+                        Vmk = node1.Coordinate - origo;
+                        Vml = node2.Coordinate - origo;
+                    }
+                    if (node4 == Ni)
+                    {
+                        Vmj = node1.Coordinate - origo;
+                        Vmk = node2.Coordinate - origo;
+                        Vml = node3.Coordinate - origo;
+                    }
+
+                    vectorSum = (Vmj + Vml - Vmk) + vectorSum;
+                }
+
+                Vector3d Vi = Ni.Coordinate - origo;
+                Vector3d Vi_mark = (1 / numberOfConnectedQuads) * vectorSum;
+
+                Vector3d deltaA = Vi_mark - Vi;
+
+
+                // If numberOfConnectedQuads = 2, do utvidet smooth 
+                Vector3d deltaI = Vector3d.Zero;
+                Vector3d deltaB = Vector3d.Zero;
+                Vector3d deltaC = Vector3d.Zero;
+                if (numberOfConnectedQuads == 2)
+                {
+                    // Length modification:
+                    qEdge sharedEdge = null;
+                    qElement quadElement1 = quadElements[0];
+                    qElement quadElement2 = quadElements[0];
+
+
+
+                    foreach (qEdge edge in quadElement1.EdgeList)
+                    { 
+                        if (quadElement2.EdgeList.Contains(edge))
+                        {
+                            sharedEdge = edge;
+                        }
+                    }
+
+                    qNode Nj = GetOppositeNode(Ni, sharedEdge);
+                    Vector3d Vj = Nj.Coordinate - origo;
+
+                    double la = (Vi_mark - Vj).Length;
+
+                    // Find ld
+                    double ld = 0;
+                    double tr = 2.5; //todo: fix tr!!
+                    double sumSurroundingEdges = 0;
+                    double n = 0;
+                    if (tr <= 2.5)
+                    {
+                        ld = (Ni.Coordinate - Nj.Coordinate).Length; // todo: check assumption
+                    }
+                    else if (tr > 2.5 & tr <= 20)
+                    {
+                        for (int i = 0; i < 4; i++)
+                        {
+                            qEdge edge1 = quadElement1.EdgeList[i];
+                            qEdge edge2 = quadElement2.EdgeList[i];
+
+                            // length of edges of element1
+                            if (!IsFrontEdge(edge1) || edge1 != sharedEdge)
+                            {
+                                sumSurroundingEdges = edge1.Length + sumSurroundingEdges;
+                            }
+
+                            // length of edges of element2
+                            if (!IsFrontEdge(edge2) || edge2 != sharedEdge)
+                            {
+                                sumSurroundingEdges = edge2.Length + sumSurroundingEdges;
+                            }
+                        }
+
+                        // length of edges not connected to elements or is frontedge
+                        foreach (qEdge edge in connectedEdges)
+                        {
+                            if (!IsFrontEdge(edge) || edge != sharedEdge)
+                            {
+                                sumSurroundingEdges = edge.Length + sumSurroundingEdges;
+                                n++;
+                            }
+                        }
+
+                        ld = sumSurroundingEdges / (4 + n);
+                    }
+                    else 
+                    {
+                        foreach (qEdge edge in connectedEdges)
+                        {
+                            sumSurroundingEdges = edge.Length + sumSurroundingEdges;
+                            n++;
+                        }
+
+                        ld = sumSurroundingEdges / n;              
+                    }
+
+                    if (IsFrontEdge(sharedEdge)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Shared edge in Front Node smooth (two quads) is a front edge.."); }
+
+                    deltaB = Vj - Vi + (deltaA + Vi - Vj) * ld / la;
+
+
+                    // Angle modification:
 
 
 
 
+                }
+                else { deltaI = deltaA; }
 
+                
+            }
+            else (AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "numberOfConnectedQuads is zero. Blacker smooth can not be performed!!");
             return null;
         }
+
         private Vector3d GetAngularSmoothness(qNode Nj) // todo: check if this works
         {
             return Vector3d.Zero;
