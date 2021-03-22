@@ -596,7 +596,8 @@ namespace MeshPoints.QuadRemesh
                     {
                         nodeList.Add(edge.StartNode);
                     }
-                    else if (!nodeList.Contains(edge.EndNode))
+                   
+                    if (!nodeList.Contains(edge.EndNode))
                     {
                         nodeList.Add(edge.EndNode);
                     }
@@ -1357,6 +1358,13 @@ namespace MeshPoints.QuadRemesh
                 foreach (qEdge edge in T_k.EdgeList)
                 {
                     if (edge.StartNode == N_i | edge.EndNode == N_i) { E_nCandidates.Add(edge); }
+                }
+
+                if (E_nCandidates.Count < 2)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Top edge: Fails because E_nCandidates is zero");
+                    performed = false;
+                    return Tuple.Create(E_top, performed);
                 }
 
                 var vectors = CalculateVectorsFromSharedNode(E_nCandidates[0], E_nCandidates[1]);
