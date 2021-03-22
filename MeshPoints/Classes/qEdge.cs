@@ -19,10 +19,13 @@ namespace MeshPoints.Classes
         public qElement Element2 { get; set; }
         public qEdge LeftFrontNeighbor { get; set; }
         public qEdge RightFrontNeighbor { get; set; }
+        public int Level { get; set; } // level if front edge
+        public bool IsQuadSideEdge { get; set; }
 
-        
 
-    public qEdge()
+
+
+        public qEdge()
         {
             // empty constructor
         }
@@ -33,6 +36,8 @@ namespace MeshPoints.Classes
             EndNode = _endNode;
             Length = CalculateLength(_startNode, _endNode);
             EdgeLine = VisualizeLine(_startNode, _endNode);
+            Level = 0; // check if needed
+            IsQuadSideEdge = false;
         }
 
         public double CalculateLength(qNode _startNode, qNode _endNode)

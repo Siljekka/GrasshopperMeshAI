@@ -79,6 +79,9 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> edgeList = initialEdgeAndElementList.Item1;
             List<qElement> elementList = initialEdgeAndElementList.Item2;
 
+            // Get intial front edges
+            List<qEdge> frontEdges = GetFrontEdges(edgeList);
+
             qEdge E_k_left = new qEdge(); // left side edge of quad
             qEdge E_k_right = new qEdge(); // right side edge of quad
             qEdge E_front = new qEdge(); // bottom of quad
@@ -91,8 +94,8 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> list10 = new List<qEdge>();
             List<qEdge> list11 = new List<qEdge>();
             List<qEdge> listE_frontFailed = new List<qEdge>();
-            List<qEdge> frontEdges = new List<qEdge>();
             int iterationCounter = 0;
+
 
             for (int n = 0; n < numberElementsToRemesh; n++) // change back
             {
@@ -104,63 +107,37 @@ namespace MeshPoints.QuadRemesh
                 }
                 iterationCounter++;
 
-
-                // Mesh modification 
-                frontEdges = GetFrontEdges(edgeList);
-
-                if (E_frontFail != null)
-                { frontEdges.RemoveAt(frontEdges.IndexOf(E_frontFail)); } // ensure failed edge is not in lists to pick from
-
-                var edgeStates = CreateEdgeStateList(frontEdges);
-                list11 = edgeStates.Item1;
-                list10 = edgeStates.Item2;
-                list01 = edgeStates.Item3;
-                list00 = edgeStates.Item4;
-
-                frontEdges.Add(E_frontFail); // add failed E_front
-
-                // back up if picked E_front is not to useable
+                // back up if selected E_front is not to useable
                 List<qElement> elementListBackUp = elementList;
                 List<qEdge> edgeListBackUp = edgeList;
 
-                // get bottom edge: E_front
-                // todo: extand the hieraki to levels
-                if (list11.Count != 0)
+                // to do: temporarty front fail fix
+                if (E_frontFail != null)
+                { frontEdges.RemoveAt(frontEdges.IndexOf(E_frontFail)); } // ensure failed edge is not in lists to pick from
+                
+                // select next front edge
+                var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
+                E_front = E_frontAndEdgeState.Item1;
+                var edgeState = E_frontAndEdgeState.Item2;
+
+                frontEdges.Add(E_frontFail); // to do: temporary add failed E_front
+
+                // get left edge
+                switch (edgeState[0])
                 {
-                    E_front = list11[0];
-                    //list11.RemoveAt(0);
-                    E_k_left = E_front.LeftFrontNeighbor;
-                    E_k_right = E_front.RightFrontNeighbor;
+                    case 0:
+                        E_k_left = GetSideEdge(elementList, edgeList, 0, E_front); break;
+                    case 1:
+                        E_k_left = E_front.LeftFrontNeighbor; break;
                 }
-                else if (list01.Count != 0)
+
+                // get right edge
+                switch (edgeState[1])
                 {
-                    E_front = list01[0];
-                    //list01.RemoveAt(0);
-                    int nodeToEvaluate = 0; // evaluate left node
-                    E_k_left = GetSideEdge(elementList, edgeList, nodeToEvaluate, E_front);
-                    E_k_right = E_front.RightFrontNeighbor;
-                }
-                else if (list10.Count != 0)
-                {
-                    E_front = list10[0];
-                    //list10.RemoveAt(0);
-                    int nodeToEvaluate = 1; // evaluate right node
-                    E_k_left = E_front.LeftFrontNeighbor;
-                    E_k_right = GetSideEdge(elementList, edgeList, nodeToEvaluate, E_front);
-                }
-                else if (list00.Count != 0)
-                {
-                    E_front = list00[0];
-                    //list00.RemoveAt(0);
-                    E_k_left = GetSideEdge(elementList, edgeList, 0, E_front);
-                    E_k_right = GetSideEdge(elementList, edgeList, 1, E_front);
-                }
-                else 
-                {
-                    E_front = listE_frontFailed[0]; 
-                    listE_frontFailed.RemoveAt(0);
-                    E_k_left = GetSideEdge(elementList, edgeList, 0, E_front); // to do: temporary, find a fix
-                    E_k_right = GetSideEdge(elementList, edgeList, 1, E_front);// to do: temporary, find a fix
+                    case 0:
+                        E_k_right = GetSideEdge(elementList, edgeList, 1, E_front); break;
+                    case 1:
+                        E_k_right = E_front.RightFrontNeighbor; break;
                 }
 
                 // get top edge
@@ -185,12 +162,18 @@ namespace MeshPoints.QuadRemesh
                 // quadrilateral formation
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 CreateQuadElement(quadEdges, edgeList, elementList);
+
+                // Mesh modification
+                frontEdges = GetFrontEdges(edgeList);
+
+                // local smoothing
             }
             #endregion End Code
 
             List<qEdge> test = new List<qEdge>() {E_front, E_k_left, E_k_right, E_top };
 
             // todo: fix globalEdgeList and elementEdgeList
+            // todo: when new Level: change qEdge.IsQuadSideEdge = false;
 
             // output
             DA.SetDataList(0, edgeList);
@@ -485,7 +468,111 @@ namespace MeshPoints.QuadRemesh
                 else if (edge.Element1.IsQuad & !edge.Element2.IsQuad) { check = true; }
             }
             return check;
-        } 
+        }
+        private qEdge SelectFrontEdgeFromList(List<qEdge> edgeStateList)
+        {
+            // summary: select an edge from edge state list input. Choose lowest level, if multiple choose shortest of them.
+
+            // get edges of lowest level
+            List<qEdge> edgesOfLowestLevel = new List<qEdge>();
+            int lowestLevel = edgeStateList[0].Level;
+            foreach (qEdge edge in edgeStateList)
+            {
+                if (edge.Level == lowestLevel)
+                {
+                    edgesOfLowestLevel.Add(edge);
+                }
+                else if (edge.Level < lowestLevel)
+                {
+                    edgesOfLowestLevel.Clear();
+                    lowestLevel = edge.Level;
+                    edgesOfLowestLevel.Add(edge);
+                }
+            }
+
+            // get shortes edge
+            qEdge E_front = new qEdge();
+            double shortestLength = edgesOfLowestLevel[0].Length;
+            foreach (qEdge edge in edgesOfLowestLevel)
+            {
+                if (edge.Length <= shortestLength)
+                {
+                    E_front = edge;
+                }
+            }
+            return E_front;
+        }
+        private Tuple<qEdge, int[] > SelectNextFrontEdge(List<qEdge> frontEdges)
+        {
+            // summary: select next front edge with the hierarchy: list -> lowest level -> shortest length and switch to neighbor if large transision
+            double transitionTolerance = 2.5;
+            qEdge E_front = new qEdge();
+
+            var edgeStates = CreateEdgeStateList(frontEdges);
+            var list11 = edgeStates.Item1;
+            var list10 = edgeStates.Item2;
+            var list01 = edgeStates.Item3;
+            var list00 = edgeStates.Item4;
+            int[] edgeState = { 0, 0 };
+
+            // select
+            if (list11.Count != 0)
+            {
+                E_front = SelectFrontEdgeFromList(list11);
+                edgeState[0] = 1; edgeState[1] = 1;
+
+            }
+            else if (list01.Count != 0 | list10.Count != 0)
+            {
+                // merge list01 and 10
+                List<qEdge> list0110 = new List<qEdge>();
+                foreach (qEdge edge in list01)
+                {
+                    list0110.Add(edge);
+                }
+                foreach (qEdge edge in list10)
+                {
+                    list0110.Add(edge);
+                }
+
+                E_front = SelectFrontEdgeFromList(list0110);
+
+                // set edge state
+                if (list01.Contains(E_front))
+                {
+                    edgeState[0] = 0; edgeState[1] = 1;
+                }
+                else
+                {
+                    edgeState[0] = 1; edgeState[1] = 0;
+                }
+            }
+            else if (list00.Count == 0)
+            {
+                E_front = SelectFrontEdgeFromList(list00);
+                edgeState[0] = 0; edgeState[1] = 0;
+            }
+            else
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: No more edges to select."); }
+
+            // switch E_front to neighbor front if transision to one of the front neighbors is large and neighbor is selectable
+            if (E_front.Length / E_front.LeftFrontNeighbor.Length > transitionTolerance)
+            {
+                if (!list11.Contains(E_front.LeftFrontNeighbor))
+                {
+                    E_front = E_front.LeftFrontNeighbor;
+                }
+            }
+            else if (E_front.Length / E_front.RightFrontNeighbor.Length > transitionTolerance)
+            {
+                if (!list11.Contains(E_front.RightFrontNeighbor))
+                {
+                    E_front = E_front.RightFrontNeighbor;
+                }
+            }
+
+            return Tuple.Create(E_front, edgeState);
+        }
 
         // _________________________________________ for topology  _______________________________________________
         private List<qEdge> GetConnectedEdges(qNode node, List<qEdge> edgeList)
@@ -731,8 +818,7 @@ namespace MeshPoints.QuadRemesh
         // _______________________________________ for mesh modification __________________________________________________
         private qEdge GetSideEdge(List<qElement> elementList, List<qEdge> edgeList, double nodeToEvaluate, qEdge E_front)
         {
-            // todo: Implement split. Have not used N_n and E_m.
-
+            // summary: Get side edge of a new quad
             double thetaTolerance = 0.16667 * Math.PI; // todo: an assumption
             qEdge E_neighborFront = new qEdge();
             if (nodeToEvaluate == 0) { E_neighborFront = E_front.LeftFrontNeighbor; ; }
@@ -744,16 +830,6 @@ namespace MeshPoints.QuadRemesh
             Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
             qNode N_k = vectorsAndSharedNode.Item3; // shared node
             Vector3d V_k = Vector3d.Zero;
-
-            /* Delete old method to calculate vector V_K..
-            Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
-            if (Math.Round(V_k.Length, 2) == 0)
-            {
-                if (nodeToEvaluate == 0) { V_k = vec1; }
-                else { V_k = vec2; }
-                V_k.Rotate(0.5 * Math.PI, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
-            }
-            */
 
             if (nodeToEvaluate == 0)
             {
@@ -1501,6 +1577,9 @@ namespace MeshPoints.QuadRemesh
                 }
                 else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Quadelement not assigned to edges"); }
             }
+            quadEdge[1].IsQuadSideEdge = true;
+            quadEdge[2].IsQuadSideEdge = true; // make sure not pick as new front edge, but is in frontEdges
+            quadEdge[3].Level++; // update level for top edge of quad
         }
 
         // __________________________________________ Local smoothing ______________________________________________________
