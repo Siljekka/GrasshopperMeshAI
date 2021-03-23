@@ -1626,22 +1626,22 @@ namespace MeshPoints.QuadRemesh
             List<qNode> adjacentNodes = new List<qNode>();
             List<qEdge> connectedEdges = new List<qEdge>();
 
-            List<qEdge> QuadEdges = QuadElement.EdgeList;
+            //List<qEdge> QuadEdges = QuadElement.EdgeList;
             List<qNode> QuadNodes = GetNodesOfElement(QuadElement);
 
 
-            qEdge baseEdge = QuadEdges[0];
-            qEdge rightEdge = QuadEdges[1];
-            qEdge leftEdge = QuadEdges[2];
-            qEdge topEdge = QuadEdges[3];
+            //qEdge baseEdge = QuadEdges[0];
+            //qEdge rightEdge = QuadEdges[1];
+            //qEdge leftEdge = QuadEdges[2];
+            //qEdge topEdge = QuadEdges[3];
 
-            qNode node1 = QuadNodes[0];
-            qNode node2 = QuadNodes[1];
-            qNode node3 = QuadNodes[2];
-            qNode node4 = QuadNodes[3];
+            //qNode node1 = QuadNodes[0];
+            //qNode node2 = QuadNodes[1];
+            //qNode node3 = QuadNodes[2];
+            //qNode node4 = QuadNodes[3];
 
             // Smooth nodes on Quad
-            foreach (qNode qNode in QuadNodes)
+            foreach (qNode qNode in QuadNodes) //assume rekkefølge ikke har noe å si
             {
                 bool isFrontNode = IsFrontNode(qNode, frontEdges);
                 if (isFrontNode & !qNode.BoundaryNode)
@@ -1656,6 +1656,7 @@ namespace MeshPoints.QuadRemesh
                 }
                 else
                 {
+                    // assume that node is not moved
                     qNode.Coordinate = qNode.Coordinate;
                 }
             }
@@ -1678,6 +1679,7 @@ namespace MeshPoints.QuadRemesh
                 }
                 else
                 {
+                    // assume that node is not moved
                     adjNode.Coordinate = adjNode.Coordinate;
                 }
             }
