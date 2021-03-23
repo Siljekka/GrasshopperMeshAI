@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using Rhino.Geometry.Collections;
+using System.Linq;
+using Rhino.Geometry.Intersect;
 
 namespace MeshPoints.QuadRemesh
 {
@@ -1774,7 +1776,6 @@ namespace MeshPoints.QuadRemesh
 
 
         }
-
         private List<qNode> GetNeighborNodesToElement(qElement element, List<qEdge> globalEdgeList) // todo: check if this is OK.
         {
             List<qNode> adjacentNodes = new List<qNode>();
@@ -2041,8 +2042,6 @@ namespace MeshPoints.QuadRemesh
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "numberOfConnectedQuads is zero. Blacker smooth can not be performed!!"); }
             return null;
         }
-
-
         private Vector3d GetAngularSmoothness(qNode Ni, qNode Nj, List<qEdge> globalEdgeList) // todo: check if this works
         {
             List<qElement> quadElements = GetQuadsConnectedToNode(Ni, globalEdgeList);
@@ -2059,12 +2058,11 @@ namespace MeshPoints.QuadRemesh
                 qEdge sharedEdge = GetSharedEdge(quadElements);
 
                 qElement quadElement1 = quadElements[0];
-                qEdge topEdge1 = quadElement1.EdgeList[3];
-                List<qNode> nodes1 = GetNodesOfElement(quadElement1);
-
                 qElement quadElement2 = quadElements[1];
+                qEdge topEdge1 = quadElement1.EdgeList[3];
                 qEdge topEdge2 = quadElement2.EdgeList[3];
-
+                List<qNode> nodes1 = GetNodesOfElement(quadElement1);
+                           
                 Vector3d vectorLeft = Vector3d.Zero; // dummy vector
                 Vector3d vectorRight = Vector3d.Zero; // dummy vector
 
@@ -2087,6 +2085,10 @@ namespace MeshPoints.QuadRemesh
 
                 Line line1 = new Line(Nj.Coordinate, P_B2, 100);
                 Line line2 = new Line(GetOppositeNode(Ni, topEdge1).Coordinate, GetOppositeNode(Ni, topEdge2).Coordinate);
+                Intersection.LineLine(line1, line2, out double param1, out double param2, 0.001, false);         
+                Point3d Q = line1.PointAt(param1);
+                Point3d Qtest = line2.PointAt(param2); //test point - delete not yet
+                if (Q != Qtest) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Point Q and Qtest is not the same point."); }
 
 
             }
@@ -2094,7 +2096,6 @@ namespace MeshPoints.QuadRemesh
 
             return Vector3d.Zero;
         }
-
         private Vector3d GetBisectingVector(Vector3d VectorRight, Vector3d VectorLeft)
         {
             double angle = Vector3d.VectorAngle(VectorRight, VectorLeft, Vector3d.ZAxis); // todo: make normal mor general
@@ -2145,7 +2146,6 @@ namespace MeshPoints.QuadRemesh
             return nodeFrontEdges;
 
         }
-
         private List<qElement> GetQuadsConnectedToNode(qNode node, List<qEdge> globalEdgeList)
         {
             // Get how quads that are connected to node. Todo: check if this do what I want.
@@ -2170,47 +2170,9 @@ namespace MeshPoints.QuadRemesh
 
             return quadElements;
         }
+         
+        
 
-        private List<qNode> GetQuadNodesOfElement(qElement element)
-        {
-            List<qEdge> quadEdges = element.EdgeList;
-            
-            qEdge baseEdge = quadEdges[0];
-            qEdge rightEdge = quadEdges[1];
-            qEdge leftEdge = quadEdges[2];
-            qEdge topEdge = quadEdges[3];
-
-            qNode node1 = new qNode();
-            qNode node2 = new qNode();
-            qNode node3 = new qNode();
-            qNode node4 = new qNode();
-
-            if (baseEdge.StartNode == leftEdge.StartNode || baseEdge.StartNode == leftEdge.EndNode)
-            {
-                node1 = baseEdge.StartNode;
-                node2 = GetOppositeNode(node1, baseEdge);
-            }
-            else if (baseEdge.EndNode == leftEdge.StartNode || baseEdge.EndNode == leftEdge.EndNode)
-            {
-                node1 = baseEdge.EndNode;
-                node2 = GetOppositeNode(node1, baseEdge);
-            }
-
-            if (topEdge.StartNode == leftEdge.StartNode || topEdge.StartNode == leftEdge.EndNode)
-            {
-                node3 = baseEdge.StartNode;
-                node4 = GetOppositeNode(node3, topEdge);
-            }
-            else if (topEdge.EndNode == leftEdge.StartNode || topEdge.EndNode == leftEdge.EndNode)
-            {
-                node3 = baseEdge.EndNode;
-                node4 = GetOppositeNode(node3, topEdge);
-            }
-
-            List<qNode> quadNodes = new List<qNode> { node1, node2, node3, node4 };
-
-            return quadNodes;
-        }
 
         #endregion
 
