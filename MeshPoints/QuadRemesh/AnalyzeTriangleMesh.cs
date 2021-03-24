@@ -32,6 +32,10 @@ namespace MeshPoints.QuadRemesh
             pManager.AddGenericParameter("testItem1", "tI", "", GH_ParamAccess.item);
             pManager.AddGenericParameter("testItem2", "tI", "", GH_ParamAccess.item);
             pManager.AddNumberParameter("number iteration before stop", "temp", "Temoprary: number of iteration to perform", GH_ParamAccess.item, 2);
+            pManager[2].Optional = true;
+            pManager[3].Optional = true;
+            pManager[4].Optional = true;
+
         }
 
         /// <summary>
@@ -63,13 +67,17 @@ namespace MeshPoints.QuadRemesh
             Mesh mesh = new Mesh();
             double numberElementsToRemesh = 0;
             double iterationsToPerformBeforeStop = 0;
+            
+            List<double> testList = new List<double>();
+            double testItem1 = 0;
+            double testItem2 = 2;
 
             // input
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref numberElementsToRemesh);
-            //DA.GetData(2, testList); //to test 
-            //DA.GetData(3, ref testItem1); // to test
-            //DA.GetData(4, ref testItem2); // to test
+            DA.GetDataList(2, testList); //to test 
+            DA.GetData(3, ref testItem1); // to test
+            DA.GetData(4, ref testItem2); // to test
 
 
             DA.GetData(5, ref iterationsToPerformBeforeStop);
@@ -92,6 +100,7 @@ namespace MeshPoints.QuadRemesh
             qEdge E_frontFail = null;
             List<qEdge> listE_frontFailed = new List<qEdge>();
             int iterationCounter = 0;
+            qElement quadElement = new qElement();
 
             for (int n = 0; n < numberElementsToRemesh; n++)
             {
@@ -162,7 +171,7 @@ namespace MeshPoints.QuadRemesh
 
                 // quadrilateral formation
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
-                qElement quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList);
+                quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList);
 
                 // Mesh modification
                 frontEdges = GetFrontEdges(globalEdgeList);
@@ -177,13 +186,13 @@ namespace MeshPoints.QuadRemesh
             // todo: when new Level: change qEdge.IsQuadSideEdge = false;
 
             // output
-            DA.SetDataList(0, globalEdgeList);
+            DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, frontEdges); 
             DA.SetDataList(2, globalElementList); //list10
             DA.SetDataList(3, globalElementList); //list01
             DA.SetDataList(4, globalElementList);
             DA.SetDataList(5, test);
-            DA.SetData(6, E_front);
+            DA.SetData(6, quadElement);
             DA.SetData(7, E_k_left);
             DA.SetData(8, E_k_right);
             
@@ -191,8 +200,6 @@ namespace MeshPoints.QuadRemesh
             //DA.SetData(10, );
 
         }
-
-
 
         #region Methods
         // _____________________________________ for ininital mesh _________________________________________
