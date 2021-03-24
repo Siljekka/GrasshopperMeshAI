@@ -2579,18 +2579,18 @@ namespace MeshPoints.QuadRemesh
             }
 
             // delete dublicates
+            List<qElement> quadElementsNoDublicates = new List<qElement>(quadElements);
             if (quadElements.Count > 0)
             {
-                List<qElement> quadElementsCopy = new List<qElement>(quadElements);
-                foreach (qElement element in quadElementsCopy)
+                foreach (qElement element in quadElements)
                 {
-                    if (quadElements.Contains(element)) { quadElements.Remove(element); }
+                    if (!quadElementsNoDublicates.Contains(element)) { quadElementsNoDublicates.Add(element); }
                 }
             }
 
             //if (quadElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "number of connected quad-elements to frontNode is zero."); }
 
-            return quadElements;
+            return quadElementsNoDublicates;
         }
          
         
