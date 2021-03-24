@@ -11,6 +11,7 @@ namespace MeshPoints.Classes
     {
         public List<qEdge> EdgeList { get; set; }
         public List<double> AngleList { get; } // todo: when angle is larger than pi it does not work..
+        public List<Line> Contour { get; }
         public bool IsQuad { get; }
 
 
@@ -25,6 +26,7 @@ namespace MeshPoints.Classes
         {
             EdgeList = _edgeList;
             AngleList = CalculateAngles(_edgeList);
+            Contour = GetContourOfElement(_edgeList);
 
             if (_edgeList.Count == 4) { IsQuad = true; }
             else { IsQuad = false; }
@@ -58,6 +60,18 @@ namespace MeshPoints.Classes
             return angList;
         
         }
-        
+
+        private List<Line> GetContourOfElement(List<qEdge> _edgeList)
+        {
+            List<Line> contour = new List<Line>();
+            foreach (qEdge edge in _edgeList)
+            {
+                Line contourLine = new Line(edge.StartNode.Coordinate, edge.EndNode.Coordinate);
+                contour.Add(contourLine);
+            }
+            return contour;
+        }
+
+
     }
 }
