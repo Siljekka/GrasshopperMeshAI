@@ -38,6 +38,7 @@ namespace MeshPoints.QuadRemesh
             pManager.AddGenericParameter("Left front neighbor ", "lf", "Adjacent front egde to left", GH_ParamAccess.item);
             pManager.AddGenericParameter("Right front neighbor ", "rf", "Adjacent front egde to right", GH_ParamAccess.item);
             pManager.AddGenericParameter("Line", "l", "Edge line", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Level", "l", "Level", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -55,6 +56,7 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, edge.LeftFrontNeighbor);
             DA.SetData(5, edge.RightFrontNeighbor);
             DA.SetData(6, edge.EdgeLine);
+            DA.SetData(7, edge.Level);
         }
 
         /// <summary>

@@ -110,14 +110,7 @@ namespace MeshPoints.QuadRemesh
                 var edgeState = E_frontAndEdgeState.Item2;
 
                 // to do: temporay solution for E_frontFail
-                /*
-                if (E_front == E_frontFail) 
-                { 
-                    E_front = E_frontFail.RightFrontNeighbor;
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "E_front == E_frontFail, switch to rightneighbor.");
-                    edgeState[0] = 0;
-                    edgeState[1] = 0;
-                }*/
+
 
                 // get left edge
                 switch (edgeState[0])
@@ -137,8 +130,9 @@ namespace MeshPoints.QuadRemesh
                         E_k_right = E_front.RightFrontNeighbor; break;
                 }
                 if (n == 7 & iterationCounter == 10)
-                { // debug stop }
+                { // debug stop 
                 }
+
                 // get top edge
                 var topEdgeValue = GetTopEdge(E_front, E_k_left, E_k_right, globalEdgeList, globalElementList, frontEdges);
                 E_top = topEdgeValue.Item1;
@@ -864,6 +858,20 @@ namespace MeshPoints.QuadRemesh
             else { triangleElement = edge.Element2; }
 
             return triangleElement;
+        }
+        private void CheckSpecialCase(qEdge E_front, List<qEdge> globalEdgeList)
+        {
+            double epsilon_1 = 0.04 * Math.PI; // to do: constant, can be changed
+            double epsilon_2 = 0.09 * Math.PI; // to do: constant, can be changed
+
+            double leftAngle = CalculateAngleOfNeighborFrontEdges(0, E_front);
+            double rightAngle = CalculateAngleOfNeighborFrontEdges(1, E_front);
+
+            if (leftAngle < epsilon_2)
+            { 
+                
+            }
+
         }
 
         // _______________________________________ for mesh modification __________________________________________________
