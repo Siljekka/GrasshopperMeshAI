@@ -99,11 +99,7 @@ namespace MeshPoints.QuadRemesh
                 // back up if selected E_front is not to useable
                 List<qElement> globalElementListBackUp = globalElementList;
                 List<qEdge> globalEdgeListBackUp = globalEdgeList;
-                
-                // check for special cases
-                // * seams
-                // * transision
-
+               
                 // select next front edge
                 var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
                 E_front = E_frontAndEdgeState.Item1;
@@ -111,45 +107,71 @@ namespace MeshPoints.QuadRemesh
 
                 // to do: temporay solution for E_frontFail
 
+                // check special case
+                var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
+                bool seamAnglePerformed = specialCaseValues.Item1;
+                bool isSpecialCaseLeft = specialCaseValues.Item2;
+                bool isSecialCaseRight = specialCaseValues.Item4;
 
                 // get left edge
-                switch (edgeState[0])
+                if (!isSecialCaseRight)
                 {
-                    case 0:
-                        E_k_left = GetSideEdge(globalElementList, globalEdgeList, 0, E_front); break;
-                    case 1:
-                        E_k_left = E_front.LeftFrontNeighbor; break;
+                    switch (edgeState[0])
+                    {
+                        case 0:
+                            E_k_left = GetSideEdge(globalElementList, globalEdgeList, 0, E_front); break;
+                        case 1:
+                            E_k_left = E_front.LeftFrontNeighbor; break;
+                    }
+                }
+                else if (isSecialCaseRight & !seamAnglePerformed)
+                {
+                    E_k_left = specialCaseValues.Item3;
                 }
 
                 // get right edge
-                switch (edgeState[1])
+                if (!isSecialCaseRight)
                 {
-                    case 0:
-                        E_k_right = GetSideEdge(globalElementList, globalEdgeList, 1, E_front); break;
-                    case 1:
-                        E_k_right = E_front.RightFrontNeighbor; break;
+                    switch (edgeState[1])
+                    {
+                        case 0:
+                            E_k_right = GetSideEdge(globalElementList, globalEdgeList, 1, E_front); break;
+                        case 1:
+                            E_k_right = E_front.RightFrontNeighbor; break;
+                    }
                 }
+                else if (isSecialCaseRight & !seamAnglePerformed)
+                {
+                    E_k_right = specialCaseValues.Item5;
+                }
+
                 if (n == 7 & iterationCounter == 10)
                 { // debug stop 
                 }
 
                 // get top edge
-                var topEdgeValue = GetTopEdge(E_front, E_k_left, E_k_right, globalEdgeList, globalElementList, frontEdges);
-                E_top = topEdgeValue.Item1;
-                bool E_top_performCheck = topEdgeValue.Item2;
-
-                // if not possible to perform top recovery skip the chosen E_front and choose new
-                if (!E_top_performCheck)
+                bool E_top_performCheck = true;
+                if (!seamAnglePerformed)
                 {
-                    listE_frontFailed.Add(E_front);
-                    E_frontFail = E_front;
-                    globalElementList = globalElementListBackUp; // reset changes made in the iteration
-                    globalEdgeList = globalEdgeListBackUp; // reset changes made in the iteration
-                    E_frontFail.Level = 100 ; // to do: temporary
+                    var topEdgeValue = GetTopEdge(E_front, E_k_left, E_k_right, globalEdgeList, globalElementList, frontEdges);
+                    E_top = topEdgeValue.Item1;
+                    E_top_performCheck = topEdgeValue.Item2;
 
-                    n--;
-                    continue;
+                    // if not possible to perform top recovery skip the chosen E_front and choose new
+                    if (!E_top_performCheck)
+                    {
+                        listE_frontFailed.Add(E_front);
+                        E_frontFail = E_front;
+                        globalElementList = globalElementListBackUp; // reset changes made in the iteration
+                        globalEdgeList = globalEdgeListBackUp; // reset changes made in the iteration
+                        E_frontFail.Level = 100; // to do: temporary
+
+                        n--;
+                        continue;
+                    }
                 }
+
+                
 
                 E_frontFail = null;
 
@@ -585,7 +607,7 @@ namespace MeshPoints.QuadRemesh
             {
                 if (edge.IsQuadSideEdge)
                 {
-                    selectableEdges.RemoveAt(selectableEdges.IndexOf(edge));
+                    selectableEdges.Remove(edge);
                 }
             }
 
@@ -859,18 +881,93 @@ namespace MeshPoints.QuadRemesh
 
             return triangleElement;
         }
-        private void CheckSpecialCase(qEdge E_front, List<qEdge> globalEdgeList)
+        private Tuple<bool,bool, qEdge, bool, qEdge> CheckSpecialCase(qEdge E_front, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
         {
             double epsilon_1 = 0.04 * Math.PI; // to do: constant, can be changed
             double epsilon_2 = 0.09 * Math.PI; // to do: constant, can be changed
 
-            double leftAngle = CalculateAngleOfNeighborFrontEdges(0, E_front);
-            double rightAngle = CalculateAngleOfNeighborFrontEdges(1, E_front);
+            bool seamAnglePerformed = false;
+            bool specialCaseLeft = false;
+            bool specialCaseRight = false;
+            qEdge E_k_left = new qEdge();
+            qEdge E_k_right = new qEdge();
 
-            if (leftAngle < epsilon_2)
-            { 
+
+            #region Check left side
+
+            qNode leftNode = GetNodeOfFrontEdge(0, E_front);
+            double leftAngle = CalculateAngleOfNeighborFrontEdges(0, E_front);
+            int numberConnectedQuad = GetQuadsConnectedToNode(leftNode, globalEdgeList).Count;
+
+            // ensure length ratio is > 1
+            double lengthRatio = 0;
+            if (E_front.Length < E_front.LeftFrontNeighbor.Length) { lengthRatio = E_front.LeftFrontNeighbor.Length / E_front.Length; }
+            else { lengthRatio = E_front.Length / E_front.LeftFrontNeighbor.Length; }
+
+
+            if (    (leftAngle < epsilon_2 & numberConnectedQuad <= 4)    |    ((leftAngle < epsilon_1) & numberConnectedQuad > 4)    ) // seam
+            {
+                if (lengthRatio > 2.5)
+                { 
+                    // perform seam transition
                 
+                }
+                else
+                {
+                    // perform angle seam
+                    Seam(E_front.LeftFrontNeighbor, E_front, globalEdgeList, globalElementList, frontEdges);
+                    specialCaseLeft = true;
+                    seamAnglePerformed = true;
+
+                    return Tuple.Create(seamAnglePerformed, specialCaseLeft, E_k_left, specialCaseRight, E_k_right);
+                }
+
             }
+            else if (lengthRatio > 2.5) // split
+            {
+                // perform specialCaseLeft
+                specialCaseLeft = true;
+            }
+            #endregion check left side
+
+            #region Check right side
+
+            qNode rightNode = GetNodeOfFrontEdge(1, E_front);
+            double rightAngle = CalculateAngleOfNeighborFrontEdges(1, E_front);
+            numberConnectedQuad = GetQuadsConnectedToNode(rightNode, globalEdgeList).Count;
+
+            // ensure length ratio is > 1
+            lengthRatio = 0;
+            if (E_front.Length < E_front.RightFrontNeighbor.Length) { lengthRatio = E_front.RightFrontNeighbor.Length / E_front.Length; }
+            else { lengthRatio = E_front.Length / E_front.RightFrontNeighbor.Length; }
+
+            if ((leftAngle < epsilon_2 & numberConnectedQuad <= 4) | ((leftAngle < epsilon_1) & numberConnectedQuad > 4)) // seam
+            {
+                if (lengthRatio > 2.5)
+                {
+                    // perform seam transition
+
+                }
+                else
+                {
+                    // perform angle seam
+                    Seam(E_front, E_front.RightFrontNeighbor, globalEdgeList, globalElementList, frontEdges);
+                    specialCaseRight = true;
+                    seamAnglePerformed = true;
+
+                    return Tuple.Create(seamAnglePerformed, specialCaseLeft, E_k_left, specialCaseRight, E_k_right);
+                }
+
+            }
+            else if (lengthRatio > 2.5) // split
+            {
+                // perform specialCaseLeft
+                specialCaseRight = true;
+            }
+
+            #endregion Check right side
+
+            return Tuple.Create(seamAnglePerformed, specialCaseLeft, E_k_left, specialCaseRight, E_k_right);
 
         }
 
