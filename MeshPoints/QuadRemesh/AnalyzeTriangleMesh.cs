@@ -1559,7 +1559,7 @@ namespace MeshPoints.QuadRemesh
                 double angleV_k1ToV_s = Vector3d.VectorAngle(V_k1, V_s, Vector3d.ZAxis); // to do: make more general
                 
                 bool possibleSolution = false;
-                if (angleV_kToV_s < angleV_k1ToV_s) { possibleSolution = true; } // added criterior, not in Owen's article
+                if (angleV_kToV_s < angleV_k1ToV_s | angleV_k1ToV_s == 0) { possibleSolution = true; } // added criterior, not in Owen's article
 
                 if (V_k.IsParallelTo(V_s) == 1 & V_k.Length == V_s.Length)
                 {
@@ -1589,7 +1589,7 @@ namespace MeshPoints.QuadRemesh
             }
 
             bool done = false;
-            while (!done) // todo: bug. E_i may only have 1 elements..
+            while (!done) // to do: bug. E_i may only have 1 elements..
             {
                 if (E_i.Element1 != T_k)
                 {
