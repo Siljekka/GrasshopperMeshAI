@@ -359,7 +359,7 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
-                Point3d midPointEdg = (edge.StartNode.Coordinate + edge.EndNode.Coordinate) / 2.0; // mid point of edge
+                Point3d midPointEdg = 0.5 * (edge.StartNode.Coordinate + edge.EndNode.Coordinate); // mid point of edge
 
                 Point3d centerPoint = GetElementCenter(GetFrontElement(edge));
 
@@ -894,8 +894,10 @@ namespace MeshPoints.QuadRemesh
         }
         private Tuple<bool,bool, qEdge, bool, qEdge> CheckSpecialCase(qEdge E_front, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
         {
-            double epsilon_1 = 0.04 * Math.PI; // to do: constant, can be changed
-            double epsilon_2 = 0.09 * Math.PI; // to do: constant, can be changed
+            // summary: check if selected front edge is a special case and performe the needed operations
+
+            double epsilon_1 = 0.04 * Math.PI; // constant: can be changed
+            double epsilon_2 = 0.09 * Math.PI; // constant: can be changed
 
             bool seamAnglePerformed = false;
             bool specialCaseLeft = false;
@@ -919,9 +921,10 @@ namespace MeshPoints.QuadRemesh
             if (    (leftAngle < epsilon_2 & numberConnectedQuad <= 4)    |    ((leftAngle < epsilon_1) & numberConnectedQuad > 4)    ) // seam
             {
                 if (lengthRatio > 2.5)
-                { 
+                {
                     // perform seam transition
-                
+                    // get E_front, E_k_right and E_k_left
+
                 }
                 else
                 {
@@ -936,7 +939,7 @@ namespace MeshPoints.QuadRemesh
             }
             else if (lengthRatio > 2.5) // split
             {
-                // perform specialCaseLeft
+                // get E_front, E_k_right and E_k_left
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: want to split left edge.");
                 specialCaseLeft = true;
             }
@@ -958,7 +961,7 @@ namespace MeshPoints.QuadRemesh
                 if (lengthRatio > 2.5)
                 {
                     // perform seam transition
-
+                    // get E_front, E_k_right and E_k_left
                 }
                 else
                 {
@@ -973,6 +976,7 @@ namespace MeshPoints.QuadRemesh
             }
             else if (lengthRatio > 2.5) // split
             {
+                // get E_front, E_k_right and E_k_left
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: want to split right edge.");
                 specialCaseRight = true;
             }
@@ -1441,6 +1445,8 @@ namespace MeshPoints.QuadRemesh
             performed = E_topAndPerfomed.Item2;
             return Tuple.Create(E_top, performed);
         }
+        
+        // fix: parallel to top, if intersecting, fix.
         private Tuple<qEdge, bool> EdgeRecoveryProcess(qNode N_c, qNode N_d, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
         {
             qEdge E_recovered = new qEdge();
@@ -1853,6 +1859,8 @@ namespace MeshPoints.QuadRemesh
         }
         private Tuple<qEdge, qEdge> TransitionSeam(qEdge edge1, qEdge edge2, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
         {
+            // summary: if small angles between connected front edges and large transitions, perform transition seam. Return E_front, E_k_left, E_k_right.
+            
             qEdge E_k_left = new qEdge();
             qEdge E_k_right = new qEdge();
 
@@ -1875,27 +1883,26 @@ namespace MeshPoints.QuadRemesh
             if (E_long.EndNode.BoundaryNode & E_long.StartNode.BoundaryNode)
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Transition seam: Wrong to assumed no boundary nodes of E_long."); }
 
-            // create new elements
-            qEdge E_front = new qEdge();
 
-            // get connected element to E_long
-            List<qElement> connectedElementsToE_long = GetConnectedElements(E_long);
-
-            // get edges connected to N_k, except E_long
-            List<qEdge> connectedEdgesToN_k = GetConnectedEdges(N_k, globalEdgeList);
-
+            // get E_front and elements connected to E_long 
+            qEdge E_front = new qEdge(); 
             qElement quadElementOfE_long = new qElement();
             qElement triElementOfE_long = new qElement();
 
+            List<qElement> connectedElementsToE_long = GetConnectedElements(E_long); // connected elements to E_long
+            List<qEdge> connectedEdgesToN_k = GetConnectedEdges(N_k, globalEdgeList); // connected edges to E_long
+
             foreach (qElement element in connectedElementsToE_long)
             {
-
                 if (element.IsQuad)
                 {
-                    quadElementOfE_long = element;
+                    quadElementOfE_long = element; 
                     foreach (qEdge edge in element.EdgeList)
                     {
-                        if (connectedEdgesToN_k.Contains(edge) & edge != E_long) { E_front = edge; } // E_front
+                        if (connectedEdgesToN_k.Contains(edge) & edge != E_long)
+                        { 
+                            E_front = edge;
+                        }
                     }
                 }
                 else
@@ -1904,15 +1911,17 @@ namespace MeshPoints.QuadRemesh
                 }             
             }
 
-            // pick correct edge
             if (!IsFrontEdge(E_front))
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "TransitionSeam: OBS: the picked E_front is not a front edge. Need to add a quad-criterion.");
             }
 
+            // create new edges
             var nodesOfTriElementOfE_long = GetNodesOfElement(triElementOfE_long);
             nodesOfTriElementOfE_long.Remove(N_k);
             nodesOfTriElementOfE_long.Remove(N_k_long);
+            qNode N_triangle_tip = nodesOfTriElementOfE_long[0];
+
             if (nodesOfTriElementOfE_long.Count > 1)
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "TransitionSeam: Nodes of triangle element of E_long is not correctly found.");}
 
@@ -1924,63 +1933,132 @@ namespace MeshPoints.QuadRemesh
 
             // 3. 4.
             qEdge E_long_part1 = new qEdge(N_k, N_new);
-            qEdge E_long_part2 = new qEdge(N_new, N_k_long); // need to find out if left or right
+            qEdge E_long_part2 = new qEdge(N_new, N_k_long);
 
             // new elements
             List<qEdge> newElementFromQuadEdges = new List<qEdge>() { E_front, E_long_part1, newEdgeInQuad };
-            List<qEdge> newElementFromTriEdges_part1 = new List<qEdge>() { E_long_part1, newEdgeInTriangle, FindEdge(globalEdgeList, N_k, nodesOfTriElementOfE_long[0]) };
-            List<qEdge> newElementFromTriEdges_part2 = new List<qEdge>() { E_long_part2, newEdgeInTriangle, FindEdge(globalEdgeList, N_k, nodesOfTriElementOfE_long[0]) };
+            List<qEdge> newElementFromTriEdges_part1 = new List<qEdge>() { E_long_part1, newEdgeInTriangle, FindEdge(globalEdgeList, N_k, N_triangle_tip) };
+            List<qEdge> newElementFromTriEdges_part2 = new List<qEdge>() { E_long_part2, newEdgeInTriangle, FindEdge(globalEdgeList, N_k_long, N_triangle_tip) };
 
             qElement newElementFromQuad = new qElement(newElementFromQuadEdges);
             qElement newElementFromTri_part1 = new qElement(newElementFromTriEdges_part1);
             qElement newElementFromTri_part2 = new qElement(newElementFromTriEdges_part2);
 
-            // update neighbor elements
-            foreach (qEdge edge in newElementFromQuad.EdgeList)
+            List<qEdge> modifiedEdgeListFromRemainingQuad = new List<qEdge>(quadElementOfE_long.EdgeList);
+            int indexToUpdate = modifiedEdgeListFromRemainingQuad.IndexOf(E_front);
+            if (indexToUpdate == -1)
             {
-                if (edge.Element1 == null) { edge.Element1 = newElementFromQuad; }
-                else { edge.Element2 = newElementFromQuad; }
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Transition seam: did not find E_front in edgelist. E_front is only a copy of original edge??");
             }
-            foreach (qEdge edge in newElementFromTri_part1.EdgeList)
-            {
-                if (edge.Element1 == null) { edge.Element1 = newElementFromTri_part1; }
-                else { edge.Element2 = newElementFromTri_part1; }
+            modifiedEdgeListFromRemainingQuad[indexToUpdate] = newEdgeInQuad;
+            indexToUpdate = modifiedEdgeListFromRemainingQuad.IndexOf(E_long);
+            modifiedEdgeListFromRemainingQuad[indexToUpdate] = E_long_part1;
+            quadElementOfE_long.EdgeList = modifiedEdgeListFromRemainingQuad;
 
-            }
-            foreach (qEdge edge in newElementFromTri_part2.EdgeList)
-            {
-                if (edge.Element1 == null) { edge.Element1 = newElementFromTri_part2; }
-                else { edge.Element2 = newElementFromTri_part2; }
-            }
-
-            // set more neighbors
-
+            // fix elements
+            // fix newEdgeInQuad
             newEdgeInQuad.Element1 = quadElementOfE_long;
+            newEdgeInQuad.Element2 = newElementFromQuad;
+
+            // fix E_front
+            if (E_front.Element1 == quadElementOfE_long)
+            { E_front.Element1 = newElementFromQuad; }
+            else if (E_front.Element2 == quadElementOfE_long)
+            { E_front.Element2 = newElementFromQuad; }
+            else
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Transition seam: problems with assigning neighbors to E_front"); }
+
+            // fix E_long_part1
+            E_long_part1.Element1 = newElementFromQuad;
+            E_long_part1.Element2 = newElementFromTri_part1;
+
+            // fix E_long_part2
+            E_long_part2.Element1 = quadElementOfE_long;
+            E_long_part2.Element2 = newElementFromTri_part2;
+
+            // fix newEdgeInTriangle
+            newEdgeInTriangle.Element1 = newElementFromTri_part1;
+            newEdgeInTriangle.Element2 = newElementFromTri_part2;
+
+            // fix old edges from triangle
+            qEdge oldEdgeTriangle_part1 = FindEdge(globalEdgeList, N_k, N_triangle_tip);
+            qEdge oldEdgeTriangle_part2 = FindEdge(globalEdgeList, N_k_long, N_triangle_tip);
+
+            if (oldEdgeTriangle_part1.Element1 == triElementOfE_long)
+            { oldEdgeTriangle_part1.Element1 = newElementFromTri_part1; }
+            else if (oldEdgeTriangle_part1.Element2 == triElementOfE_long)
+            { oldEdgeTriangle_part1.Element2 = newElementFromTri_part1; }
+            else
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Transition seam: problems with assigning neighbors to oldEdgeTriangle_part1"); }
 
 
+            if (oldEdgeTriangle_part2.Element1 == triElementOfE_long)
+            { oldEdgeTriangle_part2.Element1 = newElementFromTri_part2; }
+            else if (oldEdgeTriangle_part2.Element2 == triElementOfE_long)
+            { oldEdgeTriangle_part2.Element2 = newElementFromTri_part2; }
+            else
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Transition seam: problems with assigning neighbors to oldEdgeTriangle_part2"); }
 
+            // check
+            if (!(E_front.Element1 == null & E_front.Element2 == null))
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Transition seam: problems with assigning neighbors. E_front is not ok."); }
 
             // update global lists
-            globalElementList.Remove(quadElementOfE_long);
             globalElementList.Remove(triElementOfE_long);
-            
-            // finn ut om man skal slette alle edges som blir overskrevet.. obs: nabo element edge list har gjerne edgen og de skal ha samme edge... 
-            //globalEdgeList.Remove(E_long)
+            globalElementList.Add(newElementFromQuad);
+            globalElementList.Add(newElementFromTri_part1);
+            globalElementList.Add(newElementFromTri_part2);
 
-            /* ryddigst måte
-            * lag nye edges, selv om de ligger over eksisterende
-            * lag nye elementer
-            * hent eksisterende naboelements til new edges
-            * tilegn new edges disse elemenetene, i tillegg til nye naboer
-            * slett gamle edges og elements i global lister
-            * legg til nye edges og elements i global lister
-            */
+            globalEdgeList.Remove(E_long);
+            globalEdgeList.Add(newEdgeInQuad);
+            globalEdgeList.Add(newEdgeInTriangle);
+            globalEdgeList.Add(E_long_part1);
+            globalEdgeList.Add(E_long_part2);
 
+            // add a controll for all edges in elements are found in global lists
 
+            #region Find left and right side edge
+            qEdge neigborEdgeToStartNode = new qEdge();
+            qEdge neigborEdgeToEndNode = new qEdge();
 
+            List<qEdge> sideEdgeCandidates = new List<qEdge>() { E_short, newEdgeInQuad };
+            foreach (qEdge sideEdgeCandidate in sideEdgeCandidates)
+            {
+                if ((E_front.StartNode == sideEdgeCandidate.StartNode) | (E_front.StartNode == sideEdgeCandidate.EndNode)) // check edge start node if connected
+                {
+                    neigborEdgeToStartNode = sideEdgeCandidate;
+                }
+                else if ((E_front.EndNode == sideEdgeCandidate.StartNode) | (E_front.EndNode == sideEdgeCandidate.EndNode)) // check edge end point if connected
+                {
+                    neigborEdgeToEndNode = sideEdgeCandidate;
+                }
+            }
 
+            Point3d midPointEdg = 0.5 * (E_front.StartNode.Coordinate + E_front.EndNode.Coordinate); // mid point of edge
 
+            Point3d centerPoint = GetElementCenter(GetFrontElement(E_front));
 
+            Vector3d centerToMidVector = midPointEdg - centerPoint;
+
+            Vector3d centerToEndNodeVector = E_front.EndNode.Coordinate - centerPoint;
+
+            Vector3d centerToStartNodeVector = E_front.StartNode.Coordinate - centerPoint;
+
+            double startAngle = Vector3d.VectorAngle(centerToMidVector, centerToStartNodeVector, Vector3d.ZAxis); // todo: make normal more general
+
+            double endAngle = Vector3d.VectorAngle(centerToMidVector, centerToEndNodeVector, Vector3d.ZAxis); // todo: make normal more general
+
+            if (endAngle < startAngle)
+            {
+                E_k_left = neigborEdgeToStartNode;
+                E_k_right = neigborEdgeToEndNode;
+            }
+            else
+            {
+                E_k_left = neigborEdgeToEndNode;
+                E_k_right = neigborEdgeToStartNode;
+            }
+            #endregion Find left and right side edge
 
             return Tuple.Create(E_k_left, E_k_right);
         }
@@ -2579,7 +2657,7 @@ namespace MeshPoints.QuadRemesh
             }
 
             // delete dublicates
-            List<qElement> quadElementsNoDublicates = new List<qElement>(quadElements);
+            List<qElement> quadElementsNoDublicates = new List<qElement>();
             if (quadElements.Count > 0)
             {
                 foreach (qElement element in quadElements)
