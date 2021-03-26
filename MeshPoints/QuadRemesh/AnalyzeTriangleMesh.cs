@@ -109,7 +109,12 @@ namespace MeshPoints.QuadRemesh
                 // back up if selected E_front is not to useable
                 List<qElement> globalElementListBackUp = globalElementList;
                 List<qEdge> globalEdgeListBackUp = globalEdgeList;
-               
+
+                if (iterationCounter == 4)
+                {
+                    //break;
+                    // debug stop 
+                }
                 // select next front edge
                 var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
                 E_front = E_frontAndEdgeState.Item1;
@@ -117,15 +122,11 @@ namespace MeshPoints.QuadRemesh
 
                 // to do: temporay solution for E_frontFail
 
+
                 // check special case
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
-                if (iterationCounter == 21)
-                {
-                    //break;
-                    // debug stop 
-                }
 
                 if (isSpecialCase & !seamAnglePerformed)
                 {
@@ -391,7 +392,7 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> list10 = new List<qEdge>();
             List<qEdge> list00 = new List<qEdge>();
 
-            double angleTolerance = 0.75 * Math.PI;
+            double angleTolerance = 0.75 * Math.PI; // constant
             double leftAngle = 0;
             double rightAngle = 0;
 
@@ -583,13 +584,13 @@ namespace MeshPoints.QuadRemesh
             else
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: No more edges to select."); }
 
-            // to do: change back!!
             // switch E_front to neighbor front if transision to one of the front neighbors is large and neighbor is selectable
             if (E_front.Length / E_front.LeftFrontNeighbor.Length > transitionTolerance & !E_front.LeftFrontNeighbor.IsQuadSideEdge)
             {
                 if (!list11.Contains(E_front.LeftFrontNeighbor))
                 {
                     E_front = E_front.LeftFrontNeighbor;
+                    // add correct edgestate: function: GetEdgeState
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to left neighor. Switched."); }
                 }
             }
@@ -598,6 +599,7 @@ namespace MeshPoints.QuadRemesh
                 if (!list11.Contains(E_front.RightFrontNeighbor))
                 {
                     E_front = E_front.RightFrontNeighbor;
+                    // add correct edgestate_ fucntion: GetEdgeState
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to right neighor. Switched."); }
                 }
             }
@@ -900,7 +902,8 @@ namespace MeshPoints.QuadRemesh
             qEdge E_k_left = new qEdge();
             qEdge E_k_right = new qEdge();
 
-            if (E_front.Level == 0) { return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right); }
+            // to do: check if correct to say
+            if (E_front.StartNode.BoundaryNode | E_front.EndNode.BoundaryNode) { return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right); }
 
             #region Check left side
 
@@ -1015,7 +1018,8 @@ namespace MeshPoints.QuadRemesh
         private qEdge GetSideEdge(List<qElement> globalElementList, List<qEdge> globalEdgeList, double nodeToEvaluate, qEdge E_front)
         {
             // summary: get side edge of a new quad; nodeToEvaluate: 0 = left, 1 = right;
-            double thetaTolerance = 0.16667 * Math.PI; // todo: an assumption
+            qEdge E_k = new qEdge();
+            double thetaTolerance = 0.16667 * Math.PI; // constant 
             qEdge E_neighborFront = new qEdge();
             if (nodeToEvaluate == 0) { E_neighborFront = E_front.LeftFrontNeighbor; ; }
             else { E_neighborFront = E_front.RightFrontNeighbor; }
@@ -1055,6 +1059,9 @@ namespace MeshPoints.QuadRemesh
             }
             #endregion
 
+            // to do: check if this is correct
+            if (N_k.BoundaryNode & E_i_candidates.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SideEdge: N_k is boundary node and no E_i. No edge to select for side edge."); }
+
             #region Find smallest theta to edge
             // calcualte thetas 
             List<double> theta_i_list = new List<double>();
@@ -1092,7 +1099,6 @@ namespace MeshPoints.QuadRemesh
             #endregion
 
             #region Get E_k
-            qEdge E_k = new qEdge();
             qEdge E_0 = new qEdge();
             qEdge E_m = new qEdge();
 
