@@ -40,6 +40,15 @@ namespace MeshPoints.Classes
             IsQuadSideEdge = false;
         }
 
+        public qEdge(qNode _startNode, qNode _endNode, int changeEdge)
+        {
+            StartNode = _startNode;
+            EndNode = _endNode;
+            Length = CalculateLength(_startNode, _endNode);
+            EdgeLine = VisualizeLine(_startNode, _endNode);
+            Level = 0; // check if needed
+        }
+
         public double CalculateLength(qNode _startNode, qNode _endNode)
         {
             return _startNode.Coordinate.DistanceTo(_endNode.Coordinate);
