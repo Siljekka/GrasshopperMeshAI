@@ -114,6 +114,11 @@ namespace MeshPoints.QuadRemesh
                 var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
                 E_front = E_frontAndEdgeState.Item1;
                 var edgeState = E_frontAndEdgeState.Item2;
+                if (iterationCounter == 14)
+                {
+                    break;
+                    // debug stop 
+                }
 
                 // to do: temporay solution for E_frontFail
 
@@ -121,7 +126,8 @@ namespace MeshPoints.QuadRemesh
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
-                
+
+
                 if (isSpecialCase & !seamAnglePerformed)
                 {
                     E_front = specialCaseValues.Item3;
@@ -150,10 +156,7 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
-                if (n == 3 & iterationCounter == 5)
-                { 
-                    // debug stop 
-                }
+
 
                 // get top edge
                 bool E_top_performCheck = true;
@@ -581,6 +584,7 @@ namespace MeshPoints.QuadRemesh
             else
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: No more edges to select."); }
 
+            // to do: change back!!
             // switch E_front to neighbor front if transision to one of the front neighbors is large and neighbor is selectable
             if (E_front.Length / E_front.LeftFrontNeighbor.Length > transitionTolerance & !E_front.LeftFrontNeighbor.IsQuadSideEdge)
             {
@@ -598,7 +602,7 @@ namespace MeshPoints.QuadRemesh
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to right neighor. Switched."); }
                 }
             }
-
+            
             return Tuple.Create(E_front, edgeState);
         }
         private qEdge SelectFrontEdgeFromList(List<qEdge> edgeStateList)
@@ -897,6 +901,7 @@ namespace MeshPoints.QuadRemesh
             qEdge E_k_left = new qEdge();
             qEdge E_k_right = new qEdge();
 
+            if (E_front.Level == 0) { return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right); }
 
             #region Check left side
 
@@ -919,7 +924,9 @@ namespace MeshPoints.QuadRemesh
                     E_front = edgesOfQuad.Item1;
                     E_k_right = edgesOfQuad.Item2;
                     E_k_left = edgesOfQuad.Item3;
-                    specialCase = true;
+
+                    if (E_k_right != null) { specialCase = true; }
+                    else { specialCase = false; }
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a transition seam of left edge.");
                 }
                 else
@@ -930,7 +937,7 @@ namespace MeshPoints.QuadRemesh
                     seamAnglePerformed = true;
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a seam of left edge.");
 
-                    return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right);
+                    return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                 }
 
             }
@@ -941,7 +948,9 @@ namespace MeshPoints.QuadRemesh
                 E_front = edgesOfQuad.Item1;
                 E_k_right = edgesOfQuad.Item2;
                 E_k_left = edgesOfQuad.Item3;
-                specialCase = true;
+
+                if (E_k_right != null) { specialCase = true; }
+                else { specialCase = false; }
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a split of left edge.");
             }
             #endregion check left side
@@ -967,7 +976,9 @@ namespace MeshPoints.QuadRemesh
                     E_front = edgesOfQuad.Item1;
                     E_k_right = edgesOfQuad.Item2;
                     E_k_left = edgesOfQuad.Item3;
-                    specialCase = true;
+
+                    if (E_k_right != null) { specialCase = true; }
+                    else { specialCase = false; }
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a transition seam of  right edge.");
                 }
                 else
@@ -978,7 +989,7 @@ namespace MeshPoints.QuadRemesh
                     seamAnglePerformed = true;
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a seam of  right edge.");
 
-                    return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right);
+                    return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                 }
 
             }
@@ -989,13 +1000,15 @@ namespace MeshPoints.QuadRemesh
                 E_front = edgesOfQuad.Item1;
                 E_k_right = edgesOfQuad.Item2;
                 E_k_left = edgesOfQuad.Item3;
-                specialCase = true;
+
+                if (E_k_right != null) { specialCase = true; }
+                else { specialCase = false; }
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a split of  right edge.");
             }
 
             #endregion Check right side
 
-            return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right);
+            return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
 
         }
 
@@ -1032,47 +1045,49 @@ namespace MeshPoints.QuadRemesh
             #region Get E_i (connected edges to shared node)
             List<qEdge> connectedEdges = GetConnectedEdges(N_k, globalEdgeList); // get connected edges of shared node
             // get E_i
-            List<qEdge> E_i_list = new List<qEdge>();
+            List<qEdge> E_i_candidates = new List<qEdge>();
             foreach (qEdge edge in connectedEdges) // loop connected edges
             {
-                if ((edge == E_front) | (edge == E_neighborFront)) { continue; } // continue if connected edge is E_frontEdge or E_neighborFront 
-
-                // check if edge is only connected with triangle element
-                List<qElement> connectedElements = GetConnectedElements(edge);
-
-                bool connectedToQuadElement = false;
-                foreach (qElement connectedElement in connectedElements) // loop element 1 and (if it exists) element 2 of a conncted edge
+                // E_i
+                if (!IsFrontEdge(edge))
                 {
-                    if (connectedElement.IsQuad)
-                    {
-                        connectedToQuadElement = true;
-                    }
+                    E_i_candidates.Add(edge);
                 }
-                if (!connectedToQuadElement) { E_i_list.Add(edge); } // add edge if not connected with quad
             }
             #endregion
 
             #region Find smallest theta to edge
             // calcualte thetas 
             List<double> theta_i_list = new List<double>();
-            foreach (qEdge E_i in E_i_list)
+            foreach (qEdge E_i in E_i_candidates)
             {
                 Vector3d E_i_vec = GetVectorOfEdgeFromNode(E_i, N_k);
                 double theta_i = Vector3d.VectorAngle(V_k, E_i_vec); // to do: make more general, assume there are edges close to V_K
                 theta_i_list.Add(theta_i);
             }
 
-            // find smallest theta
-            double minTheta = theta_i_list[0];
+            // sort edges wrt theta
+            double minTheta = 0;
             int minThetaIndex = 0;
-            for (int i = 1; i < theta_i_list.Count; ++i)
+            List<qEdge> E_i_candidates_sorted = new List<qEdge>(); // sorted from smallest theta angle to largest
+            int numEdges = theta_i_list.Count;
+            for (int j = 0; j < numEdges; j++)
             {
-                if (theta_i_list[i] < minTheta)
+                minTheta = theta_i_list[0];
+                minThetaIndex = 0;
+                for (int i = 1; i < theta_i_list.Count; ++i)
                 {
-                    minTheta = theta_i_list[i];
-                    minThetaIndex = i;
+                    if (theta_i_list[i] < minTheta)
+                    {
+                        minTheta = theta_i_list[i];
+                        minThetaIndex = i;
+                    }
                 }
+                E_i_candidates_sorted.Add(E_i_candidates[minThetaIndex]);
+                E_i_candidates.RemoveAt(minThetaIndex);
+                theta_i_list.RemoveAt(minThetaIndex);
             }
+
             #endregion
 
             #region Get E_k
@@ -1082,23 +1097,27 @@ namespace MeshPoints.QuadRemesh
 
             if (minTheta < thetaTolerance) // use existing edge
             {
-                E_k = E_i_list[minThetaIndex];
+                E_k = E_i_candidates_sorted[0];
             }
             else // swap or split
             {
-                if (E_i_list.Count != 2) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetSideEdge: Assumption of E_i_list.Count = 2 is wrong."); }
+                // check if V_k intersect an edge between 
+                Vector3d E_1 = GetVectorOfEdgeFromNode(E_i_candidates_sorted[0], N_k);
+                Vector3d E_2 = GetVectorOfEdgeFromNode(E_i_candidates_sorted[1], N_k);
+                Vector3d cross1 = Vector3d.CrossProduct(V_k, E_1);
+                Vector3d cross2 = Vector3d.CrossProduct(V_k, E_2);
 
-                #region Find E_0
-                // find shared node and connected egdes
-                qNode E_1_NotSharedNode = new qNode();
-                qNode E_2_NotSharedNode = new qNode();
-                if (E_i_list[0].StartNode == N_k) { E_1_NotSharedNode = E_i_list[0].EndNode; }
-                else { E_1_NotSharedNode = E_i_list[0].StartNode; }
-                if (E_i_list[1].StartNode == N_k) { E_2_NotSharedNode = E_i_list[1].EndNode; }
-                else { E_2_NotSharedNode = E_i_list[1].StartNode; }
+                if ((cross1.Z * cross2.Z) > 0)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SideEdge: Split or swap not performed because V_k does not intersect E_0.");
+                    // solution: pick another combination from E_i_candidates
+                }
 
-                E_0 = FindEdge(globalEdgeList, E_1_NotSharedNode, E_2_NotSharedNode); // find edge
-                #endregion
+                // get edge between the two edges closest to V_k
+                qNode E_1_NotSharedNode = GetOppositeNode(N_k, E_i_candidates_sorted[0]);
+                qNode E_2_NotSharedNode = GetOppositeNode(N_k, E_i_candidates_sorted[1]);
+                E_0 = FindEdge(globalEdgeList, E_1_NotSharedNode, E_2_NotSharedNode); 
+
 
                 // Get N_m
                 qNode N_m = new qNode();
@@ -1733,7 +1752,6 @@ namespace MeshPoints.QuadRemesh
             bool performed = edgeAndPerformed.Item2;
             if (!performed) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Seam: Edge recovery failed."); return; }
 
-            #region Merge elements
             // get N_new
             Point3d newNodeCoordinate = 0.5 * (E_0.EndNode.Coordinate + E_0.StartNode.Coordinate);
             qNode N_new = new qNode(newNodeCoordinate, false);
@@ -1864,13 +1882,14 @@ namespace MeshPoints.QuadRemesh
             globalEdgeList.Remove(rightEdgeToN_k);
             globalEdgeList.Remove(leftEdgeToN_t);
             globalEdgeList.Remove(rightEdgeToN_t);
-            #endregion
+            
             AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Seam: is performed.");
         }
         private Tuple<qEdge, qEdge, qEdge> TransitionSeam(qEdge edge1, qEdge edge2, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
         {
             // summary: if small angles between connected front edges and large transitions, perform transition seam. Return E_front, E_k_left, E_k_right.
-            
+
+            qEdge E_front = new qEdge();
             qEdge E_k_left = new qEdge();
             qEdge E_k_right = new qEdge();
 
@@ -1895,7 +1914,6 @@ namespace MeshPoints.QuadRemesh
 
 
             // get E_front and elements connected to E_long 
-            qEdge E_front = new qEdge(); 
             qElement quadElementOfE_long = new qElement();
             qElement triElementOfE_long = new qElement();
 
@@ -1921,9 +1939,10 @@ namespace MeshPoints.QuadRemesh
                 }             
             }
 
-            if (!IsFrontEdge(E_front))
+            if (quadElementOfE_long.EdgeList == null)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "TransitionSeam: OBS: the picked E_front is not a front edge. Need to add a quad-criterion.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Transition seam: Cannot perform because E_long has no connected quad element.");
+                return Tuple.Create(E_front, E_k_right, E_k_left);
             }
 
             // create new edges
@@ -2082,6 +2101,7 @@ namespace MeshPoints.QuadRemesh
         {
             // summary: transition split if large transition between adjacent edges, with no criterior for angle
 
+            qEdge E_front = new qEdge();
             qEdge E_k_left = new qEdge();
             qEdge E_k_right = new qEdge();
 
@@ -2097,8 +2117,7 @@ namespace MeshPoints.QuadRemesh
             qNode N_k_long = GetOppositeNode(N_k, E_long);
 
             if (E_long.EndNode.BoundaryNode & E_long.StartNode.BoundaryNode)
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Transition seam: Wrong to assumed no boundary nodes of E_long."); }
-
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Transition split: Wrong to assumed no boundary nodes of E_long."); }
 
             // get elements connected to E_long 
             qElement quadElementOfE_long = new qElement();
@@ -2117,6 +2136,12 @@ namespace MeshPoints.QuadRemesh
                 {
                     triElementOfE_long = element;
                 }
+            }
+
+            if (quadElementOfE_long.EdgeList == null)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Transition split: Cannot perform because E_long has no connected quad element.");
+                return Tuple.Create(E_front, E_k_right, E_k_left);
             }
 
             // get and create nodes to use
@@ -2271,7 +2296,7 @@ namespace MeshPoints.QuadRemesh
             // to do: add a controll for all edges in elements are found in global lists
 
             #region Find left and right side edge
-            qEdge E_front = newEdgeInQuad_part1;
+            E_front = newEdgeInQuad_part1;
             qEdge neigborEdgeToStartNode = new qEdge();
             qEdge neigborEdgeToEndNode = new qEdge();
 
