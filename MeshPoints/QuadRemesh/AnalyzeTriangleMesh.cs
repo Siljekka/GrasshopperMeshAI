@@ -114,11 +114,6 @@ namespace MeshPoints.QuadRemesh
                 var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
                 E_front = E_frontAndEdgeState.Item1;
                 var edgeState = E_frontAndEdgeState.Item2;
-                if (iterationCounter == 14)
-                {
-                    break;
-                    // debug stop 
-                }
 
                 // to do: temporay solution for E_frontFail
 
@@ -126,7 +121,11 @@ namespace MeshPoints.QuadRemesh
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
-
+                if (iterationCounter == 21)
+                {
+                    //break;
+                    // debug stop 
+                }
 
                 if (isSpecialCase & !seamAnglePerformed)
                 {
@@ -1070,6 +1069,7 @@ namespace MeshPoints.QuadRemesh
             double minTheta = 0;
             int minThetaIndex = 0;
             List<qEdge> E_i_candidates_sorted = new List<qEdge>(); // sorted from smallest theta angle to largest
+            List<double> theta_i_list_sorted = new List<double>();
             int numEdges = theta_i_list.Count;
             for (int j = 0; j < numEdges; j++)
             {
@@ -1084,6 +1084,7 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
                 E_i_candidates_sorted.Add(E_i_candidates[minThetaIndex]);
+                theta_i_list_sorted.Add(minTheta);
                 E_i_candidates.RemoveAt(minThetaIndex);
                 theta_i_list.RemoveAt(minThetaIndex);
             }
@@ -1095,29 +1096,61 @@ namespace MeshPoints.QuadRemesh
             qEdge E_0 = new qEdge();
             qEdge E_m = new qEdge();
 
-            if (minTheta < thetaTolerance) // use existing edge
+            if (theta_i_list_sorted[0] < thetaTolerance) // use existing edge
             {
                 E_k = E_i_candidates_sorted[0];
             }
             else // swap or split
             {
-                // check if V_k intersect an edge between 
-                Vector3d E_1 = GetVectorOfEdgeFromNode(E_i_candidates_sorted[0], N_k);
-                Vector3d E_2 = GetVectorOfEdgeFromNode(E_i_candidates_sorted[1], N_k);
-                Vector3d cross1 = Vector3d.CrossProduct(V_k, E_1);
-                Vector3d cross2 = Vector3d.CrossProduct(V_k, E_2);
+                #region Check if V_k intersect an edge between 
+
+                // sort edges wrt angle from V_k
+                List<double> angleFromV_kToE_i_candidates = new List<double>();
+                foreach (qEdge E_i in E_i_candidates_sorted)
+                {
+                    Vector3d E_i_vec = GetVectorOfEdgeFromNode(E_i, N_k);
+                    double theta_i = Vector3d.VectorAngle(V_k, E_i_vec,Vector3d.ZAxis); // to do: make more general
+                    angleFromV_kToE_i_candidates.Add(theta_i);
+                }
+
+                double minAngle = 0;
+                int minAngleIndex = 0;
+                List<qEdge> E_i_candidates_sortedBasedOnAngleFromV_k = new List<qEdge>(); // sorted from smallest to largest angle from V_k ccw
+                numEdges = E_i_candidates_sorted.Count;
+                for (int j = 0; j < numEdges; j++)
+                {
+                    minAngle = angleFromV_kToE_i_candidates[0];
+                    minAngleIndex = 0;
+                    for (int i = 1; i < angleFromV_kToE_i_candidates.Count; ++i)
+                    {
+                        if (angleFromV_kToE_i_candidates[i] < minAngle)
+                        {
+                            minAngle = angleFromV_kToE_i_candidates[i];
+                            minAngleIndex = i;
+                        }
+                    }
+                    E_i_candidates_sortedBasedOnAngleFromV_k.Add(E_i_candidates_sorted[minAngleIndex]);
+                    E_i_candidates_sorted.RemoveAt(minAngleIndex);
+                    angleFromV_kToE_i_candidates.RemoveAt(minAngleIndex);
+                }
+                qEdge E_1 = E_i_candidates_sortedBasedOnAngleFromV_k[0];
+                qEdge E_2 = E_i_candidates_sortedBasedOnAngleFromV_k[E_i_candidates_sortedBasedOnAngleFromV_k.Count -1];
+
+                Vector3d E_1_vec = GetVectorOfEdgeFromNode(E_1, N_k);
+                Vector3d E_2_vec = GetVectorOfEdgeFromNode(E_2, N_k);
+                Vector3d cross1 = Vector3d.CrossProduct(V_k, E_1_vec);
+                Vector3d cross2 = Vector3d.CrossProduct(V_k, E_2_vec);
 
                 if ((cross1.Z * cross2.Z) > 0)
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SideEdge: Split or swap not performed because V_k does not intersect E_0.");
                     // solution: pick another combination from E_i_candidates
                 }
-
+                #endregion
                 // get edge between the two edges closest to V_k
-                qNode E_1_NotSharedNode = GetOppositeNode(N_k, E_i_candidates_sorted[0]);
-                qNode E_2_NotSharedNode = GetOppositeNode(N_k, E_i_candidates_sorted[1]);
+                qNode E_1_NotSharedNode = GetOppositeNode(N_k, E_1);
+                qNode E_2_NotSharedNode = GetOppositeNode(N_k, E_2);
                 E_0 = FindEdge(globalEdgeList, E_1_NotSharedNode, E_2_NotSharedNode); 
-
 
                 // Get N_m
                 qNode N_m = new qNode();
