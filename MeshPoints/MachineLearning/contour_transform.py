@@ -29,42 +29,53 @@ def procrustes_superimposition(contour: np.array):
     reg_ngon = create_regular_ngon(n)
 
     # Calculate the mean coordinate values of input contour, P, and regular polygon, Q
-    p_mean = [np.divide(np.sum(contour[0]), n), np.divide(np.sum(contour[1]), n)]
-    q_mean = [np.divide(np.sum(reg_ngon[0]), n), np.divide(np.sum(reg_ngon[1]), n)]
+    p_mean = np.array([np.sum(contour[0]), np.sum(contour[1])])/n
+    q_mean = [np.sum(reg_ngon[0])/n, np.sum(reg_ngon[1])/n]  # i think this is ~0 always, so we could remove it
 
     # Calculate the "centered Euclidean norms" of P and Q
-    p_norm = np.zeros((2,1))
-    q_norm = np.zeros((2,1))
-    for i in range(2):
-        p_tmp = p_mean[i]
-        q_tmp = q_mean[i]
-        for j in range(n):
-            p_norm[i] += (contour[i][j] - p_tmp)**2
-            q_norm[i] += (reg_ngon[i][j] - q_tmp)**2
+    # todo: is this a scalar or a vector (of scalars) ???
+    p_norm = []
+    q_norm = []
+    for i in range(n):
+        p_norm.append((contour[0][i] - p_mean[0])**2 + (contour[1][i] - p_mean[1])**2)
+        q_norm.append((reg_ngon[0][i])**2 + (reg_ngon[1][i])**2)
 
-    # Scale P* and Q on the norms
-    p_scaled = np.array([np.divide(contour[0], p_norm[0]), np.divide(contour[1], p_norm[1])])
-    q_scaled = np.array([np.divide(reg_ngon[0], q_norm[0]), np.divide(reg_ngon[1], q_norm[1])])
+    p_norm = sum(p_norm)
+    q_norm = sum(q_norm)
 
-    # Apply "Singular Value Decomposition (SVD)" to A = q_scaled.transpose * p_scaled => A = UCV
-    a = np.matmul(q_scaled.transpose(), p_scaled)
-    svd_decomp = linalg.svd(a)  # svd[0] = U, svd[1] = C, svd[2] = V
+    # Scale P* and Q by the norms
+    p_scaled=np.zeros((2,n))
+    q_scaled=np.zeros((2,n))
+    for i in range(n):
+        p_scaled[0][i] = contour[0][i]/p_norm
+        p_scaled[1][i] = contour[1][i]/p_norm
+        q_scaled[0][i] = reg_ngon[0][i]/q_norm
+        q_scaled[1][i] = reg_ngon[1][i]/q_norm
+
+
+    # q_scaled = np.array([reg_ngon[i]/p_norm[i] for i in range(n)])
+    # q_scaled = np.array([reg_ngon[0]/q_norm, reg_ngon[1]/q_norm])
+
+    # Apply "Singular Value Decomposition (SVD)" to A = q_scaled.T * p_scaled => A = UCV^T
+    A = reg_ngon.copy().T @ contour
+    U, C, Vt = linalg.svd(A)  # svd[0] = U, svd[1] = C, svd[2] = V^T
 
     # Get optimal rotation matrix, R, and scaling factor, S, of input contour.
     # S = q_norm * trace(C) where trace(C) = sum(C) because of linalg.svd outputting only non-zero values of C
-    scaling_factor = q_norm[0] * np.sum(svd_decomp[1])
+    scaling_factor = q_norm / np.sum(C)
 
-    # R = U*V
-    rotation_matrix = np.matmul(svd_decomp[0], svd_decomp[2])
+    # R = U*V^T
+    rotation_matrix =  U @ Vt
 
     # The coordinates of the transformed contour are given by P_trans = scaling_factor * p_scaled * rotation + q_mean
     # We add the q_mean values separately
-    tmp =  np.matmul(scaling_factor * p_scaled, rotation_matrix)
-    tc_x = np.add(tmp[0], q_mean[0])
-    tc_y = np.add(tmp[1], q_mean[1])
+    tmp =  (scaling_factor * p_scaled) @ rotation_matrix
+    tc_x = tmp[0] + q_mean[0]
+    tc_y = tmp[1] + q_mean[1]
     transformed_contour = np.array([tc_x, tc_y])
     plot_ngon(q_scaled)
-    return transformed_contour
+    plot_ngon(p_scaled)
+    return {"transformed_contour": transformed_contour, "scaling_factor": scaling_factor}
 
 
 def plot_ngon(np_coords: np.array):
