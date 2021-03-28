@@ -1,17 +1,23 @@
-import contour_transform as ct
+import pre_processing as ct
 import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    test_contour = np.array(
-        [[7.06, 9.16, 9.62, 14.2, 14.36, 10.46], [0.55, -0.99, -3.25, -0.95, 3.31, 3.53]])
+    # test_contour = np.array(
+    #     [[7.06, 0.55],
+    #      [9.16, -0.99],
+    #      [9.62, -3.25],
+    #      [14.2, -0.95],
+    #      [14.36, 3.31],
+    #      [10.46, 3.53]])
 
+    num_sides = 10
+    test = ct.create_random_ngon(num_sides)
+    procrustes = ct.procrustes(test)
+    ct.plot_polygon(procrustes['transformed_contour'], 'ko-')
+    ct.plot_polygon(ct.create_regular_ngon(num_sides), 'ko-')
+    ct.plot_polygon(test, ':y')
 
-    transformed_contour = ct.procrustes_superimposition_scipy(test_contour)
-    # ct.plot_ngon(test_contour)
-    ct.plot_ngon(np.array([[x[0] for x in transformed_contour[1]], [y[1] for y in transformed_contour[1]]]))
-    ct.plot_ngon(np.array([[x[0] for x in transformed_contour[0]], [y[1] for y in transformed_contour[0]]]))
-    # ct.plot_ngon(transformed_contour['transformed_contour'])
+    # ======== For plotting purposes ========
+    plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
-
-    print(transformed_contour)
