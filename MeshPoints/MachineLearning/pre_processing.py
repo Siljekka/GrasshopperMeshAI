@@ -1,4 +1,5 @@
 from math import cos, sin, pi
+from random import random
 import numpy as np
 from scipy import linalg, spatial
 import matplotlib.pyplot as plt
@@ -64,8 +65,23 @@ def create_regular_ngon(number_of_sides: int) -> np.array:
 
 
 def create_random_ngon(number_of_sides: int) -> np.array:
-    pass
+    """
+    Creates a random n-gon with a point placed in each sector of a unit disc divided into N sectors (number of sides).
+    As per Papagiannopoulos et al. we do not want values of r too close to the origin.
+    """
 
+    polygon = []
+    quantile = 1 / number_of_sides
+    exclude = 0.2
+    for n in range(number_of_sides):
+        r = random() * (1 - exclude) + exclude  # mapping random from 0->1 to ex->1
+        theta = 2 * pi * n / number_of_sides + random() * quantile
+        polygon.append([
+            r * cos(theta),
+            r * sin(theta)
+        ])
+
+    return np.array(polygon)
 
 def plot_polygon(np_coords: np.array) -> None:
     # Reshaping input and appending the first element to get a circular plot of the polygons
