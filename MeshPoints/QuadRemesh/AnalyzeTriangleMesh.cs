@@ -416,6 +416,27 @@ namespace MeshPoints.QuadRemesh
             }
             return Tuple.Create(list11, list10, list01, list00);
         }
+        private int[] GetEdgeState(qEdge E_front, List<qEdge> frontEdges)
+        {
+            int[] edgeState = { 0, 0 };
+
+            var edgeStates = CreateEdgeStateList(frontEdges);
+            var list11 = edgeStates.Item1;
+            var list10 = edgeStates.Item2;
+            var list01 = edgeStates.Item3;
+            var list00 = edgeStates.Item4;
+
+            if (list11.Contains(E_front))
+            {edgeState[0] = 1; edgeState[1] = 1; }
+            else if (list01.Contains(E_front))
+            { edgeState[0] = 0; edgeState[1] = 1; }
+            else if (list10.Contains(E_front))
+            { edgeState[0] = 1; edgeState[1] = 0; }
+            else if (list00.Contains(E_front))
+            { edgeState[0] = 0; edgeState[1] = 0; }
+
+            return edgeState;
+        }
         private double CalculateAngleOfNeighborFrontEdges(int nodeToCalculate, qEdge edge)
         {
             // summary: calculate the angle between front edges with a shared point, i.e. neighbor front edges
@@ -511,15 +532,13 @@ namespace MeshPoints.QuadRemesh
             var list10 = edgeStates.Item2;
             var list01 = edgeStates.Item3;
             var list00 = edgeStates.Item4;
-            int[] edgeState = { 0, 0 };
 
-
-            // check if all list contains edges of lowest level
-            // get lowest level
+            // get lowest global level
             int lowestGlobalLevel = 1000000;
             foreach (qEdge edge in frontEdges)
             { if (edge.Level < lowestGlobalLevel & !edge.IsQuadSideEdge) { lowestGlobalLevel = edge.Level; } }
 
+            // get lowest list level
             int lowestLevelList11 = 100000;
             foreach (qEdge edge in list11)
             { if (edge.Level < lowestLevelList11 & !edge.IsQuadSideEdge) { lowestLevelList11 = edge.Level; } }
@@ -548,7 +567,6 @@ namespace MeshPoints.QuadRemesh
                 if (lowestListLevel == lowestGlobalLevel)
                 {
                     E_front = SelectFrontEdgeFromList(list11);
-                    edgeState[0] = 1; edgeState[1] = 1;
                 }
             }
             else if ((list01.Count != 0 | list10.Count != 0) & (lowestLevelList01 == lowestGlobalLevel | lowestLevelList10 == lowestGlobalLevel))
@@ -573,21 +591,10 @@ namespace MeshPoints.QuadRemesh
                 {
                     E_front = SelectFrontEdgeFromList(list0110);
                 }
-
-                // set edge state
-                if (list01.Contains(E_front))
-                {
-                    edgeState[0] = 0; edgeState[1] = 1;
-                }
-                else
-                {
-                    edgeState[0] = 1; edgeState[1] = 0;
-                }
             }
             else if (list00.Count != 0)
             {
                 E_front = SelectFrontEdgeFromList(list00);
-                edgeState[0] = 0; edgeState[1] = 0;
             }
             else
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: No more edges to select."); }
@@ -598,7 +605,6 @@ namespace MeshPoints.QuadRemesh
                 if (!list11.Contains(E_front.LeftFrontNeighbor))
                 {
                     E_front = E_front.LeftFrontNeighbor;
-                    // add correct edgestate: function: GetEdgeState
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to left neighor. Switched."); }
                 }
             }
@@ -607,10 +613,11 @@ namespace MeshPoints.QuadRemesh
                 if (!list11.Contains(E_front.RightFrontNeighbor))
                 {
                     E_front = E_front.RightFrontNeighbor;
-                    // add correct edgestate_ fucntion: GetEdgeState
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to right neighor. Switched."); }
                 }
             }
+
+            int[] edgeState = GetEdgeState(E_front, frontEdges);
 
             return Tuple.Create(E_front, edgeState);
         }
