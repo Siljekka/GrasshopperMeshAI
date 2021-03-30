@@ -1990,7 +1990,7 @@ namespace MeshPoints.QuadRemesh
 
         private void DoLocalSmoothing(qElement quadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges, List<qElement> globalElementList)
         {
-            
+
             List<qNode> adjacentNodes = new List<qNode>();
 
             //List<qEdge> QuadEdges = QuadElement.EdgeList;
@@ -2009,6 +2009,7 @@ namespace MeshPoints.QuadRemesh
             //qNode node4 = QuadNodes[3];
 
             List<qElement> globalElementListOld = new List<qElement>(globalElementList);
+            List<qEdge> globalEdgeListOld = new List<qEdge>(globalEdgeList);
             List<qEdge> newElementList = new List<qEdge>();
             List<int> changedEdgeIndex = new List<int>();
 
@@ -2033,14 +2034,15 @@ namespace MeshPoints.QuadRemesh
                     smoothNode = node.Coordinate;
                 }
 
-                changedEdgeIndex = UpdateGlobalEdgeList_NodePosition(node, smoothNode, globalEdgeList);
+                List<int> changedEdgeIndex1 = UpdateGlobalEdgeList_NodePosition(node, smoothNode, globalEdgeList);
+                changedEdgeIndex.AddRange(changedEdgeIndex1);
             }
             quadElement.EdgeList = newElementList;
 
 
             List<qEdge> globalEdgeListCopy2 = new List<qEdge>(globalEdgeList);
             adjacentNodes = GetNeighborNodesToElement(quadElement, globalEdgeListCopy2);
-            
+
             foreach (qNode adjNode in adjacentNodes)
             {
                 List<qEdge> connectedEdgesAdjNodes = GetConnectedEdges(adjNode, globalEdgeListCopy2);
@@ -2063,12 +2065,27 @@ namespace MeshPoints.QuadRemesh
                     smoothNode = adjNode.Coordinate;
                     adjNode.Coordinate = new Point3d(2, 2, 2);// adjNode.Coordinate;
                 }
-                UpdateGlobalEdgeList_NodePosition(adjNode, smoothNode, globalEdgeList);
+                List<int> changedEdgeIndex2 = UpdateGlobalEdgeList_NodePosition(adjNode, smoothNode, globalEdgeList);
+                changedEdgeIndex.AddRange(changedEdgeIndex2);
             }
-            
 
+            // make list with old and new edges at index where edges are changed.
+            List<qEdge> newGlobalEdges = new List<qEdge>();
+            List<qEdge> oldGlobalEdges = new List<qEdge>();
 
+            for (int i = 0; i < changedEdgeIndex.Count; i++)
+            {
+                newGlobalEdges.Add(globalEdgeList.ElementAt(changedEdgeIndex[i]));
+                oldGlobalEdges.Add(globalEdgeListOld.ElementAt(changedEdgeIndex[i]));
+            }
 
+            foreach (qElement element in globalElementListOld)
+            {
+                qElement element1 = edge.Element1;
+                qElement element2 = edge.Element2;
+
+                if (element1.EdgeList.Contains(edge))
+            }
 
 
 
@@ -2077,24 +2094,26 @@ namespace MeshPoints.QuadRemesh
         {
             List<int> changedEdgeIndex = new List<int>();
             List<qEdge> globalEdgeListCopy = new List<qEdge>(globalEdgeList);
-            List<qEdge> connectedEdgesElementNode = GetConnectedEdges(oldNode, globalEdgeListCopy);
+            List<qEdge> connectedEdges = GetConnectedEdges(oldNode, globalEdgeListCopy);
 
-            for (int i = 0; i < connectedEdgesElementNode.Count; i++)
+            for (int i = 0; i < connectedEdges.Count; i++)
             {
-                foreach (qEdge edge in connectedEdgesElementNode)
+                foreach (qEdge edge in connectedEdges)
                 {
                     int id = globalEdgeListCopy.IndexOf(edge);
 
                     if (globalEdgeListCopy[id].StartNode == oldNode)
                     {
                         globalEdgeList[id].StartNode.Coordinate = smoothNode;
-                        globalEdgeList[id] = new qEdge(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode, 0);
+                        globalEdgeList[id].CalculateLength(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
+                        globalEdgeList[id].VisualizeLine(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
                         changedEdgeIndex.Add(id);
                     }
                     else if (globalEdgeListCopy[id].EndNode == oldNode)
                     {
                         globalEdgeList[id].EndNode.Coordinate = smoothNode;
-                        globalEdgeList[id] = new qEdge(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode, 0);
+                        globalEdgeList[id].CalculateLength(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
+                        globalEdgeList[id].VisualizeLine(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
                         changedEdgeIndex.Add(id);
                     }
                     //todo: else { add runtimemessage }
