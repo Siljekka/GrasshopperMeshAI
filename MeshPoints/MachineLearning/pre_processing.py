@@ -3,6 +3,9 @@ from random import random
 import numpy as np
 from scipy import linalg
 import matplotlib.pyplot as plt
+import gmsh
+import sys
+import csv
 
 
 def procrustes(contour: np.array) -> dict:
@@ -22,19 +25,16 @@ def procrustes(contour: np.array) -> dict:
     reference = create_regular_ngon(n)
 
     # Translate P* to the origin.
-    p_mean = contour - np.mean(contour, 0)
-    # As Q is defined in the origin, we do not have to calculate q_mean
-    # assert (sum(np.mean(reference, 0)) < 0.000001)
-    # q_mean = reference - np.mean(reference, 0)
-    q_mean = reference
+    # As Q is defined in the origin, we do not have to translate the reference polygon
+    p_centered = contour - np.mean(contour, 0)
 
     # Calculate the "centered Euclidean norms" of P* and Q
-    p_norm = np.linalg.norm(p_mean)
-    q_norm = np.linalg.norm(q_mean)
+    p_norm = np.linalg.norm(p_centered)
+    q_norm = np.linalg.norm(reference)
 
     # Scale P* and Q by the norms
-    p_scaled = p_mean / p_norm
-    q_scaled = q_mean / q_norm
+    p_scaled = p_centered / p_norm
+    q_scaled = reference / q_norm
 
     # Apply "Singular Value Decomposition (SVD)" to A = q_scaled.T * p_scaled => A = UCV^T
     a = q_scaled.T @ p_scaled
@@ -46,12 +46,11 @@ def procrustes(contour: np.array) -> dict:
     # Get optimal rotation matrix, R = U*V^T
     rotation_matrix = u @ vt
 
-    # The coordinates of the transformed contour are given by P_trans = scaling_factor * p_scaled * rotation + ~q
-    # p_norm*p_scaled
+    # The coordinates of the transformed contour are given by P_trans = scaling_factor * p_scaled * rotation
     transformed_contour = sigma * p_scaled @ rotation_matrix
 
     # The scale difference between the transformed and the original contour is s / p_norm;
-    # assert (np.allclose(contour, p_norm * p_scaled + np.mean(contour, 0)))
+    assert np.allclose(contour, p_norm * p_scaled + np.mean(contour, 0))
     scale = sigma / p_norm
 
     return {"transformed_contour": transformed_contour, "scale": scale}
@@ -64,10 +63,9 @@ def create_regular_ngon(number_of_sides: int) -> np.array:
     """
     polygon = []
     for n in range(number_of_sides):
-        polygon.append([
-            cos(2 * pi * n / number_of_sides),
-            sin(2 * pi * n / number_of_sides)
-        ])
+        polygon.append(
+            [cos(2 * pi * n / number_of_sides), sin(2 * pi * n / number_of_sides)]
+        )
 
     return np.array(polygon)
 
@@ -84,15 +82,68 @@ def create_random_ngon(number_of_sides: int) -> np.array:
     for n in range(number_of_sides):
         r = random() * (1 - exclude) + exclude  # mapping random from 0->1 to ex->1
         theta = 2 * pi * n / number_of_sides + random() * quantile
-        polygon.append([
-            r * cos(theta),
-            r * sin(theta)
-        ])
+        polygon.append([r * cos(theta), r * sin(theta)])
 
     return np.array(polygon)
 
 
-def plot_polygon(np_coords: np.array, style='') -> None:
+def mesh_contour(contour: np.array, target_edge_length: float):
+    """
+    Mesh the transformed contour using Gmsh [1] as the reference mesher.
+
+    We do not place points along the edges of the contour. It is crucial
+    that the input points are defined
+
+    [1] C. Geuzaine and J.-F. Remacle. Gmsh: a three-dimensional finite element
+        mesh generator with built-in pre- and post-processing facilities. 2009.
+
+    output: .msh-file containing mesh data
+    """
+    # Start a gmsh API session
+    gmsh.initialize()
+
+    # Create a new model
+    gmsh.model.add("1")
+
+    for i, p in enumerate(contour):
+        # (x, y, z, edge_length, id)
+        gmsh.model.geo.add_point(p[0], p[1], 0, target_edge_length, i)
+
+    # Create curves
+    curve_ids = []
+    for j in range(len(contour)):
+        if j == len(contour) - 1:
+            gmsh.model.geo.add_line(j, 0, j)
+        else:
+            gmsh.model.geo.add_line(j, j + 1, j)
+        # Constrain each edge curve to only have two points (endpoints)
+        gmsh.model.geo.mesh.set_transfinite_curve(j, 2)
+        curve_ids.append(j)
+
+    # Add all ids of curves to define a curve loop
+    gmsh.model.geo.add_curve_loop(curve_ids, 1)
+
+    # Add curve loop with id=1 as a plane surface
+    gmsh.model.geo.add_plane_surface([1], 1)
+
+    # Synchronize CAD entities (point, line, surface) with the gmsh-model
+    gmsh.model.geo.synchronize()
+
+    # Generate 2D mesh
+    gmsh.model.mesh.generate(2)
+
+    # GUI (buggy on macOS)
+    if "-nopopup" not in sys.argv:
+        gmsh.fltk.run()
+
+    # Write to file
+    gmsh.write("data/1.msh")
+
+    # Close API call
+    gmsh.finalize()
+
+
+def plot_polygon(np_coords: np.array, style="") -> None:
     """
     See https://matplotlib.org/2.1.1/api/_as_gen/matplotlib.pyplot.plot.html for styles.
     """
