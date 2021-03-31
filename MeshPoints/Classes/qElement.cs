@@ -34,7 +34,7 @@ namespace MeshPoints.Classes
 
         // Methods
         
-        private List<double> CalculateAngles(List<qEdge> _edgeList)
+        public List<double> CalculateAngles(List<qEdge> _edgeList)
         {
             Vector3d vec1 = Vector3d.Zero;
             Vector3d vec2 = Vector3d.Zero;
@@ -61,7 +61,7 @@ namespace MeshPoints.Classes
         
         }
 
-        private List<Line> GetContourOfElement(List<qEdge> _edgeList)
+        public List<Line> GetContourOfElement(List<qEdge> _edgeList)
         {
             List<Line> contour = new List<Line>();
             foreach (qEdge edge in _edgeList)
