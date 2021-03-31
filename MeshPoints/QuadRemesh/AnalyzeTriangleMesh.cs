@@ -189,7 +189,7 @@ namespace MeshPoints.QuadRemesh
                 frontEdges = GetFrontEdges(globalEdgeList);
 
                 // local smoothing
-                // DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList);
+                DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList);
 
 
 
@@ -2604,15 +2604,37 @@ namespace MeshPoints.QuadRemesh
                 newGlobalEdges.Add(globalEdgeList.ElementAt(changedEdgeIndex[i]));
                 oldGlobalEdges.Add(globalEdgeListOld.ElementAt(changedEdgeIndex[i]));
             }
-
-            foreach (qElement element in globalElementListOld)
+           
+            foreach (qElement oldElement in globalElementListOld)
             {
-                qElement element1 = edge.Element1;
-                qElement element2 = edge.Element2;
+                for (int i = 0; i < oldGlobalEdges.Count; i++)
+                {
+                    int elementId = globalElementListOld.IndexOf(oldElement);
+                    qEdge edge = oldGlobalEdges[i];
+                    if (oldElement.EdgeList.Contains(oldGlobalEdges[i]))
+                    {
+                        int edgeId = oldElement.EdgeList.IndexOf(oldGlobalEdges[i]);
+                        
+                        globalElementList[elementId].EdgeList[edgeId] = newGlobalEdges[i];
+                        globalElementList[elementId].GetContourOfElement(globalElementList[elementId].EdgeList);
+                        globalElementList[elementId].CalculateAngles(globalElementList[elementId].EdgeList);
 
-                if (element1.EdgeList.Contains(edge))
+                        int id = globalEdgeList.IndexOf(oldGlobalEdges[i]);
+                        if (oldElement == globalEdgeList[id].Element1)
+                        {
+                            globalEdgeList[id].Element1 = globalElementList[elementId];
+                        }
+                        else if (globalEdgeList[id].Element2 != null)
+                        {
+                            if (oldElement == globalEdgeList[id].Element2)
+                            {
+                                globalEdgeList[id].Element2 = globalElementList[elementId];
+                            }
+                        }
+                    }
+                }
             }
-
+           
 
 
         } // todo: check if this is OK
@@ -3055,13 +3077,10 @@ namespace MeshPoints.QuadRemesh
                 return nodeFrontEdges;
 
         } //todo: test if this is OK
-
-       // check with Hilde
         private List<qElement> GetQuadsConnectedToNode(qNode node, List<qEdge> globalEdgeList)
         {
             // Get how quads that are connected to node.
             List<qElement> quadElements = new List<qElement>();
-
             var connectedEdges = GetConnectedEdges(node, globalEdgeList);
 
             foreach (qEdge edge in connectedEdges)
@@ -3083,7 +3102,7 @@ namespace MeshPoints.QuadRemesh
                 }
             }
 
-            //if (quadElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "number of connected quad-elements to frontNode is zero."); }
+            if (quadElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "number of connected quad-elements to frontNode is zero."); }
 
             return quadElementsNoDublicates;
         }//todo: OK
