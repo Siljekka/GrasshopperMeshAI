@@ -2523,17 +2523,6 @@ namespace MeshPoints.QuadRemesh
             List<qNode> quadNodes = GetNodesOfElement(quadElement);
             Point3d smoothNode = new Point3d();
 
-
-            //qEdge baseEdge = QuadEdges[0];
-            //qEdge rightEdge = QuadEdges[1];
-            //qEdge leftEdge = QuadEdges[2];
-            //qEdge topEdge = QuadEdges[3];
-
-            //qNode node1 = QuadNodes[0];
-            //qNode node2 = QuadNodes[1];
-            //qNode node3 = QuadNodes[2];
-            //qNode node4 = QuadNodes[3];
-
             List<qElement> globalElementListOld = new List<qElement>(globalElementList);
             List<qEdge> globalEdgeListOld = new List<qEdge>(globalEdgeList);
             List<qEdge> newElementList = new List<qEdge>();
@@ -2596,46 +2585,7 @@ namespace MeshPoints.QuadRemesh
             }
 
             // make list with old and new edges at index where edges are changed.
-            List<qEdge> newGlobalEdges = new List<qEdge>();
-            List<qEdge> oldGlobalEdges = new List<qEdge>();
-
-            for (int i = 0; i < changedEdgeIndex.Count; i++)
-            {
-                newGlobalEdges.Add(globalEdgeList.ElementAt(changedEdgeIndex[i]));
-                oldGlobalEdges.Add(globalEdgeListOld.ElementAt(changedEdgeIndex[i]));
-            }
-           
-            foreach (qElement oldElement in globalElementListOld)
-            {
-                for (int i = 0; i < oldGlobalEdges.Count; i++)
-                {
-                    int elementId = globalElementListOld.IndexOf(oldElement);
-                    qEdge edge = oldGlobalEdges[i];
-                    if (oldElement.EdgeList.Contains(oldGlobalEdges[i]))
-                    {
-                        int edgeId = oldElement.EdgeList.IndexOf(oldGlobalEdges[i]);
-                        
-                        globalElementList[elementId].EdgeList[edgeId] = newGlobalEdges[i];
-                        globalElementList[elementId].GetContourOfElement(globalElementList[elementId].EdgeList);
-                        globalElementList[elementId].CalculateAngles(globalElementList[elementId].EdgeList);
-
-                        int id = globalEdgeList.IndexOf(oldGlobalEdges[i]);
-                        if (oldElement == globalEdgeList[id].Element1)
-                        {
-                            globalEdgeList[id].Element1 = globalElementList[elementId];
-                        }
-                        else if (globalEdgeList[id].Element2 != null)
-                        {
-                            if (oldElement == globalEdgeList[id].Element2)
-                            {
-                                globalEdgeList[id].Element2 = globalElementList[elementId];
-                            }
-                        }
-                    }
-                }
-            }
-           
-
+            UpdateGlobalElementList_ChangedEdges(changedEdgeIndex, globalEdgeList, globalEdgeListOld, globalElementList);
 
         } // todo: check if this is OK
         private List<int> UpdateGlobalEdgeList_NodePosition(qNode oldNode, Point3d smoothNode, List<qEdge> globalEdgeList)
@@ -2668,6 +2618,49 @@ namespace MeshPoints.QuadRemesh
                 }
             }
             return changedEdgeIndex;
+        }
+        private void UpdateGlobalElementList_ChangedEdges(List<int> changedEdgeIndex, List<qEdge> globalEdgeList, List<qEdge> globalEdgeListOld, List<qElement> globalElementList)
+        {
+            // make list with old and new edges at index where edges are changed.
+            List<qElement> globalElementListOld = new List<qElement>(globalElementList);
+            List<qEdge> newGlobalEdges = new List<qEdge>();
+            List<qEdge> oldGlobalEdges = new List<qEdge>();
+
+            for (int i = 0; i < changedEdgeIndex.Count; i++)
+            {
+                newGlobalEdges.Add(globalEdgeList.ElementAt(changedEdgeIndex[i]));
+                oldGlobalEdges.Add(globalEdgeListOld.ElementAt(changedEdgeIndex[i]));
+            }
+
+            foreach (qElement oldElement in globalElementListOld)
+            {
+                for (int i = 0; i < oldGlobalEdges.Count; i++)
+                {
+                    int elementId = globalElementListOld.IndexOf(oldElement);
+                    qEdge oldEdge = oldGlobalEdges[i];
+                    if (oldElement.EdgeList.Contains(oldEdge))
+                    {
+                        int edgeId = oldElement.EdgeList.IndexOf(oldEdge);
+
+                        globalElementList[elementId].EdgeList[edgeId] = newGlobalEdges[i];
+                        globalElementList[elementId].GetContourOfElement(globalElementList[elementId].EdgeList);
+                        globalElementList[elementId].CalculateAngles(globalElementList[elementId].EdgeList);
+
+                        int id = globalEdgeList.IndexOf(oldEdge);
+                        if (oldElement == globalEdgeList[id].Element1)
+                        {
+                            globalEdgeList[id].Element1 = globalElementList[elementId];
+                        }
+                        else if (globalEdgeList[id].Element2 != null)
+                        {
+                            if (oldElement == globalEdgeList[id].Element2)
+                            {
+                                globalEdgeList[id].Element2 = globalElementList[elementId];
+                            }
+                        }
+                    }
+                }
+            }
         }
         private List<qNode> GetNeighborNodesToElement(qElement element, List<qEdge> globalEdgeList) 
         {
