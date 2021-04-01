@@ -146,9 +146,9 @@ namespace MeshPoints.CreateMesh
 
             // Find edges composing the rails and add into list
             Curve rail1 = brep.Edges[0];  //get edge1 of brep = rail 1
-            Curve rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
+            Curve rail2 = brep.Edges[11];  //get edge2 of brep = rail 2
             Curve rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
-            Curve rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
+            Curve rail4 = brep.Edges[9]; //get edge4 of brep = rail 4
 
             List<Curve> rails = new List<Curve>() { rail1, rail2, rail3, rail4 };
             rails.Reverse();
@@ -179,7 +179,7 @@ namespace MeshPoints.CreateMesh
             for (int i = 0; i < railPoints.BranchCount; i++)
             {
                 Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
-                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[1];
+                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
                 Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
                 Plane plane = new Plane(railPoints.Branch(i)[0], normal);
                 //Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane); // make plane on floor i

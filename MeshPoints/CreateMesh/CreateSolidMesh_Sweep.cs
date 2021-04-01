@@ -39,7 +39,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3D", "Creates a Mesh3D", GH_ParamAccess.item);
-            pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("mesh", "m", "Mesh (solid elements).", GH_ParamAccess.item);
             pManager.AddGenericParameter("test2", "", "", GH_ParamAccess.list);
         }
 
@@ -49,6 +49,11 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /* Todo:
+             * sjekk at det er forskjell mellom create solid mesh generic og sweep og at warningmessage i generic sweep er rett.
+             * endre navn på Mesh3D -> til SolidMesh.
+             * Legg til/endre INP-valid.
+            */
             // Input
             Brep brep = new Brep();
             int nu = 0;
@@ -58,7 +63,7 @@ namespace MeshPoints.CreateMesh
             DA.GetData(1, ref nu);
             DA.GetData(2, ref nv);
             DA.GetData(3, ref nw);
-
+            brep.
             #region Variables
             //Variables
             Mesh3D m3D = new Mesh3D();
@@ -92,7 +97,8 @@ namespace MeshPoints.CreateMesh
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
 
             // Check if brep can be interpret by Abaqus
-            IsBrepCompatibleWithAbaqus(railPoints, intersectionCurve, m3D);
+            //IsBrepCompatibleWithAbaqus(railPoints, intersectionCurve, m3D);
+
 
             //4. Make grid of points in u and v direction at leven nw
             meshPoints = CreateGridOfPointsAtEachFloor(m3D.nu, m3D.nv, surfaceAtNw, intersectionCurve, planes);
@@ -100,6 +106,11 @@ namespace MeshPoints.CreateMesh
             //5. Create nodes and elements
             nodes = CreateNodes(meshPoints, m3D.nu, m3D.nv, m3D.nw); // assign Coordiantes, GlobalId and Boundary Conditions
             elements = CreateHexElements(meshPoints, nodes, m3D.nu, m3D.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
+
+            // todo: test disse 3 linjene!!
+            List<Point3d> points = new List<Point3d> { elements[0].Node1.Coordinate, elements[0].Node2.Coordinate, elements[0].Node3.Coordinate, elements[0].Node4.Coordinate };
+            NurbsCurve curve = NurbsCurve.Create(true, 1, points);
+            curve.ClosedCurveOrientation(planes[0]);
 
             //6. Create global mesh
             allMesh = CreateGlobalMesh(elements);
@@ -112,8 +123,8 @@ namespace MeshPoints.CreateMesh
 
             // Output
             DA.SetData(0, m3D);
-            DA.SetDataList(1, planes);
-            DA.SetDataTree(2, intersectionCurve);
+            DA.SetData(1, m3D.mesh);
+            DA.SetDataTree(2, railPoints);
         }
 
         #region Methods
@@ -122,7 +133,7 @@ namespace MeshPoints.CreateMesh
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
-        private void IsBrepCompatibleWithAbaqus(DataTree<Point3d> railPoints, DataTree<Curve> intersectionCurve, Mesh3D solidMesh)
+        /*private void IsBrepCompatibleWithAbaqus(DataTree<Point3d> railPoints, DataTree<Curve> intersectionCurve, Mesh3D solidMesh)
         {
             Vector3d vector = railPoints.Branch(1)[0] - railPoints.Branch(0)[0];
             string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(vector).ToString();
@@ -132,7 +143,7 @@ namespace MeshPoints.CreateMesh
                 solidMesh.inp = false;
             }
             else { solidMesh.inp = true; }
-        }
+        }*/
 
 
         /// <summary>
@@ -147,9 +158,9 @@ namespace MeshPoints.CreateMesh
 
             // Find edges composing the rails and add into list
             Curve rail1 = brep.Edges[0];  //get edge1 of brep = rail 1
-            Curve rail2 = brep.Edges[11];  //get edge2 of brep = rail 2
+            Curve rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
             Curve rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
-            Curve rail4 = brep.Edges[9]; //get edge4 of brep = rail 4
+            Curve rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
 
             // Check if brep must be fliped
             NurbsSurface bottomSurface = brep.Surfaces[5].ToNurbsSurface();
@@ -160,9 +171,9 @@ namespace MeshPoints.CreateMesh
             if (angle > Math.PI / 2) 
             { 
                 rail1 = brep.Edges[0];  //get edge1 of brep = rail 1
-                rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
+                rail2 = brep.Edges[11];  //get edge2 of brep = rail 2
                 rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
-                rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
+                rail4 = brep.Edges[9]; //get edge4 of brep = rail 4
             }
             List<Curve> rails = new List<Curve>() { rail1, rail2, rail3, rail4 };
 
@@ -192,7 +203,7 @@ namespace MeshPoints.CreateMesh
             for (int i = 0; i < railPoints.BranchCount; i++)
             {
                 Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
-                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[1];
+                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
                 Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
                 Plane plane = new Plane(railPoints.Branch(i)[0], normal);
                 //Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane); // make plane on floor i
@@ -281,7 +292,7 @@ namespace MeshPoints.CreateMesh
             }
             else
             {
-                double pointU = 0;//u.Length;
+                double pointU = 0; //u.Length;
                 double pointV = v.Length;
                 for (double j = 0; j <= nv; j++)
                 {
