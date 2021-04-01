@@ -38,7 +38,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh3D", "m3D", "Creates a Mesh3D", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SolidMesh", "solid", "Creates a SolidMesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("mesh", "m", "Mesh (solid elements).", GH_ParamAccess.item);
             pManager.AddGenericParameter("test2", "", "", GH_ParamAccess.list);
         }
@@ -51,7 +51,6 @@ namespace MeshPoints.CreateMesh
         {
             /* Todo:
              * sjekk at det er forskjell mellom create solid mesh generic og sweep og at warningmessage i generic sweep er rett.
-             * endre navn på Mesh3D -> til SolidMesh.
              * Legg til/endre INP-valid.
             */
             // Input
@@ -63,7 +62,7 @@ namespace MeshPoints.CreateMesh
             DA.GetData(1, ref nu);
             DA.GetData(2, ref nv);
             DA.GetData(3, ref nw);
-            brep.
+
             #region Variables
             //Variables
             Mesh3D m3D = new Mesh3D();
@@ -83,7 +82,7 @@ namespace MeshPoints.CreateMesh
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
 
 
-            // 1. Assign properties to mesh3D
+            // 1. Assign properties to SolidMesh
             m3D.nu = nu;
             m3D.nv = nv;
             m3D.nw = nw;
@@ -115,7 +114,7 @@ namespace MeshPoints.CreateMesh
             //6. Create global mesh
             allMesh = CreateGlobalMesh(elements);
 
-            //7. Add properties to Mesh3D
+            //7. Add properties to SolidMesh
             m3D.Nodes = nodes;
             m3D.Elements = elements;
             m3D.mesh = allMesh;

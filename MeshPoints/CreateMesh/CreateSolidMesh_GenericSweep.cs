@@ -17,7 +17,7 @@ namespace MeshPoints.CreateMesh
         /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
         public CreateSolidMesh_GenericSweep()
-          : base("Create SolidMesh (Sweep)", "mesh3DG",
+          : base("Create SolidMesh (Sweep)", "SolidMesh",
               "Creates a solid mesh (brep can not be made from box",
               "MyPlugIn", "Mesh")
         {
@@ -39,7 +39,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh3D", "m3D", "Creates a Mesh3D", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SolidMesh", "solid", "Creates a SolidMesh", GH_ParamAccess.item);
             //pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
         }
 
@@ -78,7 +78,7 @@ namespace MeshPoints.CreateMesh
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
 
 
-            // 1. Assign properties to mesh3D
+            // 1. Assign properties to SolidMesh
             m3D.nu = nu;
             m3D.nv = nv;
             m3D.nw = nw;
@@ -104,7 +104,7 @@ namespace MeshPoints.CreateMesh
             //6. Create global mesh
             allMesh = CreateGlobalMesh(elements);
 
-            //7. Add properties to Mesh3D
+            //7. Add properties to SolidMesh
             m3D.Nodes = nodes;
             m3D.Elements = elements;
             m3D.mesh = allMesh;
