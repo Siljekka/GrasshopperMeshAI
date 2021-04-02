@@ -80,10 +80,10 @@
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
-    <Compile Include="CreateMesh\CreateSolidMesh_Sweep.cs" />
+    <Compile Include="CreateMesh\CreateSolidMesh_Generic.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
     <Compile Include="CreateMesh\CreateMesh3D_Box.cs" />
-    <Compile Include="CreateMesh\CreateSolidMesh_GenericSweep.cs" />
+    <Compile Include="CreateMesh\CreateSolidMesh_OldSweep.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />
     <Compile Include="DeconstructClasses\DeconstructMesh3D.cs" />
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
