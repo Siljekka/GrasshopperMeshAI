@@ -33,7 +33,6 @@ namespace MeshPoints.CreateMesh
             pManager.AddIntegerParameter("u", "u", "division in u direction", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("v", "v", "division in v direction", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("w", "w", "division in w direction", GH_ParamAccess.item, 4);
-            pManager.AddPointParameter("Points", "pts", "Insert flatten list of points", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -53,90 +52,110 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            // Input
+            Surface surface = null;
+            int nu = 0;
+            int nv = 0;
+            int nw = 0;
+            DA.GetData(0, ref surface);
+            DA.GetData(1, ref nu);
+            DA.GetData(2, ref nv);
+            DA.GetData(3, ref nw);
+
             #region Variables
             Mesh2D surfaceMesh = new Mesh2D();
-            Element e = new Element();
             Mesh globalMesh = new Mesh();
-
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
             List<Point3d> meshPts = new List<Point3d>();
-            int nu = 0; // number of grids in u direction
-            int nv = 0; // number of grids in v direction
             #endregion
 
-            // input
 
+            // 1. Check input OK.
+            if (!surface.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid surface input found."); return; } //todo: is this one needed?
+            if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
+            if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
+            if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
 
+            // 2. Generate grid of points on surface
+            meshPts = CreateGridOfPointsUV(nu, nv, surface.ToNurbsSurface());
 
-            DA.GetDataList(0, meshPts);
-
-            // Check input ok.
-            if (meshPts.Count < 3)
-            {
-                throw new ArgumentOutOfRangeException(
-                    message: "To few points to mesh",
-                    paramName: "meshPt");
-            }
-
-            /* Todo: Add warning if the list is not flatten
-            if (meshPts == null)
-            {
-                throw new ArgumentNullException(
-                    message: "List of points is invalid",
-                    paramName: "meshPt");
-            }
-            */
-
-
-            var numberOfGrids = GetNumberOfGrids(meshPts);
-            nu = numberOfGrids.Item1;
-            nv = numberOfGrids.Item2;
-
+            // 3. Create nodes and elements
             nodes = CreateNodes(meshPts, nu, nv);
             elements = CreateQuadElements(nodes, nu, nv);
+
+            //4. Create global mesh
             globalMesh = CreateGlobalMesh(meshPts, nu, nv);
 
+            //5. Add properties to SolidMesh
             surfaceMesh = new Mesh2D(nu, nv, nodes, elements, globalMesh);
 
-            // output
+
+            // Output
             DA.SetData(0, surfaceMesh);
             DA.SetData(1, surfaceMesh.mesh);
         }
 
         /// <summary>
-        /// count the number of grids in u direction and v direction
+        /// Makes grid of points in U and V direction
         /// </summary>
-        /// <param name="meshPts"></param>
-        /// <returns></returns>
-        Tuple<int, int> GetNumberOfGrids(List<Point3d> meshPts)
+        /// <returns> List of points in U and V direction</returns>
+        private List<Point3d> CreateGridOfPointsUV(int nu, int nv, NurbsSurface surface)
         {
-            int numGridsInU = 2; // number points in U direction, start by adding first and last point in the u direction
-            int numGridsInV = 0;
-            double dotProduct = 0;
-            Vector3d vec1 = Vector3d.Zero;
-            Vector3d vec2 = Vector3d.Zero;
-            Boolean completeCountOfGridsInU = false;
-            for (int i = 0; i < meshPts.Count - 2; i++)
-            {
-                vec1 = (meshPts[i + 1] - meshPts[i]);
-                vec2 = (meshPts[i + 2] - meshPts[i]);
-                dotProduct = Vector3d.Multiply(vec1, vec2);
+            List<Point3d> pt = new List<Point3d>();
 
-                if (dotProduct > 0)
+            var u = surface.Domain(0);
+            var v = surface.Domain(1);
+
+            double stepU = 1 / ((double)nu) * u.Length;
+            double stepV = 1 / ((double)nv) * v.Length;
+            BoundingBox bb = surface.GetBoundingBox(true);
+            Vector3d vec1 = bb.GetCorners()[1] - bb.GetCorners()[0];
+            Vector3d vec2 = bb.GetCorners()[3] - bb.GetCorners()[0];
+            Vector3d vector1 = Vector3d.CrossProduct(vec1, vec2);
+            vector1.Unitize();
+            Vector3d vector2 = surface.NormalAt(u.T1 * 0.5, v.T1 * 0.5);
+            
+            Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
+            double angle = Vector3d.VectorAngle(vector1, vector2, normal);
+
+      
+            if (angle < Math.PI / 2)
+            {
+                double pointU = 0;
+                double pointV = 0;
+                for (double j = 0; j <= nv; j++)
                 {
-                    if (!completeCountOfGridsInU) { numGridsInU++; } // count grids in u direction
+                    for (double k = 0; k <= nu; k++)
+                    {
+                        pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
+                        pointU = pointU + stepU;
+                    }
+                    pointV = pointV + stepV;
+                    pointU = 0;
                 }
-                else { completeCountOfGridsInU = true; }
             }
-            numGridsInV = meshPts.Count / numGridsInU;
-            return Tuple.Create(numGridsInU, numGridsInV);
+            else
+            {
+                double pointU = 0;
+                double pointV = v.Length;
+                for (double j = 0; j <= nv; j++)
+                {
+                    for (double k = 0; k <= nu; k++)
+                    {
+                        pt.Add(surface.PointAt(pointU, pointV)); // make point on surface
+                        pointU = pointU + stepU;
+                    }
+                    pointV = pointV - stepV;
+                    pointU = 0; 
+                }
+            }
+            return pt;
         }
 
         /// <summary>
         /// Create global nodes by assigning global id, coordinate, boundary condiditon in u and v direction
         /// </summary>
-        /// <param name="meshPts"></param>
         /// <returns></returns>
         List<Node> CreateNodes(List<Point3d> meshPts, int nu, int nv)
         {
