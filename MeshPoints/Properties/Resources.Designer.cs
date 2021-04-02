@@ -63,6 +63,16 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Abaqus {
+            get {
+                object obj = ResourceManager.GetObject("Abaqus", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap MeshQuality {
             get {
                 object obj = ResourceManager.GetObject("MeshQuality", resourceCulture);

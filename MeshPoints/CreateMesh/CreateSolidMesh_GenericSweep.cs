@@ -69,12 +69,15 @@ namespace MeshPoints.CreateMesh
             DataTree<Curve> intersectionCurve = new DataTree<Curve>();
             DataTree<Point3d> railPoints = new DataTree<Point3d>();
             DataTree<Point3d> meshPoints = new DataTree<Point3d>();
+            List<Plane> planes = new List<Plane>();
             #endregion
 
             if (!brep.IsValid) { return; } //todo: is this one needed?
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
+
+            
 
             // 1. Assign properties to mesh3D
             m3D.nu = nu;
@@ -85,11 +88,15 @@ namespace MeshPoints.CreateMesh
             railPoints = DivideRailIntoNwPoints(brep, m3D.nw);
 
             //3. Create NurbsSurface for each nw-floor
-            intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
+            intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item1;
+            planes = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item2;
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
 
+            // Check if brep can be interpret by Abaqus
+            IsBrepCompatibleWithAbaqus(railPoints, intersectionCurve, m3D);
+
             //4. Make grid of points in u and v direction at leven nw
-            meshPoints = CreateGridOfPointsAtEachFloor(m3D.nu, m3D.nv, surfaceAtNw, intersectionCurve);
+            meshPoints = CreateGridOfPointsAtEachFloor(m3D.nu, m3D.nv, surfaceAtNw, intersectionCurve, planes);
 
             //5. Create nodes and elements
             nodes = CreateNodes(meshPoints, m3D.nu, m3D.nv, m3D.nw); // assign Coordiantes, GlobalId and Boundary Conditions
@@ -102,6 +109,7 @@ namespace MeshPoints.CreateMesh
             m3D.Nodes = nodes;
             m3D.Elements = elements;
             m3D.mesh = allMesh;
+            // Find edges composing the rails and add into list
 
             // Output
             DA.SetData(0, m3D);
@@ -109,10 +117,24 @@ namespace MeshPoints.CreateMesh
 
         #region Methods
 
+        private void IsBrepCompatibleWithAbaqus(DataTree<Point3d> railPoints, DataTree<Curve> intersectionCurve, Mesh3D solidMesh)
+        {
+            Vector3d vector = railPoints.Branch(1)[0] - railPoints.Branch(0)[0];
+            string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(vector).ToString();
+            if (curveOrientation == "Clockwise")
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Surface must have normal pointing in different direction than rail. Abaqus can not interpret order of nodes. ");
+                solidMesh.inp = false;
+            }
+            else { solidMesh.inp = true; }
+         }
+
+
         /// <summary>
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
+        /// 
         private DataTree<Point3d> DivideRailIntoNwPoints(Brep brep, int nw)
         {
             Point3d[] nwPt;
@@ -124,6 +146,7 @@ namespace MeshPoints.CreateMesh
             Curve rail2 = brep.Edges[9];  //get edge2 of brep = rail 2
             Curve rail3 = brep.Edges[10]; //get edge3 of brep = rail 3
             Curve rail4 = brep.Edges[11]; //get edge4 of brep = rail 4
+
             List<Curve> rails = new List<Curve>() { rail1, rail2, rail3, rail4 };
             rails.Reverse();
 
@@ -131,7 +154,7 @@ namespace MeshPoints.CreateMesh
             for (int i = 0; i < rails.Count; i++)
             {
                 rails[i].DivideByCount(nw, true, out nwPt);  //divide each rail in nw number of points
-                nwPoints = nwPt.OrderBy(f => f.Z).ToList();     //order the points according to z-value
+                nwPoints = nwPt.ToList(); //.OrderBy(f => f.Z).ToList();     //order the points according to z-value
                 for (int j = 0; j < nwPoints.Count; j++)
                 {
                     railPoints.Add(nwPoints[j], new GH_Path(j)); //tree with nw points on each rail. Branch: floor
@@ -145,22 +168,28 @@ namespace MeshPoints.CreateMesh
         /// Get intersectionCurve between Brep and plane made from RailPoints. Curve is closed.
         /// </summary>
         /// <returns> DataTree with closed curves at each Floor. Branch: Floor Level </returns>
-        private DataTree<Curve> GetIntersectionCurveBrepAndRailPoints(DataTree<Point3d> railPoints, Brep brep)
+        private Tuple<DataTree<Curve>, List<Plane>> GetIntersectionCurveBrepAndRailPoints(DataTree<Point3d> railPoints, Brep brep)
         {
             DataTree<Curve> intersectionCurve = new DataTree<Curve>();
+            List<Plane> planes = new List<Plane>();
 
             for (int i = 0; i < railPoints.BranchCount; i++)
             {
-                Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane); // make plane on floor i
+                Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
+                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[1];
+                Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+                Plane plane = new Plane(railPoints.Branch(i)[0], normal);
+                //Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane); // make plane on floor i
                 Intersection.BrepPlane(brep, plane, 0.00001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
                 List<Curve> intCrv = iCrv.ToList();
+                planes.Add(plane);
 
                 for (int j = 0; j < intCrv.Count; j++) { intCrv[j].MakeClosed(0.0001); intersectionCurve.Add(intCrv[j], new GH_Path(i)); }  // make curve closed and add to intersectionCurve
                 if (intersectionCurve.Branch(i).Count != 1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not OK."); }
 
                 intCrv.Clear();
             }
-            return intersectionCurve;
+            return new Tuple<DataTree<Curve>, List<Plane>>(intersectionCurve, planes);
         }
 
         /// <summary>
@@ -189,14 +218,14 @@ namespace MeshPoints.CreateMesh
         /// Copy a grid of points in u and v direction onto every floor.
         /// </summary>
         /// <returns> DataTree with points on Brep. Branch: floor level.</returns>
-        private DataTree<Point3d> CreateGridOfPointsAtEachFloor(int nu, int nv, List<NurbsSurface> surfaceAtNw, DataTree<Curve> intersectionCurve)
+        private DataTree<Point3d> CreateGridOfPointsAtEachFloor(int nu, int nv, List<NurbsSurface> surfaceAtNw, DataTree<Curve> intersectionCurve, List<Plane> planes)
         {
             List<Point3d> pt = new List<Point3d>();
             DataTree<Point3d> points = new DataTree<Point3d>();
 
             for (int i = 0; i < surfaceAtNw.Count; i++) // loop floors
             {
-                pt = CreateGridOfPointsUV(nu, nv, surfaceAtNw[i], intersectionCurve.Branch(i));
+                pt = CreateGridOfPointsUV(nu, nv, surfaceAtNw[i], intersectionCurve.Branch(i), planes[i]);
                 points.AddRange(pt, new GH_Path(i)); // add points to datatree. Branch: floor level
                 pt.Clear();
             }
@@ -207,7 +236,7 @@ namespace MeshPoints.CreateMesh
         /// Makes grid of points in U and V direction
         /// </summary>
         /// <returns> List of points in U and V direction</returns>
-        private List<Point3d> CreateGridOfPointsUV(int nu, int nv, NurbsSurface surfaceAtNw, List<Curve> intersectionCurve)
+        private List<Point3d> CreateGridOfPointsUV(int nu, int nv, NurbsSurface surfaceAtNw, List<Curve> intersectionCurve, Plane plane)
         {
             List<Point3d> pt = new List<Point3d>();
             NurbsSurface surface = surfaceAtNw;
@@ -224,7 +253,7 @@ namespace MeshPoints.CreateMesh
             surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 1-direction
             double stepU = 1 / ((double)nu - 1);
             double stepV = 1 / ((double)nv - 1);*/
-            string curveOrientation = intersectionCurve[0].ClosedCurveOrientation().ToString();
+            string curveOrientation = (intersectionCurve[0].ToNurbsCurve()).ClosedCurveOrientation(plane).ToString();
             if (curveOrientation == "CounterClockwise")
             {
                 double pointU = 0;

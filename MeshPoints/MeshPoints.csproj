@@ -94,6 +94,7 @@
     <Compile Include="Galapagos\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
+    <Compile Include="GenerateINPfile.cs" />
     <Compile Include="MeshQuality\JacobianRatio3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="CreateMesh\CreateMesh2D.cs" />
@@ -125,6 +126,7 @@
     <EmbeddedResource Include="Properties\Resources\test.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Properties\Resources\Abaqus.png" />
     <Content Include="Properties\Resources\MeshQuality.png" />
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>
