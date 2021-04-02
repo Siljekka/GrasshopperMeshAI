@@ -11,13 +11,13 @@ using Rhino.Geometry.Intersect;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateSolidMesh_GenericSweep : GH_Component
+    public class CreateSolidMesh_OldSweep : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
-        public CreateSolidMesh_GenericSweep()
-          : base("Create SolidMesh (Sweep)", "SolidMesh",
+        public CreateSolidMesh_OldSweep()
+          : base("Create SolidMesh (OldSweep)", "solid",
               "Creates a solid mesh (brep can not be made from box",
               "MyPlugIn", "Mesh")
         {
@@ -40,7 +40,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("SolidMesh", "solid", "Creates a SolidMesh", GH_ParamAccess.item);
-            //pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("mesh", "m", "Mesh (solid elements).", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace MeshPoints.CreateMesh
 
             #region Variables
             //Variables
-            Mesh3D m3D = new Mesh3D();
+            Mesh3D solidMesh = new Mesh3D();
             Mesh allMesh = new Mesh();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
@@ -79,39 +79,40 @@ namespace MeshPoints.CreateMesh
 
 
             // 1. Assign properties to SolidMesh
-            m3D.nu = nu;
-            m3D.nv = nv;
-            m3D.nw = nw;
+            solidMesh.nu = nu;
+            solidMesh.nv = nv;
+            solidMesh.nw = nw;
 
             //2. Divide each brep edge in w direction (rail) into nw points.
-            railPoints = DivideRailIntoNwPoints(brep, m3D.nw);
+            railPoints = DivideRailIntoNwPoints(brep, solidMesh.nw);
 
             //3. Create NurbsSurface for each nw-floor
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item1;
             planes = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item2;
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
 
-            // Check if brep can be interpret by Abaqus
-            IsBrepCompatibleWithAbaqus(railPoints, intersectionCurve, m3D);
-
             //4. Make grid of points in u and v direction at leven nw
-            meshPoints = CreateGridOfPointsAtEachFloor(m3D.nu, m3D.nv, surfaceAtNw, intersectionCurve, planes);
+            meshPoints = CreateGridOfPointsAtEachFloor(solidMesh.nu, solidMesh.nv, surfaceAtNw, intersectionCurve, planes);
 
             //5. Create nodes and elements
-            nodes = CreateNodes(meshPoints, m3D.nu, m3D.nv, m3D.nw); // assign Coordiantes, GlobalId and Boundary Conditions
-            elements = CreateHexElements(meshPoints, nodes, m3D.nu, m3D.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
-            
+            nodes = CreateNodes(meshPoints, solidMesh.nu, solidMesh.nv, solidMesh.nw); // assign Coordiantes, GlobalId and Boundary Conditions
+            elements = CreateHexElements(meshPoints, nodes, solidMesh.nu, solidMesh.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
+
+            // Check if brep can be interpret by Abaqus
+            IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
+
             //6. Create global mesh
             allMesh = CreateGlobalMesh(elements);
 
             //7. Add properties to SolidMesh
-            m3D.Nodes = nodes;
-            m3D.Elements = elements;
-            m3D.mesh = allMesh;
+            solidMesh.Nodes = nodes;
+            solidMesh.Elements = elements;
+            solidMesh.mesh = allMesh;
             // Find edges composing the rails and add into list
            
             // Output
-            DA.SetData(0, m3D);
+            DA.SetData(0, solidMesh);
+            DA.SetData(1, solidMesh.mesh);
         }
 
         #region Methods
@@ -120,17 +121,21 @@ namespace MeshPoints.CreateMesh
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
-        private void IsBrepCompatibleWithAbaqus(DataTree<Point3d> railPoints, DataTree<Curve> intersectionCurve, Mesh3D solidMesh)
+        private void IsBrepCompatibleWithAbaqus(Element element, Mesh3D solidMesh)
         {
-            Vector3d vector = railPoints.Branch(1)[0] - railPoints.Branch(0)[0];
-            string curveOrientation = intersectionCurve.Branch(0)[0].ClosedCurveOrientation(vector).ToString();
-            if (curveOrientation != "Clockwise")
+            List<Point3d> nodes = new List<Point3d> { element.Node1.Coordinate, element.Node2.Coordinate, element.Node3.Coordinate, element.Node4.Coordinate };
+
+            NurbsCurve curve = PolyCurve.CreateControlPointCurve(nodes, 2).ToNurbsCurve();
+            Vector3d direction = element.Node5.Coordinate - element.Node1.Coordinate;
+            curve.MakeClosed(0.001);
+            string curveOrientation = curve.ClosedCurveOrientation(direction).ToString();
+            if (curveOrientation == "Clockwise")
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Abaqus can not interpret order of nodes. Error in brep input. ");
                 solidMesh.inp = false;
             }
             else { solidMesh.inp = true; }
-         }
+        }
 
 
         /// <summary>
