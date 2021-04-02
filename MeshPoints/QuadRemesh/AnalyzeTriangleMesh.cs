@@ -339,7 +339,6 @@ namespace MeshPoints.QuadRemesh
             return;
         } 
 
-
         // ________________________________ for front definiton and classification ___________________________________
         private List<qEdge> GetFrontEdges(List<qEdge> globalEdgeList)
         {
