@@ -76,7 +76,7 @@ namespace MeshPoints.CreateMesh
             List<Plane> planes = new List<Plane>();
             #endregion
 
-            if (!brep.IsValid) { return; } //todo: is this one needed?
+            if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid brep input found."); return; } //todo: is this one needed?
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
