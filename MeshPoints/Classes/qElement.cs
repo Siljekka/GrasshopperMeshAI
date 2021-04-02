@@ -10,8 +10,8 @@ namespace MeshPoints.Classes
     class qElement
     {
         public List<qEdge> EdgeList { get; set; }
-        public List<double> AngleList { get; } // todo: when angle is larger than pi it does not work..
-        public List<Line> Contour { get; }
+        public List<double> AngleList { get; set; } // todo: when angle is larger than pi it does not work..
+        public List<Line> Contour { get; set; }
         public bool IsQuad { get; }
 
 
@@ -34,7 +34,7 @@ namespace MeshPoints.Classes
 
         // Methods
         
-        private List<double> CalculateAngles(List<qEdge> _edgeList)
+        public List<double> CalculateAngles(List<qEdge> _edgeList)
         {
             Vector3d vec1 = Vector3d.Zero;
             Vector3d vec2 = Vector3d.Zero;
@@ -61,7 +61,7 @@ namespace MeshPoints.Classes
         
         }
 
-        private List<Line> GetContourOfElement(List<qEdge> _edgeList)
+        public List<Line> GetContourOfElement(List<qEdge> _edgeList)
         {
             List<Line> contour = new List<Line>();
             foreach (qEdge edge in _edgeList)
