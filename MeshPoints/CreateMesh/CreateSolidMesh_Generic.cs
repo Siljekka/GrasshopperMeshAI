@@ -107,17 +107,17 @@ namespace MeshPoints.CreateMesh
             nodes = CreateNodes(meshPoints, solidMesh.nu, solidMesh.nv, solidMesh.nw); // assign Coordiantes, GlobalId and Boundary Conditions
             elements = CreateHexElements(meshPoints, nodes, solidMesh.nu, solidMesh.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
 
-            // . Check if brep can be interpret by Abaqus
+            // 6. Check if brep can be interpret by Abaqus
             IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
 
-            //6. Create global mesh
+            //7. Create global mesh
             allMesh = CreateGlobalMesh(elements);
 
-            //7. Add properties to SolidMesh
+            //8. Add properties to SolidMesh
             solidMesh.Nodes = nodes;
             solidMesh.Elements = elements;
             solidMesh.mesh = allMesh;
-            // Find edges composing the rails and add into list
+
 
             // Output
             DA.SetData(0, solidMesh);
@@ -125,6 +125,10 @@ namespace MeshPoints.CreateMesh
         }
 
         #region Methods
+        /// <summary>
+        /// Find the edges of brep composing rails
+        /// </summary>
+        /// <returns> List with rails. </returns>
         private List<Curve> FindRails(Brep brep)
         {
             BrepEdgeList brepEdges = brep.Edges;
@@ -159,14 +163,14 @@ namespace MeshPoints.CreateMesh
             }
             return rail;
         }
+
         /// <summary>
-        /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
+        /// Check if mesh is compatible with Abaqus
         /// </summary>
-        /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
+        /// <returns> Nothing. Assign propertie to solidMesh. </returns>
         private void IsBrepCompatibleWithAbaqus(Element element, Mesh3D solidMesh)
         {
             List<Point3d> nodes = new List<Point3d> { element.Node1.Coordinate, element.Node2.Coordinate, element.Node3.Coordinate, element.Node4.Coordinate };
-
             NurbsCurve curve = PolyCurve.CreateControlPointCurve(nodes, 2).ToNurbsCurve();
             Vector3d direction = element.Node5.Coordinate - element.Node1.Coordinate;
             curve.MakeClosed(0.001);
@@ -179,7 +183,6 @@ namespace MeshPoints.CreateMesh
             else { solidMesh.inp = true; }
         }
 
-
         /// <summary>
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
@@ -190,6 +193,7 @@ namespace MeshPoints.CreateMesh
             List<Point3d> nwPoints = new List<Point3d>();
             DataTree<Point3d> railPoints = new DataTree<Point3d>();
 
+            // Check if the rails must be re-oredered to generate elements with nodes counting ccw
             NurbsSurface endSurface = brep.Surfaces[5].ToNurbsSurface();
             Vector3d vector1 = (rails[0].PointAtEnd - rails[0].PointAtStart);
             Vector3d vector2 = endSurface.NormalAt(0, 0);
@@ -199,6 +203,7 @@ namespace MeshPoints.CreateMesh
             {
                 rails.Reverse();
             }
+            #region Old code
             /*
             // Find edges composing the rails and add into list
             Curve rail1 = brep.Edges[0];  //get edge1 of brep = rail 1
@@ -220,6 +225,7 @@ namespace MeshPoints.CreateMesh
                 rail4 = brep.Edges[9]; //get edge4 of brep = rail 4
             }
             List<Curve> rails = new List<Curve>() { rail1, rail2, rail3, rail4 };*/
+            #endregion
 
             //Divide each rail into nw points.
             for (int i = 0; i < rails.Count; i++)
@@ -250,7 +256,6 @@ namespace MeshPoints.CreateMesh
                 Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
                 Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
                 Plane plane = new Plane(railPoints.Branch(i)[0], normal);
-                //Plane.FitPlaneToPoints(railPoints.Branch(i), out Plane plane); // make plane on floor i
                 Intersection.BrepPlane(brep, plane, 0.00001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
                 List<Curve> intCrv = iCrv.ToList();
                 planes.Add(plane);

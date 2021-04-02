@@ -72,7 +72,7 @@ namespace MeshPoints.CreateMesh
             List<Plane> planes = new List<Plane>();
             #endregion
 
-            if (!brep.IsValid) { return; } //todo: is this one needed?
+            if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid brep input found."); return; } //todo: is this one needed?
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
@@ -108,7 +108,6 @@ namespace MeshPoints.CreateMesh
             solidMesh.Nodes = nodes;
             solidMesh.Elements = elements;
             solidMesh.mesh = allMesh;
-            // Find edges composing the rails and add into list
            
             // Output
             DA.SetData(0, solidMesh);
@@ -118,9 +117,9 @@ namespace MeshPoints.CreateMesh
         #region Methods
 
         /// <summary>
-        /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
+        /// Check if mesh is compatible with Abaqus
         /// </summary>
-        /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
+        /// <returns> Nothing. Assign propertie to solidMesh. </returns>
         private void IsBrepCompatibleWithAbaqus(Element element, Mesh3D solidMesh)
         {
             List<Point3d> nodes = new List<Point3d> { element.Node1.Coordinate, element.Node2.Coordinate, element.Node3.Coordinate, element.Node4.Coordinate };
@@ -137,12 +136,10 @@ namespace MeshPoints.CreateMesh
             else { solidMesh.inp = true; }
         }
 
-
         /// <summary>
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
-
         private DataTree<Point3d> DivideRailIntoNwPoints(Brep brep, int nw)
         {
             Point3d[] nwPt;
