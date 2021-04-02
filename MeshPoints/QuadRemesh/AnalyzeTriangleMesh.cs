@@ -206,23 +206,11 @@ namespace MeshPoints.QuadRemesh
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList);
 
-<<<<<<< HEAD
-                
-                // Mesh modification
-                frontEdges = GetFrontEdges(globalEdgeList);
-
-                // Local smoothing
-                DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList);
-
-
-
-=======
                 //________________ Mesh modification________________
                 frontEdges = GetFrontEdges(globalEdgeList);
 
                 // ________________Local smoothing________________
                 // DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList);
->>>>>>> b19f4bc768c5866ce156813c24739c739a053e5e
 
 
             }
@@ -230,15 +218,9 @@ namespace MeshPoints.QuadRemesh
 
             List<qEdge> test = new List<qEdge>() { E_front, E_k_left, E_k_right, E_top };
 
-<<<<<<< HEAD
-            // todo: when new Level: change qEdge.IsQuadSideEdge = false;
-
-            
-=======
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
 
->>>>>>> b19f4bc768c5866ce156813c24739c739a053e5e
             // testing
             //qNode testNode = quadElement.EdgeList[(int)testNodeIndex].StartNode;
             // var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
