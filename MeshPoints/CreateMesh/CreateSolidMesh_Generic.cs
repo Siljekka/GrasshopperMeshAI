@@ -76,7 +76,7 @@ namespace MeshPoints.CreateMesh
             List<Plane> planes = new List<Plane>();
             #endregion
 
-            if (!brep.IsValid) { return; } //todo: is this one needed?
+            if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid brep input found."); return; } //todo: is this one needed?
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
@@ -195,8 +195,11 @@ namespace MeshPoints.CreateMesh
 
             // Check if the rails must be re-oredered to generate elements with nodes counting ccw
             NurbsSurface endSurface = brep.Surfaces[5].ToNurbsSurface();
+            var u = endSurface.Domain(0);
+            var v = endSurface.Domain(1);
+
             Vector3d vector1 = (rails[0].PointAtEnd - rails[0].PointAtStart);
-            Vector3d vector2 = endSurface.NormalAt(0, 0);
+            Vector3d vector2 = endSurface.NormalAt(u.T1 * 0.5, v.T1 * 0.5); //(0, 0);
             Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
             double angle = Vector3d.VectorAngle(vector1, vector2, normal);
             if (angle > Math.PI / 2)
@@ -504,6 +507,7 @@ namespace MeshPoints.CreateMesh
         }
 
         #endregion
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>

@@ -81,6 +81,7 @@
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh_Generic.cs" />
+    <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
     <Compile Include="Mesh_outdated\CreateMesh3D_Box.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh_OldSweep.cs" />
