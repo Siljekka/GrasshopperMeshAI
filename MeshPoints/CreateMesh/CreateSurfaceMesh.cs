@@ -41,7 +41,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("SurfaceMesh", "surface", "SurfaceMesh from given points", GH_ParamAccess.item);
-            pManager.AddGenericParameter("mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
             //pManager.AddGenericParameter("test2", "", "", GH_ParamAccess.list);
 
         }
@@ -67,7 +67,7 @@ namespace MeshPoints.CreateMesh
             Mesh globalMesh = new Mesh();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
-            List<Point3d> meshPts = new List<Point3d>();
+            List<Point3d> meshPoints = new List<Point3d>();
             #endregion
 
 
@@ -77,25 +77,44 @@ namespace MeshPoints.CreateMesh
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
 
+
             // 2. Generate grid of points on surface
-            meshPts = CreateGridOfPointsUV(nu, nv, surface.ToNurbsSurface());
+            meshPoints = CreateGridOfPointsUV(nu, nv, surface.ToNurbsSurface());
 
             // 3. Create nodes and elements
-            nodes = CreateNodes(meshPts, nu, nv);
+            nodes = CreateNodes(meshPoints, nu, nv);
             elements = CreateQuadElements(nodes, nu, nv);
 
             //4. Create global mesh
-            globalMesh = CreateGlobalMesh(meshPts, nu, nv);
+            globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
 
             //5. Add properties to SolidMesh
             surfaceMesh = new Mesh2D(nu, nv, nodes, elements, globalMesh);
 
+            // 6. Check if brep can be interpret by Abaqus
+            IsBrepCompatibleWithAbaqus(surfaceMesh);
+
 
             // Output
             DA.SetData(0, surfaceMesh);
-            DA.SetData(1, surfaceMesh.mesh);
+            DA.SetDataList(1, meshPoints);
         }
-
+        /// <summary>
+        /// Check if mesh is compatible with Abaqus
+        /// </summary>
+        /// <returns> Nothing. Assign propertie to surfaceMesh. </returns>
+        private void IsBrepCompatibleWithAbaqus(Mesh2D surfaceMesh)
+        {
+            BoundingBox bb = surfaceMesh.Elements[0].mesh.GetBoundingBox(false);
+            Vector3d vec1 = bb.GetCorners()[1] - bb.GetCorners()[0];
+            Vector3d vec2 = bb.GetCorners()[3] - bb.GetCorners()[0];
+            Vector3d vector1 = Vector3d.CrossProduct(vec1, vec2);
+            Vector3d vector2 = surfaceMesh.Elements[0].mesh.FaceNormals[0];
+            Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
+            double angle = Vector3d.VectorAngle(vector1, vector2, normal);
+            if (angle < Math.PI / 2) { surfaceMesh.inp = true; }
+            else { surfaceMesh.inp = false; }
+        }
         /// <summary>
         /// Makes grid of points in U and V direction
         /// </summary>
@@ -113,15 +132,13 @@ namespace MeshPoints.CreateMesh
             Vector3d vec1 = bb.GetCorners()[1] - bb.GetCorners()[0];
             Vector3d vec2 = bb.GetCorners()[3] - bb.GetCorners()[0];
             Vector3d vector1 = Vector3d.CrossProduct(vec1, vec2);
-            vector1.Unitize();
             Vector3d vector2 = surface.NormalAt(u.T1 * 0.5, v.T1 * 0.5);
             
             Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
             double angle = Vector3d.VectorAngle(vector1, vector2, normal);
 
-      
-            if (angle < Math.PI / 2)
-            {
+            if (angle < Math.PI / 2) 
+            { 
                 double pointU = 0;
                 double pointV = 0;
                 for (double j = 0; j <= nv; j++)
@@ -157,14 +174,16 @@ namespace MeshPoints.CreateMesh
         /// Create global nodes by assigning global id, coordinate, boundary condiditon in u and v direction
         /// </summary>
         /// <returns></returns>
-        List<Node> CreateNodes(List<Point3d> meshPts, int nu, int nv)
+        List<Node> CreateNodes(List<Point3d> meshPoints, int nu, int nv)
         {
             List<Node> nodes = new List<Node>();
+            nu = nu + 1;
+            nv = nv + 1;
             int uSequence = 0;
             int vSequence = 0;
-            for (int i = 0; i < meshPts.Count; i++)
+            for (int i = 0; i < meshPoints.Count; i++)
             {
-                Node node = new Node(i, meshPts[i]); // assign global id and cooridinates
+                Node node = new Node(i, meshPoints[i]); // assign global id and cooridinates
 
                 // assign boundary condition
                 if (uSequence == 0 | uSequence == nu - 1) { node.BC_U = true; } // assign BC u-dir
@@ -184,9 +203,6 @@ namespace MeshPoints.CreateMesh
         /// <summary>
         /// Creates quad elements by assigning id, local nodes and mesh.
         /// </summary>
-        /// <param name="nodes"></param>
-        /// <param name="nu"></param>
-        /// <param name="nv"></param>
         /// <returns></returns>
         List<Element> CreateQuadElements(List<Node> nodes, int nu, int nv)
         {
@@ -194,6 +210,8 @@ namespace MeshPoints.CreateMesh
             List<Element> elements = new List<Element>();
             int uSequence = 0;
             int counter = 0;
+            nu = nu + 1;
+            nv = nv + 1;
 
             for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
             {
@@ -201,16 +219,17 @@ namespace MeshPoints.CreateMesh
                 Node n2 = new Node(2, nodes[counter + 1].GlobalId, nodes[counter + 1].Coordinate, nodes[counter + 1].BC_U, nodes[counter + 1].BC_V);
                 Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, nodes[counter + nu + 1].Coordinate, nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V);
                 Node n4 = new Node(4, nodes[counter + nu].GlobalId, nodes[counter + nu].Coordinate, nodes[counter + nu].BC_U, nodes[counter + nu].BC_V);
-                Mesh m = new Mesh();
-                m.Vertices.Add(n1.Coordinate);
-                m.Vertices.Add(n2.Coordinate);
-                m.Vertices.Add(n3.Coordinate);
-                m.Vertices.Add(n4.Coordinate);
-                m.Faces.AddFace(0, 1, 2, 3);
+                Mesh mesh = new Mesh();
+                mesh.Vertices.Add(n1.Coordinate);
+                mesh.Vertices.Add(n2.Coordinate);
+                mesh.Vertices.Add(n3.Coordinate);
+                mesh.Vertices.Add(n4.Coordinate);
+                mesh.Faces.AddFace(0, 1, 2, 3);
+                mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
 
-                e = new Element(i, n1, n2, n3, n4, m);
+                e = new Element(i, n1, n2, n3, n4, mesh);
                 elements.Add(e); // add element to list of elements
-
+                
                 counter++;
                 uSequence++;
                 if (uSequence == (nu - 1)) // check if done with a v sequence
@@ -225,17 +244,16 @@ namespace MeshPoints.CreateMesh
         /// <summary>
         /// Creates a global mesh for the geometry.
         /// </summary>
-        /// <param name="meshPt"></param>
-        /// <param name="nu"></param>
-        /// <param name="nv"></param>
         /// <returns></returns>
-        Mesh CreateGlobalMesh(List<Point3d> meshPt, int nu, int nv)
+        Mesh CreateGlobalMesh(List<Point3d> meshPoints, int nu, int nv)
         {
             Mesh globalMesh = new Mesh();
             int counter = 0;
             int uSequence = 0;
+            nu = nu + 1;
+            nv = nv + 1;
 
-            foreach (Point3d pt in meshPt)
+            foreach (Point3d pt in meshPoints)
             {
                 globalMesh.Vertices.Add(pt);
             }
