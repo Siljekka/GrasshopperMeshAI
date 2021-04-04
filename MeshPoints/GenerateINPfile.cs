@@ -25,10 +25,10 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("SolidMesh", "solid", "Solid mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
             pManager.AddGenericParameter("SurfaceMesh", "surface", "Surface mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
-            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I, S4 (Solid, Shell)", GH_ParamAccess.item);
+            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8, S4 (Solid, Shell)", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 1 mm", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 10 mm", GH_ParamAccess.item);
 
             pManager[0].Optional = true; // SolidMesh is optional
             pManager[1].Optional = true; // SurfaceMesh is optional
@@ -52,21 +52,22 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            #region Input
+            // Input
             Mesh3D solidMesh = new Mesh3D();
             Mesh2D surfaceMesh = new Mesh2D();
             string elementType = "Empty";
             double Emodul = 210000;
             double nu = 0.3;
-            double sectionThickness = 1.0;
+            double sectionThickness = 10.0;
             DA.GetData(0, ref solidMesh);
             DA.GetData(1, ref surfaceMesh);
             DA.GetData(2, ref elementType);
             DA.GetData(3, ref Emodul);
             DA.GetData(4, ref nu);
             DA.GetData(5, ref sectionThickness);
-            #endregion
 
+
+            if (!DA.GetData(0, ref solidMesh) | !DA.GetData(1, ref surfaceMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Failed to collect data from mesh. Must input either solidMesh or surfaceMesh."); }
 
             // Variables
             List<string> inpText = new List<string>();
@@ -75,14 +76,14 @@ namespace MeshPoints
             string materialName = "Steel";
 
             // 0. Check if inp-file can be made. 
-            if (!solidMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
+            if (!solidMesh.inp | /*!surfaceMesh.inp*/) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
 
 
             // 1. Set material properties
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
 
             // 2. Set element type dependent on solid or surface mesh
-            if (DA.GetData(0, ref solidMesh) & elementType == "Empty") { elementType = "C3D8I"; }
+            if (DA.GetData(0, ref solidMesh) & elementType == "Empty") { elementType = "C3D8"; }
             if (DA.GetData(1, ref surfaceMesh) & elementType == "Empty") { elementType = "S4"; }
 
             // 3. Generate inp-file
