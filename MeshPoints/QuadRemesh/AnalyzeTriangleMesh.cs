@@ -236,6 +236,9 @@ namespace MeshPoints.QuadRemesh
             //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
             //qEdge edge = GetSharedEdge(testItem1);
 
+
+            bool test1 = IsInverted(globalElementList[0]);
+
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
@@ -247,8 +250,8 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(8, badestQuality);
             DA.SetData(9, colorMesh);
 
-            //DA.SetDataList(9, );
-            //DA.SetData(10, );
+            //DA.SetDataList(9, )
+            DA.SetData(10, test1);
         }
 
         #region Methods
@@ -317,7 +320,7 @@ namespace MeshPoints.QuadRemesh
                     edgeListElement.Add(globalEdgeList[n]);
                 }
                 element = new qElement(edgeListElement);
-                FixEdgeOrder(element);
+                FixEdgeOrderOfTriangle(element);
                 elementList.Add(element);
             }
             return elementList;
@@ -1254,7 +1257,7 @@ namespace MeshPoints.QuadRemesh
             }
             return Tuple.Create(avgQuality, badestQuality, colorMesh);
         }
-        private void FixEdgeOrder(qElement element)
+        private void FixEdgeOrderOfTriangle(qElement element)
         {
             // summary: fix edge order of triangle elements
 
@@ -1289,6 +1292,20 @@ namespace MeshPoints.QuadRemesh
             {
                 element.EdgeList = new List<qEdge>() { edge, edgeConnectedToStartNode, edgeConnectedToEndNode };
             }
+        }
+        private bool IsInverted(qElement element)
+        {
+            // summary: check if a triangle element is inverted
+            bool isInverted = false;
+
+            Point3d A = CalculateVectorsFromSharedNode(element.EdgeList[0], element.EdgeList[1]).Item3.Coordinate;
+            Point3d B = CalculateVectorsFromSharedNode(element.EdgeList[1], element.EdgeList[2]).Item3.Coordinate;
+            Point3d C = CalculateVectorsFromSharedNode(element.EdgeList[2], element.EdgeList[0]).Item3.Coordinate;
+
+            // check area
+            double area = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
+            if (area >= 0) { isInverted = true; }
+            return isInverted;
         }
 
 
@@ -1553,8 +1570,8 @@ namespace MeshPoints.QuadRemesh
 
             qElement newElement1 = new qElement(element1edgesNew);
             qElement newElement2 = new qElement(element2edgesNew);
-            FixEdgeOrder(newElement1);
-            FixEdgeOrder(newElement2);
+            FixEdgeOrderOfTriangle(newElement1);
+            FixEdgeOrderOfTriangle(newElement2);
             globalElementList.Add(newElement1);
             globalElementList.Add(newElement2);
 
@@ -1789,7 +1806,7 @@ namespace MeshPoints.QuadRemesh
             globalElementList.Remove(E_0.Element2);
             foreach (qElement newElement in newElements)
             {
-                FixEdgeOrder(newElement);
+                FixEdgeOrderOfTriangle(newElement);
                 globalElementList.Add(newElement);
             }
 
@@ -2353,8 +2370,8 @@ namespace MeshPoints.QuadRemesh
             qElement newElementFromQuad = new qElement(newElementFromQuadEdges);
             qElement newElementFromTri_part1 = new qElement(newElementFromTriEdges_part1);
             qElement newElementFromTri_part2 = new qElement(newElementFromTriEdges_part2);
-            FixEdgeOrder(newElementFromTri_part1);
-            FixEdgeOrder(newElementFromTri_part2);
+            FixEdgeOrderOfTriangle(newElementFromTri_part1);
+            FixEdgeOrderOfTriangle(newElementFromTri_part2);
 
             List<qEdge> modifiedEdgeListFromRemainingQuad = new List<qEdge>(quadElementOfE_long.EdgeList);
             int indexToUpdate = modifiedEdgeListFromRemainingQuad.IndexOf(E_front);
@@ -2586,9 +2603,9 @@ namespace MeshPoints.QuadRemesh
             qElement newElementFromTri_part1 = new qElement(newElementFromTriEdges_part1);
             qElement newElementFromTri_part2 = new qElement(newElementFromTriEdges_part2);
 
-            FixEdgeOrder(newElementFromQuad_part2);
-            FixEdgeOrder(newElementFromTri_part1);
-            FixEdgeOrder(newElementFromTri_part2);
+            FixEdgeOrderOfTriangle(newElementFromQuad_part2);
+            FixEdgeOrderOfTriangle(newElementFromTri_part1);
+            FixEdgeOrderOfTriangle(newElementFromTri_part2);
 
             // fix elements to new edges
             // fix newEdgeInQuad_part1
