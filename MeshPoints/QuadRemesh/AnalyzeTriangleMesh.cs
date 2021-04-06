@@ -2736,6 +2736,7 @@ namespace MeshPoints.QuadRemesh
                 {
                     // assume that node is not moved
                     smoothNode = node.Coordinate;
+                    continue;
                 }
 
                 List<int> changedEdgeIndex1 = UpdateGlobalEdgeList_NodePosition(node, smoothNode, globalEdgeList);
@@ -2755,19 +2756,17 @@ namespace MeshPoints.QuadRemesh
                 {
                     // smooth front node
                     smoothNode = FrontNodeSmooth(adjNode, globalEdgeListOldUpdated);
-                    //adjNode.Coordinate = smoothNode;
                 }
                 else if (!isFrontNode & !adjNode.BoundaryNode)
                 {
                     // do laplacian smooth
                     smoothNode = ModifiedLengthWeightedLaplacianSmooth(adjNode, globalEdgeListOldUpdated);
-                    //adjNode.Coordinate = smoothNode;
                 }
                 else
                 {
                     // assume that node is not moved
                     smoothNode = adjNode.Coordinate;
-                    //adjNode.Coordinate = smoothNode;
+                    continue;
                 }
                 List<int> changedEdgeIndex2 = UpdateGlobalEdgeList_NodePosition(adjNode, smoothNode, globalEdgeList);
                 changedEdgeIndex.AddRange(changedEdgeIndex2);
@@ -3206,7 +3205,6 @@ namespace MeshPoints.QuadRemesh
                     deltaC = P_B2 - Pi;
                 }
             }
-            
             return deltaC;
         }
         private Vector3d GetBisectingVector(Vector3d VectorRight, Vector3d VectorLeft)
