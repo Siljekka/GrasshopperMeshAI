@@ -121,6 +121,51 @@
   <data name="Abaqus" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resources\abaqus.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Icon_CreateTriangleMesh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-createtrianglemesh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructNode" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructnode.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructQEdge" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructqedge.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructQElement" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructqelement.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructQNode" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructqnode.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructSolidElement" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructsolidelement.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructSolidMesh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructsolidmesh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructSurfaceElement" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructsurfaceelement.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_DeconstructSurfaceMesh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-deconstructsurfacemesh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_MeshQualiy" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-meshqualiy.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_MoveSolidMeshVertices" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-movesolidmeshvertices.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_MoveSurfaceMeshVertices" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-movesurfacemeshvertices.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_QuadRemesh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-quadremesh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_SolidMesh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-solidmesh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_SurfaceMesh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\icon-surfacemesh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="MeshQuality" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resources\meshquality.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

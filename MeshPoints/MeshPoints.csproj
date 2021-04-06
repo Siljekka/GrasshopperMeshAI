@@ -127,6 +127,21 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Properties\Resources\Abaqus.png" />
+    <Content Include="Properties\Resources\Icon-CreateTriangleMesh.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructNode.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructQEdge.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructQElement.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructQNode.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructSolidElement.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructSolidMesh.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructSurfaceElement.png" />
+    <Content Include="Properties\Resources\Icon-DeconstructSurfaceMesh.png" />
+    <Content Include="Properties\Resources\Icon-MeshQualiy.png" />
+    <Content Include="Properties\Resources\Icon-MoveSolidMeshVertices.png" />
+    <Content Include="Properties\Resources\Icon-MoveSurfaceMeshVertices.png" />
+    <Content Include="Properties\Resources\Icon-QuadRemesh.png" />
+    <Content Include="Properties\Resources\Icon-SolidMesh.png" />
+    <Content Include="Properties\Resources\Icon-SurfaceMesh.png" />
     <Content Include="Properties\Resources\MeshQuality.png" />
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>
