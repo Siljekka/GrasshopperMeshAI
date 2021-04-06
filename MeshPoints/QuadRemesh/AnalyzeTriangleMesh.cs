@@ -210,12 +210,8 @@ namespace MeshPoints.QuadRemesh
                 frontEdges = GetFrontEdges(globalEdgeList);
 
                 // ________________Local smoothing________________
-<<<<<<< HEAD
-                // DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList);
-=======
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
->>>>>>> ece5135d5bce7f4856395daaa67c209f78c12902
 
                 // to d0: what if closing front og special case?
                 // to do: apply local smoothing for seamAngle
@@ -245,19 +241,6 @@ namespace MeshPoints.QuadRemesh
 
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
-<<<<<<< HEAD
-            DA.SetDataList(2, globalElementList); //list10
-
-            DA.SetDataList(3, globalElementList); //list01
-            DA.SetDataList(4, globalElementList);
-            DA.SetDataList(5, test);
-            DA.SetData(6, E_front);
-            DA.SetData(7, colorMesh);
-            DA.SetData(8, avgQuality);
-
-            //DA.SetDataList(9, );
-            //DA.SetData(10, );
-=======
             DA.SetDataList(2, globalElementList);
             DA.SetDataList(3, test);
             DA.SetData(4, E_front);
@@ -269,7 +252,6 @@ namespace MeshPoints.QuadRemesh
 
             //DA.SetDataList(9, )
             DA.SetData(10, test1);
->>>>>>> ece5135d5bce7f4856395daaa67c209f78c12902
         }
 
         #region Methods
@@ -2856,10 +2838,7 @@ namespace MeshPoints.QuadRemesh
 
             return newQuadElement;
         }
-<<<<<<< HEAD
-=======
 
->>>>>>> ece5135d5bce7f4856395daaa67c209f78c12902
 
         // __________________________________________ Local smoothing ______________________________________________________
         private void DoLocalSmoothing(qElement quadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges, List<qElement> globalElementList)
@@ -2891,11 +2870,7 @@ namespace MeshPoints.QuadRemesh
                 {
                     // assume that node is not moved
                     smoothNode = node.Coordinate;
-<<<<<<< HEAD
                     continue;
-=======
-                    // silje comment: continue;
->>>>>>> ece5135d5bce7f4856395daaa67c209f78c12902
                 }
 
                 List<int> changedEdgeIndex1 = UpdateGlobalEdgeList_NodePosition(node, smoothNode, globalEdgeList);
