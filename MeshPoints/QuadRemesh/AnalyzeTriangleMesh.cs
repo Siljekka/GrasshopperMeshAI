@@ -6,6 +6,7 @@ using MeshPoints.Classes;
 using Rhino.Geometry.Collections;
 using System.Linq;
 using Rhino.Geometry.Intersect;
+using System.Drawing;
 
 namespace MeshPoints.QuadRemesh
 {
@@ -122,13 +123,10 @@ namespace MeshPoints.QuadRemesh
                 var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
                 E_front = E_frontAndEdgeState.Item1;
                 var edgeState = E_frontAndEdgeState.Item2;
-
-
-
-                if (iterationCounter == 4)
+                if (E_front == null)
                 {
-                    //break;
-                    // debug stop 
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "QuadRemesh is complete");
+                    break;
                 }
 
                 //________________ check special case________________
@@ -155,7 +153,7 @@ namespace MeshPoints.QuadRemesh
                             E_k_left_performed = leftSideEdgeValues.Item2;  // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
                             break;
                         case 1:
-                            E_k_left = E_front.LeftFrontNeighbor; break;
+                            E_k_left = E_front.LeftFrontNeighbor; break; // to do: check om closing front
                     }
 
                     // get right edge
@@ -167,16 +165,15 @@ namespace MeshPoints.QuadRemesh
                             E_k_right_performed = rightSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
                             break;
                         case 1:
-                            E_k_right = E_front.RightFrontNeighbor; break;
+                            E_k_right = E_front.RightFrontNeighbor; break; // to do: check om closing front 
                     }
                 }
-
-                if (iterationCounter == 31)
+                if (iterationCounter == 8)
                 {
-
-                    break;
-                    // debug stop 
+                    //break;
+                    //debug stop 
                 }
+
 
                 //________________get top edge________________
                 if (!seamAnglePerformed)
@@ -195,7 +192,7 @@ namespace MeshPoints.QuadRemesh
                         listE_frontFailed.Add(E_front); // to do: temporary
                         globalElementList = globalElementListBackUp; // reset changes made in the iteration
                         globalEdgeList = globalEdgeListBackUp; // reset changes made in the iteration
-                        E_front.Level = 100; // to do: temporary
+                        E_front.Level++; // to do: temporary
 
                         n--;
                         continue;
@@ -212,11 +209,17 @@ namespace MeshPoints.QuadRemesh
                 // ________________Local smoothing________________
                 // DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList);
 
-
+                // to d0: what if closing front og special case?
+                // to do: apply local smoothing for seamAngle
+                // to do: is closing front selv om edge state = 1 ? må da legge inn kontroll av ekisterende uansett
             }
             #endregion End Code
 
             List<qEdge> test = new List<qEdge>() { E_front, E_k_left, E_k_right, E_top };
+            var meshValues = CalculateQuality(globalElementList);
+            double avgQuality = meshValues.Item1;
+            double badestQuality = meshValues.Item2;
+            Mesh colorMesh = meshValues.Item3;
 
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
@@ -232,12 +235,21 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList); //list10
+<<<<<<< HEAD
+            DA.SetDataList(3, globalElementList); //list01
+            DA.SetDataList(4, globalElementList);
+            DA.SetDataList(5, test);
+            DA.SetData(6, E_front);
+            DA.SetData(7, colorMesh);
+            DA.SetData(8, avgQuality);
+=======
             DA.SetData(3, quad); //list01
             //DA.SetDataList(4, globalElementList);
             //DA.SetDataList(5, test);
             //DA.SetData(6, quad);
             //DA.SetData(7, E_k_left);
             //DA.SetData(8, E_k_right);
+>>>>>>> 3ebc5cd9eff61095183739004a1937dec0bacaeb
 
             //DA.SetDataList(9, );
             //DA.SetData(10, );
@@ -336,7 +348,6 @@ namespace MeshPoints.QuadRemesh
             }      
             return;
         } 
-
 
         // ________________________________ for front definiton and classification ___________________________________
         private List<qEdge> GetFrontEdges(List<qEdge> globalEdgeList)
@@ -618,7 +629,12 @@ namespace MeshPoints.QuadRemesh
                 E_front = SelectFrontEdgeFromList(list00);
             }
             else
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: No more edges to select."); }
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "SelectNextFrontEdge: No more edges to select.");
+                E_front = null;
+                int[] tempList = { 0, 0 };
+                return Tuple.Create(E_front, tempList);
+            }
 
             // switch E_front to neighbor front if transision to one of the front neighbors is large and neighbor is selectable
             if (E_front.Length / E_front.LeftFrontNeighbor.Length > transitionTolerance & !E_front.LeftFrontNeighbor.IsQuadSideEdge)
@@ -979,9 +995,13 @@ namespace MeshPoints.QuadRemesh
                     E_k_right = edgesOfQuad.Item2;
                     E_k_left = edgesOfQuad.Item3;
 
-                    if (E_k_left != null) { specialCase = true; }
+                    if (E_k_left != null) 
+                    { 
+                        specialCase = true;
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a transition seam of left edge.");
+                        return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
+                    }
                     else { specialCase = false; }
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a transition seam of left edge.");
                 }
                 else
                 {
@@ -989,8 +1009,7 @@ namespace MeshPoints.QuadRemesh
                     Seam(E_front.LeftFrontNeighbor, E_front, globalEdgeList, globalElementList, frontEdges);
                     specialCase = true;
                     seamAnglePerformed = true;
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a seam of left edge.");
-
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a seam of left edge.");
                     return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                 }
 
@@ -1006,10 +1025,10 @@ namespace MeshPoints.QuadRemesh
                 if (E_k_left != null)
                 { 
                     specialCase = true;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a split of left edge.");
                     return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                 }
                 else { specialCase = false; }
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a split of left edge.");
             }
             #endregion check left side
 
@@ -1038,10 +1057,10 @@ namespace MeshPoints.QuadRemesh
                     if (E_k_right != null)
                     {
                         specialCase = true;
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a transition seam of  right edge.");
                         return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                     }
                     else { specialCase = false; }
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a transition seam of  right edge.");
                 }
                 else
                 {
@@ -1049,8 +1068,7 @@ namespace MeshPoints.QuadRemesh
                     Seam(E_front, E_front.RightFrontNeighbor, globalEdgeList, globalElementList, frontEdges);
                     specialCase = true;
                     seamAnglePerformed = true;
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a seam of  right edge.");
-
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a seam of  right edge.");
                     return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                 }
 
@@ -1066,10 +1084,10 @@ namespace MeshPoints.QuadRemesh
                 if (E_k_right != null)
                 {
                     specialCase = true;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a split of  right edge.");
                     return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                 }
                 else { specialCase = false; }
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "CheckSpecialCase: performed a split of  right edge.");
             }
 
             #endregion Check right side
@@ -1197,7 +1215,49 @@ namespace MeshPoints.QuadRemesh
             }
             return existingEdgeIsClosingFront;
         }
-       
+        private Tuple<double, double, Mesh> CalculateQuality(List<qElement> globalElementList)
+        {
+            // summary: calculate quality aspect ratio and create color mesh
+            double avgQuality = 0;
+            double badestQuality = 0;
+            List<double> ARList = new List<double>();
+
+            foreach (qElement element in globalElementList)
+            {
+                double maxEdgeLength = 0;
+                double minEdgeLength = 10000;
+                foreach(qEdge edge in element.EdgeList)
+                {
+                    if (edge.Length < minEdgeLength) { minEdgeLength = edge.Length;}
+                    if (edge.Length > maxEdgeLength) { maxEdgeLength = edge.Length; }
+                }
+                double AR = minEdgeLength / maxEdgeLength;
+                ARList.Add(AR);
+                avgQuality = avgQuality + AR;
+            }
+
+            badestQuality = ARList.Min();
+            avgQuality = Math.Round(avgQuality / globalElementList.Count, 3);
+
+            Mesh colorMesh = new Mesh();
+            for (int i = 0; i < globalElementList.Count; i++)
+            {
+                Mesh mesh = new Mesh();
+                List<qNode> nodes = GetNodesOfElement(globalElementList[i]);
+                foreach (qNode node in nodes) {mesh.Vertices.Add(node.Coordinate);}
+
+                if (globalElementList[i].IsQuad) { mesh.Faces.AddFace(0, 1, 2, 3);  }
+                else { mesh.Faces.AddFace(0, 1, 2); }
+     
+                if (ARList[i] > 0.9) { mesh.VertexColors.CreateMonotoneMesh(Color.Green); }
+                else if (ARList[i] > 0.7) { mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);}
+                else if (ARList[i] > 0.6){mesh.VertexColors.CreateMonotoneMesh(Color.Orange);}
+                else if (ARList[i] > 0){mesh.VertexColors.CreateMonotoneMesh(Color.Red);}
+                colorMesh.Append(mesh);
+            }
+            return Tuple.Create(avgQuality, badestQuality, colorMesh);
+        }
+
         // _______________________________________ for mesh modification __________________________________________________
         private Tuple<qEdge, bool> GetSideEdge(List<qElement> globalElementList, List<qEdge> globalEdgeList, double nodeToEvaluate, qEdge E_front, List<qEdge> frontEdges)
         {
@@ -2704,7 +2764,11 @@ namespace MeshPoints.QuadRemesh
 
             return newQuadElement;
         }
+<<<<<<< HEAD
+        // __________________________________________ Local smoothing ______________________________________________________
+=======
 
+>>>>>>> 3ebc5cd9eff61095183739004a1937dec0bacaeb
 
         // __________________________________________ Local smoothing ______________________________________________________
         private void DoLocalSmoothing(qElement quadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges, List<qElement> globalElementList)
