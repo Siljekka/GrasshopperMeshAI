@@ -67,7 +67,7 @@ namespace MeshPoints
             DA.GetData(5, ref sectionThickness);
 
 
-            if (!DA.GetData(0, ref solidMesh) | !DA.GetData(1, ref surfaceMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Failed to collect data from mesh. Must input either solidMesh or surfaceMesh."); }
+            if (!DA.GetData(0, ref solidMesh) & !DA.GetData(1, ref surfaceMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Failed to collect data from mesh. Must input either solidMesh or surfaceMesh."); }
 
             // Variables
             List<string> inpText = new List<string>();
@@ -75,9 +75,10 @@ namespace MeshPoints
             string sectionName = "Section"; //todo: fix name
             string materialName = "Steel";
 
-            // 0. Check if inp-file can be made. 
-            if (!solidMesh.inp | /*!surfaceMesh.inp*/) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
+            
 
+            // 0. Check if inp-file can be made. 
+           
 
             // 1. Set material properties
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
@@ -90,10 +91,12 @@ namespace MeshPoints
             if (DA.GetData(0, ref solidMesh) & !DA.GetData(1, ref surfaceMesh))
             {
                 inpText = GenerateSolidfile(solidMesh, elementType, Emodul, nu, partName, sectionName, materialName);
+                if (!solidMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
             }
             else if (DA.GetData(1, ref surfaceMesh) & !DA.GetData(0, ref solidMesh))
             {
                 inpText = GenerateSurfacefile(surfaceMesh, elementType, Emodul, nu, sectionThickness, partName, sectionName, materialName);
+                if (!surfaceMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
             }
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Double mesh input. Remove one mesh input."); return; }
 
@@ -110,6 +113,7 @@ namespace MeshPoints
         /// <returns> inp text file </returns>
         private List<string> GenerateSolidfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
+            //Transform.ChangeBasis(Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis, Vector3d.ZAxis, Vector3d.XAxis, Vector3d.YAxis);
             List<string> inpText = new List<string>();
             List<Node> nodes = solidMesh.Nodes;
             List<Element> elements = solidMesh.Elements;
@@ -125,7 +129,7 @@ namespace MeshPoints
             inpText.Add("** PARTS");
             inpText.Add("**");
             inpText.Add(String.Format("*Part, name={0}", partName)); //clean to have parts included, but not needed.
-
+            
             // Nodes
             inpText.Add("*Node");
             foreach (Node node in nodes)
