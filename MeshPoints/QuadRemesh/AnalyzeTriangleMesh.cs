@@ -235,21 +235,13 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList); //list10
-<<<<<<< HEAD
+
             DA.SetDataList(3, globalElementList); //list01
             DA.SetDataList(4, globalElementList);
             DA.SetDataList(5, test);
             DA.SetData(6, E_front);
             DA.SetData(7, colorMesh);
             DA.SetData(8, avgQuality);
-=======
-            DA.SetData(3, quad); //list01
-            //DA.SetDataList(4, globalElementList);
-            //DA.SetDataList(5, test);
-            //DA.SetData(6, quad);
-            //DA.SetData(7, E_k_left);
-            //DA.SetData(8, E_k_right);
->>>>>>> 3ebc5cd9eff61095183739004a1937dec0bacaeb
 
             //DA.SetDataList(9, );
             //DA.SetData(10, );
@@ -2764,11 +2756,6 @@ namespace MeshPoints.QuadRemesh
 
             return newQuadElement;
         }
-<<<<<<< HEAD
-        // __________________________________________ Local smoothing ______________________________________________________
-=======
-
->>>>>>> 3ebc5cd9eff61095183739004a1937dec0bacaeb
 
         // __________________________________________ Local smoothing ______________________________________________________
         private void DoLocalSmoothing(qElement quadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges, List<qElement> globalElementList)
