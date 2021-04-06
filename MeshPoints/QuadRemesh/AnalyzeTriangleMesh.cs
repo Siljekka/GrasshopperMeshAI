@@ -235,23 +235,29 @@ namespace MeshPoints.QuadRemesh
             //var testItem1 = GetNeighborNodesToElement(quadElement, globalEdgeList);
             //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
             //qEdge edge = GetSharedEdge(testItem1);
-
+            List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
+            List<bool> a = new List<bool>();
+            foreach (qElement con in connectedTrinagles)
+            {
+                bool b = IsInverted(con);
+                a.Add(b);
+            }
 
             bool test1 = IsInverted(globalElementList[0]);
 
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
-            DA.SetDataList(3, test);
-            DA.SetData(4, E_front);
-            DA.SetData(5, E_k_left);
+            DA.SetData(3, quadElement);
+            DA.SetDataList(4, connectedTrinagles);
+            DA.SetDataList(5, a);
             DA.SetData(6, E_k_left);
             DA.SetData(7, avgQuality);
             DA.SetData(8, badestQuality);
             DA.SetData(9, colorMesh);
 
             //DA.SetDataList(9, )
-            DA.SetData(10, test1);
+            //DA.SetData(10, test1);
         }
 
         #region Methods
@@ -2845,78 +2851,121 @@ namespace MeshPoints.QuadRemesh
         {
             List<qNode> adjacentNodes = new List<qNode>();
             List<qNode> quadNodes = GetNodesOfElement(quadElement);
-            Point3d smoothNode = new Point3d();
+            Point3d newCoordinate = new Point3d();
 
-            List<qElement> globalElementListOld = new List<qElement>(globalElementList);
-            List<qEdge> globalEdgeListOld = new List<qEdge>(globalEdgeList);
-            List<int> changedEdgeIndex = new List<int>();
 
             // Smooth nodes of Quad
+            List<qEdge> globalEdgeListOld = new List<qEdge>(globalEdgeList);
             foreach (qNode node in quadNodes) //assume order is irrelevant
             {
+                qNode oldNode = new qNode(node.Coordinate, node.BoundaryNode);
                 bool isFrontNode = IsFrontNode(node, frontEdges);
+                
                 if (isFrontNode & !node.BoundaryNode)
                 {
                     // smooth front node
-                    smoothNode = FrontNodeSmooth(node, globalEdgeListOld);
-                    
+                    newCoordinate = FrontNodeSmooth(node, globalEdgeListOld);
                 }
                 else if (!isFrontNode & !node.BoundaryNode)
                 {
                     // do laplacian smooth
-                    smoothNode = ModifiedLengthWeightedLaplacianSmooth(node, globalEdgeListOld);
+                    newCoordinate = ModifiedLengthWeightedLaplacianSmooth(node, globalEdgeListOld);
                 }
                 else
                 {
                     // assume that node is not moved
-                    smoothNode = node.Coordinate;
+                    newCoordinate = node.Coordinate;
                     continue;
                 }
+                
+                var changedEdges = UpdateGlobalEdgeList_NodePosition(node, newCoordinate, globalEdgeList);
+                List<qEdge> oldEdges = changedEdges.Item1;
+                List<qEdge> newEdges = changedEdges.Item2;
+                UpdateGlobalElementList_ChangedEdges(newEdges, oldEdges, globalElementList);
 
-                List<int> changedEdgeIndex1 = UpdateGlobalEdgeList_NodePosition(node, smoothNode, globalEdgeList);
-                changedEdgeIndex.AddRange(changedEdgeIndex1);
+                List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(node, globalEdgeList);
+                Vector3d movingVector = oldNode.Coordinate - node.Coordinate;
+                bool hadInvertedElement = InvertedElementsCleanUp(node, connectedTrinagles, movingVector);
+                if (hadInvertedElement)
+                {
+                    changedEdges = UpdateGlobalEdgeList_NodePosition(node, newCoordinate, globalEdgeList);
+                    oldEdges = changedEdges.Item1;
+                    newEdges = changedEdges.Item2;
+                    UpdateGlobalElementList_ChangedEdges(newEdges, oldEdges, globalElementList);
+                }
             }
-            UpdateGlobalElementList_ChangedEdges(changedEdgeIndex, globalEdgeList, globalEdgeListOld, globalElementList);
-            changedEdgeIndex.Clear();
-            
+
+            // Smooth adjacent nodes
             List<qEdge> globalEdgeListOldUpdated = new List<qEdge>(globalEdgeList);
             adjacentNodes = GetNeighborNodesToElement(quadElement, globalEdgeListOld);
-
             foreach (qNode adjNode in adjacentNodes)
             {
-                List<qEdge> connectedEdgesAdjNodes = GetConnectedEdges(adjNode, globalEdgeListOldUpdated);
+                qNode oldAdjNode = new qNode(adjNode.Coordinate, adjNode.BoundaryNode);
                 bool isFrontNode = IsFrontNode(adjNode, frontEdges);
                 if (isFrontNode & !adjNode.BoundaryNode)
                 {
                     // smooth front node
-                    smoothNode = FrontNodeSmooth(adjNode, globalEdgeListOldUpdated);
+                    newCoordinate = FrontNodeSmooth(adjNode, globalEdgeListOldUpdated);
                 }
                 else if (!isFrontNode & !adjNode.BoundaryNode)
                 {
                     // do laplacian smooth
-                    smoothNode = ModifiedLengthWeightedLaplacianSmooth(adjNode, globalEdgeListOldUpdated);
+                    newCoordinate = ModifiedLengthWeightedLaplacianSmooth(adjNode, globalEdgeListOldUpdated);
                 }
                 else
                 {
                     // assume that node is not moved
-                    smoothNode = adjNode.Coordinate;
+                    newCoordinate = adjNode.Coordinate;
                     continue;
                 }
-                List<int> changedEdgeIndex2 = UpdateGlobalEdgeList_NodePosition(adjNode, smoothNode, globalEdgeList);
-                changedEdgeIndex.AddRange(changedEdgeIndex2);
+                var changedEdges = UpdateGlobalEdgeList_NodePosition(adjNode, newCoordinate, globalEdgeList);
+                List<qEdge> oldEdges = changedEdges.Item1;
+                List<qEdge> newEdges = changedEdges.Item2;
+                UpdateGlobalElementList_ChangedEdges(newEdges, oldEdges, globalElementList);
+
+                List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(adjNode, globalEdgeList);
+                Vector3d movingVector = oldAdjNode.Coordinate - adjNode.Coordinate;
+                bool hadInvertedElement = InvertedElementsCleanUp(adjNode, connectedTrinagles, movingVector);
+                if (hadInvertedElement)
+                {
+                    changedEdges = UpdateGlobalEdgeList_NodePosition(adjNode, newCoordinate, globalEdgeList);
+                    oldEdges = changedEdges.Item1;
+                    newEdges = changedEdges.Item2;
+                    UpdateGlobalElementList_ChangedEdges(newEdges, oldEdges, globalElementList);
+                }
             }
-
-            // make list with old and new edges at index where edges are changed.
-            UpdateGlobalElementList_ChangedEdges(changedEdgeIndex, globalEdgeList, globalEdgeListOldUpdated, globalElementList);
-
         } // todo: check if this is OK
-        private List<int> UpdateGlobalEdgeList_NodePosition(qNode oldNode, Point3d smoothNode, List<qEdge> globalEdgeList)
+        private bool InvertedElementsCleanUp(qNode smoothNode, List<qElement> connectedTriangles, Vector3d movingVector)
+        {
+            Point3d newCoordinate = new Point3d(smoothNode.Coordinate);
+            bool hadInvertedElement = false;
+            for (int i = 0; i < connectedTriangles.Count; i++)
+            {
+                qElement triangle = connectedTriangles[i];
+
+                while (!IsInverted(triangle))
+                {
+                    newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.1, newCoordinate.Y + movingVector.Y * 0.1, newCoordinate.Z + movingVector.Z * 0.1);
+                    for (int j = 0; j < triangle.EdgeList.Count; j++)
+                    {
+                        qEdge edge = triangle.EdgeList[j];
+                        if (edge.StartNode == smoothNode) { triangle.EdgeList[j].StartNode.Coordinate = newCoordinate; }
+                        else if (edge.EndNode == smoothNode) { triangle.EdgeList[j].EndNode.Coordinate = newCoordinate; }
+                    }
+                    hadInvertedElement = true;
+                }
+            }
+            return hadInvertedElement;
+        }
+        private Tuple<List<qEdge>,List<qEdge>> UpdateGlobalEdgeList_NodePosition(qNode smoothNode, Point3d newCoordinate, List<qEdge> globalEdgeList)
         {
             // summary: modify node location of oldNode to smoothNode location and update connected edges
             // silje comment: sjekk naboelementer. Blir deres edgelist oppdatert?
             List<int> changedEdgeIndex = new List<int>();
+            List<qEdge> oldEdges = new List<qEdge>();
+            List<qEdge> newEdges = new List<qEdge>();
             List<qEdge> globalEdgeListCopy = new List<qEdge>(globalEdgeList);
-            List<qEdge> connectedEdges = GetConnectedEdges(oldNode, globalEdgeListCopy);
+            List<qEdge> connectedEdges = GetConnectedEdges(smoothNode, globalEdgeListCopy);
 
             for (int i = 0; i < connectedEdges.Count; i++) // silje comment: fjerne denne loopen?
             {
@@ -2924,64 +2973,72 @@ namespace MeshPoints.QuadRemesh
                 {
                     int id = globalEdgeListCopy.IndexOf(edge);
 
-                    if (globalEdgeListCopy[id].StartNode == oldNode)
+                    if (globalEdgeListCopy[id].StartNode == smoothNode)
                     {
-                        globalEdgeList[id].StartNode.Coordinate = smoothNode;
+                        globalEdgeList[id].StartNode.Coordinate = newCoordinate;
                         globalEdgeList[id].Length = globalEdgeList[id].CalculateLength(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
                         globalEdgeList[id].EdgeLine = globalEdgeList[id].VisualizeLine(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
-                        changedEdgeIndex.Add(id);
+
+                        int edgeId1 = globalEdgeListCopy[id].Element1.EdgeList.IndexOf(edge);
+                        int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
+
+                        globalEdgeList[id].Element1.EdgeList[edgeId1] = globalEdgeList[id];
+                        globalEdgeList[id].Element1.Contour = globalEdgeList[id].Element1.GetContourOfElement(globalEdgeList[id].Element1.EdgeList);
+                        globalEdgeList[id].Element1.AngleList = globalEdgeList[id].Element1.CalculateAngles(globalEdgeList[id].Element1.EdgeList);
+
+                        globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
+                        globalEdgeList[id].Element2.Contour = globalEdgeList[id].Element2.GetContourOfElement(globalEdgeList[id].Element2.EdgeList);
+                        globalEdgeList[id].Element2.AngleList = globalEdgeList[id].Element2.CalculateAngles(globalEdgeList[id].Element2.EdgeList);
+
+                        newEdges.Add(globalEdgeList[id]);
+                        oldEdges.Add(globalEdgeListCopy[id]);
                     }
-                    else if (globalEdgeListCopy[id].EndNode == oldNode)
+                    else if (globalEdgeListCopy[id].EndNode == smoothNode)
                     {
-                        globalEdgeList[id].EndNode.Coordinate = smoothNode;
+                        globalEdgeList[id].EndNode.Coordinate = newCoordinate;
                         globalEdgeList[id].Length = globalEdgeList[id].CalculateLength(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
                         globalEdgeList[id].EdgeLine = globalEdgeList[id].VisualizeLine(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
+                        
                         changedEdgeIndex.Add(id);
+
+                        int edgeId1 = globalEdgeListCopy[id].Element1.EdgeList.IndexOf(edge);
+                        int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
+
+                        globalEdgeList[id].Element1.EdgeList[edgeId1] = globalEdgeList[id];
+                        globalEdgeList[id].Element1.Contour = globalEdgeList[id].Element1.GetContourOfElement(globalEdgeList[id].Element1.EdgeList);
+                        globalEdgeList[id].Element1.AngleList = globalEdgeList[id].Element1.CalculateAngles(globalEdgeList[id].Element1.EdgeList);
+
+                        globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
+                        globalEdgeList[id].Element2.Contour = globalEdgeList[id].Element2.GetContourOfElement(globalEdgeList[id].Element2.EdgeList);
+                        globalEdgeList[id].Element2.AngleList = globalEdgeList[id].Element2.CalculateAngles(globalEdgeList[id].Element2.EdgeList);
+
+                        newEdges.Add(globalEdgeList[id]);
+                        oldEdges.Add(globalEdgeListCopy[id]);
                     }
                     //todo: else { add runtimemessage }
                 }
             }
-            return changedEdgeIndex;
+            return Tuple.Create(oldEdges, newEdges);
         }
-        private void UpdateGlobalElementList_ChangedEdges(List<int> changedEdgeIndex, List<qEdge> globalEdgeList, List<qEdge> globalEdgeListOld, List<qElement> globalElementList)
+        private void UpdateGlobalElementList_ChangedEdges(List<qEdge> newEdges, List<qEdge> oldEdges, List<qElement> globalElementList)
         {
             // make list with old and new edges at index where edges are changed.
             List<qElement> globalElementListOld = new List<qElement>(globalElementList);
-            List<qEdge> newGlobalEdges = new List<qEdge>();
-            List<qEdge> oldGlobalEdges = new List<qEdge>();
 
-            for (int i = 0; i < changedEdgeIndex.Count; i++)
-            {
-                newGlobalEdges.Add(globalEdgeList.ElementAt(changedEdgeIndex[i]));
-                oldGlobalEdges.Add(globalEdgeListOld.ElementAt(changedEdgeIndex[i]));
-            }
 
             foreach (qElement oldElement in globalElementListOld)
             {
-                for (int i = 0; i < oldGlobalEdges.Count; i++)
+                for (int i = 0; i < oldEdges.Count; i++)
                 {
                     int elementId = globalElementListOld.IndexOf(oldElement);
-                    qEdge oldEdge = oldGlobalEdges[i];
+                    qEdge oldEdge = oldEdges[i];
                     if (oldElement.EdgeList.Contains(oldEdge))
                     {
                         int edgeId = oldElement.EdgeList.IndexOf(oldEdge);
 
-                        globalElementList[elementId].EdgeList[edgeId] = newGlobalEdges[i];
+                        globalElementList[elementId].EdgeList[edgeId] = newEdges[i];
                         globalElementList[elementId].Contour = globalElementList[elementId].GetContourOfElement(globalElementList[elementId].EdgeList);
                         globalElementList[elementId].AngleList = globalElementList[elementId].CalculateAngles(globalElementList[elementId].EdgeList);
-                        
-                        int id = globalEdgeListOld.IndexOf(oldEdge);
-                        if (oldElement == globalEdgeListOld[id].Element1)
-                        {
-                            globalEdgeList[id].Element1 = globalElementList[elementId];
-                        }
-                        else if (globalEdgeListOld[id].Element2 != null)
-                        {
-                            if (oldElement == globalEdgeListOld[id].Element2)
-                            {
-                                globalEdgeList[id].Element2 = globalElementList[elementId];
-                            }
-                        }
                     }
                 }
             }
@@ -3225,7 +3282,7 @@ namespace MeshPoints.QuadRemesh
             Point3d smoothNode = new Point3d(Ni.Coordinate.X + deltaI.X, Ni.Coordinate.Y + deltaI.Y, Ni.Coordinate.Z + deltaI.Z);
             return smoothNode;
         } // todo: check if this is OK
-        private Tuple<Vector3d,Vector3d> TrueIsoparametricSmooth(qNode node, List<qElement> quadElements)
+        private Tuple<Vector3d,Vector3d> TrueIsoparametricSmooth(qNode Ni, List<qElement> quadElements)
         {
             // summary: get translations vectors to perfome true isoparametric smoothing
             Vector3d Vi = Vector3d.Zero;
@@ -3246,25 +3303,25 @@ namespace MeshPoints.QuadRemesh
                 Vector3d Vmk = Vector3d.Zero;
                 Vector3d Vml = Vector3d.Zero;
 
-                if (node1 == node)
+                if (node1 == Ni)
                 {
                     Vmj = node2.Coordinate - origo;
                     Vmk = node3.Coordinate - origo;
                     Vml = node4.Coordinate - origo;
                 }
-                else if (node2 == node)
+                else if (node2 == Ni)
                 {
                     Vmj = node3.Coordinate - origo;
                     Vmk = node4.Coordinate - origo;
                     Vml = node1.Coordinate - origo;
                 }
-                else if (node3 == node)
+                else if (node3 == Ni)
                 {
                     Vmj = node4.Coordinate - origo;
                     Vmk = node1.Coordinate - origo;
                     Vml = node2.Coordinate - origo;
                 }
-                else if (node4 == node)
+                else if (node4 == Ni)
                 {
                     Vmj = node1.Coordinate - origo;
                     Vmk = node2.Coordinate - origo;
@@ -3273,7 +3330,7 @@ namespace MeshPoints.QuadRemesh
 
                 vectorSum = (Vmj + Vml - Vmk) + vectorSum;
             }
-            Vi = node.Coordinate - origo;
+            Vi = Ni.Coordinate - origo;
             Vi_mark = ((double)1 / (double)numberOfConnectedQuads) * vectorSum;
             deltaA =  Vi_mark - Vi;
             return Tuple.Create(Vi_mark, deltaA);
@@ -3441,7 +3498,34 @@ namespace MeshPoints.QuadRemesh
 
             return quadElementsNoDublicates;
         }//todo: OK
+        private List<qElement> GetTrianglesConnectedToNode(qNode node, List<qEdge> globalEdgeList)
+        {
+            // summary: get all quad elements connected to a node
+            List<qElement> triangleElements = new List<qElement>();
+            var connectedEdges = GetConnectedEdges(node, globalEdgeList);
 
+            foreach (qEdge edge in connectedEdges)
+            {
+                List<qElement> connectedElements = GetConnectedElements(edge);
+                foreach (qElement element in connectedElements)
+                {
+                    if (!element.IsQuad) { triangleElements.Add(element); }
+                }
+            }
+
+            // delete dublicates
+            List<qElement> triangleElementsNoDublicates = new List<qElement>();
+            if (triangleElements.Count > 0)
+            {
+                foreach (qElement element in triangleElements)
+                {
+                    if (!triangleElementsNoDublicates.Contains(element)) { triangleElementsNoDublicates.Add(element); }
+                }
+            }
+            if (triangleElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "number of connected quad-elements to frontNode is zero."); }
+
+            return triangleElementsNoDublicates;
+        }//todo: test
 
         #endregion
 
