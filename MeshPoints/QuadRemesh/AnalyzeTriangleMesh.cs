@@ -236,8 +236,6 @@ namespace MeshPoints.QuadRemesh
             //var testItem1 = GetNeighborNodesToElement(quadElement, globalEdgeList);
             //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
             //qEdge edge = GetSharedEdge(testItem1);
-<<<<<<< HEAD
-=======
             List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             List<bool> a = new List<bool>();
             foreach (qElement con in connectedTrinagles)
@@ -246,23 +244,13 @@ namespace MeshPoints.QuadRemesh
                 a.Add(b);
             }
 
-            bool test1 = IsInverted(globalElementList[0]);
->>>>>>> f60e0a9500b28cbc6f1ffa595a43625eab33e93b
-
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
-<<<<<<< HEAD
             DA.SetDataList(3, test);
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-=======
-            DA.SetData(3, quadElement);
-            DA.SetDataList(4, connectedTrinagles);
-            DA.SetDataList(5, a);
-            DA.SetData(6, E_k_left);
->>>>>>> f60e0a9500b28cbc6f1ffa595a43625eab33e93b
             DA.SetData(7, avgQuality);
             DA.SetData(8, badestQuality);
             DA.SetData(9, colorMesh);
