@@ -236,6 +236,7 @@ namespace MeshPoints.QuadRemesh
             //var testItem1 = GetNeighborNodesToElement(quadElement, globalEdgeList);
             //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
             //qEdge edge = GetSharedEdge(testItem1);
+            /*
             List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             List<bool> a = new List<bool>();
             foreach (qElement con in connectedTrinagles)
@@ -243,7 +244,7 @@ namespace MeshPoints.QuadRemesh
                 bool b = IsInverted(con);
                 a.Add(b);
             }
-
+            */
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
@@ -2942,7 +2943,8 @@ namespace MeshPoints.QuadRemesh
             {
                 qElement triangle = connectedTriangles[i];
 
-                while (!IsInverted(triangle))
+                int counter = 0;
+                while (!IsInverted(triangle) & counter < 1000)
                 {
                     newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.1, newCoordinate.Y + movingVector.Y * 0.1, newCoordinate.Z + movingVector.Z * 0.1);
                     for (int j = 0; j < triangle.EdgeList.Count; j++)
@@ -2952,7 +2954,9 @@ namespace MeshPoints.QuadRemesh
                         else if (edge.EndNode == smoothNode) { triangle.EdgeList[j].EndNode.Coordinate = newCoordinate; }
                     }
                     hadInvertedElement = true;
+                    counter++;
                 }
+                if (counter >= 1000) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "InvertedElementsCleanUp: failed"); }
             }
             return hadInvertedElement;
         }
