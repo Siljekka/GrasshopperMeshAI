@@ -205,11 +205,11 @@ namespace MeshPoints.QuadRemesh
                 //________________ Mesh modification________________
                 frontEdges = GetFrontEdges(globalEdgeList);
 
-                if (iterationCounter == 48)
-                {
-                    break;
+               // if (iterationCounter == 48)
+                //{
+                  //  break;
                     //debug stop 
-                }
+                //}
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
@@ -236,28 +236,28 @@ namespace MeshPoints.QuadRemesh
             //var testItem1 = GetNeighborNodesToElement(quadElement, globalEdgeList);
             //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
             //qEdge edge = GetSharedEdge(testItem1);
-            
-            List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
-            List<bool> a = new List<bool>();
-            foreach (qElement con in connectedTrinagles)
-            {
-                bool b = IsInverted(con);
-                a.Add(b);
-            }
-            
+
+            //List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
+            //List<bool> a = new List<bool>();
+            //foreach (qElement con in connectedTrinagles)
+            //{
+            //    bool b = IsInverted(con);
+            //    a.Add(b);
+            //}
+
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
             DA.SetData(3, quadElement);
-            DA.SetDataList(4, connectedTrinagles);
-            DA.SetDataList(5, a);
-            DA.SetData(6, E_front);
-            DA.SetData(7, avgQuality);
-            DA.SetData(8, badestQuality);
-            DA.SetData(9, colorMesh);
 
-            //DA.SetDataList(9, )
-            //DA.SetData(10, test1);
+            /*
+            DA.SetData(4, Ni);
+            DA.SetData(5, Nj);
+            DA.SetData(6, Pi);
+            DA.SetDataList(7, C);
+            DA.SetData(8, delta);
+            DA.SetData(9, smoothNode);*/
+
         }
 
         #region Methods
@@ -3337,7 +3337,7 @@ namespace MeshPoints.QuadRemesh
             deltaA =  Vi_mark - Vi;
             return Tuple.Create(Vi_mark, deltaA);
         } // todo: check if this is OK
-        private Vector3d GetAngularSmoothness(qNode Ni, qNode Nj, double ld, bool Ni_IsFrontNode, List<qEdge> globalEdgeList) // todo: check if this works
+        private Vector3d GetAngularSmoothness(qNode Ni, qNode Nj, double ld, bool Ni_IsFrontNode, List<qEdge> globalEdgeList) 
         {
             // summary: get a translation vector to performe angular smoothing
             Vector3d P_B1 = Vector3d.Zero;
@@ -3345,9 +3345,6 @@ namespace MeshPoints.QuadRemesh
             Vector3d Pi = Ni.Coordinate - Nj.Coordinate;
             Point3d pointQ = new Point3d();
             Vector3d deltaC = Vector3d.Zero;
-
-            //List<qElement> quadElements = GetQuadsConnectedToNode(Ni, globalEdgeList);
-            List<qEdge> connectedEdges = GetConnectedEdges(Ni, globalEdgeList);
 
             //Hvis node til quadElements er på BC - gjør slik.
 
@@ -3388,6 +3385,7 @@ namespace MeshPoints.QuadRemesh
                     }
 
                     P_B2 = (double)P_B1.Length * Pi + (double)Pi.Length * P_B1; // Assume angle always less than 180 degree.
+                    P_B2.Unitize();
                     if (Vector3d.Multiply(P_B1, Pi) < 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "P_B1 and Pi have angle larger than 90 degree. Do not know it is above 180."); }
 
 
@@ -3405,19 +3403,16 @@ namespace MeshPoints.QuadRemesh
                         pointQ = placesWithIntersection[0].PointA;
                     }
 
-
                     // make P_B2:
                     double lq = (pointQ - Nj.Coordinate).Length;
                     if (ld > lq & isIntersecting)
                     {
                         double lengthP_B2 = (lq + ld) / (double)2;
-                        P_B2.Unitize();
                         P_B2 = P_B2 * lengthP_B2;
                     }
                     else
                     {
                         double lengthP_B2 = ld;
-                        P_B2.Unitize();
                         P_B2 = P_B2 * lengthP_B2;
                     }
 
@@ -3425,7 +3420,7 @@ namespace MeshPoints.QuadRemesh
                 }
             }
             return deltaC;
-        }
+        } // todo: OK
         private Vector3d GetBisectingVector(Vector3d VectorRight, Vector3d VectorLeft)
             {
                 // summary: get bisecting vector, assuming the source vectors are not parallel 
@@ -3433,7 +3428,6 @@ namespace MeshPoints.QuadRemesh
                 Vector3d bisectVector = VectorRight;
                 bisectVector.Rotate(0.5 * angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
                 bisectVector.Unitize();
-                bisectVector = bisectVector * (VectorRight.Length * VectorLeft + VectorLeft.Length * VectorRight).Length; // silje comment: hva om de er motsatt parallelle. Da blir denne null.
                 return bisectVector;
             } // todo: test if this is OK
         private List<qEdge> GetFrontEdgesConnectedToNode(qNode node, List<qEdge> globalEdgeList)
