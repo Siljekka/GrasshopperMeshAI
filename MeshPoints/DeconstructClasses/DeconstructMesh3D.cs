@@ -12,8 +12,8 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the DeconstructMesh3d class.
         /// </summary>
         public DeconstructMesh3D()
-          : base("DeconstructMesh3D", "decM3D",
-              "Deconstructing Mesh3D class",
+          : base("Deconstruct SolidMesh", "decSolid",
+              "Deconstructing SolidMesh class",
               "MyPlugIn", "Deconstruct")
         {
         }

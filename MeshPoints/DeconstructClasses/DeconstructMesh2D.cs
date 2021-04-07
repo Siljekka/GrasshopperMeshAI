@@ -14,8 +14,8 @@ namespace MeshPoints
         /// Initializes a new instance of the Deconstruct_Mesh2D class.
         /// </summary>
         public Deconstruct_Mesh2D()
-          : base("Deconstruct Mesh2D", "decM2D",
-              "Deconstructing Mesh2D class",
+          : base("Deconstruct SurfaceMesh", "decSurf",
+              "Deconstruct SurfaceMesh class",
               "MyPlugIn", "Deconstruct")
         {
         }

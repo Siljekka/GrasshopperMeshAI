@@ -40,7 +40,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("SolidMesh", "solid", "Creates a SolidMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("mesh", "m", "Mesh (solid elements).", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Vertices", "vertices", "Mesh (solid elements).", GH_ParamAccess.item);
         }
 
         /// <summary>
