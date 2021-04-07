@@ -61,20 +61,23 @@ namespace MeshPoints.QuadRemesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            // variables
+            // Input
             Mesh mesh = new Mesh();
             double numberElementsToRemesh = 0;
             double iterationsToPerformBeforeStop = 0;
-            
-            List<double> testList = new List<double>();
             bool performeLocalSmoothing = false;
-            //double testItem2 = 2;
-
-            // input
+            
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref numberElementsToRemesh);
             DA.GetData(2, ref performeLocalSmoothing); // to test
             DA.GetData(3, ref iterationsToPerformBeforeStop);
+
+            if (!DA.GetData(0, ref mesh)) { return; }
+            if (!DA.GetData(1, ref numberElementsToRemesh)) { return; }
+            if (!DA.GetData(2, ref performeLocalSmoothing)) { return; }
+            if (!DA.GetData(3, ref iterationsToPerformBeforeStop)) { return; }
+            
+
 
             #region Code
 
@@ -223,13 +226,7 @@ namespace MeshPoints.QuadRemesh
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
 
-            // testing
-            //qNode testNode = quadElement.EdgeList[(int)testNodeIndex].StartNode;
-            // var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
-            //var testItem1 = GetConnectedEdges(testNode, globalEdgeList);
-            //var testItem1 = GetNeighborNodesToElement(quadElement, globalEdgeList);
-            //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
-            //qEdge edge = GetSharedEdge(testItem1);
+            // testing:
 
             //List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             //List<bool> a = new List<bool>();
@@ -244,7 +241,6 @@ namespace MeshPoints.QuadRemesh
             qEdge sharedEdge = GetSharedEdge(quadElements);
             qNode Nj = GetOppositeNode(Ni, sharedEdge);
 
-            
             qElement quadElement1 = new qElement();
             Vector3d P_B1 = Vector3d.Zero;
             Vector3d P_B2 = Vector3d.Zero;
@@ -310,14 +306,13 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
             DA.SetData(9, colorMesh);
+            
             /*
             DA.SetData(4, Ni);
             DA.SetData(5, Nj);
-            
             DA.SetData(7, vectorLeft);
             DA.SetData(8, vectorRight);
             DA.SetData(9, P_B1);*/
-
         }
 
         #region Methods
