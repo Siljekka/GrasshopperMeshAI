@@ -131,7 +131,6 @@ namespace MeshPoints.QuadRemesh
 
 
 
-
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
@@ -172,11 +171,7 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
-                if (iterationCounter == 41)
-                {
-                    //break;
-                    //debug stop 
-                }
+
                 //________________get top edge________________
                 if (!seamAnglePerformed)
                 {
@@ -210,6 +205,11 @@ namespace MeshPoints.QuadRemesh
                 //________________ Mesh modification________________
                 frontEdges = GetFrontEdges(globalEdgeList);
 
+                if (iterationCounter == 48)
+                {
+                    break;
+                    //debug stop 
+                }
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
@@ -236,7 +236,7 @@ namespace MeshPoints.QuadRemesh
             //var testItem1 = GetNeighborNodesToElement(quadElement, globalEdgeList);
             //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
             //qEdge edge = GetSharedEdge(testItem1);
-            /*
+            
             List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             List<bool> a = new List<bool>();
             foreach (qElement con in connectedTrinagles)
@@ -244,14 +244,14 @@ namespace MeshPoints.QuadRemesh
                 bool b = IsInverted(con);
                 a.Add(b);
             }
-            */
+            
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
-            DA.SetDataList(3, test);
-            DA.SetData(4, E_front);
-            DA.SetData(5, E_k_left);
-            DA.SetData(6, E_k_right);
+            DA.SetData(3, quadElement);
+            DA.SetDataList(4, connectedTrinagles);
+            DA.SetDataList(5, a);
+            DA.SetData(6, E_front);
             DA.SetData(7, avgQuality);
             DA.SetData(8, badestQuality);
             DA.SetData(9, colorMesh);
@@ -1310,7 +1310,7 @@ namespace MeshPoints.QuadRemesh
 
             // check area
             double area = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
-            if (area >= 0) { isInverted = true; }
+            if (area <= 0) { isInverted = true; }
             return isInverted;
         }
 
@@ -2884,11 +2884,11 @@ namespace MeshPoints.QuadRemesh
                 UpdateGlobalElementList_ChangedEdges(newEdges, oldEdges, globalElementList);
 
                 List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(node, globalEdgeList);
-                Vector3d movingVector = oldNode.Coordinate - node.Coordinate;
-                bool hadInvertedElement = InvertedElementsCleanUp(node, connectedTrinagles, movingVector);
-                if (hadInvertedElement)
+                Vector3d movingVector = oldNode.Coordinate - newCoordinate;
+                var newCoordinateInverted = InvertedElementsCleanUp(node, connectedTrinagles, movingVector);
+                if (newCoordinateInverted != newCoordinate)
                 {
-                    changedEdges = UpdateGlobalEdgeList_NodePosition(node, newCoordinate, globalEdgeList);
+                    changedEdges = UpdateGlobalEdgeList_NodePosition(node, newCoordinateInverted, globalEdgeList);
                     oldEdges = changedEdges.Item1;
                     newEdges = changedEdges.Item2;
                     UpdateGlobalElementList_ChangedEdges(newEdges, oldEdges, globalElementList);
@@ -2925,26 +2925,25 @@ namespace MeshPoints.QuadRemesh
 
                 List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(adjNode, globalEdgeList);
                 Vector3d movingVector = oldAdjNode.Coordinate - adjNode.Coordinate;
-                bool hadInvertedElement = InvertedElementsCleanUp(adjNode, connectedTrinagles, movingVector);
-                if (hadInvertedElement)
+                Point3d newCoordinateInverted = InvertedElementsCleanUp(adjNode, connectedTrinagles, movingVector);
+                if (newCoordinateInverted != newCoordinate)
                 {
-                    changedEdges = UpdateGlobalEdgeList_NodePosition(adjNode, newCoordinate, globalEdgeList);
+                    changedEdges = UpdateGlobalEdgeList_NodePosition(adjNode, newCoordinateInverted, globalEdgeList);
                     oldEdges = changedEdges.Item1;
                     newEdges = changedEdges.Item2;
                     UpdateGlobalElementList_ChangedEdges(newEdges, oldEdges, globalElementList);
                 }
             }
         } // todo: check if this is OK
-        private bool InvertedElementsCleanUp(qNode smoothNode, List<qElement> connectedTriangles, Vector3d movingVector)
+        private Point3d InvertedElementsCleanUp(qNode smoothNode, List<qElement> connectedTriangles, Vector3d movingVector)
         {
             Point3d newCoordinate = new Point3d(smoothNode.Coordinate);
-            bool hadInvertedElement = false;
             for (int i = 0; i < connectedTriangles.Count; i++)
             {
-                qElement triangle = connectedTriangles[i];
+                qElement triangle = new qElement(connectedTriangles[i].EdgeList);
 
                 int counter = 0;
-                while (!IsInverted(triangle) & counter < 1000)
+                while (IsInverted(triangle) & counter < 1000)
                 {
                     newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.1, newCoordinate.Y + movingVector.Y * 0.1, newCoordinate.Z + movingVector.Z * 0.1);
                     for (int j = 0; j < triangle.EdgeList.Count; j++)
@@ -2953,12 +2952,12 @@ namespace MeshPoints.QuadRemesh
                         if (edge.StartNode == smoothNode) { triangle.EdgeList[j].StartNode.Coordinate = newCoordinate; }
                         else if (edge.EndNode == smoothNode) { triangle.EdgeList[j].EndNode.Coordinate = newCoordinate; }
                     }
-                    hadInvertedElement = true;
+                    smoothNode.Coordinate = newCoordinate;
                     counter++;
                 }
                 if (counter >= 1000) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "InvertedElementsCleanUp: failed"); }
             }
-            return hadInvertedElement;
+            return newCoordinate;
         }
         private Tuple<List<qEdge>,List<qEdge>> UpdateGlobalEdgeList_NodePosition(qNode smoothNode, Point3d newCoordinate, List<qEdge> globalEdgeList)
         {
