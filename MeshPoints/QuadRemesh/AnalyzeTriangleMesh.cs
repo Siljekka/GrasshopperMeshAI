@@ -129,9 +129,6 @@ namespace MeshPoints.QuadRemesh
                     break;
                 }
 
-
-
-
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
@@ -912,26 +909,6 @@ namespace MeshPoints.QuadRemesh
             }
             if (foundEdge == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No edge contains the given nodes."); }
             return foundEdge;
-        }
-        private List<qElement> GetNeighborElements(qElement element)
-        {
-            // summary: get neighbor elements of element 
-            // to do: check if needed.
-            List<qElement> neighborElements = new List<qElement>();
-
-            foreach (qEdge edge in element.EdgeList)
-            {
-                List<qElement> connectedElements = GetConnectedElements(edge);
-                foreach (qElement elementCandidate in connectedElements)
-                {
-                    if (elementCandidate != element)
-                    {
-                        neighborElements.Add(elementCandidate);
-                    }
-                }
-
-            }
-            return neighborElements;
         }
         private qNode GetOppositeNode(qNode node, qEdge edge)
         {
@@ -2844,8 +2821,137 @@ namespace MeshPoints.QuadRemesh
 
             return newQuadElement;
         }
+        private void CleanUpChevorns(List<qEdge> globalEdgeList, List<qElement> globalElementList)
+        {
+            // summary: clean up chevrons if there are any. Assume only quads
+            foreach(qElement element in globalElementList)
+            {
+                double maxAngle = 0;
+                int id = 0;
+                double chevronConstant = 200 / 180 * Math.PI;
+                List<qEdge> edgeList = element.EdgeList;
+                List<double> angleList = element.AngleList;
+                for (int i = 0; i < angleList.Count ; i++)
+                {
+                    if (angleList[i] > maxAngle) { maxAngle = angleList[i] ; id = i; }
+                }
+
+                //
+                if (maxAngle > chevronConstant)
+                {
+                    qNode concavNode = GetNodesOfElement(element)[id]; // assume same order 
+                    bool laplaceSmoothFailed = false;
+                    if (!concavNode.BoundaryNode)
+                    {
+                        // do laplace smoothing
+
+                        // check if ok
+                        foreach (double angle in element.AngleList)
+                        {
+                            if (angle > chevronConstant) { laplaceSmoothFailed = true; }
+                        }
+
+                    }
+                    if (concavNode.BoundaryNode | laplaceSmoothFailed)
+                    {
+                        // fill
+                        List<qEdge> conncectedEdgesOfconcaveNode = GetConnectedEdges(concavNode, globalEdgeList);
+                        List<qEdge> edgeCandidates = new List<qEdge>();
+                        List<qElement> elementCandidates = new List<qElement>();
+                        foreach (qEdge edge in element.EdgeList)
+                        {
+                            if (!conncectedEdgesOfconcaveNode.Contains(edge)) 
+                            {
+                                edgeCandidates.Add(edge);
+                                if (edge.Element1 == element) { elementCandidates.Add(edge.Element2); }
+                                else { elementCandidates.Add(edge.Element1); }
+                            }
+                        }
+
+                        // check node valence
+                        // temporary: select first element
+                        qEdge edgeToUse = edgeCandidates[0];
+                        qElement elementToUse = elementCandidates[0];
+                        
+                        // find n1
+                        qNode n1 = new qNode();
+                        if (edgeToUse.StartNode == edgeCandidates[1].StartNode | edgeToUse.StartNode == edgeToUse.EndNode)
+                        { n1 = edgeToUse.EndNode; }
+                        else { n1 = edgeToUse.StartNode; }
+
+                        // check if fill_4
+                        bool fill_3 = true;
+                        foreach (qEdge edge2 in elementToUse.EdgeList)
+                        {
+                            if ((edge2.StartNode == concavNode | edge2.EndNode == concavNode) & edge2 != edgeToUse)
+                            {
+                                qEdge edge1 = FindEdge(globalEdgeList, n1, concavNode);
+                                var vectors = CalculateVectorsFromSharedNode(edge1, edge2);
+                                Vector3d vec1 = vectors.Item1;
+                                Vector3d vec2 = vectors.Item2;
+                                double angleToCheck = 0;
+                                if (Vector3d.CrossProduct(vec1, vec2).Z >= 0)
+                                {
+                                    angleToCheck =Vector3d.VectorAngle(vec1, vec2, Vector3d.ZAxis); // to do: make more general
+                                }
+                                else
+                                {
+                                    angleToCheck = Vector3d.VectorAngle(vec2, vec1, Vector3d.ZAxis); // to do: make more general
+                                }
+                                if (angleToCheck > chevronConstant) { fill_3 = false; }
+                                break;
+                            }
+                        }
+
+                        if (fill_3)
+                        {
+                            qNode n5 = new qNode();
+                            qNode n4 = new qNode();
+                            qNode n3 = GetOppositeNode(n1, edgeToUse);
+                            qEdge n1n5 = new qEdge();
+                            qEdge n3n4 = new qEdge();
 
 
+                            foreach (qEdge edge in elementToUse.EdgeList)
+                            {
+                                if ((edge.StartNode == n3 | edge.EndNode == n3) & edge != edgeToUse)
+                                {
+                                    n3n4 = edge;
+                                    n4 = GetOppositeNode(n3, edge);
+                                }
+                                if ((edge.StartNode == n1 | edge.EndNode == n1) & edge != edgeToUse)
+                                {
+                                    n1n5 = edge;
+                                    n5 = GetOppositeNode(n1, edge);
+                                }
+
+                            }
+
+                            // new node
+                            qNode n6 = new qNode(0.5 * (n4.Coordinate + n1.Coordinate), false); // assume new node is given by this
+
+                            // edges to keep
+                            List<qEdge> edgesToKeep = new List<qEdge>(elementToUse.EdgeList);
+                            edgesToKeep.AddRange(element.EdgeList);
+                            edgesToKeep.Remove(edgeToUse);
+
+                            // new edges
+                            qEdge n6c = new qEdge(n6, concavNode);
+                            qEdge n6n5 = new qEdge(n6, n5);
+                            qEdge n6n3 = new qEdge(n6, n3);
+                            
+                            // new elements
+                           
+
+                        }
+
+                    }
+
+                }
+            }
+            return;
+        }
+        
         // __________________________________________ Local smoothing ______________________________________________________
         private void DoLocalSmoothing(qElement quadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges, List<qElement> globalElementList)
         {
