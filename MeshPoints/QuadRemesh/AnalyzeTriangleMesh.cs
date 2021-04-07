@@ -129,6 +129,9 @@ namespace MeshPoints.QuadRemesh
                     break;
                 }
 
+
+
+
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
@@ -169,8 +172,11 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
-
-
+                if (iterationCounter == 41)
+                {
+                    //break;
+                    //debug stop 
+                }
                 //________________get top edge________________
                 if (!seamAnglePerformed)
                 {
@@ -197,11 +203,6 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
-                if (iterationCounter == 14)
-                {
-                    //break;
-                    //debug stop 
-                }
                 //________________ quadrilateral formation________________
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList);
@@ -219,7 +220,7 @@ namespace MeshPoints.QuadRemesh
             }
             #endregion End Code
 
-            List<qEdge> test = new List<qEdge>() { E_front, E_k_left, E_k_right, E_top };
+            List<qEdge> test = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
             var meshValues = CalculateQuality(globalElementList);
             double avgQuality = meshValues.Item1;
             double badestQuality = meshValues.Item2;
@@ -236,22 +237,19 @@ namespace MeshPoints.QuadRemesh
             //var testItem1 = GetQuadsConnectedToNode(testNode, globalEdgeList);
             //qEdge edge = GetSharedEdge(testItem1);
 
-
-            bool test1 = IsInverted(globalElementList[0]);
-
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
             DA.SetDataList(3, test);
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
-            DA.SetData(6, E_k_left);
+            DA.SetData(6, E_k_right);
             DA.SetData(7, avgQuality);
             DA.SetData(8, badestQuality);
             DA.SetData(9, colorMesh);
 
             //DA.SetDataList(9, )
-            DA.SetData(10, test1);
+            //DA.SetData(10, test1);
         }
 
         #region Methods
@@ -1857,9 +1855,9 @@ namespace MeshPoints.QuadRemesh
                 else
                 {
                     performed = false;
-                    { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Top edge recovery not performed because N_C and N_d is equal."); }
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Top edge recovery not performed because N_C and N_d is equal.");
+                    return Tuple.Create(E_top, E_k_left, E_k_right, performed);
                 }
-                return Tuple.Create(E_top, E_k_left, E_k_right, performed);
             }
 
             var E_topAndPerfomed = EdgeRecoveryProcess( N_c, N_d, globalEdgeList, globalElementList, frontEdges);
@@ -1975,11 +1973,11 @@ namespace MeshPoints.QuadRemesh
                 // check if intersection
                 // todo: change if 3d
 
-                double angleV_kToV_s = Vector3d.VectorAngle(V_k, V_s, Vector3d.ZAxis); // to do: make more general
-                double angleV_k1ToV_s = Vector3d.VectorAngle(V_k1, V_s, Vector3d.ZAxis); // to do: make more general
+                //double angleV_kToV_s = Vector3d.VectorAngle(V_k, V_s, Vector3d.ZAxis); // to do: make more general
+                //double angleV_k1ToV_s = Vector3d.VectorAngle(V_k1, V_s, Vector3d.ZAxis); // to do: make more general
                 
-                bool possibleSolution = false;
-                if (angleV_kToV_s < angleV_k1ToV_s | angleV_k1ToV_s == 0 | angleV_k1ToV_s == 2* Math.PI) { possibleSolution = true; } // added criterior, not in Owen's article
+                //bool possibleSolution = false;
+                //if (angleV_kToV_s < angleV_k1ToV_s | angleV_k1ToV_s == 0 | angleV_k1ToV_s == 2* Math.PI) { possibleSolution = true; } // added criterior, not in Owen's article
 
                 if (V_k.IsParallelTo(V_s) == 1 & V_k.Length == V_s.Length)  // the recovered edge can consist of more than one parallel edge 
                 {
@@ -1991,7 +1989,7 @@ namespace MeshPoints.QuadRemesh
                     E_recovered = E_k1;
                     return Tuple.Create(E_recovered, performed);
                 }
-                else if (Vector3d.Multiply(V_s, V_k) >= -0.001 & Vector3d.Multiply(V_s, V_k1) >= -0.001 & possibleSolution) // todo: correct compared to Owen??
+                else if (Vector3d.CrossProduct(V_s, V_k).Z <= -0.001 & Vector3d.CrossProduct(V_s, V_k1).Z >= -0.001) // todo: correct compared to Owen??
                 {
                     break;
                 }
