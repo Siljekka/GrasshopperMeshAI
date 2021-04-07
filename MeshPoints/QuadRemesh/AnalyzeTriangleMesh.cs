@@ -29,15 +29,12 @@ namespace MeshPoints.QuadRemesh
         {
             pManager.AddGenericParameter("Triangle mesh", "trimesh", "Input a trinagle mesh", GH_ParamAccess.item);
             pManager.AddNumberParameter("# elements to remesh", "number", "Input an integer", GH_ParamAccess.item, 1);
-            pManager.AddGenericParameter("testList", "tL", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("Local smoothing", "tI", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("testItem2", "tI", "", GH_ParamAccess.item);
             pManager.AddNumberParameter("number iteration before stop", "temp", "Temoprary: number of iteration to perform", GH_ParamAccess.item, 2);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
             pManager[2].Optional = true;
             pManager[3].Optional = true;
-            pManager[4].Optional = true;
 
         }
 
@@ -76,10 +73,8 @@ namespace MeshPoints.QuadRemesh
             // input
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref numberElementsToRemesh);
-            //DA.GetDataList(2, testList); //to test 
-            DA.GetData(3, ref performeLocalSmoothing); // to test
-            //DA.GetData(4, ref testItem2); // to test
-            DA.GetData(5, ref iterationsToPerformBeforeStop);
+            DA.GetData(2, ref performeLocalSmoothing); // to test
+            DA.GetData(3, ref iterationsToPerformBeforeStop);
 
             #region Code
 
