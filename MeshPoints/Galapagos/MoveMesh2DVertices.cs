@@ -81,7 +81,7 @@ namespace MeshPoints
             DA.GetDataList(2, genesU);
             DA.GetDataList(3, genesV);
 
-            if ( (genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count)) { return; }// add warning message
+            if ( (genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Too few genes"); return; }// add warning message
 
 
             #region Update nodes
