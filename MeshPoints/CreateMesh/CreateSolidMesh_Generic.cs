@@ -29,6 +29,8 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Brep", "bp", "Brep", GH_ParamAccess.item);
+            pManager.AddGenericParameter("BottomSurface", "bottom", "Bottom surface of Brep", GH_ParamAccess.item);
+            pManager.AddGenericParameter("TopSurface", "top", "Top surface of Brep", GH_ParamAccess.item);
             pManager.AddIntegerParameter("u", "u", "division in u direction", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("v", "v", "division in v direction", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("w", "w", "division in w direction", GH_ParamAccess.item, 4);
@@ -55,13 +57,17 @@ namespace MeshPoints.CreateMesh
             */
             // Input
             Brep brep = new Brep();
+            int bottomSurface = 0;
+            int topSurface = 0;
             int nu = 0;
             int nv = 0;
             int nw = 0;
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref nu);
-            DA.GetData(2, ref nv);
-            DA.GetData(3, ref nw);
+            DA.GetData(1, ref bottomSurface);
+            DA.GetData(2, ref topSurface);
+            DA.GetData(3, ref nu);
+            DA.GetData(4, ref nv);
+            DA.GetData(5, ref nw);
 
             #region Variables
             //Variables
@@ -90,11 +96,11 @@ namespace MeshPoints.CreateMesh
             solidMesh.inp = true;
 
             // . Find Rails
-            List<Curve> rails = FindRails(brep);
+            List<Curve> rails = FindRails(brep, bottomSurface, topSurface);
 
             //2. Divide each brep edge in w direction (rail) into nw points.
             railPoints = DivideRailIntoNwPoints(rails, brep, solidMesh.nw);
-
+            
             //3. Create NurbsSurface for each nw-floor
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item1;
             planes = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item2;
@@ -117,7 +123,7 @@ namespace MeshPoints.CreateMesh
             solidMesh.Nodes = nodes;
             solidMesh.Elements = elements;
             solidMesh.mesh = allMesh;
-
+            
 
             // Output
             DA.SetData(0, solidMesh);
@@ -129,7 +135,7 @@ namespace MeshPoints.CreateMesh
         /// Find the edges of brep composing rails
         /// </summary>
         /// <returns> List with rails. </returns>
-        private List<Curve> FindRails(Brep brep)
+        private List<Curve> FindRails(Brep brep, int bottomSurface, int topSurface)
         {
             BrepEdgeList brepEdges = brep.Edges;
             List<Curve> rail = new List<Curve>();
@@ -141,10 +147,10 @@ namespace MeshPoints.CreateMesh
                 bool pointOnFace5 = false;
                 foreach (Point3d point in edgePoints)
                 {
-                    brep.Faces[4].ClosestPoint(point, out double PointOnCurveUFace4, out double PointOnCurveVFace4);
-                    brep.Faces[5].ClosestPoint(point, out double PointOnCurveUFace5, out double PointOnCurveVFace5);
-                    Point3d testPointFace4 = brep.Faces[4].PointAt(PointOnCurveUFace4, PointOnCurveVFace4);  // make test point
-                    Point3d testPointFace5 = brep.Faces[5].PointAt(PointOnCurveUFace5, PointOnCurveVFace5);  // make test point
+                    brep.Faces[bottomSurface].ClosestPoint(point, out double PointOnCurveUFace4, out double PointOnCurveVFace4);
+                    brep.Faces[topSurface].ClosestPoint(point, out double PointOnCurveUFace5, out double PointOnCurveVFace5);
+                    Point3d testPointFace4 = brep.Faces[bottomSurface].PointAt(PointOnCurveUFace4, PointOnCurveVFace4);  // make test point
+                    Point3d testPointFace5 = brep.Faces[topSurface].PointAt(PointOnCurveUFace5, PointOnCurveVFace5);  // make test point
                     double distanceToFace4 = testPointFace4.DistanceTo(point); // calculate distance between testPoint and node
                     double distanceToFace5 = testPointFace5.DistanceTo(point); // calculate distance between testPoint and node
                     if ((distanceToFace4 <= 0.0001 & distanceToFace4 >= -0.0001)) // if distance = 0: node is on edge
@@ -243,7 +249,6 @@ namespace MeshPoints.CreateMesh
             return railPoints;
         }
 
-
         /// <summary>
         /// Get intersectionCurve between Brep and plane made from RailPoints. Curve is closed.
         /// </summary>
@@ -259,7 +264,7 @@ namespace MeshPoints.CreateMesh
                 Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
                 Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
                 Plane plane = new Plane(railPoints.Branch(i)[0], normal);
-                Intersection.BrepPlane(brep, plane, 0.00001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
+                Intersection.BrepPlane(brep, plane, 0.0001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
                 List<Curve> intCrv = iCrv.ToList();
                 planes.Add(plane);
 
