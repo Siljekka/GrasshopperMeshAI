@@ -236,42 +236,10 @@ namespace MeshPoints.QuadRemesh
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
 
-<<<<<<< HEAD
             // testing:
             List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             List<bool> a = new List<bool>();
             foreach (qElement con in connectedTrinagles)
-=======
-
-            //List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
-            //List<bool> a = new List<bool>();
-            //foreach (qElement con in connectedTrinagles)
-            //{
-            //    bool b = IsInverted(con);
-            //    a.Add(b);
-            //}
-            /*
-            qNode Ni = GetNodesOfElement(quadElement)[3];
-            List<qElement> quadElements = GetQuadsConnectedToNode(Ni, globalEdgeList);
-            qEdge sharedEdge = GetSharedEdge(quadElements);
-            qNode Nj = GetOppositeNode(Ni, sharedEdge);
-
-            qElement quadElement1 = new qElement();
-            Vector3d P_B1 = Vector3d.Zero;
-            Vector3d P_B2 = Vector3d.Zero;
-            Vector3d Pi = Ni.Coordinate - Nj.Coordinate;
-            Point3d pointQ = new Point3d();
-            Vector3d deltaC = Vector3d.Zero;
-            Vector3d vectorLeft = Vector3d.Zero;
-            Vector3d vectorRight = Vector3d.Zero;
-            qEdge topEdge1 = new qEdge();
-            qEdge topEdge2 = new qEdge();
-            int id = 9;
-            int testNodeIndex = 9;
-            //Hvis node til quadElements er på BC - gjør slik.
-            
-            if (quadElements.Count == 2)
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
             {
                 bool b = IsInverted(con);
                 a.Add(b);
@@ -285,7 +253,6 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-<<<<<<< HEAD
             DA.SetDataList(7, connectedTrinagles);
             DA.SetDataList(8, a);
 
@@ -295,14 +262,6 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(7, vectorLeft);
             DA.SetData(8, vectorRight);
             DA.SetData(9, P_B1);*/
-=======
-            DA.SetData(7, avgQuality);
-            DA.SetData(8, badestQuality);
-            DA.SetData(9, colorMesh);
-      
-          
-
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
         }
 
         #region Methods
@@ -1537,23 +1496,14 @@ namespace MeshPoints.QuadRemesh
         }
         private bool SwapEdge(qEdge E_0, List<qElement> globalElementList)
         {
-<<<<<<< HEAD
-            bool performed = true;
-
-=======
             // summary: swap edge if swapable
 
             bool performed = true ;
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
             // is swapable
             if (E_0.Element1.IsQuad | E_0.Element2.IsQuad)
             {
                 performed = false;
-<<<<<<< HEAD
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable.");
-=======
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SwapEdge: Edge is not swapable.");
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
                 return performed;
             }
 
@@ -1562,10 +1512,6 @@ namespace MeshPoints.QuadRemesh
             qNode node2 = E_0.EndNode;
             List<qNode> swapedNodes = GetSwapedNodes(E_0);
 
-<<<<<<< HEAD
-            //endring
-=======
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
             // is swapable
             Vector3d vector1 = swapedNodes[0].Coordinate - node1.Coordinate;
             Vector3d vector2 = swapedNodes[1].Coordinate - node1.Coordinate;
@@ -1573,30 +1519,18 @@ namespace MeshPoints.QuadRemesh
             Vector3d vector3 = swapedNodes[0].Coordinate - node2.Coordinate;
             Vector3d vector4 = swapedNodes[1].Coordinate - node2.Coordinate;
             double check12 = Vector3d.VectorAngle(vector1, vector2, Vector3d.ZAxis); // to do: make more general
-<<<<<<< HEAD
-            double check34 = Vector3d.VectorAngle(vector3, vector4, Vector3d.ZAxis); // to do: make more general
-=======
             double check34 = Vector3d.VectorAngle(vector3, vector4, Vector3d.ZAxis);  // to do: make more general
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
 
             if (check12 >= Math.PI & check34 >= Math.PI)
             {
                 performed = false;
-<<<<<<< HEAD
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable, angles larger or equal to 180 degree..");
-=======
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SwapEdge: Edge is not swapable b/c of elements will be inverted.");
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
                 return performed;
             }
             else if (check12 <= Math.PI & check34 <= Math.PI)
             {
                 performed = false;
-<<<<<<< HEAD
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable, angles smaller or equal to 180 degree..");
-=======
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SwapEdge: Edge is not swapable b/c of elements will be inverted.");
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
                 return performed;
             }
 
@@ -2184,11 +2118,7 @@ namespace MeshPoints.QuadRemesh
             {
                 E_recovered = intersectingS[0];
                 bool swapPerformed = SwapEdge(E_recovered, globalElementList); // swap the edge
-<<<<<<< HEAD
-
-=======
                 
->>>>>>> 11fc84020c120f1727c147e35734ffef91b5016a
                 // check if inverted
                 if (swapPerformed)
                 {
