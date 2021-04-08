@@ -89,24 +89,10 @@ def create_random_ngon(number_of_sides: int) -> np.array:
 
 
 def mesh_contour(contour: np.array, target_edge_length: float):
-    """
-    Mesh the transformed contour using Gmsh [1] as the reference mesher.
-
-    We do not place points along the edges of the contour. It is crucial
-    that the input points are defined
-
-    [1] C. Geuzaine and J.-F. Remacle. Gmsh: a three-dimensional finite element
-        mesh generator with built-in pre- and post-processing facilities. 2009.
-
-    output: .msh-file containing mesh data, or
-            dict containing info
-    """
-
     # Create a new model
     gmsh.model.add("1")
 
     for i, p in enumerate(contour):
-        # (x, y, z, edge_length, id)
         gmsh.model.geo.add_point(p[0], p[1], 0, target_edge_length, i)
 
     # Create curves
@@ -128,25 +114,79 @@ def mesh_contour(contour: np.array, target_edge_length: float):
 
     # Synchronize CAD entities (point, line, surface) with the gmsh-model
     gmsh.model.geo.synchronize()
+    gmsh.option.set_number("Mesh.MeshSizeMax", target_edge_length)
 
     # Generate 2D mesh
     mesh = gmsh.model.mesh.generate(2)
 
-    # Extract features
     mesh_nodes = gmsh.model.mesh.get_nodes()
     num_nodes_total = mesh_nodes[0][-1]
     internal_nodes = int(num_nodes_total - contour.shape[0])
 
-    # For NN1: contour nodes and num of internal nodes
     features = np.append(contour.copy(), target_edge_length)
     features = np.append(features, internal_nodes)
 
-    # GUI (buggy on macOS)
-    # if "-nopopup" not in sys.argv:
-    #     gmsh.fltk.run()
+    gmsh.clear()
 
-    # Write to file
-    # gmsh.write("data/1.msh")
+    return features
+
+
+def mesh_contour_all_lc(contour: np.array):
+
+    edge_lengths = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    features = []
+    for k, target_edge_length in enumerate(edge_lengths):
+        tmp_features = np.zeros(len(contour)+1)
+        # Create a new model
+        gmsh.model.add(f"{k}")
+
+        for i, p in enumerate(contour):
+            # (x, y, z, edge_length, id)
+            gmsh.model.geo.add_point(p[0], p[1], 0, target_edge_length, i)
+
+        # Create curves
+        curve_ids = []
+        for j in range(len(contour)):
+            if j == len(contour) - 1:
+                gmsh.model.geo.add_line(j, 0, j)
+            else:
+                gmsh.model.geo.add_line(j, j + 1, j)
+            # Constrain each edge curve to only have two points (endpoints)
+            gmsh.model.geo.mesh.set_transfinite_curve(j, 2)
+            curve_ids.append(j)
+
+        # Add all ids of curves to define a curve loop
+        gmsh.model.geo.add_curve_loop(curve_ids, 1)
+
+        # Add curve loop with id=1 as a plane surface
+        gmsh.model.geo.add_plane_surface([1], 1)
+
+        # Synchronize CAD entities (point, line, surface) with the gmsh-model
+        gmsh.model.geo.synchronize()
+        gmsh.option.set_number("Mesh.MeshSizeMax", target_edge_length)
+
+        # Generate 2D mesh
+        mesh = gmsh.model.mesh.generate(2)
+
+        # Extract features
+        mesh_nodes = gmsh.model.mesh.get_nodes()
+        num_nodes_total = mesh_nodes[0][-1]
+        internal_nodes = int(num_nodes_total - contour.shape[0])
+
+        # For NN1: contour nodes and num of internal nodes
+        tmp_features = np.append(contour.copy(), target_edge_length)
+        tmp_features = np.append(tmp_features, internal_nodes)
+
+        # GUI (buggy on macOS)
+        # if "-nopopup" not in sys.argv:
+        #     gmsh.fltk.run()
+
+        # Write to file
+        # gmsh.write("data/1.msh")
+        features.append(tmp_features)
+
+        # Clear model data
+        gmsh.clear()
 
     return features
 
