@@ -103,7 +103,6 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> listE_frontFailed = new List<qEdge>();
             int iterationCounter = 0;
             qElement quadElement = new qElement();
-            qElement quad = new qElement();
 
             for (int n = 0; n < numberElementsToRemesh; n++)
             {
@@ -120,14 +119,6 @@ namespace MeshPoints.QuadRemesh
                 List<qElement> globalElementListBackUp = globalElementList;
                 List<qEdge> globalEdgeListBackUp = globalEdgeList;
 
- // #################
-                if (iterationCounter == 9)
-                {
-
-                    //break;
-                    //debug stop 
-                }
- // #################
 
                 //________________ select next front edge________________
                 var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
@@ -150,7 +141,7 @@ namespace MeshPoints.QuadRemesh
                     E_front = specialCaseValues.Item3;
                     E_k_right = specialCaseValues.Item4;
                     E_k_left = specialCaseValues.Item5;
-                    frontEdges = GetFrontEdges(globalEdgeList); // update front edges
+                    //frontEdges = GetFrontEdges(globalEdgeList); // update front edges
                 }
                 else if  (!isSpecialCase) // if not special case
                 {
@@ -209,14 +200,23 @@ namespace MeshPoints.QuadRemesh
 
                 //________________ quadrilateral formation________________
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
-                quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList);
+                quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList, frontEdges);
 
                 //________________ Mesh modification________________
-                frontEdges = GetFrontEdges(globalEdgeList);
+                //frontEdges = GetFrontEdges(globalEdgeList);
 
+                // #################
+                if (iterationCounter == 25)
+                {
+
+                    break;
+                    //debug stop 
+                }
+                // #################
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
+
 
                 // to d0: what if closing front og special case?
                 // to do: apply local smoothing for seamAngle
@@ -532,6 +532,7 @@ namespace MeshPoints.QuadRemesh
         }
         private bool IsFrontEdge(qEdge edge)
         {
+            // summary: check if an edge is a front edge
             bool check = false;
             List<qElement> connectedElements = GetConnectedElements(edge);
             if (connectedElements.Count == 1)
@@ -610,7 +611,7 @@ namespace MeshPoints.QuadRemesh
             }
 
             // switch E_front to neighbor front if transision to one of the front neighbors is large and neighbor is selectable
-            /*
+            
             if (E_front.Length / E_front.LeftFrontNeighbor.Length > transitionTolerance & !E_front.LeftFrontNeighbor.IsQuadSideEdge)
             {
                 if (!list11.Contains(E_front.LeftFrontNeighbor))
@@ -627,7 +628,7 @@ namespace MeshPoints.QuadRemesh
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to right neighor. Switched."); }
                 }
             }
-            */
+            
 
             int[] edgeState = GetEdgeState(E_front, frontEdges);
 
@@ -640,7 +641,7 @@ namespace MeshPoints.QuadRemesh
             // ensure side edge is not selected
             List<qEdge> selectableEdges = new List<qEdge>(edgeStateList);
 
-            foreach (qEdge edge in edgeStateList)
+            foreach (qEdge edge in edgeStateList) // to do: delete
             {
                 //if (edge.IsQuadSideEdge) { selectableEdges.Remove(edge); }
             }
@@ -913,7 +914,7 @@ namespace MeshPoints.QuadRemesh
             qEdge E_k_right = new qEdge();
 
             // to do: check if correct to say
-            if (E_front.StartNode.BoundaryNode & E_front.EndNode.BoundaryNode) { return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right); }
+            if (E_front.StartNode.BoundaryNode | E_front.EndNode.BoundaryNode) { return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_left, E_k_right); }
 
             #region Check left side
 
@@ -2250,6 +2251,21 @@ namespace MeshPoints.QuadRemesh
             globalEdgeList.Remove(leftEdgeToN_t);
             globalEdgeList.Remove(rightEdgeToN_t);
 
+            // update frontEdges
+            frontEdges.Remove(leftEdgeToN_k);
+            frontEdges.Remove(rightEdgeToN_k);
+            List<qEdge> edgesToCheck =  GetConnectedEdges(N_new, globalEdgeList);
+            foreach (qEdge edge in edgesToCheck)
+            {
+                if (IsFrontEdge(edge))
+                {
+                    frontEdges.Add(edge);
+                    indexToUpdate = globalEdgeList.IndexOf(edge);
+                    globalEdgeList[indexToUpdate].Level++;
+                }
+            }
+            SetNeighorFrontEdges(frontEdges);
+
             // local smoothing of new quads
             DoLocalSmoothing(elementsToSeamAtN_k[0], globalEdgeList, frontEdges, globalElementList);
             DoLocalSmoothing(elementsToSeamAtN_k[1], globalEdgeList, frontEdges, globalElementList);
@@ -2421,6 +2437,11 @@ namespace MeshPoints.QuadRemesh
             globalEdgeList.Add(newEdgeInTriangle);
             globalEdgeList.Add(E_long_part1);
             globalEdgeList.Add(E_long_part2);
+
+
+            // update frontEdges
+            frontEdges.Remove(E_long);
+            SetNeighorFrontEdges(frontEdges);
 
             // local smoothing
             DoLocalSmoothing(quadElementOfE_long, globalEdgeList, frontEdges, globalElementList);
@@ -2653,7 +2674,6 @@ namespace MeshPoints.QuadRemesh
             else
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Transition seam: problems with assigning neighbors to oldEdgeTriangle_part2"); }
 
-
             // update global lists
             globalElementList.Remove(quadElementOfE_long);
             globalElementList.Remove(triElementOfE_long);
@@ -2670,6 +2690,10 @@ namespace MeshPoints.QuadRemesh
             globalEdgeList.Add(newEdge_long_part2);
             globalEdgeList.Add(newEdgeFromQuadToTriangle);
             globalEdgeList.Add(newEdgeInTriangle);
+
+            // update frontEdges
+            frontEdges.Remove(E_long);
+            SetNeighorFrontEdges(frontEdges);
 
             // local smoothing
             DoLocalSmoothing(newElementFromQuad_part1, globalEdgeList, frontEdges, globalElementList);
@@ -2724,7 +2748,7 @@ namespace MeshPoints.QuadRemesh
 
             return Tuple.Create(E_front, E_k_right, E_k_left);
         }
-        private qElement CreateQuadElement(List<qEdge> quadEdge, List<qEdge> globalEdgeList, List<qElement> globalElementList)
+        private qElement CreateQuadElement(List<qEdge> quadEdge, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
         {
             // get inside elements
             qEdge E_front = quadEdge[0];
@@ -2814,14 +2838,33 @@ namespace MeshPoints.QuadRemesh
             }
 
             // update edges used
-            int indexToUpdate = globalEdgeList.IndexOf(quadEdge[1]); // make sure not selected as new front edge, but is in frontEdges
-            globalEdgeList[indexToUpdate].IsQuadSideEdge = true;
-            indexToUpdate = globalEdgeList.IndexOf(quadEdge[2]); // make sure not selected as new front edge, but is in frontEdges
-            globalEdgeList[indexToUpdate].IsQuadSideEdge = true;
-            indexToUpdate = globalEdgeList.IndexOf(quadEdge[3]); // update level for top edge of quad
-            int maxLevel = 0;
-            foreach (qEdge edge in quadEdge) { if (edge.Level > maxLevel) { maxLevel = edge.Level; } }        
-            globalEdgeList[indexToUpdate].Level = maxLevel + 1;
+            //int indexToUpdate = globalEdgeList.IndexOf(quadEdge[1]); // make sure not selected as new front edge, but is in frontEdges
+            //globalEdgeList[indexToUpdate].IsQuadSideEdge = true;
+            //indexToUpdate = globalEdgeList.IndexOf(quadEdge[2]); // make sure not selected as new front edge, but is in frontEdges
+            //globalEdgeList[indexToUpdate].IsQuadSideEdge = true;
+            //indexToUpdate = globalEdgeList.IndexOf(quadEdge[3]); // update level for top edge of quad
+
+            //int maxLevel = 0;
+            //foreach (qEdge edge in quadEdge) { if (edge.Level > maxLevel) { maxLevel = edge.Level; } }        
+            //globalEdgeList[indexToUpdate].Level = maxLevel + 1;
+
+            // update frontEdges
+            foreach (qEdge edge in quadEdge)
+            {
+                if (IsFrontEdge(edge) & !frontEdges.Contains(edge))
+                {
+                    frontEdges.Add(edge);
+                    int indexToUpdate = globalEdgeList.IndexOf(edge);
+                    globalEdgeList[indexToUpdate].Level++;
+                }
+                else if (frontEdges.Contains(edge))
+                {
+                    frontEdges.Remove(edge); // remove edge from front edge if not a front edge, but is in the frontEdges list
+                }
+                else
+                { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "CreateQuad: problems with front edge criterion or is closing front."); } // to do: temporary check 
+            }
+            SetNeighorFrontEdges(frontEdges);
 
             return newQuadElement;
         }
