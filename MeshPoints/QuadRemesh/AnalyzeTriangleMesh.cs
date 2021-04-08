@@ -90,7 +90,7 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> frontEdges = GetFrontEdges(globalEdgeList);
 
             // check if even number of boundary nodes
-            if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Need the initial mesh to have an even number of boundary nodes to make it an all quad mesh"); }
+            if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Need the initial mesh to have an even number of boundary nodes to make it an all quad mesh"); }
 
             // temporary variables
             qEdge E_k_left = new qEdge(); // left side edge of quad
@@ -168,7 +168,7 @@ namespace MeshPoints.QuadRemesh
                             E_k_right = E_front.RightFrontNeighbor; break; // to do: check om closing front 
                     }
                 }
-                if (iterationCounter == 81)
+                if (iterationCounter == 60)
                 {
                     break;
                     //debug stop 
@@ -227,77 +227,15 @@ namespace MeshPoints.QuadRemesh
             // to do: temporay solution for E_frontFail
 
             // testing:
-
-            //List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
-            //List<bool> a = new List<bool>();
-            //foreach (qElement con in connectedTrinagles)
-            //{
-            //    bool b = IsInverted(con);
-            //    a.Add(b);
-            //}
-            /*
-            qNode Ni = GetNodesOfElement(quadElement)[3];
-            List<qElement> quadElements = GetQuadsConnectedToNode(Ni, globalEdgeList);
-            qEdge sharedEdge = GetSharedEdge(quadElements);
-            qNode Nj = GetOppositeNode(Ni, sharedEdge);
-
-            qElement quadElement1 = new qElement();
-            Vector3d P_B1 = Vector3d.Zero;
-            Vector3d P_B2 = Vector3d.Zero;
-            Vector3d Pi = Ni.Coordinate - Nj.Coordinate;
-            Point3d pointQ = new Point3d();
-            Vector3d deltaC = Vector3d.Zero;
-            Vector3d vectorLeft = Vector3d.Zero;
-            Vector3d vectorRight = Vector3d.Zero;
-            qEdge topEdge1 = new qEdge();
-            qEdge topEdge2 = new qEdge();
-            int id = 9;
-            int testNodeIndex = 9;
-            //Hvis node til quadElements er på BC - gjør slik.
-            
-            if (quadElements.Count == 2)
+            List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
+            List<bool> a = new List<bool>();
+            foreach (qElement con in connectedTrinagles)
             {
-                if (!IsFrontEdge(sharedEdge))
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        qEdge edge1 = quadElements[0].EdgeList[i];
-                        qEdge edge2 = quadElements[1].EdgeList[i];
-                        if (edge1 != sharedEdge & (edge1.StartNode == Ni | edge1.EndNode == Ni)) { topEdge1 = edge1; }
-                        if (edge2 != sharedEdge & (edge2.StartNode == Ni | edge2.EndNode == Ni)) { topEdge2 = edge2; }
-                    }
-                   
-                    List<qNode> testNodes = GetNodesOfElement(quadElements[0]);
-                    testNodeIndex = testNodes.IndexOf(Nj) + 2;
-                    if (testNodeIndex > 3) { testNodeIndex = testNodeIndex - 4; }
+                bool b = IsInverted(con);
+                a.Add(b);
+            }
 
 
-                    if (GetOppositeNode(Ni, topEdge1) == testNodes[testNodeIndex])
-                    {
-                        vectorLeft = GetOppositeNode(Ni, topEdge1).Coordinate - Nj.Coordinate;
-                        vectorRight = GetOppositeNode(Ni, topEdge2).Coordinate - Nj.Coordinate;
-                        P_B1 = GetBisectingVector(vectorRight, vectorLeft);
-                    }
-                    else
-                    {
-                        vectorLeft = GetOppositeNode(Ni, topEdge1).Coordinate - Nj.Coordinate;
-                        vectorRight = GetOppositeNode(Ni, topEdge2).Coordinate - Nj.Coordinate;
-                        P_B1 = GetBisectingVector(vectorRight, vectorLeft);
-                    }
-
-                    vectorLeft = GetOppositeNode(Ni, topEdge1).Coordinate - Nj.Coordinate;
-                    vectorRight = GetOppositeNode(Ni, topEdge2).Coordinate - Nj.Coordinate;
-                    if (Vector3d.VectorAngle(vectorLeft, vectorRight, Vector3d.ZAxis) < Math.PI)  
-                    {
-                        vectorRight = GetOppositeNode(Ni, topEdge1).Coordinate - Nj.Coordinate;
-                        vectorLeft = GetOppositeNode(Ni, topEdge2).Coordinate - Nj.Coordinate;
-                    }
-                    P_B1 = GetBisectingVector(vectorRight, vectorLeft);
-
-                    P_B2 = (double)P_B1.Length * Pi + (double)Pi.Length * P_B1; // Assume angle always less than 180 degree.
-                    P_B2.Unitize();
-                }
-            }*/
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
@@ -305,11 +243,12 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-            DA.SetData(9, colorMesh);
-            
+            DA.SetDataList(7, connectedTrinagles);
+            DA.SetDataList(8, a);
+
+
             /*
-            DA.SetData(4, Ni);
-            DA.SetData(5, Nj);
+
             DA.SetData(7, vectorLeft);
             DA.SetData(8, vectorRight);
             DA.SetData(9, P_B1);*/
@@ -1570,18 +1509,45 @@ namespace MeshPoints.QuadRemesh
 
             return Tuple.Create(E_k, performed);
         }
-        private void SwapEdge(qEdge E_0, List<qElement> globalElementList)
+        private bool SwapEdge(qEdge E_0, List<qElement> globalElementList)
         {
+            bool performed = true;
+
             // is swapable
             if (E_0.Element1.IsQuad | E_0.Element2.IsQuad)
             {
+                performed = false;
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable.");
+                return performed;
             }
 
             // get nodes of edge to swap
             qNode node1 = E_0.StartNode;
             qNode node2 = E_0.EndNode;
             List<qNode> swapedNodes = GetSwapedNodes(E_0);
+
+            //endring
+            // is swapable
+            Vector3d vector1 = swapedNodes[0].Coordinate - node1.Coordinate;
+            Vector3d vector2 = swapedNodes[1].Coordinate - node1.Coordinate;
+
+            Vector3d vector3 = swapedNodes[0].Coordinate - node2.Coordinate;
+            Vector3d vector4 = swapedNodes[1].Coordinate - node2.Coordinate;
+            double check12 = Vector3d.VectorAngle(vector1, vector2, Vector3d.ZAxis); // to do: make more general
+            double check34 = Vector3d.VectorAngle(vector3, vector4, Vector3d.ZAxis); // to do: make more general
+
+            if (check12 >= Math.PI & check34 >= Math.PI)
+            {
+                performed = false;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable, angles larger or equal to 180 degree..");
+                return performed;
+            }
+            else if (check12 <= Math.PI & check34 <= Math.PI)
+            {
+                performed = false;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable, angles smaller or equal to 180 degree..");
+                return performed;
+            }
 
             // get edges of adjacent elements
             List<qEdge> element1edges = E_0.Element1.EdgeList;
@@ -1672,7 +1638,7 @@ namespace MeshPoints.QuadRemesh
             globalElementList.Remove(oldElement1);
             globalElementList.Remove(oldElement2);
             
-            return;
+            return performed;
         }
         private qEdge SplitEdge(qEdge E_0, Vector3d V_k, qNode N_k, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
@@ -2166,14 +2132,10 @@ namespace MeshPoints.QuadRemesh
             while (intersectingS.Count > 0)
             {
                 E_recovered = intersectingS[0];
-                SwapEdge(E_recovered, globalElementList); // swap the edge
+                bool swapPerformed = SwapEdge(E_recovered, globalElementList); // swap the edge
 
-                List<qElement> Tswaped = new List<qElement>() { E_recovered.Element1, E_recovered.Element2 };
-
-                // todo: check area of Tswaped
-                // check if inverted...
-                bool areaOK = true;
-                if (areaOK)
+                // check if inverted
+                if (swapPerformed)
                 {
                     intersectingS.RemoveAt(0);
                 }
