@@ -1539,7 +1539,7 @@ namespace MeshPoints.QuadRemesh
 
                 if ((lengthN_kN_m < Math.Sqrt(3) * (E_front.Length + E_neighborFront.Length) * 0.5) & beta < thetaTolerance)
                 {
-                    SwapEdge(E_0, globalElementList);
+                    performed = SwapEdge(E_0, globalElementList);
                     E_k = E_0;
                 }
                 else
@@ -1552,18 +1552,45 @@ namespace MeshPoints.QuadRemesh
 
             return Tuple.Create(E_k, performed);
         }
-        private void SwapEdge(qEdge E_0, List<qElement> globalElementList)
+        private bool SwapEdge(qEdge E_0, List<qElement> globalElementList)
         {
+            // summary: swap edge if swapable
+
+            bool performed = true ;
             // is swapable
             if (E_0.Element1.IsQuad | E_0.Element2.IsQuad)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge is not swapable.");
+                performed = false;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SwapEdge: Edge is not swapable.");
+                return performed;
             }
 
             // get nodes of edge to swap
             qNode node1 = E_0.StartNode;
             qNode node2 = E_0.EndNode;
             List<qNode> swapedNodes = GetSwapedNodes(E_0);
+
+            // is swapable
+            Vector3d vector1 = swapedNodes[0].Coordinate - node1.Coordinate;
+            Vector3d vector2 = swapedNodes[1].Coordinate - node1.Coordinate;
+
+            Vector3d vector3 = swapedNodes[0].Coordinate - node2.Coordinate;
+            Vector3d vector4 = swapedNodes[1].Coordinate - node2.Coordinate;
+            double check12 = Vector3d.VectorAngle(vector1, vector2, Vector3d.ZAxis); // to do: make more general
+            double check34 = Vector3d.VectorAngle(vector3, vector4, Vector3d.ZAxis);  // to do: make more general
+
+            if (check12 >= Math.PI & check34 >= Math.PI)
+            {
+                performed = false;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SwapEdge: Edge is not swapable b/c of elements will be inverted.");
+                return performed;
+            }
+            else if (check12 <= Math.PI & check34 <= Math.PI)
+            {
+                performed = false;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SwapEdge: Edge is not swapable b/c of elements will be inverted.");
+                return performed;
+            }
 
             // get edges of adjacent elements
             List<qEdge> element1edges = E_0.Element1.EdgeList;
@@ -1593,7 +1620,7 @@ namespace MeshPoints.QuadRemesh
             // create new elements
             List<qEdge> element1edgesNew = new List<qEdge>();
             List<qEdge> element2edgesNew = new List<qEdge>();
-            element1edgesNew.Add(E_0);
+            element1edgesNew.Add(E_0); 
             element2edgesNew.Add(E_0);
 
             foreach (qEdge edge in edgeForNewElements)
@@ -1654,7 +1681,7 @@ namespace MeshPoints.QuadRemesh
             globalElementList.Remove(oldElement1);
             globalElementList.Remove(oldElement2);
             
-            return;
+            return performed;
         }
         private qEdge SplitEdge(qEdge E_0, Vector3d V_k, qNode N_k, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
@@ -2148,14 +2175,10 @@ namespace MeshPoints.QuadRemesh
             while (intersectingS.Count > 0)
             {
                 E_recovered = intersectingS[0];
-                SwapEdge(E_recovered, globalElementList); // swap the edge
-
-                List<qElement> Tswaped = new List<qElement>() { E_recovered.Element1, E_recovered.Element2 };
-
-                // todo: check area of Tswaped
-                // check if inverted...
-                bool areaOK = true;
-                if (areaOK)
+                bool swapPerformed = SwapEdge(E_recovered, globalElementList); // swap the edge
+                
+                // check if inverted
+                if (swapPerformed)
                 {
                     intersectingS.RemoveAt(0);
                 }
