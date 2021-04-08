@@ -128,6 +128,7 @@ namespace MeshPoints.QuadRemesh
                     break;
                 }
 
+
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
@@ -155,12 +156,7 @@ namespace MeshPoints.QuadRemesh
                         case 1:
                             E_k_left = E_front.LeftFrontNeighbor; break; // to do: check om closing front
                     }
-                    if (iterationCounter == 57)
-                    {
-                        
-                        //break;
-                        //debug stop 
-                    }
+
                     // get right edge
                     switch (edgeState[1])
                     {
@@ -174,6 +170,12 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
+                if (iterationCounter == 119)
+                {
+
+                    //break;
+                    //debug stop 
+                }
 
                 //________________get top edge________________
                 if (!seamAnglePerformed)
@@ -230,15 +232,6 @@ namespace MeshPoints.QuadRemesh
 
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
-
-            // testing:
-            List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
-            List<bool> a = new List<bool>();
-            foreach (qElement con in connectedTrinagles)
-            {
-                bool b = IsInverted(con);
-                a.Add(b);
-            }
 
 
             DA.SetDataList(0, frontEdges);
@@ -1380,7 +1373,6 @@ namespace MeshPoints.QuadRemesh
                     if (!IsFrontLoopsEven(frontEdges, E_i_candidates_sorted[0], globalEdgeList)) // potential loops are not even loops, need to split
                     {
                         // split the edge because not an even number edges in loops
-                        // to do: check
                         qEdge edgeToSplit = E_i_candidates_sorted[0];
                         List<qNode> nodes = GetNodesOfElement(E_i_candidates_sorted[0].Element1);
                         qNode newNode = new qNode(0.5 * (edgeToSplit.StartNode.Coordinate + edgeToSplit.EndNode.Coordinate), false);
@@ -1390,7 +1382,8 @@ namespace MeshPoints.QuadRemesh
                         { 
                             if (node != edgeToSplit.StartNode & node != edgeToSplit.EndNode) { nodeToSpitFrom = node; break; } 
                         }
-                        E_k = SplitEdge(edgeToSplit, newNode.Coordinate - nodeToSpitFrom.Coordinate, nodeToSpitFrom, globalEdgeList, globalElementList);
+                        qEdge E_temp = SplitEdge(edgeToSplit, newNode.Coordinate - nodeToSpitFrom.Coordinate, nodeToSpitFrom, globalEdgeList, globalElementList);
+                        E_k = FindEdge(globalEdgeList, N_k, GetOppositeNode(nodeToSpitFrom, E_temp));
                     }
                     else 
                     {
@@ -3688,7 +3681,6 @@ namespace MeshPoints.QuadRemesh
                     if (!triangleElementsNoDublicates.Contains(element)) { triangleElementsNoDublicates.Add(element); }
                 }
             }
-            if (triangleElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetTrinagleElements: number of connected triangle-elements to frontNode is zero."); }
 
             return triangleElementsNoDublicates;
         }//todo: test
