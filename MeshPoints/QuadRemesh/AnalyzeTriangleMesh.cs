@@ -80,7 +80,7 @@ namespace MeshPoints.QuadRemesh
 
 
             #region Code
-            if (mesh == null ) { return; }
+
 
             // Get initial edges and elements using mesh topology properties
             var initialEdgeAndElementList = GetInitialEdgesAndElements(mesh);
@@ -167,14 +167,11 @@ namespace MeshPoints.QuadRemesh
                             E_k_right = E_front.RightFrontNeighbor; break; // to do: check om closing front 
                     }
                 }
-<<<<<<< HEAD
-=======
                 if (iterationCounter == 81)
                 {
                     break;
                     //debug stop 
                 }
->>>>>>> 3c1787e0f34fc47dd63cbae21daa66e6c3867b61
 
                 //________________get top edge________________
                 if (!seamAnglePerformed)
@@ -215,13 +212,10 @@ namespace MeshPoints.QuadRemesh
                 if (iterationCounter == 25)
                 {
 
-<<<<<<< HEAD
                     break;
                     //debug stop 
                 }
                 // #################
-=======
->>>>>>> 3c1787e0f34fc47dd63cbae21daa66e6c3867b61
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
@@ -242,9 +236,6 @@ namespace MeshPoints.QuadRemesh
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
 
-<<<<<<< HEAD
-=======
-            // testing:
 
             //List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             //List<bool> a = new List<bool>();
@@ -311,7 +302,6 @@ namespace MeshPoints.QuadRemesh
                         vectorLeft = GetOppositeNode(Ni, topEdge2).Coordinate - Nj.Coordinate;
                     }
                     P_B1 = GetBisectingVector(vectorRight, vectorLeft);
->>>>>>> 3c1787e0f34fc47dd63cbae21daa66e6c3867b61
 
                     P_B2 = (double)P_B1.Length * Pi + (double)Pi.Length * P_B1; // Assume angle always less than 180 degree.
                     P_B2.Unitize();
@@ -320,7 +310,6 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
-<<<<<<< HEAD
             DA.SetDataList(3, test);
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
@@ -331,20 +320,6 @@ namespace MeshPoints.QuadRemesh
       
           
 
-=======
-            DA.SetData(3, quadElement);
-            DA.SetData(4, E_front);
-            DA.SetData(5, E_k_left);
-            DA.SetData(6, E_k_right);
-            DA.SetData(9, colorMesh);
-            
-            /*
-            DA.SetData(4, Ni);
-            DA.SetData(5, Nj);
-            DA.SetData(7, vectorLeft);
-            DA.SetData(8, vectorRight);
-            DA.SetData(9, P_B1);*/
->>>>>>> 3c1787e0f34fc47dd63cbae21daa66e6c3867b61
         }
 
         #region Methods
@@ -3722,11 +3697,7 @@ namespace MeshPoints.QuadRemesh
                 }
             }
 
-<<<<<<< HEAD
-            //if (quadElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "number of connected quad-elements to frontNode is zero."); }
-=======
             if (quadElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetQuadsConnectedToNode: number of connected quad-elements to frontNode is zero."); }
->>>>>>> 3c1787e0f34fc47dd63cbae21daa66e6c3867b61
 
             return quadElementsNoDublicates;
         }//todo: OK
