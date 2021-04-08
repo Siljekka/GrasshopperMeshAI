@@ -64,7 +64,8 @@ def create_regular_ngon(number_of_sides: int) -> np.array:
     polygon = []
     for n in range(number_of_sides):
         polygon.append(
-            [cos(2 * pi * n / number_of_sides), sin(2 * pi * n / number_of_sides)]
+            [cos(2 * pi * n / number_of_sides),
+             sin(2 * pi * n / number_of_sides)]
         )
 
     return np.array(polygon)
@@ -97,10 +98,9 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     [1] C. Geuzaine and J.-F. Remacle. Gmsh: a three-dimensional finite element
         mesh generator with built-in pre- and post-processing facilities. 2009.
 
-    output: .msh-file containing mesh data
+    output: .msh-file containing mesh data, or
+            dict containing info
     """
-    # Start a gmsh API session
-    gmsh.initialize()
 
     # Create a new model
     gmsh.model.add("1")
@@ -130,17 +130,25 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     gmsh.model.geo.synchronize()
 
     # Generate 2D mesh
-    gmsh.model.mesh.generate(2)
+    mesh = gmsh.model.mesh.generate(2)
+
+    # Extract features
+    mesh_nodes = gmsh.model.mesh.get_nodes()
+    num_nodes_total = mesh_nodes[0][-1]
+    internal_nodes = int(num_nodes_total - contour.shape[0])
+
+    # For NN1: contour nodes and num of internal nodes
+    features = np.append(contour.copy(), target_edge_length)
+    features = np.append(features, internal_nodes)
 
     # GUI (buggy on macOS)
-    if "-nopopup" not in sys.argv:
-        gmsh.fltk.run()
+    # if "-nopopup" not in sys.argv:
+    #     gmsh.fltk.run()
 
     # Write to file
-    gmsh.write("data/1.msh")
+    # gmsh.write("data/1.msh")
 
-    # Close API call
-    gmsh.finalize()
+    return features
 
 
 def plot_polygon(np_coords: np.array, style="") -> None:
