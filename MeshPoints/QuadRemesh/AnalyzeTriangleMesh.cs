@@ -173,15 +173,7 @@ namespace MeshPoints.QuadRemesh
                             E_k_right = E_front.RightFrontNeighbor; break; // to do: check om closing front 
                     }
                 }
-<<<<<<< HEAD
 
-=======
-                if (iterationCounter == 60)
-                {
-                    break;
-                    //debug stop 
-                }
->>>>>>> fc94aafc5a56e520aa0679c079fadf2f178e63b4
 
                 //________________get top edge________________
                 if (!seamAnglePerformed)
@@ -256,8 +248,9 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-            DA.SetDataList(7, connectedTrinagles);
-            DA.SetDataList(8, a);
+            DA.SetData(7, avgQuality);
+            DA.SetData(8, badestQuality);
+            DA.SetData(9, colorMesh);
 
 
             /*
