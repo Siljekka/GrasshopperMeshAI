@@ -127,15 +127,38 @@ namespace MeshPoints.QuadRemesh
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "QuadRemesh is complete");
                     break;
                 }
+<<<<<<< HEAD
                 if (iterationCounter == 46)
                 {
                     break;
                     //debug stop 
                 }
+=======
+                if (frontEdges.Count == 4)
+                {
+                    E_k_left = E_front.LeftFrontNeighbor;
+                    E_k_right = E_front.RightFrontNeighbor;
+                    E_top = GetTopEdge(E_front, E_k_left, E_k_right, globalEdgeList, globalElementList, frontEdges).Item1;
+                    List<qEdge> quadEdgeList = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
+                    quadElement = CreateQuadElement(quadEdgeList, globalEdgeList, globalElementList, frontEdges);
+                    DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList);
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "QuadRemesh is complete");
+                    break;
+                }
+                if (iterationCounter == 116)
+                {
+                    DoLocalSmoothing(globalElementList[141], globalEdgeList, frontEdges, globalElementList);
+
+                    //break;
+                    //debug stop 
+                }
+
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
+
 
                 //________________ get side edges ________________
                 if (isSpecialCase & !seamAnglePerformed) // if special case
@@ -153,25 +176,29 @@ namespace MeshPoints.QuadRemesh
                         case 0:
                             var leftSideEdgeValues = GetSideEdge(globalElementList, globalEdgeList, 0, E_front, frontEdges, false);
                             E_k_left = leftSideEdgeValues.Item1;
-                            E_k_left_performed = leftSideEdgeValues.Item2;  // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
+                            E_k_left_performed = leftSideEdgeValues.Item2;  // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge, and swap edge fails
                             break;
                         case 1:
                             E_k_left = E_front.LeftFrontNeighbor; break; // to do: check om closing front
                     }
-
+    
                     // get right edge
                     switch (edgeState[1])
                     {
                         case 0:
                             var rightSideEdgeValues = GetSideEdge(globalElementList, globalEdgeList, 1, E_front, frontEdges, false);
                             E_k_right = rightSideEdgeValues.Item1;
-                            E_k_right_performed = rightSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
+                            E_k_right_performed = rightSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge, and swap edge fails
                             break;
                         case 1:
                             E_k_right = E_front.RightFrontNeighbor; break; // to do: check om closing front 
                     }
                 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
 
                 //________________get top edge________________
                 if (!seamAnglePerformed)
@@ -202,7 +229,10 @@ namespace MeshPoints.QuadRemesh
                 }
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                 //________________ quadrilateral formation________________
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList, frontEdges);
@@ -211,7 +241,10 @@ namespace MeshPoints.QuadRemesh
                 //frontEdges = GetFrontEdges(globalEdgeList);
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
@@ -232,6 +265,7 @@ namespace MeshPoints.QuadRemesh
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
 
+<<<<<<< HEAD
             // testing:
             List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             List<bool> a = new List<bool>();
@@ -243,6 +277,8 @@ namespace MeshPoints.QuadRemesh
 
 
 
+=======
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
@@ -250,9 +286,15 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
+<<<<<<< HEAD
            /* DA.SetData(7, edge);
             DA.SetData(8, start);
             DA.SetData(9, opposite);*/
+=======
+            DA.SetData(7, avgQuality);
+            DA.SetData(8, badestQuality);
+            DA.SetData(9, colorMesh);
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
 
 
             /*
@@ -1111,6 +1153,7 @@ namespace MeshPoints.QuadRemesh
                 // get left loop
                 List<qEdge> edgesOfLeftLoop = new List<qEdge>() { checkSideEdge, startEdgeLeft };
                 bool leftLoopDone = false;
+                int counter = 0;
                 while (!leftLoopDone)
                 {
                     edgesOfLeftLoop.Add(startEdgeLeft.LeftFrontNeighbor);
@@ -1119,12 +1162,16 @@ namespace MeshPoints.QuadRemesh
                         startEdgeLeft = startEdgeLeft.LeftFrontNeighbor;
                     }
                     else { leftLoopDone = true; }
+
+                    if (counter > 1000) { leftLoopDone = true; AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "IsFrontLoopEven: failed left loop"); }
+                    counter++;
                 }
 
                 // get right loop
                 List<qEdge> edgesOfRightLoop = new List<qEdge>() { checkSideEdge, startEdgeRight };
                 bool rightLoopDone = false;
-                while (!rightLoopDone)
+                counter = 0;
+                while (!rightLoopDone )
                 {
                     edgesOfRightLoop.Add(startEdgeRight.RightFrontNeighbor);
                     if (endNode != startEdgeRight.RightFrontNeighbor.StartNode & endNode != startEdgeRight.RightFrontNeighbor.EndNode)
@@ -1132,6 +1179,8 @@ namespace MeshPoints.QuadRemesh
                         startEdgeRight = startEdgeRight.RightFrontNeighbor;
                     }
                     else { rightLoopDone = true; }
+                    if (counter > 1000) { rightLoopDone = true; AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "IsFrontLoopEven: failed right loop"); }
+                    counter++;
                 }
                 frontLoopList.Add(edgesOfLeftLoop.Count);
                 frontLoopList.Add(edgesOfRightLoop.Count);
@@ -1145,32 +1194,49 @@ namespace MeshPoints.QuadRemesh
 
             return evenEdgesInLoops;
         }
-        private bool IsExistingEdgeClosingFront(qNode N_k, List<qEdge> E_i_candidates_sorted, List<double> theta_i_list_sorted, double thetaToleranceForClosing, List<qEdge> frontEdges, List<qEdge> globalEdgeList)
+        private bool IsExistingEdgeClosingFront(qNode N_k, List<qEdge> E_i_candidates_sorted, List<double> theta_i_list_sorted, double thetaToleranceForClosing, List<qEdge> frontEdges, List<qEdge> globalEdgeList, qEdge E_front)
         {
-            qNode N_m = new qNode();
-            qEdge E_k = new qEdge();
+
             bool existingEdgeIsClosingFront = false;
-
-            // to do: temporary, need to find a correct solution
-            List<qNode> notNodeCandidates = new List<qNode>();
-            foreach (qEdge edge in GetFrontEdgesConnectedToNode(N_k, globalEdgeList))
-            {
-                foreach (qEdge edgeConncected in GetConnectedEdges(GetOppositeNode(N_k, edge), globalEdgeList))
-                {
-                    notNodeCandidates.Add(edgeConncected.StartNode);
-                    notNodeCandidates.Add(edgeConncected.EndNode);
-                }
-            }
-
             if (theta_i_list_sorted[0] < thetaToleranceForClosing)
             {
-                N_m = GetOppositeNode(N_k, E_i_candidates_sorted[0]);
-                if (IsFrontNode(N_m, frontEdges) & !notNodeCandidates.Contains(N_m)) // to do: change this to another criterion.
-                { 
-                    existingEdgeIsClosingFront = IsFrontNode(N_m, frontEdges);
+                qNode N_m = GetOppositeNode(N_k, E_i_candidates_sorted[0]);
+                bool isFrontNode = IsFrontNode(N_m, frontEdges);
+                if (IsFrontNode(N_m, frontEdges))
+                {
+                    List<qEdge> edgesToIgnore = new List<qEdge>() { E_front, E_front.LeftFrontNeighbor, E_front.RightFrontNeighbor };
+                    foreach (qEdge edge in edgesToIgnore)
+                    {
+                        if (edge.StartNode == N_m | edge.EndNode == N_m) { existingEdgeIsClosingFront = false; break; }
+                            //if (edge.StartNode == N_m | edge.EndNode == N_m) { existingEdgeIsClosingFront = false; break; }
+                        else { existingEdgeIsClosingFront = true; }
+                    }
                 }
             }
-            return existingEdgeIsClosingFront;
+
+
+            // to do: temporary, need to find a correct solution            
+            // to do: delete
+            /*
+            List<qNode> notNodeCandidates = new List<qNode>();
+                foreach (qEdge edge in GetFrontEdgesConnectedToNode(N_k, globalEdgeList))
+                {
+                    foreach (qEdge edgeConncected in GetConnectedEdges(GetOppositeNode(N_k, edge), globalEdgeList))
+                    {
+                        notNodeCandidates.Add(edgeConncected.StartNode);
+                        notNodeCandidates.Add(edgeConncected.EndNode);
+                    }
+                }
+
+                if (theta_i_list_sorted[0] < thetaToleranceForClosing)
+                {
+                    N_m = GetOppositeNode(N_k, E_i_candidates_sorted[0]);
+                    if (IsFrontNode(N_m, frontEdges) & !notNodeCandidates.Contains(N_m)) // to do: change this to another criterion.
+                    { 
+                        existingEdgeIsClosingFront = IsFrontNode(N_m, frontEdges);
+                    }
+                }*/
+                return existingEdgeIsClosingFront;
         }
         private Tuple<double, double, Mesh> CalculateQuality(List<qElement> globalElementList)
         {
@@ -1357,7 +1423,7 @@ namespace MeshPoints.QuadRemesh
             qEdge E_0 = new qEdge();
             qEdge E_m = new qEdge();
 
-            bool existingEdgeIsClosingFront = IsExistingEdgeClosingFront(N_k, E_i_candidates_sorted, theta_i_list_sorted, thetaToleranceForClosing, frontEdges, globalEdgeList);
+            bool existingEdgeIsClosingFront = IsExistingEdgeClosingFront(N_k, E_i_candidates_sorted, theta_i_list_sorted, thetaToleranceForClosing, frontEdges, globalEdgeList, E_front);
 
             // if trangle case, assumption
             bool forceNextBestExisting = false;
@@ -1366,9 +1432,9 @@ namespace MeshPoints.QuadRemesh
             {
                 if (E_i_candidates_sorted.Count > 1)
                 {
-                    if (theta_i_list_sorted[1] < thetaTolerance) { forceNextBestExisting = true;} 
+                    if (theta_i_list_sorted[1] < thetaTolerance) { forceNextBestExisting = true; }
+                    else {forceSwapOrSplit = true; }
                 }
-                if (!forceNextBestExisting) { forceSwapOrSplit = true; }
             }
 
             if ( ((theta_i_list_sorted[0] < thetaTolerance) | existingEdgeIsClosingFront) & !forceSwapOrSplit) // use existing edge
@@ -1382,7 +1448,6 @@ namespace MeshPoints.QuadRemesh
                     if (!IsFrontLoopsEven(frontEdges, E_i_candidates_sorted[0], globalEdgeList)) // potential loops are not even loops, need to split
                     {
                         // split the edge because not an even number edges in loops
-                        // to do: check
                         qEdge edgeToSplit = E_i_candidates_sorted[0];
                         List<qNode> nodes = GetNodesOfElement(E_i_candidates_sorted[0].Element1);
                         qNode newNode = new qNode(0.5 * (edgeToSplit.StartNode.Coordinate + edgeToSplit.EndNode.Coordinate), false);
@@ -1392,7 +1457,8 @@ namespace MeshPoints.QuadRemesh
                         { 
                             if (node != edgeToSplit.StartNode & node != edgeToSplit.EndNode) { nodeToSpitFrom = node; break; } 
                         }
-                        E_k = SplitEdge(edgeToSplit, newNode.Coordinate - nodeToSpitFrom.Coordinate, nodeToSpitFrom, globalEdgeList, globalElementList);
+                        qEdge E_temp = SplitEdge(edgeToSplit, newNode.Coordinate - nodeToSpitFrom.Coordinate, nodeToSpitFrom, globalEdgeList, globalElementList);
+                        E_k = FindEdge(globalEdgeList, N_k, GetOppositeNode(nodeToSpitFrom, E_temp));
                     }
                     else 
                     {
@@ -1827,6 +1893,9 @@ namespace MeshPoints.QuadRemesh
         {
             // summary: top edge recovery
             bool performed = true;
+            bool E_k_left_performed = true;
+            bool E_k_right_performed = true;
+
             qEdge E_top = new qEdge();
 
             // Get N_d and N_c
@@ -1850,7 +1919,7 @@ namespace MeshPoints.QuadRemesh
                     // select E_k_left based on triangle case
                     var leftSideEdgeValues = GetSideEdge(globalElementList, globalEdgeList, 0, E_front, frontEdges, true);
                     E_k_left = leftSideEdgeValues.Item1;
-                    //E_k_left_performed = leftSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
+                    E_k_left_performed = leftSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
 
                     if (E_k_left.StartNode == leftNode) { N_d = E_k_left.EndNode; }
                     else { N_d = E_k_left.StartNode; }
@@ -1860,7 +1929,7 @@ namespace MeshPoints.QuadRemesh
                     // select E_k_right based on triangle case
                     var rightSideEdgeValues = GetSideEdge(globalElementList, globalEdgeList, 1, E_front, frontEdges, true);
                     E_k_right = rightSideEdgeValues.Item1;
-                    //E_k_right_performed = rightSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
+                    E_k_right_performed = rightSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge
 
                     if (E_k_right.StartNode == rightNode) { N_c = E_k_right.EndNode; }
                     else { N_c = E_k_right.StartNode; }
@@ -1871,6 +1940,13 @@ namespace MeshPoints.QuadRemesh
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Top edge recovery not performed because N_C and N_d is equal.");
                     return Tuple.Create(E_top, E_k_left, E_k_right, performed);
                 }
+            }
+
+            if (!E_k_left_performed | !E_k_right_performed)
+            {   
+                performed = false;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Top edge recovery not performed because N_C and N_d is equal and case was not swapable.");
+                return Tuple.Create(E_top, E_k_left, E_k_right, performed);
             }
 
             var E_topAndPerfomed = EdgeRecoveryProcess( N_c, N_d, globalEdgeList, globalElementList, frontEdges);
@@ -2293,6 +2369,7 @@ namespace MeshPoints.QuadRemesh
             frontEdges.Remove(leftEdgeToN_k);
             frontEdges.Remove(rightEdgeToN_k);
             List<qEdge> edgesToCheck =  GetConnectedEdges(N_new, globalEdgeList);
+
             foreach (qEdge edge in edgesToCheck)
             {
                 if (IsFrontEdge(edge))
@@ -2335,7 +2412,6 @@ namespace MeshPoints.QuadRemesh
 
             if (E_long.EndNode.BoundaryNode & E_long.StartNode.BoundaryNode)
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Transition seam: Wrong to assumed no boundary nodes of E_long."); }
-
 
             // get E_front and elements connected to E_long 
             qElement quadElementOfE_long = new qElement();
@@ -2476,13 +2552,15 @@ namespace MeshPoints.QuadRemesh
             globalEdgeList.Add(E_long_part1);
             globalEdgeList.Add(E_long_part2);
 
-
             // update frontEdges
+            frontEdges.Add(E_long_part2);
+            frontEdges.Add(newEdgeInQuad);
+            frontEdges.Add(E_front);
             frontEdges.Remove(E_long);
             SetNeighorFrontEdges(frontEdges);
 
             // local smoothing
-            DoLocalSmoothing(quadElementOfE_long, globalEdgeList, frontEdges, globalElementList);
+            //DoLocalSmoothing(quadElementOfE_long, globalEdgeList, frontEdges, globalElementList);
 
             // add a controll for all edges in elements are found in global lists
 
@@ -2578,6 +2656,9 @@ namespace MeshPoints.QuadRemesh
                 return Tuple.Create(E_front, E_k_right, E_k_left);
             }
 
+            // to do: check if ok, also add to transition seam
+            // is quad a chevron ?
+            //if () : do local smoothing
             // get and create nodes to use
 
             Point3d midPointE_long = 0.5 * (E_long.EndNode.Coordinate + E_long.StartNode.Coordinate);
@@ -2737,8 +2818,8 @@ namespace MeshPoints.QuadRemesh
             SetNeighorFrontEdges(frontEdges);
 
             // local smoothing
-            DoLocalSmoothing(newElementFromQuad_part1, globalEdgeList, frontEdges, globalElementList);
-            DoLocalSmoothing(newElementFromQuad_part3, globalEdgeList, frontEdges, globalElementList);
+            //DoLocalSmoothing(newElementFromQuad_part1, globalEdgeList, frontEdges, globalElementList);
+            //DoLocalSmoothing(newElementFromQuad_part3, globalEdgeList, frontEdges, globalElementList);
 
             // to do: add a controll for all edges in elements are found in global lists
 
@@ -2885,9 +2966,8 @@ namespace MeshPoints.QuadRemesh
             //globalEdgeList[indexToUpdate].IsQuadSideEdge = true;
             //indexToUpdate = globalEdgeList.IndexOf(quadEdge[3]); // update level for top edge of quad
 
-            //int maxLevel = 0;
+            int newLevel = quadEdge[0].Level + 1;
             //foreach (qEdge edge in quadEdge) { if (edge.Level > maxLevel) { maxLevel = edge.Level; } }        
-            //globalEdgeList[indexToUpdate].Level = maxLevel + 1;
 
             // update frontEdges
             foreach (qEdge edge in quadEdge)
@@ -2896,7 +2976,7 @@ namespace MeshPoints.QuadRemesh
                 {
                     frontEdges.Add(edge);
                     int indexToUpdate = globalEdgeList.IndexOf(edge);
-                    globalEdgeList[indexToUpdate].Level++;
+                    globalEdgeList[indexToUpdate].Level = newLevel;
                 }
                 else if (frontEdges.Contains(edge))
                 {
@@ -3144,7 +3224,11 @@ namespace MeshPoints.QuadRemesh
                 int counter = 0;
                 while (IsInverted(triangle) & counter < 1000)
                 {
+<<<<<<< HEAD
                     newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.25, newCoordinate.Y + movingVector.Y * 0.25, newCoordinate.Z + movingVector.Z * 0.25);
+=======
+                    newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.5, newCoordinate.Y + movingVector.Y * 0.5, newCoordinate.Z + movingVector.Z * 0.5);
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                     for (int j = 0; j < triangle.EdgeList.Count; j++)
                     {
                         qEdge edge = triangle.EdgeList[j];
@@ -3664,10 +3748,12 @@ namespace MeshPoints.QuadRemesh
                 }
             }
 
-            if (quadElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetQuadsConnectedToNode: number of connected quad-elements to frontNode is zero."); }
-
             return quadElementsNoDublicates;
+<<<<<<< HEAD
         } // class: kan bli implementert i: qNode
+=======
+        }
+>>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
         private List<qElement> GetTrianglesConnectedToNode(qNode node, List<qEdge> globalEdgeList)
         {
             // summary: get all quad elements connected to a node
@@ -3692,7 +3778,6 @@ namespace MeshPoints.QuadRemesh
                     if (!triangleElementsNoDublicates.Contains(element)) { triangleElementsNoDublicates.Add(element); }
                 }
             }
-            if (triangleElements.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetTrinagleElements: number of connected triangle-elements to frontNode is zero."); }
 
             return triangleElementsNoDublicates;
         } // class: kan bli implementert i: qNode
