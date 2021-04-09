@@ -26,6 +26,10 @@ namespace MeshPoints.Classes
         {
             //Empty constructor
         }
+        public Node(Point3d _coord)
+        {
+            Coordinate = _coord;
+        }
 
         public Node(int _globalId, Point3d _coord)
         {

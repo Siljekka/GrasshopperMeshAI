@@ -33,7 +33,16 @@ namespace MeshPoints.Classes
             //Empty constructor
         }
 
-        //_for 2D
+        //_for 2D - triangle
+        public Element(int _id, Node _node1, Node _node2, Node _node3, Mesh _mesh)
+        {
+            Id = _id;
+            Node1 = _node1;
+            Node2 = _node2;
+            Node3 = _node3;
+            mesh = _mesh;
+        }
+        //_for 2D - quad
         public Element(int _id, Node _node1, Node _node2, Node _node3, Node _node4, Mesh _mesh)
         {
             Id = _id;
