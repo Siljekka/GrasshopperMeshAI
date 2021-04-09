@@ -75,8 +75,9 @@ namespace MeshPoints.QuadRemesh
             if (!DA.GetData(0, ref mesh)) return; 
             if (!DA.GetData(1, ref numberElementsToRemesh)) return; 
             if (!DA.GetData(2, ref performeLocalSmoothing)) return; 
-            if (!DA.GetData(3, ref iterationsToPerformBeforeStop)) return; 
-            
+            if (!DA.GetData(3, ref iterationsToPerformBeforeStop)) return;
+
+
 
 
             #region Code
@@ -138,13 +139,13 @@ namespace MeshPoints.QuadRemesh
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "QuadRemesh is complete");
                     break;
                 }
-                if (iterationCounter == 116)
+                /*if (iterationCounter == 116)
                 {
                     DoLocalSmoothing(globalElementList[141], globalEdgeList, frontEdges, globalElementList);
 
                     //break;
                     //debug stop 
-                }
+                }*/
 
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
@@ -234,7 +235,14 @@ namespace MeshPoints.QuadRemesh
                 // to do: apply local smoothing for seamAngle
                 // to do: is closing front selv om edge state = 1 ? må da legge inn kontroll av ekisterende uansett
             }
-            #endregion End Code
+
+
+            // ___________Transform to main mesh classes_______________
+            var meshProperties = TransformToMainMeshClasses(globalElementList);
+            List<Node> nodes = meshProperties.Item1;
+            List<Element> elements = meshProperties.Item2;
+
+
 
             List<qEdge> test = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
             var meshValues = CalculateQuality(globalElementList);
@@ -242,17 +250,24 @@ namespace MeshPoints.QuadRemesh
             double badestQuality = meshValues.Item2;
             Mesh colorMesh = meshValues.Item3;
 
+
+            // Assign properties to surfaceMesh:
+            Mesh2D surfaceMesh = new Mesh2D(nodes, elements, colorMesh);
+            
+
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
+            #endregion End Code
+
 
             // testing:
-            List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
+            /*List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             List<bool> a = new List<bool>();
             foreach (qElement con in connectedTrinagles)
             {
                 bool b = IsInverted(con);
                 a.Add(b);
-            }
+            }*/
 
 
 
@@ -263,9 +278,9 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-            DA.SetData(7, avgQuality);
-            DA.SetData(8, badestQuality);
-            DA.SetData(9, colorMesh);
+            //DA.SetData(7, avgQuality);
+            //DA.SetData(8, badestQuality);
+            DA.SetData(9, surfaceMesh);
 
 
             /*
@@ -276,6 +291,83 @@ namespace MeshPoints.QuadRemesh
         }
 
         #region Methods
+        private Tuple<List<Node>, List<Element>> TransformToMainMeshClasses(List<qElement> globalElementList)
+        {
+            List<Node> nodes = new List<Node>();
+            List<Element> elements = new List<Element>();
+            List<Node> elementNodes = new List<Node>();
+            List<Point3d> nodesCoord = new List<Point3d>();
+            int nodeId = 0;
+            int elementId = 0;
+            foreach (qElement qrElement in globalElementList)
+            {
+                List<qNode> qrElementNodes = GetNodesOfElement(qrElement);
+
+                // Create Nodes:
+                foreach (qNode qrNode in qrElementNodes)
+                {
+                    Node newNode = new Node(qrNode.Coordinate);
+
+                    if (nodesCoord.Contains(newNode.Coordinate)) // node already exist.
+                    {
+                        int index = nodesCoord.IndexOf(newNode.Coordinate);
+
+                        // Assign "old" properties
+                        newNode.GlobalId = nodes[index].GlobalId;
+                        newNode.BC_U = nodes[index].BC_U;
+                        newNode.BC_U = nodes[index].BC_V;
+                        elementNodes.Add(newNode);
+                    }
+                    else
+                    {
+                        // Assign properties
+                        if (qrNode.BoundaryNode) { newNode.BC_U = true; newNode.BC_V = true; }
+                        newNode.GlobalId = nodeId;
+
+                        // Add node to list
+                        nodesCoord.Add(newNode.Coordinate);
+                        elementNodes.Add(newNode);
+                        nodes.Add(newNode);
+                        nodeId++;
+                    }
+                }
+
+                // Create Elements
+                if (qrElementNodes.Count == 3) // for triangles
+                {
+                    Node n1 = new Node(1, elementNodes[0].GlobalId, elementNodes[0].Coordinate, elementNodes[0].BC_U, elementNodes[0].BC_V);
+                    Node n2 = new Node(2, elementNodes[1].GlobalId, elementNodes[1].Coordinate, elementNodes[1].BC_U, elementNodes[1].BC_V);
+                    Node n3 = new Node(3, elementNodes[2].GlobalId, elementNodes[2].Coordinate, elementNodes[2].BC_U, elementNodes[2].BC_V);
+
+                    Mesh elementMesh = new Mesh();
+                    elementMesh.Vertices.Add(n1.Coordinate);
+                    elementMesh.Vertices.Add(n2.Coordinate);
+                    elementMesh.Vertices.Add(n3.Coordinate);
+                    elementMesh.Faces.AddFace(0, 1, 2);
+                    Element e = new Element(elementId, n1, n2, n3, elementMesh);
+                    elements.Add(e);
+                }
+                else  // for quads
+                {
+                    Node n1 = new Node(1, elementNodes[0].GlobalId, elementNodes[0].Coordinate, elementNodes[0].BC_U, elementNodes[0].BC_V);
+                    Node n2 = new Node(2, elementNodes[1].GlobalId, elementNodes[1].Coordinate, elementNodes[1].BC_U, elementNodes[1].BC_V);
+                    Node n3 = new Node(3, elementNodes[2].GlobalId, elementNodes[2].Coordinate, elementNodes[2].BC_U, elementNodes[2].BC_V);
+                    Node n4 = new Node(4, elementNodes[3].GlobalId, elementNodes[3].Coordinate, elementNodes[3].BC_U, elementNodes[3].BC_V);
+
+                    Mesh elementMesh = new Mesh();
+                    elementMesh.Vertices.Add(n1.Coordinate);
+                    elementMesh.Vertices.Add(n2.Coordinate);
+                    elementMesh.Vertices.Add(n3.Coordinate);
+                    elementMesh.Vertices.Add(n4.Coordinate);
+                    elementMesh.Faces.AddFace(0, 1, 2, 3);
+                    Element e = new Element(elementId, n1, n2, n3, n4, elementMesh);
+                    elements.Add(e);
+                }
+                elementId++;
+                elementNodes.Clear();
+            }
+            return Tuple.Create(nodes, elements);
+        }
 
         // _____________________________________ for ininital mesh _________________________________________
         private Tuple<List<qEdge>, List<qElement>> GetInitialEdgesAndElements(Mesh mesh)
@@ -3744,6 +3836,14 @@ namespace MeshPoints.QuadRemesh
 
             return triangleElementsNoDublicates;
         } // class: kan bli implementert i: qNode
+
+
+        // __________________________________________ Global smoothing ______________________________________________________
+        private void DoGlobalSmoothing()
+        { 
+        
+        }
+
 
         #endregion
 
