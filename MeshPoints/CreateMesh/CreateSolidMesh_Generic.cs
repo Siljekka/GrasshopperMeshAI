@@ -57,13 +57,13 @@ namespace MeshPoints.CreateMesh
             */
             // Input
             Brep brep = new Brep();
-            int bottomSurface = 0;
+            int bottomFace = 0;
             int topSurface = 0;
             int nu = 0;
             int nv = 0;
             int nw = 0;
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref bottomSurface);
+            DA.GetData(1, ref bottomFace);
             DA.GetData(2, ref topSurface);
             DA.GetData(3, ref nu);
             DA.GetData(4, ref nv);
@@ -95,39 +95,42 @@ namespace MeshPoints.CreateMesh
             solidMesh.nw = nw;
             solidMesh.inp = true;
 
+
+            // Add bottom and top face to list
+
             // . Find Rails
-            List<Curve> rails = FindRails(brep, bottomSurface, topSurface);
-
-            //2. Divide each brep edge in w direction (rail) into nw points.
-            railPoints = DivideRailIntoNwPoints(rails, brep, solidMesh.nw);
+             List<Curve> rails = FindRails(brep, bottomFace);
             
-            //3. Create NurbsSurface for each nw-floor
-            intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item1;
-            planes = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item2;
-            surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
+             //2. Divide each brep edge in w direction (rail) into nw points.
+             railPoints = DivideRailIntoNwPoints(rails, brep, solidMesh.nw);
+            /*
+             //3. Create NurbsSurface for each nw-floor
+             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item1;
+             planes = GetIntersectionCurveBrepAndRailPoints(railPoints, brep).Item2;
+             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
 
-            //4. Make grid of points in u and v direction at leven nw
-            meshPoints = CreateGridOfPointsAtEachFloor(solidMesh.nu, solidMesh.nv, surfaceAtNw, intersectionCurve, planes);
+             //4. Make grid of points in u and v direction at leven nw
+             meshPoints = CreateGridOfPointsAtEachFloor(solidMesh.nu, solidMesh.nv, surfaceAtNw, intersectionCurve, planes);
 
-            //5. Create nodes and elements
-            nodes = CreateNodes(meshPoints, solidMesh.nu, solidMesh.nv, solidMesh.nw); // assign Coordiantes, GlobalId and Boundary Conditions
-            elements = CreateHexElements(meshPoints, nodes, solidMesh.nu, solidMesh.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
+             //5. Create nodes and elements
+             nodes = CreateNodes(meshPoints, solidMesh.nu, solidMesh.nv, solidMesh.nw); // assign Coordiantes, GlobalId and Boundary Conditions
+             elements = CreateHexElements(meshPoints, nodes, solidMesh.nu, solidMesh.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
 
-            // 6. Check if brep can be interpret by Abaqus
-            IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
+             // 6. Check if brep can be interpret by Abaqus
+             IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
 
-            //7. Create global mesh
-            allMesh = CreateGlobalMesh(elements);
+             //7. Create global mesh
+             allMesh = CreateGlobalMesh(elements);
 
-            //8. Add properties to SolidMesh
-            solidMesh.Nodes = nodes;
-            solidMesh.Elements = elements;
-            solidMesh.mesh = allMesh;
-            
+             //8. Add properties to SolidMesh
+             solidMesh.Nodes = nodes;
+             solidMesh.Elements = elements;
+             solidMesh.mesh = allMesh;
+             */
 
             // Output
-            DA.SetData(0, solidMesh);
-            DA.SetData(1, solidMesh.mesh);
+            DA.SetDataTree(0, railPoints);
+            DA.SetData(1, 2);
         }
 
         #region Methods
@@ -135,11 +138,31 @@ namespace MeshPoints.CreateMesh
         /// Find the edges of brep composing rails
         /// </summary>
         /// <returns> List with rails. </returns>
-        private List<Curve> FindRails(Brep brep, int bottomSurface, int topSurface)
+        private List<Curve> FindRails(Brep brep, int bottomFace)
         {
-            BrepEdgeList brepEdges = brep.Edges;
-            List<Curve> rail = new List<Curve>();
+            List<BrepFace> brepFace = brep.Faces.ToList();
+            List<BrepFace> brepFaceBotTop = new List<BrepFace>();
+            List<int> indexAdjecentFaces = (brepFace[bottomFace].AdjacentFaces()).ToList();
+            List<int> indexAdjecentEdges = (brepFace[bottomFace].AdjacentEdges()).ToList();
+            indexAdjecentFaces.Add(bottomFace);
+            for (int i = 0; i < brepFace.Count; i++)
+            {
+                if (!indexAdjecentFaces.Contains(brepFace.IndexOf(brepFace[i])))
+                {
+                    brepFaceBotTop.Add(brepFace[bottomFace]);
+                    brepFaceBotTop.Add(brepFace[i]); // top face
+                    indexAdjecentEdges.AddRange(brepFaceBotTop[0].AdjacentEdges());
+                    indexAdjecentEdges.AddRange(brepFaceBotTop[1].AdjacentEdges());
+                    continue;
+                }
+            }
 
+            List<BrepEdge> brepEdges = brep.Edges.ToList();
+            List<Curve> rails = new List<Curve>(brepEdges);
+            foreach (int index in indexAdjecentEdges) { rails.Remove(brepEdges[index]); }
+
+            #region Old Code
+            /*
             foreach (BrepEdge edge in brepEdges) // check if node is on edge
             {
                 List<Point3d> edgePoints = new List<Point3d> { edge.StartVertex.Location, edge.EndVertex.Location };
@@ -147,10 +170,10 @@ namespace MeshPoints.CreateMesh
                 bool pointOnFace5 = false;
                 foreach (Point3d point in edgePoints)
                 {
-                    brep.Faces[bottomSurface].ClosestPoint(point, out double PointOnCurveUFace4, out double PointOnCurveVFace4);
-                    brep.Faces[topSurface].ClosestPoint(point, out double PointOnCurveUFace5, out double PointOnCurveVFace5);
-                    Point3d testPointFace4 = brep.Faces[bottomSurface].PointAt(PointOnCurveUFace4, PointOnCurveVFace4);  // make test point
-                    Point3d testPointFace5 = brep.Faces[topSurface].PointAt(PointOnCurveUFace5, PointOnCurveVFace5);  // make test point
+                    brepFace[0].ClosestPoint(point, out double PointOnCurveUFace4, out double PointOnCurveVFace4);
+                    brepFace[1].ClosestPoint(point, out double PointOnCurveUFace5, out double PointOnCurveVFace5);
+                    Point3d testPointFace4 = brepFace[0].PointAt(PointOnCurveUFace4, PointOnCurveVFace4);  // make test point
+                    Point3d testPointFace5 = brepFace[1].PointAt(PointOnCurveUFace5, PointOnCurveVFace5);  // make test point
                     double distanceToFace4 = testPointFace4.DistanceTo(point); // calculate distance between testPoint and node
                     double distanceToFace5 = testPointFace5.DistanceTo(point); // calculate distance between testPoint and node
                     if ((distanceToFace4 <= 0.0001 & distanceToFace4 >= -0.0001)) // if distance = 0: node is on edge
@@ -164,10 +187,11 @@ namespace MeshPoints.CreateMesh
                 }
                 if (pointOnFace4 & pointOnFace5)
                 {
-                    rail.Add(edge);  //get edge1 of brep = rail 1
+                    rails.Add(edge);  //get edge1 of brep = rail 1
                 }
-            }
-            return rail;
+            }*/
+            #endregion
+            return rails;
         }
 
         /// <summary>
