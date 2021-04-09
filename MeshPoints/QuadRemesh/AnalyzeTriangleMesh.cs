@@ -127,13 +127,6 @@ namespace MeshPoints.QuadRemesh
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "QuadRemesh is complete");
                     break;
                 }
-<<<<<<< HEAD
-                if (iterationCounter == 46)
-                {
-                    break;
-                    //debug stop 
-                }
-=======
                 if (frontEdges.Count == 4)
                 {
                     E_k_left = E_front.LeftFrontNeighbor;
@@ -153,7 +146,6 @@ namespace MeshPoints.QuadRemesh
                     //debug stop 
                 }
 
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
@@ -195,10 +187,7 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
-<<<<<<< HEAD
-=======
 
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
 
                 //________________get top edge________________
                 if (!seamAnglePerformed)
@@ -228,11 +217,6 @@ namespace MeshPoints.QuadRemesh
                     
                 }
 
-
-<<<<<<< HEAD
-
-=======
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                 //________________ quadrilateral formation________________
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList, frontEdges);
@@ -241,10 +225,6 @@ namespace MeshPoints.QuadRemesh
                 //frontEdges = GetFrontEdges(globalEdgeList);
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
@@ -265,7 +245,6 @@ namespace MeshPoints.QuadRemesh
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
 
-<<<<<<< HEAD
             // testing:
             List<qElement> connectedTrinagles = GetTrianglesConnectedToNode(quadElement.EdgeList[3].EndNode, globalEdgeList);
             List<bool> a = new List<bool>();
@@ -277,8 +256,6 @@ namespace MeshPoints.QuadRemesh
 
 
 
-=======
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
@@ -286,15 +263,9 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-<<<<<<< HEAD
-           /* DA.SetData(7, edge);
-            DA.SetData(8, start);
-            DA.SetData(9, opposite);*/
-=======
             DA.SetData(7, avgQuality);
             DA.SetData(8, badestQuality);
             DA.SetData(9, colorMesh);
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
 
 
             /*
@@ -3224,11 +3195,7 @@ namespace MeshPoints.QuadRemesh
                 int counter = 0;
                 while (IsInverted(triangle) & counter < 1000)
                 {
-<<<<<<< HEAD
                     newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.25, newCoordinate.Y + movingVector.Y * 0.25, newCoordinate.Z + movingVector.Z * 0.25);
-=======
-                    newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.5, newCoordinate.Y + movingVector.Y * 0.5, newCoordinate.Z + movingVector.Z * 0.5);
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
                     for (int j = 0; j < triangle.EdgeList.Count; j++)
                     {
                         qEdge edge = triangle.EdgeList[j];
@@ -3749,11 +3716,7 @@ namespace MeshPoints.QuadRemesh
             }
 
             return quadElementsNoDublicates;
-<<<<<<< HEAD
         } // class: kan bli implementert i: qNode
-=======
-        }
->>>>>>> b3e9afcb18a3fdd2aeb7536aeab83a337724c5b0
         private List<qElement> GetTrianglesConnectedToNode(qNode node, List<qEdge> globalEdgeList)
         {
             // summary: get all quad elements connected to a node
