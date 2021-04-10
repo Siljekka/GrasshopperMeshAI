@@ -28,5 +28,13 @@ namespace MeshPoints.Classes
             Elements = _elements;
             mesh = _mesh;
         }
+        public Mesh2D(Mesh2D _mesh2D)
+        {
+            nu = _mesh2D.nu;
+            nv = _mesh2D.nv;
+            Nodes = _mesh2D.Nodes;
+            Elements = _mesh2D.Elements;
+            mesh = _mesh2D.mesh;
+        }
     }
 }

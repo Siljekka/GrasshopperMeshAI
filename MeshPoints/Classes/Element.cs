@@ -23,6 +23,7 @@ namespace MeshPoints.Classes
         public int Id { get; set; }
         public bool IsCube { get; set; } //if 3D element
 
+        public bool IsQuad { get; } // if 2D quad, add function
         public Mesh mesh { get; set; }
 
         //Constructer
