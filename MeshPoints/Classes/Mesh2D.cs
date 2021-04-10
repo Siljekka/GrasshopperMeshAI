@@ -20,6 +20,12 @@ namespace MeshPoints.Classes
         {
             //Empty constructor
         }
+        public Mesh2D(List<Node> _nodes, List<Element> _elements, Mesh _mesh)
+        {
+            Nodes = _nodes;
+            Elements = _elements;
+            mesh = _mesh;
+        }
         public Mesh2D(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh)
         {
             nu = _nu;
