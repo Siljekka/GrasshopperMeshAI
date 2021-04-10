@@ -29,7 +29,6 @@ namespace MeshPoints.QuadRemesh
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Brep", "", "", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("TopFace", "", "", GH_ParamAccess.item);
             pManager.AddIntegerParameter("BottomFace", "", "", GH_ParamAccess.item);
             pManager.AddIntegerParameter("nw", "", "", GH_ParamAccess.item, 4);
         }
@@ -49,17 +48,14 @@ namespace MeshPoints.QuadRemesh
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             Brep brep = new Brep();
-            int topFace = 0;
-            int bottomFace = 0;
+            int bottomFaceIndex = 0;
             int nw = 0;
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref topFace);
-            DA.GetData(2, ref bottomFace);
-            DA.GetData(3, ref nw);
+            DA.GetData(1, ref bottomFaceIndex);
+            DA.GetData(2, ref nw);
 
             if (!DA.GetData(0, ref brep)) return;
-            if (!DA.GetData(1, ref topFace)) return;
-            if (!DA.GetData(2, ref bottomFace)) return;
+            if (!DA.GetData(1, ref bottomFaceIndex)) return;
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "nw = 0"); return; }
 
             #region Code
@@ -70,10 +66,10 @@ namespace MeshPoints.QuadRemesh
             solidMesh.inp = true;
 
             // 2. Find Rails
-            List<Curve> rails = FindRails(brep, topFace, bottomFace);
+            List<Curve> rails = FindRails(brep, bottomFaceIndex);
 
             // 3. Divide each brep edge in w direction (rail) into nw points.
-            DataTree<Point3d> railPoints = DivideRailIntoNwPoints(rails, nw);
+            DataTree<Point3d> railPoints = DivideRailIntoNwPoints(rails, brep.Faces[bottomFaceIndex], nw);
             
             // 4. Create Planes
             List<Plane> planes = GetPlanes(railPoints);
@@ -85,10 +81,62 @@ namespace MeshPoints.QuadRemesh
 
         }
 
-        #region Methods
-        private List<Curve> FindRails(Brep brep, int topFace, int bottomFace)
+
+
+        /// <summary>
+        /// Get intersectionCurve between Brep and plane made from RailPoints. Curve is closed.
+        /// </summary>
+        /// <returns> DataTree with closed curves at each Floor. Branch: Floor Level </returns>
+        private DataTree<Curve> GetIntersectionCurveBrepAndRailPoints(DataTree<Point3d> railPoints, Brep brep)
         {
-            BrepEdgeList brepEdges = brep.Edges;
+            DataTree<Curve> intersectionCurve = new DataTree<Curve>();
+            List<Plane> planes = new List<Plane>();
+
+            for (int i = 0; i < railPoints.BranchCount; i++)
+            {
+                Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
+                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
+                Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+                Plane plane = new Plane(railPoints.Branch(i)[0], vec1, vec2);
+                Intersection.BrepPlane(brep, plane, 0.0001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
+                List<Curve> intCrv = iCrv.ToList();
+                planes.Add(plane);
+
+                for (int j = 0; j < intCrv.Count; j++) { intCrv[j].MakeClosed(0.0001); intersectionCurve.Add(intCrv[j], new GH_Path(i)); }  // make curve closed and add to intersectionCurve
+                if (intersectionCurve.Branch(i).Count != 1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not OK."); return null; }
+                intCrv.Clear();
+            }
+            return intersectionCurve;
+        }
+
+        #region Methods
+        private List<Curve> FindRails(Brep brep, int bottomFaceIndex)
+        {
+            // Find top and bottom edge
+            List<BrepFace> brepFace = brep.Faces.ToList();
+
+            List<int> indexAdjecentFaces = (brepFace[bottomFaceIndex].AdjacentFaces()).ToList();
+            List<int> indexAdjecentEdges = (brepFace[bottomFaceIndex].AdjacentEdges()).ToList();
+            indexAdjecentFaces.Add(bottomFaceIndex);
+            for (int i = 0; i < brepFace.Count; i++)
+            {
+                if (!indexAdjecentFaces.Contains(brepFace.IndexOf(brepFace[i])))
+                {
+                    BrepFace brepBottomFace = brepFace[bottomFaceIndex];
+                    BrepFace brepTopFace = brepFace[i]; // top face
+                    indexAdjecentEdges.AddRange(brepBottomFace.AdjacentEdges());
+                    indexAdjecentEdges.AddRange(brepTopFace.AdjacentEdges());
+                    continue;
+                }
+            }
+
+            // Find rails
+            List<BrepEdge> brepEdges = brep.Edges.ToList();
+            List<Curve> rails = new List<Curve>(brepEdges);
+            foreach (int index in indexAdjecentEdges) { rails.Remove(brepEdges[index]); }
+
+            #region Old Code
+            /*BrepEdgeList brepEdges = brep.Edges;
             List<Curve> rails = new List<Curve>();
 
             foreach (BrepEdge edge in brepEdges) // check if node is on edge
@@ -117,11 +165,43 @@ namespace MeshPoints.QuadRemesh
                 {
                     rails.Add(edge);  //get edge1 of brep = rail 1
                 }
-            }
+            }*/
+            #endregion
             return rails;
         }
-        private DataTree<Point3d> DivideRailIntoNwPoints(List<Curve> rails, int nw)
+        private DataTree<Point3d> DivideRailIntoNwPoints(List<Curve> rails, BrepFace brepBottomFace, int nw)
         {
+            DataTree<Point3d> railPoints = new DataTree<Point3d>();
+
+            for (int i = 0; i < rails.Count; i++)
+            {
+                rails[i].DivideByCount(nw, true, out Point3d[] pt);
+                List<Point3d> point = pt.ToList();
+                
+                brepBottomFace.ClosestPoint(point[0], out double PointOnCurveU, out double PointOnCurveV);
+                Point3d testPoint = brepBottomFace.PointAt(PointOnCurveU, PointOnCurveV);
+                Vector3d distanceToFace = testPoint - point[0];
+                if (distanceToFace.Length > 0.001) { point.Reverse(); }
+
+                for (int j = 0; j < point.Count; j++)
+                {
+                    railPoints.Add(point[j], new GH_Path(j)); //tree with nw points on each rail. Branch: floor
+                }
+            }
+
+            // Check if the rails must be re-oredered to generate elements with nodes counting ccw
+            Curve testCurve = Curve.CreateControlPointCurve(railPoints.Branch(0), 1);
+            Vector3d direction = railPoints.Branch(nw)[0] - railPoints.Branch(0)[0];
+            string curveOrientation = testCurve.ClosedCurveOrientation(direction).ToString();
+            if (curveOrientation == "Clockwise")
+            {
+                for (int i = 0; i < railPoints.BranchCount; i++)
+                {
+                    railPoints.Branch(i).Reverse();
+                }
+            }
+            #region Old Code:
+            /*
             DataTree<Point3d> railPoints = new DataTree<Point3d>();
             if (rails.Count == 0) { return null; }
 
@@ -148,7 +228,8 @@ namespace MeshPoints.QuadRemesh
                     railPoints.Branch(i).Reverse();
                 }
             }
-
+            */
+            #endregion
             return railPoints;
         }
         private List<Plane> GetPlanes(DataTree<Point3d> railPoints)
