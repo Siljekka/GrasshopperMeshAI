@@ -82,33 +82,6 @@ namespace MeshPoints.QuadRemesh
         }
 
 
-
-        /// <summary>
-        /// Get intersectionCurve between Brep and plane made from RailPoints. Curve is closed.
-        /// </summary>
-        /// <returns> DataTree with closed curves at each Floor. Branch: Floor Level </returns>
-        private DataTree<Curve> GetIntersectionCurveBrepAndRailPoints(DataTree<Point3d> railPoints, Brep brep)
-        {
-            DataTree<Curve> intersectionCurve = new DataTree<Curve>();
-            List<Plane> planes = new List<Plane>();
-
-            for (int i = 0; i < railPoints.BranchCount; i++)
-            {
-                Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
-                Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
-                Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
-                Plane plane = new Plane(railPoints.Branch(i)[0], vec1, vec2);
-                Intersection.BrepPlane(brep, plane, 0.0001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
-                List<Curve> intCrv = iCrv.ToList();
-                planes.Add(plane);
-
-                for (int j = 0; j < intCrv.Count; j++) { intCrv[j].MakeClosed(0.0001); intersectionCurve.Add(intCrv[j], new GH_Path(i)); }  // make curve closed and add to intersectionCurve
-                if (intersectionCurve.Branch(i).Count != 1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not OK."); return null; }
-                intCrv.Clear();
-            }
-            return intersectionCurve;
-        }
-
         #region Methods
         private List<Curve> FindRails(Brep brep, int bottomFaceIndex)
         {
