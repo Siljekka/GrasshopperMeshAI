@@ -49,18 +49,17 @@ namespace MeshPoints.QuadRemesh
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             Brep brep = new Brep();
-            int bottomFaceIndex = 0;
+            int bottomFace = 0;
             int nw = 0;
             Mesh2D mesh = new Mesh2D();
 
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref topFace);
-            DA.GetData(2, ref bottomFace);
-            DA.GetData(3, ref nw);
-            DA.GetData(4, ref mesh);
+            DA.GetData(1, ref bottomFace);
+            DA.GetData(2, ref nw);
+            DA.GetData(3, ref mesh);
 
             if (!DA.GetData(0, ref brep)) return;
-            if (!DA.GetData(1, ref bottomFaceIndex)) return;
+            if (!DA.GetData(1, ref bottomFace)) return;
             if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "nw = 0"); return; }
 
             #region Code
@@ -70,10 +69,10 @@ namespace MeshPoints.QuadRemesh
             //solidMesh.inp = true;
 
             // 2. Find Rails
-            List<Curve> rails = FindRails(brep, bottomFaceIndex);
+            List<Curve> rails = FindRails(brep, bottomFace);
 
             // 3. Divide each brep edge in w direction (rail) into nw points.
-            DataTree<Point3d> railPoints = DivideRailIntoNwPoints(rails, brep.Faces[bottomFaceIndex], nw);
+            DataTree<Point3d> railPoints = DivideRailIntoNwPoints(rails, brep.Faces[bottomFace], nw);
             
             // 4. Create Planes
             List<Plane> planes = GetPlanes(railPoints);
@@ -85,16 +84,6 @@ namespace MeshPoints.QuadRemesh
             List<Mesh2D> meshOnPlanes = new List<Mesh2D>();
             meshOnPlanes.Add(mesh);
             Plane basePlane = planes[0];
-
-            List<Mesh> meshes = new List<Mesh>();
-
-            meshes.Add(mesh.mesh);
-            Transform t = new Transform();
-            t = Transform.PlaneToPlane(basePlane, planes[1]);
-            Mesh m1 = new Mesh();
-            m1 = mesh.mesh;
-
-            meshes.Add(m1);
 
             for (int i = 1; i < planes.Count; i++)
             {
@@ -134,7 +123,7 @@ namespace MeshPoints.QuadRemesh
                 meshOnPlanes.Add(meshToTransform); // add to list of mesh
             }
             /*
-            // from SurfaceMesh to SolidMesh
+            // from SurfaceMesh to SolidMesh, Old method
 
             int elementIndex = 0;
             List<Element> solidElements = new List<Element>();
@@ -222,7 +211,7 @@ namespace MeshPoints.QuadRemesh
 
             #endregion
 
-            DA.SetDataList(0, meshes);
+            DA.SetDataList(0, meshOnPlanes);
 
         }
 
