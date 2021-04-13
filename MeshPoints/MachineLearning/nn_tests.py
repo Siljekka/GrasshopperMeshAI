@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 import time
 from sklearn.model_selection import train_test_split
+import sklearn.preprocessing as skpp
+import sklearn.utils
 
 # print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
@@ -21,36 +23,37 @@ def nn1():
 
         polygons = pd.read_csv("data/6-gon-mesh-dataset.csv")
 
+        polygons = sklearn.utils.shuffle(polygons)
+
         # Split dataset into 80/20 training/test
         polygon_train = polygons.sample(frac=0.8, random_state=0)
+        polygon_test = polygons.drop(polygon_train.index)
 
         train_features = polygon_train.copy()
         train_labels = train_features.pop('internal_nodes')
 
-        polygon_test = polygons.drop(polygon_train.index)
-
         test_features = polygon_test.copy()
         test_labels = test_features.pop('internal_nodes')
 
-        train_features = np.array(train_features)
-        test_features = np.array(test_features)
-
-        np.random.shuffle(train_features)
-        np.random.shuffle(test_features)
-
         polygon_model = tf.keras.Sequential([
-            layers.Dense(24, activation="relu", input_shape=(13,)),
+            tf.keras.Input(shape=(13,)),
             layers.BatchNormalization(),
-
             layers.Dense(24, activation="relu"),
-            layers.BatchNormalization(),
 
-            layers.Dense(1, activation="linear")
+            layers.BatchNormalization(),
+            layers.Dense(24, activation="relu"),
+
+            layers.BatchNormalization(),
+            layers.Dense(24, activation="relu"),
+
+            layers.Dense(1)
         ])
 
         polygon_model.summary()
         polygon_model.compile(loss = tf.losses.MeanAbsoluteError(),
-                              optimizer=tf.optimizers.Adam(learning_rate=learning_rate, decay=weight_decay),
+                              optimizer=tf.optimizers.Adam(
+                                  # learning_rate=learning_rate, decay=weight_decay
+                              ),
                               metrics=['accuracy']
                               )
 
@@ -63,8 +66,8 @@ def nn1():
                                     )
 
         # Evaluate the model
-        train_acc = polygon_model.evaluate(train_features, train_labels, verbose=0)
-        test_acc = polygon_model.evaluate(test_features, test_labels, verbose=0)
+        _, train_acc = polygon_model.evaluate(train_features, train_labels, verbose=0)
+        _, test_acc = polygon_model.evaluate(test_features, test_labels, verbose=0)
         print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
 
         # plot history

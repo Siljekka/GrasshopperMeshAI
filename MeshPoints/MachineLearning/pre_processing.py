@@ -89,6 +89,8 @@ def create_random_ngon(number_of_sides: int) -> np.array:
 
 
 def mesh_contour(contour: np.array, target_edge_length: float):
+    # Meshes a contour with a given edge length
+
     # Create a new model
     gmsh.model.add("1")
 
@@ -132,6 +134,7 @@ def mesh_contour(contour: np.array, target_edge_length: float):
 
 
 def mesh_contour_all_lc(contour: np.array):
+    # Meshes one contour with all the edge lengths
 
     edge_lengths = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     features = []
@@ -163,7 +166,10 @@ def mesh_contour_all_lc(contour: np.array):
 
         # Synchronize CAD entities (point, line, surface) with the gmsh-model
         gmsh.model.geo.synchronize()
+
+        # ! Unsure about this line !!!!
         gmsh.option.set_number("Mesh.MeshSizeMax", target_edge_length)
+        gmsh.option.set_number("Mesh.Algorithm", 5)
 
         # Generate 2D mesh
         mesh = gmsh.model.mesh.generate(2)
@@ -173,13 +179,20 @@ def mesh_contour_all_lc(contour: np.array):
         num_nodes_total = mesh_nodes[0][-1]
         internal_nodes = int(num_nodes_total - contour.shape[0])
 
-        # For NN1: contour nodes and num of internal nodes
+        # For NN1: contour nodes, target edge length, and num of internal nodes
         tmp_features = np.append(contour.copy(), target_edge_length)
         tmp_features = np.append(tmp_features, internal_nodes)
 
         # GUI (buggy on macOS)
+        # Display options:
+        # gmsh.option.set_number("Mesh.Nodes", 1)
+        # gmsh.option.set_number("Mesh.NodeSize", 10)
+        # gmsh.option.set_number("Mesh.NodeLabels", 1)
         # if "-nopopup" not in sys.argv:
         #     gmsh.fltk.run()
+
+        # print(f"edge length: {target_edge_length}")
+        # print(f"internal nodes: {internal_nodes}")
 
         # Write to file
         # gmsh.write("data/1.msh")

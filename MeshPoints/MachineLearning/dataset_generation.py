@@ -53,6 +53,7 @@ def contour_to_csv(triangles: np.array, number_of_sides: int) -> None:
 
         writer.writerow(header)
 
+
 def single_edge_length_mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
     # Columns needed:
     #  contour nodes ( xi | yi) | target_edge_length | num inner nodes
@@ -70,6 +71,7 @@ def single_edge_length_mesh_to_csv(features, dataset_size: int, number_of_sides:
         for i, contour in enumerate(features):
             print("writing", i, "of", dataset_size, end="\r")
             writer.writerow(contour)
+
 
 def mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
     # Columns needed:

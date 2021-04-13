@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     num_sides = 6
     target_edge_length = 0.4
-    dataset_size = 1_333  # * 9 =~ 12_000
+    dataset_size = 1_333  # 1333 * 9 =~ 12_000 (wanted dataset size for 6-gons)
     # dataset_test = dg.generate_dataset(dataset_size, num_sides, target_edge_length)
     # dg.single_edge_length_mesh_to_csv(dataset_test, dataset_size, num_sides)
 
