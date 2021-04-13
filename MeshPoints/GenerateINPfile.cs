@@ -58,7 +58,7 @@ namespace MeshPoints
             string elementType = "Empty";
             double Emodul = 210000;
             double nu = 0.3;
-            double sectionThickness = 10.0;
+            double sectionThickness = 10;
             DA.GetData(0, ref solidMesh);
             DA.GetData(1, ref surfaceMesh);
             DA.GetData(2, ref elementType);
@@ -95,7 +95,7 @@ namespace MeshPoints
             }
             else if (DA.GetData(1, ref surfaceMesh) & !DA.GetData(0, ref solidMesh))
             {
-                inpText = GenerateSurfacefile(surfaceMesh, elementType, Emodul, nu, sectionThickness, partName, sectionName, materialName);
+                inpText = GenerateSurfacefile(surfaceMesh, elementType, sectionThickness, Emodul, nu, partName, sectionName, materialName);
                 if (!surfaceMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
             }
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Double mesh input. Remove one mesh input."); return; }
@@ -138,7 +138,7 @@ namespace MeshPoints
                 double nodeX = node.Coordinate.X;
                 double nodeY = node.Coordinate.Y;
                 double nodeZ = node.Coordinate.Z;
-                inpText.Add(String.Format("{0}, {1}, {2}, {3}", globalId, nodeY, nodeZ, nodeX)); //GlobalId, x-coord, y-coord, z-coord
+                inpText.Add(String.Format("{0}, {1}, {2}, {3}", globalId, nodeX, nodeZ, nodeY)); //GlobalId, x-coord, y-coord, z-coord
             }
 
             // Elements
@@ -154,7 +154,7 @@ namespace MeshPoints
                 int n6 = e.Node6.GlobalId + 1;
                 int n7 = e.Node7.GlobalId + 1;
                 int n8 = e.Node8.GlobalId + 1;
-                inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", elementId, n1, n2, n3, n4, n5, n6, n7, n8)); //ElementId, n1, n2, n3, n4, n5, n6, n7, n8
+                inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", elementId, n4, n3, n2, n1, n8, n7, n6, n5)); //ElementId, nodes. Count cw because of transformation of coordsyst. between rhino and abaqus.
             }
             inpText.Add("**");
 
@@ -229,27 +229,22 @@ namespace MeshPoints
 
             // OUTPUT
             //todo: fix output
-            inpText.Add("** OUTPUT REQUESTS");
+            inpText.Add("**OUTPUT REQUESTS");
             inpText.Add("**");
-            inpText.Add("*Restart, write, frequency=0");
+            inpText.Add("*Restart, write, frequency=0"); //fix for solid
             inpText.Add("**");
 
-            inpText.Add("** FIELD OUTPUT: F-Output-1");
+            inpText.Add("**FIELD OUTPUT: F-Output-1");
             inpText.Add("**");
-            inpText.Add("*Output, field");
-            inpText.Add("*Node Output");
-            inpText.Add("CF, RF, U");
-            inpText.Add("*Element Output, directions=YES");
-            inpText.Add("E, MISES, S");
+            inpText.Add("*Output, field, variable=PRESELECT");
+            inpText.Add("**");
 
+            inpText.Add("**HISTORY OUTPUT: H-Output-1");
             inpText.Add("**");
-            inpText.Add("** HISTORY OUTPUT: H-Output-1");
-            inpText.Add("**");
-            inpText.Add("*Output, history");
-            inpText.Add("*Energy Output, elset=BeamInstance.Fixed, variable=PRESELECT");
-            
+            inpText.Add("*Output, history, variable=PRESELECT");
+
             inpText.Add("*End Step");
-            
+
             return inpText;
         }
 
@@ -290,10 +285,10 @@ namespace MeshPoints
             foreach (Element e in elements)
             {
                 int elementId = e.Id + 1;
-                int n1 = e.Node1.GlobalId;
-                int n2 = e.Node2.GlobalId;
-                int n3 = e.Node3.GlobalId;
-                int n4 = e.Node4.GlobalId;
+                int n1 = e.Node1.GlobalId + 1;
+                int n2 = e.Node2.GlobalId + 1;
+                int n3 = e.Node3.GlobalId + 1;
+                int n4 = e.Node4.GlobalId + 1;
                 inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}", elementId, n1, n2, n3, n4)); //ElementId, n1, n2, n3, n4
             }
             inpText.Add("**");
@@ -320,7 +315,7 @@ namespace MeshPoints
             // Assembly
             inpText.Add("**");
             inpText.Add("**");
-            inpText.Add("ASSEMBLY");
+            inpText.Add("** ASSEMBLY");
             inpText.Add("**");
             inpText.Add("*Assembly, name=Assembly");
             inpText.Add("**");
@@ -391,9 +386,9 @@ namespace MeshPoints
        
         
         #endregion
-            /// <summary>
-            /// Provides an Icon for the component.
-            /// </summary>
+        /// <summary>
+        /// Provides an Icon for the component.
+        /// </summary>
         protected override System.Drawing.Bitmap Icon
         {
             get
