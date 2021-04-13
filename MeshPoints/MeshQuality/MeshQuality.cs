@@ -532,13 +532,20 @@ namespace MeshPoints.MeshQuality
             // Minimum element divided by maximum element. A value of 1 denotes a rectangular element.
             double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
 
-            // Generate a warning if Jacobian ratio is outside of the valid range: [0.0, 1.0].
-            if (jacobianRatio < 0 || 1.0 < jacobianRatio)
+            // If any of the determinants are negative, we have to divide the maximum with the minimum
+            if (jacobiansOfElement.Any(x => x < 0))
             {
-                //throw new ArgumentOutOfRangeException(
-                //    paramName: "jacobianRatio", jacobianRatio,
-                //    message: "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a concave or self-intersecting element.");
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The Jacobian ratio is outside of the valid range [0.0, 1.0]. A negative value might indicate a concave or self-intersecting element.");
+                jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
+
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {e.Id} is negative.");
+                if (jacobianRatio < 0)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {e.Id} is negative.");
+                }
+            }
+            else
+            {
+                jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
             }
 
             return jacobianRatio;
