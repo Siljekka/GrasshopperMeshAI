@@ -87,33 +87,31 @@ namespace MeshPoints.CreateMesh
 
 
 
-            // 1. Assign properties to SolidMesh
-            //solidMesh.nu = nu;
-            //solidMesh.nv = nv;
-            //solidMesh.nw = nw;
-            //solidMesh.inp = true;
+            /* Todo:
+             * Fjern bottomFace og brep og ha heller brepGeometry som input
+             * kan erstatte FindRails
+             * vurder å lage en tuple for sortbrepProperties, evt legg metode inn i Geometry-klassen
+            */
 
 
-            // Add bottom and top face to list
+            // 0. Add properties to Geometry
+            Geometry brepGeometry = new Geometry(brep, SortBrepFaces(brep, bottomFace), SortBrepEdges(brep, bottomFace), SortBrepVertex(brep, bottomFace));
 
             // 1. Find Rails
             List<Curve> rails = FindRails(brep, bottomFace);
 
-
-            //2. Divide each brep edge in w direction (rail) into nw points.
+            // 2. Divide each brep edge in w direction (rail) into nw points.
             railPoints = DivideRailIntoNwPoints(rails, brep, nw, bottomFace);
-
 
             // 3. Create NurbsSurface for each nw-floor
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
             if (intersectionCurve == null) return;
-
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
          
-            //4. Make grid of points in u and v direction at leven nw
+            // 4. Make grid of points in u and v direction at leven nw
             meshPoints = CreateGridOfPointsAtEachFloor(nu, nv, surfaceAtNw, railPoints);
             
-            //5. Create nodes and elements
+            // 5. Create nodes and elements
             nodes = CreateNodes(meshPoints, nu, nv, nw); // assign Coordiantes, GlobalId and Boundary Conditions
             elements = CreateHexElements(meshPoints, nodes, nu, nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
 
@@ -123,8 +121,9 @@ namespace MeshPoints.CreateMesh
             // 7. Create global mesh
             allMesh = CreateGlobalMesh(elements);
 
-            //8. Add properties to SolidMesh
+            // 8. Add properties to SolidMesh
             Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, allMesh);
+            solidMesh.Geometry = brepGeometry;
             solidMesh.inp = true;
 
             // Output
@@ -133,13 +132,107 @@ namespace MeshPoints.CreateMesh
         }
 
         #region Methods
+        private List<BrepFace> SortBrepFaces(Brep brep, int bottomFace)
+        {
+            List<BrepFace> faceSorted = new List<BrepFace>();
+            // Find top and bottom edge
+            List<BrepFace> brepFace = brep.Faces.ToList();
+            List<int> indexAdjecentFaces = (brepFace[bottomFace].AdjacentFaces()).ToList();
+            indexAdjecentFaces.Add(bottomFace);
+            for (int i = 0; i < brepFace.Count; i++)
+            {
+                if (!indexAdjecentFaces.Contains(brepFace.IndexOf(brepFace[i])))
+                {
+                    faceSorted.Add(brepFace[bottomFace]); // bottom face
+                    faceSorted.Add(brepFace[i]); // top face
+                    continue;
+                }
+            }
+            indexAdjecentFaces.Remove(bottomFace);
+            foreach (int index in indexAdjecentFaces) { faceSorted.Add(brepFace[index]); }
+            return faceSorted;
+        }
+        private List<BrepEdge> SortBrepEdges(Brep brep, int bottomFace)
+        {
+            List<BrepFace> faceSorted = SortBrepFaces(brep, bottomFace);
+            List<BrepEdge> edgeSorted = new List<BrepEdge>();
+            List<int> indexAdjecentEdges = new List<int>();
+
+            // Find edges connected to top and bottom face.
+            indexAdjecentEdges.AddRange(faceSorted[0].AdjacentEdges().ToList());
+            indexAdjecentEdges.AddRange(faceSorted[1].AdjacentEdges().ToList());
+
+            // Add edges to list.
+            foreach (int index in indexAdjecentEdges) { edgeSorted.Add(brep.Edges[index]); }
+
+            // Find rest of edges
+            List<BrepEdge> brepEdgesCopy = brep.Edges.ToList();
+            List<Curve> rails = new List<Curve>(brepEdgesCopy);
+            foreach (int index in indexAdjecentEdges) { rails.Remove(brepEdgesCopy[index]); }
+
+            // Add rest of edges to list.
+            foreach (BrepEdge edge in rails) { edgeSorted.Add(edge); }
+            return edgeSorted;
+        }
+        private List<BrepVertex> SortBrepVertex(Brep brep, int bottomFace)
+        {
+            List<BrepVertex> vertexSorted = new List<BrepVertex>();
+            List<BrepFace> brepFaces = SortBrepFaces(brep, bottomFace);
+            List<BrepVertex> brepVertex = brep.Vertices.ToList();
+
+            foreach (BrepVertex vertex in brepVertex)
+            {
+                bool isOnBottomFace = IsOnFace(vertex.Location, brepFaces[0]);
+                if (isOnBottomFace) { vertexSorted.Add(vertex); }
+            }
+
+            foreach (BrepVertex vertex in brepVertex)
+            {
+                bool isOnTopFace = IsOnFace(vertex.Location, brepFaces[1]);
+                if (isOnTopFace) { vertexSorted.Add(vertex); }
+            }
+            return vertexSorted;
+        }
+        private bool IsOnFace(Point3d point, BrepFace face)
+        {
+            bool isOnFace = false;
+
+            face.ClosestPoint(point, out double PointOnCurveU, out double PointOnCurveV);
+            Point3d testPoint = face.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
+            double distanceToFace = (testPoint - point).Length; // calculate distance between testPoint and node
+            if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
+            {
+                isOnFace = true;
+            }
+            return isOnFace;
+        }
+        private bool IsOnEdge(Point3d point, BrepEdge edge)
+        {
+            bool isOnEdge = false;
+
+            edge.ClosestPoint(point, out double PointOnCurve);
+            Point3d testPoint = edge.PointAt(PointOnCurve);  // make test point 
+            double distanceToEdge = (testPoint - point).Length; // calculate distance between testPoint and node
+            if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
+            {
+                isOnEdge = true;
+            }
+            return isOnEdge;
+        }
+
         /// <summary>
         /// Find the edges of brep composing rails
         /// </summary>
         /// <returns> List with rails. </returns>
         private List<Curve> FindRails(Brep brep, int bottomFace)
         {
-            // Find top and bottom edge
+            // Sort brep edges.
+            List<BrepEdge> brepEdges = SortBrepEdges(brep, bottomFace);
+
+            // Find rails.
+            List<Curve> rails = new List<Curve>() { brepEdges[8], brepEdges[9], brepEdges[10], brepEdges[11] };
+            #region Old Code
+            /*
             List<BrepFace> brepFace = brep.Faces.ToList();
             List<int> indexAdjecentFaces = (brepFace[bottomFace].AdjacentFaces()).ToList();
             List<int> indexAdjecentEdges = (brepFace[bottomFace].AdjacentEdges()).ToList();
@@ -154,13 +247,17 @@ namespace MeshPoints.CreateMesh
                     indexAdjecentEdges.AddRange(brepTopFace.AdjacentEdges());
                     continue;
                 }
-            }
+            }*/
 
             // Find rails
+            /*
+            List<int> indexAdjecentEdges = new List<int>();
+            indexAdjecentEdges.AddRange(brepFace[0].AdjacentEdges().ToList());
+            indexAdjecentEdges.AddRange(brepFace[1].AdjacentEdges().ToList());
             List<BrepEdge> brepEdges = brep.Edges.ToList();
             List<Curve> rails = new List<Curve>(brepEdges);
-            foreach (int index in indexAdjecentEdges) { rails.Remove(brepEdges[index]); }
-
+            foreach (int index in indexAdjecentEdges) { rails.Remove(brepEdges[index]); }*/
+            #endregion
             #region Old Code
             /*
             foreach (BrepEdge edge in brepEdges) // check if node is on edge
@@ -219,7 +316,7 @@ namespace MeshPoints.CreateMesh
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
         private DataTree<Point3d> DivideRailIntoNwPoints(List<Curve> rails, Brep brep, int nw, int bottomFace)
         {
-            DataTree<Point3d> railPoints = new DataTree<Point3d>();
+            DataTree<Point3d> railPoints = new DataTree<Point3d>(); // todo: erstatt brep og bottomFace med geometry
             BrepFace brepBottomFace = brep.Faces[bottomFace]; //todo: fix input.
 
             for (int i = 0; i < rails.Count; i++)
@@ -231,7 +328,7 @@ namespace MeshPoints.CreateMesh
                 Vector3d distanceToFace = testPoint - point[0];
 
                 if (distanceToFace.Length > 0.001) { point.Reverse(); }
-
+                //if (!IsOnFace(point[0], brepBottomFace)) { point.Reverse(); } //todo: test if this works instead of over 
                 for (int j = 0; j < point.Count; j++)
                 {
                     railPoints.Add(point[j], new GH_Path(j)); //tree with nw points on each rail. Branch: floor
@@ -296,15 +393,16 @@ namespace MeshPoints.CreateMesh
             {
                 Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
                 Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
-                Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+                //Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
                 Plane plane = new Plane(railPoints.Branch(i)[0], vec1, vec2);
                 Intersection.BrepPlane(brep, plane, 0.0001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
                 List<Curve> intCrv = iCrv.ToList();
-                planes.Add(plane);
-
+                
                 for (int j = 0; j < intCrv.Count; j++) { intCrv[j].MakeClosed(0.0001); intersectionCurve.Add(intCrv[j], new GH_Path(i)); }  // make curve closed and add to intersectionCurve
                 if (intersectionCurve.Branch(i).Count != 1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not OK."); return null; }
                 if (intersectionCurve.Branch(i)[0].ClosedCurveOrientation(plane).ToString() == "Clockwise") { intersectionCurve.Branch(i)[0].Reverse(); }
+
+                planes.Add(plane);
                 intCrv.Clear();
             }
             return intersectionCurve;
