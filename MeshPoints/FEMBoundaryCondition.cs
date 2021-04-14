@@ -92,11 +92,8 @@ namespace MeshPoints
                 {
                     for (int n = 0; n < indicesOfGeometryWithBC.Count; n++)
                     {
-                        BrepEdge bEdge = mesh.GeometryInformation.EdgeList[indicesOfGeometryWithBC[n]];
-                        bEdge.ClosestPoint(node.Coordinate, out double PointOnCurve);
-                        Point3d testPoint = bEdge.PointAt(PointOnCurve);  // make test point 
-                        double distanceToEdge = testPoint.DistanceTo(node.Coordinate); // calculate distance between testPoint and node
-                        if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
+                        BrepEdge edge = mesh.GeometryInformation.Edges[indicesOfGeometryWithBC[n]];
+                        if (IsPointOnEdge(node.Coordinate, edge)) 
                         {
                             nodeIsOnGeometry = true;
                             break;
@@ -107,11 +104,8 @@ namespace MeshPoints
                 {
                     for (int n = 0; n < indicesOfGeometryWithBC.Count; n++)
                     {
-                        BrepFace bFace = mesh.GeometryInformation.FaceList[indicesOfGeometryWithBC[n]];
-                        bFace.ClosestPoint(node.Coordinate, out double PointOnCurveU, out double PointOnCurveV);
-                        Point3d testPoint = bFace.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
-                        double distanceToFace = testPoint.DistanceTo(node.Coordinate); // calculate distance between testPoint and node
-                        if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
+                        BrepFace face = mesh.GeometryInformation.Faces[indicesOfGeometryWithBC[n]];
+                        if (IsPointOnSurface(node.Coordinate, face))
                         {
                             nodeIsOnGeometry = true;
                             break;
@@ -142,6 +136,32 @@ namespace MeshPoints
             #endregion
         }
 
+
+        private bool IsPointOnSurface(Point3d point, BrepFace face)
+        {
+            bool nodeIsOnGeometry = false;
+            face.ClosestPoint(point, out double PointOnCurveU, out double PointOnCurveV);
+            Point3d testPoint = face.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
+            double distanceToFace = testPoint.DistanceTo(point); // calculate distance between testPoint and node
+            if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
+            {
+                nodeIsOnGeometry = true;
+            }
+            return nodeIsOnGeometry;
+        }
+
+        private bool IsPointOnEdge(Point3d point, BrepEdge edge)
+        {
+            bool nodeIsOnGeometry = false;
+            edge.ClosestPoint(point, out double PointOnCurve);
+            Point3d testPoint = edge.PointAt(PointOnCurve);  // make test point 
+            double distanceToEdge = testPoint.DistanceTo(point); // calculate distance between testPoint and node
+            if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
+            {
+                nodeIsOnGeometry = true;
+            }
+            return nodeIsOnGeometry;
+        }
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>

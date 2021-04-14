@@ -20,7 +20,7 @@ namespace MeshPoints.Classes
 
         public string Type { get; set; } // to do: inplementer
 
-        public List<Brep> BrepInformation { get; set; } // to do: temporary
+        public GeometryInfo GeometryInformation { get; set; } // to do: temporary
         public Mesh3D()
         {
             //Empty constructor
