@@ -130,8 +130,8 @@ namespace MeshPoints.CreateMesh
             solidMesh.mesh = allMesh;
          
             // Output
-            DA.SetDataList(0, surfaceAtNw);
-            DA.SetData(1, allMesh);
+            DA.SetData(0, solidMesh);
+            DA.SetData(1, solidMesh.mesh);
         }
 
         #region Methods

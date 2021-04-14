@@ -25,10 +25,10 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("SolidMesh", "solid", "Solid mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
             pManager.AddGenericParameter("SurfaceMesh", "surface", "Surface mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
-            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8I, S4 (Solid, Shell)", GH_ParamAccess.item);
+            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8, S4 (Solid, Shell)", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 1 mm", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 10 mm", GH_ParamAccess.item);
 
             pManager[0].Optional = true; // SolidMesh is optional
             pManager[1].Optional = true; // SurfaceMesh is optional
@@ -52,21 +52,22 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            #region Input
+            // Input
             Mesh3D solidMesh = new Mesh3D();
             Mesh2D surfaceMesh = new Mesh2D();
             string elementType = "Empty";
             double Emodul = 210000;
             double nu = 0.3;
-            double sectionThickness = 1.0;
+            double sectionThickness = 10;
             DA.GetData(0, ref solidMesh);
             DA.GetData(1, ref surfaceMesh);
             DA.GetData(2, ref elementType);
             DA.GetData(3, ref Emodul);
             DA.GetData(4, ref nu);
             DA.GetData(5, ref sectionThickness);
-            #endregion
 
+
+            if (!DA.GetData(0, ref solidMesh) & !DA.GetData(1, ref surfaceMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Failed to collect data from mesh. Must input either solidMesh or surfaceMesh."); }
 
             // Variables
             List<string> inpText = new List<string>();
@@ -74,25 +75,28 @@ namespace MeshPoints
             string sectionName = "Section"; //todo: fix name
             string materialName = "Steel";
 
-            // 0. Check if inp-file can be made. 
-            if (!solidMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
+            
 
+            // 0. Check if inp-file can be made. 
+           
 
             // 1. Set material properties
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
 
             // 2. Set element type dependent on solid or surface mesh
-            if (DA.GetData(0, ref solidMesh) & elementType == "Empty") { elementType = "C3D8I"; }
+            if (DA.GetData(0, ref solidMesh) & elementType == "Empty") { elementType = "C3D8"; }
             if (DA.GetData(1, ref surfaceMesh) & elementType == "Empty") { elementType = "S4"; }
 
             // 3. Generate inp-file
             if (DA.GetData(0, ref solidMesh) & !DA.GetData(1, ref surfaceMesh))
             {
                 inpText = GenerateSolidfile(solidMesh, elementType, Emodul, nu, partName, sectionName, materialName);
+                if (!solidMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
             }
             else if (DA.GetData(1, ref surfaceMesh) & !DA.GetData(0, ref solidMesh))
             {
-                inpText = GenerateSurfacefile(surfaceMesh, elementType, Emodul, nu, sectionThickness, partName, sectionName, materialName);
+                inpText = GenerateSurfacefile(surfaceMesh, elementType, sectionThickness, Emodul, nu, partName, sectionName, materialName);
+                if (!surfaceMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
             }
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Double mesh input. Remove one mesh input."); return; }
 
@@ -109,6 +113,7 @@ namespace MeshPoints
         /// <returns> inp text file </returns>
         private List<string> GenerateSolidfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
+            //Transform.ChangeBasis(Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis, Vector3d.ZAxis, Vector3d.XAxis, Vector3d.YAxis);
             List<string> inpText = new List<string>();
             List<Node> nodes = solidMesh.Nodes;
             List<Element> elements = solidMesh.Elements;
@@ -124,7 +129,7 @@ namespace MeshPoints
             inpText.Add("** PARTS");
             inpText.Add("**");
             inpText.Add(String.Format("*Part, name={0}", partName)); //clean to have parts included, but not needed.
-
+            
             // Nodes
             inpText.Add("*Node");
             foreach (Node node in nodes)
@@ -133,7 +138,7 @@ namespace MeshPoints
                 double nodeX = node.Coordinate.X;
                 double nodeY = node.Coordinate.Y;
                 double nodeZ = node.Coordinate.Z;
-                inpText.Add(String.Format("{0}, {1}, {2}, {3}", globalId, nodeX, nodeY, nodeZ)); //GlobalId, x-coord, y-coord, z-coord
+                inpText.Add(String.Format("{0}, {1}, {2}, {3}", globalId, nodeX, nodeZ, nodeY)); //GlobalId, x-coord, y-coord, z-coord
             }
 
             // Elements
@@ -149,7 +154,7 @@ namespace MeshPoints
                 int n6 = e.Node6.GlobalId + 1;
                 int n7 = e.Node7.GlobalId + 1;
                 int n8 = e.Node8.GlobalId + 1;
-                inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", elementId, n1, n2, n3, n4, n5, n6, n7, n8)); //ElementId, n1, n2, n3, n4, n5, n6, n7, n8
+                inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", elementId, n4, n3, n2, n1, n8, n7, n6, n5)); //ElementId, nodes. Count cw because of transformation of coordsyst. between rhino and abaqus.
             }
             inpText.Add("**");
 
@@ -224,27 +229,22 @@ namespace MeshPoints
 
             // OUTPUT
             //todo: fix output
-            inpText.Add("** OUTPUT REQUESTS");
+            inpText.Add("**OUTPUT REQUESTS");
             inpText.Add("**");
-            inpText.Add("*Restart, write, frequency=0");
+            inpText.Add("*Restart, write, frequency=0"); //fix for solid
             inpText.Add("**");
 
-            inpText.Add("** FIELD OUTPUT: F-Output-1");
+            inpText.Add("**FIELD OUTPUT: F-Output-1");
             inpText.Add("**");
-            inpText.Add("*Output, field");
-            inpText.Add("*Node Output");
-            inpText.Add("CF, RF, U");
-            inpText.Add("*Element Output, directions=YES");
-            inpText.Add("E, MISES, S");
+            inpText.Add("*Output, field, variable=PRESELECT");
+            inpText.Add("**");
 
+            inpText.Add("**HISTORY OUTPUT: H-Output-1");
             inpText.Add("**");
-            inpText.Add("** HISTORY OUTPUT: H-Output-1");
-            inpText.Add("**");
-            inpText.Add("*Output, history");
-            inpText.Add("*Energy Output, elset=BeamInstance.Fixed, variable=PRESELECT");
-            
+            inpText.Add("*Output, history, variable=PRESELECT");
+
             inpText.Add("*End Step");
-            
+
             return inpText;
         }
 
@@ -285,10 +285,10 @@ namespace MeshPoints
             foreach (Element e in elements)
             {
                 int elementId = e.Id + 1;
-                int n1 = e.Node1.GlobalId;
-                int n2 = e.Node2.GlobalId;
-                int n3 = e.Node3.GlobalId;
-                int n4 = e.Node4.GlobalId;
+                int n1 = e.Node1.GlobalId + 1;
+                int n2 = e.Node2.GlobalId + 1;
+                int n3 = e.Node3.GlobalId + 1;
+                int n4 = e.Node4.GlobalId + 1;
                 inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}", elementId, n1, n2, n3, n4)); //ElementId, n1, n2, n3, n4
             }
             inpText.Add("**");
@@ -315,7 +315,7 @@ namespace MeshPoints
             // Assembly
             inpText.Add("**");
             inpText.Add("**");
-            inpText.Add("ASSEMBLY");
+            inpText.Add("** ASSEMBLY");
             inpText.Add("**");
             inpText.Add("*Assembly, name=Assembly");
             inpText.Add("**");
@@ -386,9 +386,9 @@ namespace MeshPoints
        
         
         #endregion
-            /// <summary>
-            /// Provides an Icon for the component.
-            /// </summary>
+        /// <summary>
+        /// Provides an Icon for the component.
+        /// </summary>
         protected override System.Drawing.Bitmap Icon
         {
             get

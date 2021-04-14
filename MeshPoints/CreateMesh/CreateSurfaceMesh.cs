@@ -97,7 +97,7 @@ namespace MeshPoints.CreateMesh
 
             // Output
             DA.SetData(0, surfaceMesh);
-            DA.SetDataList(1, meshPoints);
+            DA.SetData(1, surfaceMesh.mesh);
         }
         /// <summary>
         /// Check if mesh is compatible with Abaqus
