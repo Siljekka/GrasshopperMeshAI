@@ -106,7 +106,6 @@ namespace MeshPoints.CreateMesh
 
             // 3. Create NurbsSurface for each nw-floor
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
-
             if (intersectionCurve == null) return;
 
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
@@ -336,7 +335,7 @@ namespace MeshPoints.CreateMesh
         /// Copy a grid of points in u and v direction onto every floor.
         /// </summary>
         /// <returns> DataTree with points on Brep. Branch: floor level.</returns>
-        private DataTree<Point3d> CreateGridOfPointsAtEachFloor(int nu, int nv, List<NurbsSurface> surfaceAtNw, DataTree<Point3d> railPoints, DataTree<Curve> intersectionCurve)
+        private DataTree<Point3d> CreateGridOfPointsAtEachFloor(int nu, int nv, List<NurbsSurface> surfaceAtNw, DataTree<Point3d> railPoints)
         {
             List<Point3d> pt = new List<Point3d>();
             DataTree<Point3d> points = new DataTree<Point3d>();
