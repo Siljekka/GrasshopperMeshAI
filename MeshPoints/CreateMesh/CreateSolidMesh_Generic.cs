@@ -68,7 +68,7 @@ namespace MeshPoints.CreateMesh
 
             #region Variables
             //Variables
-            Mesh3D solidMesh = new Mesh3D();
+            //Mesh3D solidMesh = new Mesh3D();
             Mesh allMesh = new Mesh();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
@@ -88,10 +88,10 @@ namespace MeshPoints.CreateMesh
 
 
             // 1. Assign properties to SolidMesh
-            solidMesh.nu = nu;
-            solidMesh.nv = nv;
-            solidMesh.nw = nw;
-            solidMesh.inp = true;
+            //solidMesh.nu = nu;
+            //solidMesh.nv = nv;
+            //solidMesh.nw = nw;
+            //solidMesh.inp = true;
 
 
             // Add bottom and top face to list
@@ -101,7 +101,7 @@ namespace MeshPoints.CreateMesh
 
 
             //2. Divide each brep edge in w direction (rail) into nw points.
-            railPoints = DivideRailIntoNwPoints(rails, brep, solidMesh.nw, bottomFace);
+            railPoints = DivideRailIntoNwPoints(rails, brep, nw, bottomFace);
 
 
             // 3. Create NurbsSurface for each nw-floor
@@ -111,11 +111,11 @@ namespace MeshPoints.CreateMesh
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
          
             //4. Make grid of points in u and v direction at leven nw
-            meshPoints = CreateGridOfPointsAtEachFloor(solidMesh.nu, solidMesh.nv, surfaceAtNw, railPoints);
+            meshPoints = CreateGridOfPointsAtEachFloor(nu, nv, surfaceAtNw, railPoints);
             
             //5. Create nodes and elements
-            nodes = CreateNodes(meshPoints, solidMesh.nu, solidMesh.nv, solidMesh.nw); // assign Coordiantes, GlobalId and Boundary Conditions
-            elements = CreateHexElements(meshPoints, nodes, solidMesh.nu, solidMesh.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
+            nodes = CreateNodes(meshPoints, nu, nv, nw); // assign Coordiantes, GlobalId and Boundary Conditions
+            elements = CreateHexElements(meshPoints, nodes, nu, nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
 
             // 6. Check if brep can be interpret by Abaqus
             //IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
@@ -124,10 +124,9 @@ namespace MeshPoints.CreateMesh
             allMesh = CreateGlobalMesh(elements);
 
             //8. Add properties to SolidMesh
-            solidMesh.Nodes = nodes;
-            solidMesh.Elements = elements;
-            solidMesh.mesh = allMesh;
-         
+            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, allMesh);
+            solidMesh.inp = true;
+
             // Output
             DA.SetData(0, solidMesh);
             DA.SetData(1, solidMesh.mesh);
