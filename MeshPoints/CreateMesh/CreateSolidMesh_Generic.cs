@@ -99,15 +99,10 @@ namespace MeshPoints.CreateMesh
             // 1. Find Rails
             List<Curve> rails = FindRails(brep, bottomFace);
 
-<<<<<<< HEAD
-            // 2. Divide each brep edge in w direction (rail) into nw points.
-            railPoints = DivideRailIntoNwPoints(rails, brep, solidMesh.nw, bottomFace);
-=======
 
             //2. Divide each brep edge in w direction (rail) into nw points.
             railPoints = DivideRailIntoNwPoints(rails, brep, nw, bottomFace);
 
->>>>>>> 6c2ce6eb70747e882ad5acbca2535ff8158bbbbd
 
             // 3. Create NurbsSurface for each nw-floor
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
@@ -115,15 +110,6 @@ namespace MeshPoints.CreateMesh
             if (intersectionCurve == null) return;
 
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
-<<<<<<< HEAD
-
-            // 4. Make grid of points in u and v direction at leven nw
-            meshPoints = CreateGridOfPointsAtEachFloor(solidMesh.nu, solidMesh.nv, surfaceAtNw, railPoints, intersectionCurve);
-            
-            // 5. Create nodes and elements
-            nodes = CreateNodes(meshPoints, solidMesh.nu, solidMesh.nv, solidMesh.nw); // assign Coordiantes, GlobalId and Boundary Conditions
-            elements = CreateHexElements(meshPoints, nodes, solidMesh.nu, solidMesh.nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
-=======
          
             //4. Make grid of points in u and v direction at leven nw
             meshPoints = CreateGridOfPointsAtEachFloor(nu, nv, surfaceAtNw, railPoints);
@@ -131,7 +117,6 @@ namespace MeshPoints.CreateMesh
             //5. Create nodes and elements
             nodes = CreateNodes(meshPoints, nu, nv, nw); // assign Coordiantes, GlobalId and Boundary Conditions
             elements = CreateHexElements(meshPoints, nodes, nu, nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
->>>>>>> 6c2ce6eb70747e882ad5acbca2535ff8158bbbbd
 
             // 6. Check if brep can be interpret by Abaqus
             //IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
@@ -139,18 +124,10 @@ namespace MeshPoints.CreateMesh
             // 7. Create global mesh
             allMesh = CreateGlobalMesh(elements);
 
-<<<<<<< HEAD
-            // 8. Add properties to SolidMesh
-            solidMesh.Nodes = nodes;
-            solidMesh.Elements = elements;
-            solidMesh.mesh = allMesh;
-         
-=======
             //8. Add properties to SolidMesh
             Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, allMesh);
             solidMesh.inp = true;
 
->>>>>>> 6c2ce6eb70747e882ad5acbca2535ff8158bbbbd
             // Output
             DA.SetData(0, solidMesh);
             DA.SetData(1, solidMesh.mesh);
