@@ -17,6 +17,7 @@ namespace MeshPoints.Classes
     {
         public double YoungModulus { get; set; }
         public double PossionRatio { get; set; }
+        public double ShellThickness { get; set; }
 
         // constructer
         public Material()

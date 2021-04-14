@@ -89,6 +89,7 @@
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
     <Compile Include="FEMBoundaryCondition.cs" />
     <Compile Include="FEMLoad.cs" />
+    <Compile Include="FEMMaterial.cs" />
     <Compile Include="Mesh_outdated\CreateMesh3D_Box.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh_OldSweep.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />
