@@ -59,9 +59,9 @@ namespace MeshPoints
             bool Tx = false;
             bool Ty = false;
             bool Tz = false;
-            bool Rx = false;
-            bool Ry = false;
-            bool Rz = false;
+            //bool Rx = false;
+            //bool Ry = false;
+            //bool Rz = false;
 
             DA.GetData(0, ref mesh);
             DA.GetDataList(1, indicesOfGeometryWithBC);
