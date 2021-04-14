@@ -104,7 +104,6 @@ namespace MeshPoints.CreateMesh
             railPoints = DivideRailIntoNwPoints(rails, brep, solidMesh.nw, bottomFace);
 
 
-
             // 3. Create NurbsSurface for each nw-floor
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
             if (intersectionCurve == null) return;
@@ -518,30 +517,57 @@ namespace MeshPoints.CreateMesh
                     e.IsCube = true;
                     if (count2 < nu - 1)
                     {
+                        // to do: fix this
+                        List<Node> elementNodes = new List<Node>();
+                        List<int> elementConnectivity = new List<int>();
+
                         Node n1 = new Node(1, nodes[counter].GlobalId, ptsBot[j], nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
                         e.Node1 = n1;
+                        elementNodes.Add(n1);
+                        elementConnectivity.Add(n1.GlobalId);
 
                         Node n2 = new Node(2, nodes[counter + 1].GlobalId, ptsBot[j + 1], nodes[counter + 1].BC_U, nodes[counter + 1].BC_V, nodes[counter + 1].BC_W);
                         e.Node2 = n2;
+                        elementNodes.Add(n2);
+                        elementConnectivity.Add(n2.GlobalId);
 
                         Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, ptsBot[j + nu + 1], nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V, nodes[counter + nu + 1].BC_W);
                         e.Node3 = n3;
+                        elementNodes.Add(n3);
+                        elementConnectivity.Add(n3.GlobalId);
+
 
                         Node n4 = new Node(4, nodes[counter + nu].GlobalId, ptsBot[j + nu], nodes[counter + nu].BC_U, nodes[counter + nu].BC_V, nodes[counter + nu].BC_W);
                         e.Node4 = n4;
+                        elementNodes.Add(n4);
+                        elementConnectivity.Add(n4.GlobalId);
+
 
                         Node n5 = new Node(5, nodes[counter + nu * nv].GlobalId, ptsTop[j], nodes[counter + nu * nv].BC_U, nodes[counter + nu * nv].BC_V, nodes[counter + nu * nv].BC_W);
                         e.Node5 = n5;
+                        elementNodes.Add(n5);
+                        elementConnectivity.Add(n5.GlobalId);
+
 
                         Node n6 = new Node(6, nodes[counter + 1 + nu * nv].GlobalId, ptsTop[j + 1], nodes[counter + 1 + nu * nv].BC_U, nodes[counter + 1 + nu * nv].BC_V, nodes[counter + 1 + nu * nv].BC_W);
                         e.Node6 = n6;
+                        elementNodes.Add(n6);
+                        elementConnectivity.Add(n6.GlobalId);
+
 
                         Node n7 = new Node(7, nodes[counter + nu + 1 + nu * nv].GlobalId, ptsTop[j + nu + 1], nodes[counter + nu + 1 + nu * nv].BC_U, nodes[counter + nu + 1 + nu * nv].BC_V, nodes[counter + nu + 1 + nu * nv].BC_W);
                         e.Node7 = n7;
+                        elementNodes.Add(n7);
+                        elementConnectivity.Add(n7.GlobalId);
+
 
                         Node n8 = new Node(8, nodes[counter + nu + nu * nv].GlobalId, ptsTop[j + nu], nodes[counter + nu + nu * nv].BC_U, nodes[counter + nu + nu * nv].BC_V, nodes[counter + nu + nu * nv].BC_W);
                         e.Node8 = n8;
+                        elementNodes.Add(n8);
+                        elementConnectivity.Add(n8.GlobalId);
 
+                        e.Nodes = elementNodes;
+                        e.Connectivity = elementConnectivity;
 
                         mesh.Vertices.Add(e.Node1.Coordinate); //0
                         mesh.Vertices.Add(e.Node2.Coordinate); //1
