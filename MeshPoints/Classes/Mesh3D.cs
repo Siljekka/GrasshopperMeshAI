@@ -19,6 +19,8 @@ namespace MeshPoints.Classes
         public bool inp { get; set; }
 
         public string Type { get; set; } // to do: inplementer
+
+        public GeometryInfo GeometryInformation { get; set; } // to do: temporary
         public Mesh3D()
         {
             //Empty constructor
