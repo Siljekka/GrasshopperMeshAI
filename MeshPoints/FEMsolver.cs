@@ -51,8 +51,8 @@ namespace MeshPoints
         {
             #region Input
             Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
-            List<string> loads = new List<string>();
-            List<string> boundaryConditions = new List<string>();
+            List<double> loads = new List<double>();
+            List<List<int>> boundaryConditions = new List<List<int>>();
             Material material = new Material();
 
             DA.GetData(0, ref mesh);
@@ -72,20 +72,18 @@ namespace MeshPoints
             else if (mesh.Type == "solid") { nodeDOFS = 3;}
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is shell or solid."); }
 
-            // get global stiffness matrix
+            // Get global stiffness matrix
             Matrix<double> K_global = CalculateGlobalStiffnessMatrix(elements, numNodes, nodeDOFS, material);
 
-            // get boundary conditions
-            // get list of index of dofs that are fixed
-            //List<List<int>> uIsZero =  new List<List<int>>(); // 0: false, 1: true
-
-            List<int> uIsZero = new List<int>(); 
-
-            // get load 
+            // Get load vector
             Matrix<double> R = DenseMatrix.Build.Dense(numNodes * nodeDOFS, 1);
+            for (int i = 0; i < loads.Count; i++)
+            {
+                R[i, 0] = loads[i];
+            }
 
             // calculate displacement 
-            Matrix<double> u = CalculateDisplacement(K_global, R, uIsZero); // fix: uIszero
+            Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
 
             var stress = CalculateGlobalStress(elements, u, material, nodeDOFS);
             Matrix<double> globalStress = stress.Item1;
@@ -245,20 +243,24 @@ namespace MeshPoints
             return K_global;
         }
 
-        private Matrix<double> CalculateDisplacement(Matrix<double> K_global, Matrix<double> R, List<int> uIsZero)
+        private Matrix<double> CalculateDisplacement(Matrix<double> K_global, Matrix<double> R, List<List<int>> applyBCToDOF)
         {
-            foreach (int i in uIsZero)
+            for (int n = 0; n < applyBCToDOF.Count; n++)
             {
-                foreach (int j in uIsZero)
+                List<int> applyBCToNodeDOF = applyBCToDOF[n];
+                foreach (int i in applyBCToNodeDOF)
                 {
-                    if (i != j)
+                    foreach (int j in applyBCToNodeDOF)
                     {
-                        K_global[i, j] = 0;
-                    }
-                    else 
-                    {
-                        K_global[i, j] = 1;
-                        R[i, 1] = 0;
+                        if (i != j)
+                        {
+                            K_global[i, j] = 0;
+                        }
+                        else
+                        {
+                            K_global[i, j] = 1;
+                            R[i, 1] = 0;
+                        }
                     }
                 }
             }
