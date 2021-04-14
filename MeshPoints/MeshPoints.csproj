@@ -86,6 +86,7 @@
     <Compile Include="CreateMesh\CreateSolidMesh_Generic.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
+    <Compile Include="FEMLoad.cs" />
     <Compile Include="Mesh_outdated\CreateMesh3D_Box.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh_OldSweep.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />

@@ -17,7 +17,7 @@ namespace MeshPoints
         /// </summary>
         public FEMsolver()
           : base("FEM solver", "FEM",
-              "Finite element method solver from 2D and 3D quadrilateral elements.",
+              "Finite element method solver with quad 4 and hex 8 elements.",
               "MyPlugIn", "FEM")
         { 
         }
@@ -27,11 +27,10 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SolidMesh", "solidmesh", "Input a SolidMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "solidmesh", "Input a SolidMesh", GH_ParamAccess.item); // to do: change name
             pManager.AddGenericParameter("Loads", "loads", "Input a load vector", GH_ParamAccess.item);
             pManager.AddGenericParameter("Boundary conditions", "BC", "Input a boundary condition vector", GH_ParamAccess.item);
             pManager.AddGenericParameter("Material", "material", "Input a list of material sorted: Young modulus, Poisson Ratio", GH_ParamAccess.item);
-
         }
 
         /// <summary>
@@ -56,10 +55,10 @@ namespace MeshPoints
             List<string> boundaryConditions = new List<string>();
             Material material = new Material();
 
-            DA.SetData(0, mesh);
-            DA.SetDataList(1, loads);
-            DA.SetDataList(2, boundaryConditions);
-            DA.SetData(3, material);
+            DA.GetData(0, ref mesh);
+            DA.GetDataList(1, loads);
+            DA.GetDataList(2, boundaryConditions);
+            DA.GetData(3, ref material);
             #endregion
 
             #region Code
@@ -78,13 +77,15 @@ namespace MeshPoints
 
             // get boundary conditions
             // get list of index of dofs that are fixed
-            List<int> uIsZero = new List<int>();
+            //List<List<int>> uIsZero =  new List<List<int>>(); // 0: false, 1: true
+
+            List<int> uIsZero = new List<int>(); 
 
             // get load 
             Matrix<double> R = DenseMatrix.Build.Dense(numNodes * nodeDOFS, 1);
 
             // calculate displacement 
-            Matrix<double> u = CalculateDisplacement(K_global, R, uIsZero);
+            Matrix<double> u = CalculateDisplacement(K_global, R, uIsZero); // fix: uIszero
 
             var stress = CalculateGlobalStress(elements, u, material, nodeDOFS);
             Matrix<double> globalStress = stress.Item1;
@@ -114,7 +115,7 @@ namespace MeshPoints
             // summary: calculate local K and B matrix
 
             // material
-            Matrix<double> C = material.MaterialConstant;
+            Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, nodeDOFS);
 
             // shapefunction
             FEM _FEM = new FEM();
@@ -268,16 +269,14 @@ namespace MeshPoints
         private Tuple<Matrix<double>, Matrix<double>> CalculateElementStrainStress(Element element, Matrix<double> u, Material material, int nodeDOFS)
         {
             // summary: calculate a list of strain and stress vectors for each node in a element.
-            Matrix<double> C = material.MaterialConstant;
+            Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, nodeDOFS);
+
             FEM _FEM = new FEM();
             List<Matrix<double>> B_local = CalculateElementMatrices(element, material, nodeDOFS).Item2;
             Matrix<double> elementGaussStrain = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
             Matrix<double> elementGaussStress = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
             Matrix<double> elementStrain = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
             Matrix<double> elementStress = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
-            
-            // interpolation points
-            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(1 / Math.Sqrt(3), nodeDOFS); // marcin: ok constant?
 
             // get gauss strain and stress
             for (int n = 0; n < B_local.Count; n++)
@@ -293,7 +292,9 @@ namespace MeshPoints
                 }
             }
 
-            // get node strain and stress
+            // get node strain and stress by interpolation
+            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(1 / Math.Sqrt(3), nodeDOFS); // marcin: ok constant?
+
             for (int n = 0; n < B_local.Count; n++)
             { 
                 // get stress and strain in nodes
@@ -317,7 +318,9 @@ namespace MeshPoints
         private Tuple<Matrix<double>, Vector<double>> CalculateGlobalStress(List<Element> elements, Matrix<double> u, Material material, int nodeDOFS)
         {
             int numNodes = u.RowCount;
-            Matrix<double> globalStress = DenseMatrix.Build.Dense(6, numNodes);
+            int stressRowDim = 4;
+            if (nodeDOFS == 3) { stressRowDim = 6; }
+            Matrix<double> globalStress = DenseMatrix.Build.Dense(stressRowDim, numNodes);
             foreach (Element element in elements)
             {
                 var elementStressStrain = CalculateElementStrainStress(element, u, material, nodeDOFS);
@@ -330,8 +333,9 @@ namespace MeshPoints
                 {
                     for (int j = 0; j < connectivity.Count; j++) // loop the element nodes
                     {
-                        globalStress[i, connectivity[j]] = globalStress[i, connectivity[j]] + elementStress[i, j]; // marcin: correct way to do it?
+                        globalStress[i, connectivity[j]] = globalStress[i, connectivity[j]] + elementStress[i, j]; 
                     }
+                    // to do: find the avarage if more contributions
                 }
             }
 
@@ -360,6 +364,35 @@ namespace MeshPoints
                 }
             }
             return Tuple.Create(globalStress, mises);
+        }
+
+        private Matrix<double> GetMaterialConstant(double youngModulus, double possionRatio, int nodeDOFS )
+        {
+            if (nodeDOFS == 2)
+            {
+                Matrix<double> C = DenseMatrix.OfArray(new double[,]
+                {
+                    {1, possionRatio, 0},
+                    {possionRatio, 1, 0},
+                    {0, 0, (1-possionRatio)/2}
+                });
+                C.Multiply((double) youngModulus / (1 - Math.Pow( possionRatio, 2)));
+                return C;
+            }
+            else
+            {
+                Matrix<double> C = DenseMatrix.OfArray(new double[,]
+                {
+                    {1-possionRatio, possionRatio, possionRatio, 0, 0, 0},
+                    {possionRatio, 1-possionRatio, possionRatio, 0, 0, 0},
+                    {possionRatio, possionRatio, 1- possionRatio, 0, 0, 0},
+                    {0, 0, 0, (1-2*possionRatio)/2, 0, 0},
+                    {0, 0, 0, 0, (1-2*possionRatio)/2, 0},
+                    {0, 0, 0, 0, 0, (1-2*possionRatio)/2},
+                });
+                C.Multiply((double)youngModulus / ((1 + possionRatio) * (1 - 2 * possionRatio)));
+                return C;
+            }
         }
 
         #endregion

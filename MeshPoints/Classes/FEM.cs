@@ -63,7 +63,6 @@ namespace MeshPoints.Classes
             N.Multiply(0.125);
             return N;
         }
-
         public Matrix<double> DerivateWithNatrualCoordinates(double r, double s, double t, int nodeDOFS)
         {
             if (nodeDOFS == 2)
@@ -90,7 +89,6 @@ namespace MeshPoints.Classes
             }
 
         }
-
         public Matrix<double> GetGaussPoints(double scaleFactor, int nodeDOFS)
         {
             double gp = scaleFactor;
