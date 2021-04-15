@@ -34,15 +34,9 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Node 1", "n", "Node 1", GH_ParamAccess.item); //0
-            pManager.AddGenericParameter("Node 2", "n", "Node 2", GH_ParamAccess.item); //1
-            pManager.AddGenericParameter("Node 3", "n", "Node 3", GH_ParamAccess.item); //2
-            pManager.AddGenericParameter("Node 4", "n", "Node 4", GH_ParamAccess.item); //3
-            pManager.AddGenericParameter("Node 5", "n", "Node 5", GH_ParamAccess.item); //4
-            pManager.AddGenericParameter("Node 6", "n", "Node 6", GH_ParamAccess.item); //5
-            pManager.AddGenericParameter("Node 7", "n", "Node 7", GH_ParamAccess.item); //6
-            pManager.AddGenericParameter("Node 8", "n", "Node 8", GH_ParamAccess.item); //7
-
+            pManager.AddGenericParameter("Nodes", "nodes", "Nodes of element", GH_ParamAccess.list); //0
+            pManager.AddGenericParameter("Connectivity", "con", "Connectivity of local to global nodes", GH_ParamAccess.list); //0
+            pManager.AddGenericParameter("Type", "type", "Element type", GH_ParamAccess.item); //0
             pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //8
             pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //9
         }
@@ -58,16 +52,11 @@ namespace MeshPoints.DeconstructClasses
             DA.GetData(0, ref e);
 
             //output
-            DA.SetData(0, e.Node1);
-            DA.SetData(1, e.Node2);
-            DA.SetData(2, e.Node3);
-            DA.SetData(3, e.Node4);
-            DA.SetData(4, e.Node5);
-            DA.SetData(5, e.Node6);
-            DA.SetData(6, e.Node7);
-            DA.SetData(7, e.Node8);
-            DA.SetData(8, e.Id);
-            DA.SetData(9, e.mesh);
+            DA.SetDataList(0, e.Nodes);
+            DA.SetDataList(1, e.Connectivity);
+            DA.SetData(2, e.Type);
+            DA.SetData(3, e.Id);
+            DA.SetData(4, e.mesh);
         }
 
         /// <summary>

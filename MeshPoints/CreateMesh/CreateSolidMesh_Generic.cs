@@ -29,7 +29,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Brep", "bp", "Brep", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("BottomSurface", "bottom", "Bottom surface of Brep", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("BottomSurface", "bottom", "Index of bottom surface of Brep", GH_ParamAccess.item);
             pManager.AddIntegerParameter("u", "u", "division in u direction", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("v", "v", "division in v direction", GH_ParamAccess.item, 4);
             pManager.AddIntegerParameter("w", "w", "division in w direction", GH_ParamAccess.item, 4);
@@ -69,7 +69,7 @@ namespace MeshPoints.CreateMesh
             #region Variables
             //Variables
             //Mesh3D solidMesh = new Mesh3D();
-            Mesh allMesh = new Mesh();
+            Mesh globalMesh = new Mesh();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
             List<NurbsSurface> surfaceAtNw = new List<NurbsSurface>();
@@ -113,18 +113,21 @@ namespace MeshPoints.CreateMesh
             //4. Make grid of points in u and v direction at leven nw
             meshPoints = CreateGridOfPointsAtEachFloor(nu, nv, surfaceAtNw, railPoints);
             
-            //5. Create nodes and elements
+            //5. Create nodes 
             nodes = CreateNodes(meshPoints, nu, nv, nw); // assign Coordiantes, GlobalId and Boundary Conditions
+
+
+            //6. create elements
             elements = CreateHexElements(meshPoints, nodes, nu, nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
 
             // 6. Check if brep can be interpret by Abaqus
             //IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
 
             //7. Create global mesh
-            allMesh = CreateGlobalMesh(elements);
+            globalMesh = CreateGlobalMesh(elements);
 
             //8. Add properties to SolidMesh
-            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, allMesh);
+            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, globalMesh); // Hilde: ni +1 ?? her
             solidMesh.inp = true;
 
             // Output
@@ -457,7 +460,7 @@ namespace MeshPoints.CreateMesh
         private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int nu, int nv, int nw)
         {
             List<Node> nodes = new List<Node>();
-            int count1 = 0;
+            int id = 0;
             nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
             nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
             nw = nw + 1; //input nw = nw - 1. Exs: nw = 3, total points in w-direction is 4;
@@ -468,8 +471,8 @@ namespace MeshPoints.CreateMesh
                 int column = 0;
                 for (int j = 0; j < meshPoints.Branch(i).Count; j++)
                 {
-                    Node node = new Node(count1, meshPoints.Branch(i)[j]); // assign Global ID and cooridinates
-                    count1++;
+                    Node node = new Node(id, meshPoints.Branch(i)[j]); // assign Global ID and cooridinates
+                    id++;
 
                     if (column == 0 | column == nu - 1) { node.BC_U = true; } // assign BCU
                     if (row == 0 | row == nv - 1) { node.BC_V = true; } // assign BCV
@@ -487,10 +490,89 @@ namespace MeshPoints.CreateMesh
             return nodes;
         }
 
+
+        /*
         /// <summary>
         /// Create Elements: assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
         /// </summary>
         /// <returns>List with elements incl properties</returns>
+        private List<Element> CreateHexElements(List<Node> nodes, int nu, int nv, int nw)
+        {
+            List<Element> elements = new List<Element>();
+
+            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
+            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
+            nw = nw + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4; // Hilde: riktig ?
+            int counter = 0;
+            int jumpInPlane = 0;
+            int numNodeInLevel = nu*nv;
+            for (int i = 0; i < (nu - 1) * (nv - 1) * (nw - 1); i++)  // loop levels
+            {
+                if (jumpInPlane < (nu - 1))
+                {
+                    List<int> connectivity = new List<int>();
+
+                    connectivity.Add(counter);
+                    connectivity.Add(counter + 1);
+                    connectivity.Add(counter + 1 + nu);
+                    connectivity.Add(counter + nu);
+                    connectivity.Add(counter + numNodeInLevel);
+                    connectivity.Add(counter + 1 + numNodeInLevel);
+                    connectivity.Add(counter + 1 + nu + numNodeInLevel);
+                    connectivity.Add(counter + nu + numNodeInLevel);
+
+                    counter++;
+                    jumpInPlane++;
+
+
+                    List<Node> elementNodes = new List<Node>();
+                    foreach (int id in connectivity)
+                    {
+                        elementNodes.Add(nodes[id]);
+                    }
+
+                    Element element = new Element(i, elementNodes, connectivity);
+
+                    // create local mesh
+                    Mesh localMesh = new Mesh();
+                    foreach (Node node in elementNodes)
+                    {
+                        localMesh.Vertices.Add(node.Coordinate); //0
+                    }
+
+                    localMesh.Faces.AddFace(0, 1, 5, 4);
+                    localMesh.Faces.AddFace(1, 2, 6, 5);
+                    localMesh.Faces.AddFace(2, 3, 7, 6);
+                    localMesh.Faces.AddFace(3, 0, 4, 7);
+                    localMesh.Faces.AddFace(0, 1, 2, 3);
+                    localMesh.Faces.AddFace(4, 5, 6, 7);
+                    /*
+                    mesh.Faces.AddFace(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
+                    mesh.Faces.AddFace(connectivity[4], connectivity[5], connectivity[6], connectivity[7]);
+                    mesh.Faces.AddFace(connectivity[0], connectivity[1], connectivity[5], connectivity[4]);
+                    mesh.Faces.AddFace(connectivity[1], connectivity[2], connectivity[6], connectivity[5]);
+                    mesh.Faces.AddFace(connectivity[2], connectivity[3], connectivity[7], connectivity[6]);
+                    mesh.Faces.AddFace(connectivity[3], connectivity[0], connectivity[4], connectivity[7]);
+                    
+                    localMesh.Normals.ComputeNormals();  //Control if needed
+                    localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                    localMesh.Compact(); //to ensure that it calculate
+
+                    //add element and mesh to element list
+                    element.mesh = localMesh;
+                    elements.Add(element);
+                }
+                else
+                {
+                    jumpInPlane = 0;
+                    counter++;
+                }
+            }                
+            
+            return elements;
+        }
+        */
+
         private List<Element> CreateHexElements(DataTree<Point3d> meshPoints, List<Node> nodes, int nu, int nv)
         {
             Element e = new Element();
@@ -514,87 +596,50 @@ namespace MeshPoints.CreateMesh
                 {
                     e.Id = elemId;
                     e.IsCube = true;
+                    List<Node> elementNodes = new List<Node>();
+                    List<int> connectivity = new List<int>();
+
                     if (count2 < nu - 1)
                     {
-                        // to do: fix this
-                        List<Node> elementNodes = new List<Node>();
-                        List<int> elementConnectivity = new List<int>();
 
-                        Node n1 = new Node(1, nodes[counter].GlobalId, ptsBot[j], nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
-                        e.Node1 = n1;
-                        elementNodes.Add(n1);
-                        elementConnectivity.Add(n1.GlobalId);
+                        connectivity.Add(counter);
+                        connectivity.Add(counter + 1);
+                        connectivity.Add(counter + nu + 1);
+                        connectivity.Add(counter + nu);
 
-                        Node n2 = new Node(2, nodes[counter + 1].GlobalId, ptsBot[j + 1], nodes[counter + 1].BC_U, nodes[counter + 1].BC_V, nodes[counter + 1].BC_W);
-                        e.Node2 = n2;
-                        elementNodes.Add(n2);
-                        elementConnectivity.Add(n2.GlobalId);
+                        connectivity.Add(counter + nu * nv);
+                        connectivity.Add(counter + 1 + nu * nv);
+                        connectivity.Add(counter + nu + 1 + nu * nv);
+                        connectivity.Add(counter + nu + nu * nv);
 
-                        Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, ptsBot[j + nu + 1], nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V, nodes[counter + nu + 1].BC_W);
-                        e.Node3 = n3;
-                        elementNodes.Add(n3);
-                        elementConnectivity.Add(n3.GlobalId);
+                        foreach (int id in connectivity)
+                        {
+                            elementNodes.Add(nodes[id]);
+                        }
 
+                        Element element = new Element(i, elementNodes, connectivity);
 
-                        Node n4 = new Node(4, nodes[counter + nu].GlobalId, ptsBot[j + nu], nodes[counter + nu].BC_U, nodes[counter + nu].BC_V, nodes[counter + nu].BC_W);
-                        e.Node4 = n4;
-                        elementNodes.Add(n4);
-                        elementConnectivity.Add(n4.GlobalId);
+                        // create local mesh
+                        Mesh localMesh = new Mesh();
+                        foreach (Node node in elementNodes)
+                        {
+                            localMesh.Vertices.Add(node.Coordinate); //0
+                        }
 
+                        localMesh.Faces.AddFace(0, 1, 5, 4);
+                        localMesh.Faces.AddFace(1, 2, 6, 5);
+                        localMesh.Faces.AddFace(2, 3, 7, 6);
+                        localMesh.Faces.AddFace(3, 0, 4, 7);
+                        localMesh.Faces.AddFace(0, 1, 2, 3);
+                        localMesh.Faces.AddFace(4, 5, 6, 7);
 
-                        Node n5 = new Node(5, nodes[counter + nu * nv].GlobalId, ptsTop[j], nodes[counter + nu * nv].BC_U, nodes[counter + nu * nv].BC_V, nodes[counter + nu * nv].BC_W);
-                        e.Node5 = n5;
-                        elementNodes.Add(n5);
-                        elementConnectivity.Add(n5.GlobalId);
-
-
-                        Node n6 = new Node(6, nodes[counter + 1 + nu * nv].GlobalId, ptsTop[j + 1], nodes[counter + 1 + nu * nv].BC_U, nodes[counter + 1 + nu * nv].BC_V, nodes[counter + 1 + nu * nv].BC_W);
-                        e.Node6 = n6;
-                        elementNodes.Add(n6);
-                        elementConnectivity.Add(n6.GlobalId);
-
-
-                        Node n7 = new Node(7, nodes[counter + nu + 1 + nu * nv].GlobalId, ptsTop[j + nu + 1], nodes[counter + nu + 1 + nu * nv].BC_U, nodes[counter + nu + 1 + nu * nv].BC_V, nodes[counter + nu + 1 + nu * nv].BC_W);
-                        e.Node7 = n7;
-                        elementNodes.Add(n7);
-                        elementConnectivity.Add(n7.GlobalId);
-
-
-                        Node n8 = new Node(8, nodes[counter + nu + nu * nv].GlobalId, ptsTop[j + nu], nodes[counter + nu + nu * nv].BC_U, nodes[counter + nu + nu * nv].BC_V, nodes[counter + nu + nu * nv].BC_W);
-                        e.Node8 = n8;
-                        elementNodes.Add(n8);
-                        elementConnectivity.Add(n8.GlobalId);
-
-                        e.Nodes = elementNodes;
-                        e.Connectivity = elementConnectivity;
-
-                        mesh.Vertices.Add(e.Node1.Coordinate); //0
-                        mesh.Vertices.Add(e.Node2.Coordinate); //1
-                        mesh.Vertices.Add(e.Node3.Coordinate); //2
-                        mesh.Vertices.Add(e.Node4.Coordinate); //3
-                        mesh.Vertices.Add(e.Node5.Coordinate); //4
-                        mesh.Vertices.Add(e.Node6.Coordinate); //5
-                        mesh.Vertices.Add(e.Node7.Coordinate); //6
-                        mesh.Vertices.Add(e.Node8.Coordinate); //7
-
-                        mesh.Faces.AddFace(0, 1, 5, 4);
-                        mesh.Faces.AddFace(1, 2, 6, 5);
-                        mesh.Faces.AddFace(2, 3, 7, 6);
-                        mesh.Faces.AddFace(3, 0, 4, 7);
-                        mesh.Faces.AddFace(0, 1, 2, 3);
-                        mesh.Faces.AddFace(4, 5, 6, 7);
-
-                        mesh.Normals.ComputeNormals();  //Control if needed
-                        mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                        mesh.Compact(); //to ensure that it calculate
-                        e.mesh = mesh;
+                        localMesh.Normals.ComputeNormals();  //Control if needed
+                        localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                        localMesh.Compact(); //to ensure that it calculate
 
                         //add element and mesh to element list
-                        elements.Add(e);
-
-                        //clear
-                        e = new Element();
-                        mesh = new Mesh();
+                        element.mesh = localMesh;
+                        elements.Add(element);
 
                         count2++;
                         elemId++;
@@ -602,6 +647,7 @@ namespace MeshPoints.CreateMesh
                     }
                     else { count2 = 0; counter++; }
                 }
+
             }
             return elements;
         }
@@ -610,6 +656,90 @@ namespace MeshPoints.CreateMesh
         /// Create Global mesh
         /// </summary>
         /// <returns>Global mesh</returns>
+        /*
+        private Mesh CreateGlobalMesh(List<Node> nodes, int nu, int nv, int nw)
+        {
+            nu++;
+            nv++;
+            nw++; // to do: sjekk disse
+
+
+            Mesh mesh = new Mesh();
+
+            foreach (Node node in nodes)
+            {
+                mesh.Vertices.Add(node.Coordinate);
+            }
+
+            // mesh planes in w -dir
+            int counter = 0;
+            int jump = 0; // new v sequence
+            for (int i = 0; i < nw; i++)
+            {
+                for (int j = 0; j < (nu-1)*(nv-1); j++)
+                {
+                    mesh.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
+
+                    counter++;
+                    jump++;
+                    if (jump == (nu - 1)) // check if done with a v sequence
+                    {
+                        counter++;
+                        jump = 0; // new v sequence
+                    }
+                }
+                counter++;
+            }
+
+
+            // mesh planes in u - dir
+            counter = 0; 
+            jump = 0; // new w sequence
+            for (int i = 0; i < nu; i++)
+            {
+                for (int j = 0; j < (nv - 1) * (nw - 1); j++)
+                {
+                    mesh.Faces.AddFace(counter, counter + 1, counter + nv + 1, counter + nv);
+
+                    counter++;
+                    jump++;
+                    if (jump == (nv - 1)) // check if done with a w sequence
+                    {
+                        counter++;
+                        jump = 0; // new w sequence
+                    }
+                }
+                counter++;
+            }
+
+
+            // mesh planes in v - dir
+            counter++;
+            jump = 0; // new u sequence
+            for (int i = 0; i < nv; i++)
+            {
+                for (int j = 0; j < (nw - 1) * (nu - 1); j++)
+                {
+                    mesh.Faces.AddFace(counter, counter + 1, counter + nw + 1, counter + nw);
+
+                    counter++;
+                    jump++;
+                    if (jump == (nw - 1)) // check if done with a u sequence
+                    {
+                        counter++;
+                        jump = 0; // new u sequence
+                    }
+                }
+                counter++;
+            }
+
+            mesh.Normals.ComputeNormals();  //Control if needed
+            mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+            mesh.Compact(); //to ensure that it calculate
+
+            return mesh;
+        }*/
+
         private Mesh CreateGlobalMesh(List<Element> elements)
         {
             Mesh allMesh = new Mesh();
