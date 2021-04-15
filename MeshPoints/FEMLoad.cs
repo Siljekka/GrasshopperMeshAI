@@ -27,11 +27,16 @@ namespace MeshPoints
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {        
             pManager.AddGenericParameter("MeshGeometry", "MeshFeometry", "Input a MeshGeometry", GH_ParamAccess.item); // to do: change name
-            pManager.AddGenericParameter("Load type", "load type", "Point load = 1, Surface load = 2", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Position", "pos", "Coordinate for point load", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Surface index", "Input surface index of geometry to apply load to", "", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Load type", "load type", "Point load = 1, Surface load = 2", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Position", "pos", "Coordinate for point load", GH_ParamAccess.list); 
+            //pManager.AddIntegerParameter("Surface index", "Input surface index of geometry to apply load to", "", GH_ParamAccess.item);
             //pManager.AddGenericParameter("Load size", "size", "Load size (kN for point load, kN/mm^2 for surface)", GH_ParamAccess.item); // to do: se om dette skal være en liste ift input i FEMsolver
             pManager.AddGenericParameter("Load vectors", "vec", "List of vectors for the loads", GH_ParamAccess.list);
+
+            pManager[0].Optional = true;
+            pManager[1].Optional = true;
+            pManager[2].Optional = true;
+            pManager[3].Optional = true;
 
         }
 
@@ -54,15 +59,15 @@ namespace MeshPoints
             #region Input
             Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
             int loadType = 0;
-            List<Vector3d> loadVectors = new List<Vector3d>(); 
-            Point3d loadPosition = new Point3d();
-            int surfaceIndex = 0;
+            List<Vector3d> loadVectors = new List<Vector3d>();
+            List<Point3d> loadPosition = new List<Point3d>();
+            //int surfaceIndex = 0;
 
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref loadType);
-            DA.GetData(2, ref loadPosition);
-            DA.GetData(3, ref surfaceIndex);
-            DA.GetDataList(4, loadVectors);
+            DA.GetDataList(2, loadPosition);
+            //DA.GetData(3, ref surfaceIndex);
+            DA.GetDataList(3, loadVectors);
             #endregion
 
             // to do: må gjøre noe med vektor til load... 
@@ -70,7 +75,7 @@ namespace MeshPoints
             List<Node> nodes = mesh.Nodes;
             List<Element> element = mesh.Elements;
             int nodeDOFS = 3;
-            if (mesh.Type == "shell") { nodeDOFS = 2; }
+            if (String.Equals(mesh.Type, "shell")) { nodeDOFS = 2; }
 
             List<double> globalCoordinateLoadList = new List<double>();
             for (int i = 0; i < mesh.Nodes.Count * nodeDOFS; i++)
@@ -84,15 +89,16 @@ namespace MeshPoints
                 // Point load
                 for (int i = 0; i < loadVectors.Count; i++)
                 {
-                    int nodeIndex = GetClosestNodeIndex(mesh.Nodes, loadPosition);
+                    int nodeIndex = GetClosestNodeIndex(mesh.Nodes, loadPosition[i]);
+
                     // Deconstruct load to x,y,z
                     double xLoad = loadVectors[i].X;
                     double yLoad = loadVectors[i].Y;
                     double zLoad = loadVectors[i].Z;
 
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS] = xLoad; // to do: change if for shell
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] = yLoad; // to do: change if for shell
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] = zLoad; // to do: change if for shell
+                    globalCoordinateLoadList[nodeIndex * nodeDOFS] = globalCoordinateLoadList[nodeIndex * nodeDOFS] + xLoad; // to do: change if for shell
+                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] + yLoad; // to do: change if for shell
+                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] + zLoad; // to do: change if for shell
                 }
 
             }

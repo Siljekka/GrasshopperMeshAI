@@ -30,7 +30,7 @@ namespace MeshPoints.Classes
                     (1+r)*(s+1),
                     (1-r)*(s+1),
                 });
-                N.Multiply(0.25);
+                N=N.Multiply(0.25);
                 return N;
             }
             else 
@@ -46,7 +46,7 @@ namespace MeshPoints.Classes
                     (1+r)*(s+1)*(t+1),
                     (1-r)*(s+1)*(t+1)
                 });
-                N.Multiply(0.125);
+                N=N.Multiply(0.125);
                 return N;
             }
 
@@ -60,7 +60,7 @@ namespace MeshPoints.Classes
                     {0, (1-r)*(s-1)*(t-1), 0, 0, (1+r)*(s-1)*(t-1), 0, 0, (1+r)*(s+1)*(t-1), 0, 0, (1-r)*(s+1)*(t-1), 0, 0, (1-r)*(s-1)*(t+1), 0, 0, (1+r)*(s-1)*(t+1), 0, 0, (1+r)*(s+1)*(t+1), 0, 0, (1-r)*(s+1)*(t+1), 0},
                     {0, 0, (1-r)*(s-1)*(t-1), 0, 0, (1+r)*(s-1)*(t-1), 0, 0, (1+r)*(s+1)*(t-1), 0, 0, (1-r)*(s+1)*(t-1), 0, 0, (1-r)*(s-1)*(t+1), 0, 0, (1+r)*(s-1)*(t+1), 0, 0, (1+r)*(s+1)*(t+1), 0, 0, (1-r)*(s+1)*(t+1)}
             });
-            N.Multiply(0.125);
+            N=N.Multiply(0.125);
             return N;
         }
         public Matrix<double> DerivateWithNatrualCoordinates(double r, double s, double t, int nodeDOFS)
@@ -69,10 +69,10 @@ namespace MeshPoints.Classes
             {
                 Matrix<double> shapeFunctionsDerivatedNatural = DenseMatrix.OfArray(new double[,]
                 {
-                    {-(s-1), (s-1), (s+1), -(s+1)}, // to do: sjekk med magnus, usikker på om dette er riktig..
-                    {-(r-1), -(r+1), (r+1), (r-1)}
+                    //{-(s-1), (s-1), (s+1), -(s+1)}, // to do: sjekk med magnus, usikker på om dette er riktig..
+                    //{-(r-1), -(r+1), (r+1), (r-1)}
                 });
-                shapeFunctionsDerivatedNatural.Multiply(0.25);
+                shapeFunctionsDerivatedNatural = shapeFunctionsDerivatedNatural.Multiply(0.25);
                 return shapeFunctionsDerivatedNatural;
 
             }
@@ -80,11 +80,11 @@ namespace MeshPoints.Classes
             {
                 Matrix<double> shapeFunctionsDerivatedNatural = DenseMatrix.OfArray(new double[,]
                 {
-                    {-(s-1)*(t-1), (s-1)*(t-1), (s+1)*(t-1), -(s+1)*(t-1), -(s-1)*(t+1), (s-1)*(t+1), (s+1)*(t+1), -(s+1)*(t+1)}, // to do: sjekk med magnus, usikker på om dette er riktig..
-                    {-(r-1)*(t-1), -(r+1)*(t-1), (r+1)*(t-1), (r-1)*(t - 1), -(r-1)*(t+1), -(r+1)*(t+1), (r+1)*(t+1), (r-1)*(t+1)},
-                    {-(r-1)*(s-1), -(r+1)*(s-1), -(r+1)*(s+1), -(r-1)*(s+1), (r-1)*(s-1), (r+1)*(s-1), (r+1)*(s+1), (r-1)*(s+1)}
+                        {-(1-s)*(1-t), (1-s)*(1-t), (1+s)*(1-t),-(1+s)*(1-t),-(1-s)*(1+t),(1-s)*(1+t),(1+s)*(1+t),-(1+s)*(1+t)},
+                        {-(1-r)*(1-t), -(1+r)*(1-t), (1+r)*(1-t),(1-r)*(1-t),-(1-r)*(1+t),-(1+r)*(1+t),(1+r)*(1+t),(1-r)*(1+t)},
+                        {-(1-r)*(1-s), -(1+r)*(1-s), -(1+r)*(1+s),-(1-r)*(1+s),(1-r)*(1-s),(1+r)*(1-s),(1+r)*(1+s),(1-r)*(1+s)},
                 });
-                shapeFunctionsDerivatedNatural.Multiply(0.125);
+                shapeFunctionsDerivatedNatural=shapeFunctionsDerivatedNatural.Multiply(0.125);
                 return shapeFunctionsDerivatedNatural;
             }
 
@@ -92,14 +92,15 @@ namespace MeshPoints.Classes
         public Matrix<double> GetGaussPoints(double scaleFactor, int nodeDOFS)
         {
             double gp = scaleFactor;
+
             if (nodeDOFS == 2)
             {
                 Matrix<double> gaussNodes = DenseMatrix.OfArray(new double[,]
                 {
-                    {-1*gp,-1*gp},
-                    {1*gp,-1*gp},
-                    {1*gp, 1*gp},
-                    {-1*gp, 1*gp},
+                    {-gp,-gp},
+                    {gp,-gp},
+                    {gp, gp},
+                    {-gp, gp},
                 });
                 return gaussNodes;
             }
@@ -107,14 +108,14 @@ namespace MeshPoints.Classes
             {
                 Matrix<double> gaussNodes = DenseMatrix.OfArray(new double[,]
                 {
-                    {-1*gp,-1*gp,-1*gp},
-                    {1*gp,-1*gp,-1*gp},
-                    {1*gp, 1*gp,-1*gp},
-                    {-1*gp, 1*gp,-1*gp},
-                    {-1*gp,-1*gp, 1*gp},
-                    {1*gp,-1*gp, 1*gp},
-                    {1*gp, 1*gp, 1*gp},
-                    {-1*gp, 1*gp,1*gp},
+                    {-gp,-gp,-gp},
+                    {gp,-gp,-gp},
+                    {gp, gp,-gp},
+                    {-gp, gp,-gp},
+                    {-gp,-gp, gp},
+                    {gp,-gp, gp},
+                    {gp, gp, gp},
+                    {-gp, gp,gp},
                 });
                 return gaussNodes;
             }
