@@ -17,10 +17,8 @@ namespace MeshPoints.Classes
         public int nv { get; set; } //number of nodes in y-dir
         public int nw { get; set; } //number of nodes in z-dir
         public bool inp { get; set; }
-
         public string Type { get; set; } // to do: inplementer
-
-        public GeometryInfo GeometryInformation { get; set; } // to do: temporary
+        public Geometry Geometry { get; set; } // to do: temporary
         public Mesh3D()
         {
             //Empty constructor
