@@ -80,7 +80,7 @@ namespace MeshPoints
             List<List<int>> applyBCToDOF = new List<List<int>>();
             bool nodeIsOnGeometry = false;
             int nodeDOFS = 2;
-            if (mesh.Type == "solid") { nodeDOFS = 3; }
+            if (String.Equals(mesh.Type, "solid")) { nodeDOFS = 3; }
 
             // Loop each dof for each node
             for (int i = 0; i < mesh.Nodes.Count; i++)
@@ -88,11 +88,11 @@ namespace MeshPoints
                 Node node = mesh.Nodes[i];
 
                 // Check if node is on geometry to apply BC to
-                if (mesh.Type == "shell")
+                if (String.Equals(mesh.Type, "shell"))
                 {
                     for (int n = 0; n < indicesOfGeometryWithBC.Count; n++)
                     {
-                        BrepEdge edge = mesh.GeometryInformation.Edges[indicesOfGeometryWithBC[n]];
+                        BrepEdge edge = mesh.Geometry.Edges[indicesOfGeometryWithBC[n]];
                         if (IsPointOnEdge(node.Coordinate, edge)) 
                         {
                             nodeIsOnGeometry = true;
@@ -104,7 +104,7 @@ namespace MeshPoints
                 {
                     for (int n = 0; n < indicesOfGeometryWithBC.Count; n++)
                     {
-                        BrepFace face = mesh.GeometryInformation.Faces[indicesOfGeometryWithBC[n]];
+                        BrepFace face = mesh.Geometry.Faces[indicesOfGeometryWithBC[n]];
                         if (IsPointOnSurface(node.Coordinate, face))
                         {
                             nodeIsOnGeometry = true;

@@ -28,8 +28,8 @@ namespace MeshPoints
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh", "solidmesh", "Input a SolidMesh", GH_ParamAccess.item); // to do: change name
-            pManager.AddGenericParameter("Loads", "loads", "Input a load vector", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Boundary conditions", "BC", "Input a boundary condition vector", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Loads", "loads", "Input a load vector", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Boundary conditions", "BC", "Input a boundary condition vector", GH_ParamAccess.list);
             pManager.AddGenericParameter("Material", "material", "Input a list of material sorted: Young modulus, Poisson Ratio", GH_ParamAccess.item);
         }
 
@@ -68,8 +68,8 @@ namespace MeshPoints
             int nodeDOFS = 0;
 
             // shell or solid
-            if (mesh.Type == "shell")  { nodeDOFS = 2;}
-            else if (mesh.Type == "solid") { nodeDOFS = 3;}
+            if (String.Equals(mesh.Type, "shell"))  { nodeDOFS = 2;}
+            else if (String.Equals( mesh.Type,"solid")) { nodeDOFS = 3;}
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is shell or solid."); }
 
             // Get global stiffness matrix
@@ -85,24 +85,24 @@ namespace MeshPoints
             // calculate displacement 
             Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
 
-            var stress = CalculateGlobalStress(elements, u, material, nodeDOFS);
-            Matrix<double> globalStress = stress.Item1;
-            Vector<double> mises = stress.Item2;
+            //var stress = CalculateGlobalStress(elements, u, material, nodeDOFS);
+            //Matrix<double> globalStress = stress.Item1;
+            //Vector<double> mises = stress.Item2;
 
             // prepare output
             double[] nodalDeformation = u.Column(0).ToArray();
-            double[] nodalMises = mises.ToArray();
-            List<double[]> nodalStress = new List<double[]>();
-            for (int i = 0; i < globalStress.ColumnCount; i++)
-            {
-                nodalStress.Add(globalStress.Column(i).ToArray());
-            }
+            //double[] nodalMises = mises.ToArray();
+            //List<double[]> nodalStress = new List<double[]>();
+            //for (int i = 0; i < globalStress.ColumnCount; i++)
+            //{
+             //   nodalStress.Add(globalStress.Column(i).ToArray());
+            //}
             #endregion 
 
             #region Output
             DA.SetDataList(0, nodalDeformation);
-            DA.SetDataList(1, nodalStress);
-            DA.SetDataList(2, nodalMises);
+            //DA.SetDataList(1, nodalStress);
+            //DA.SetDataList(2, nodalMises);
             #endregion 
         }
 
@@ -126,17 +126,17 @@ namespace MeshPoints
             List<Matrix<double>> B_local = new List<Matrix<double>>();
 
             // Gauss points
-            Matrix<double> gaussNodes = _FEM.GetGaussPoints(Math.Sqrt(1 / 3), nodeDOFS);
+            Matrix<double> gaussNodes = _FEM.GetGaussPoints((double)Math.Sqrt((double)1 / (double)3), nodeDOFS);
 
             // Global coordinates of the corner nodes of the actual element
             Matrix<double> globalCoordinates = Matrix<double>.Build.Dense(numElementNodes, nodeDOFS);
             for (int i = 0; i < numElementNodes; i++)
             {
-                globalCoordinates.Row(i)[0] = element.Nodes[i].Coordinate.X; // column of x coordinates
-                globalCoordinates.Row(i)[1] = element.Nodes[i].Coordinate.Y; // column of y coordinates
+                globalCoordinates[i, 0] = element.Nodes[i].Coordinate.X; // column of x coordinates
+                globalCoordinates[i, 1] = element.Nodes[i].Coordinate.Y; // column of y coordinates
                 if (nodeDOFS == 3)
                 {
-                    globalCoordinates.Row(i)[2] = element.Nodes[i].Coordinate.Y; // colum of z coordinates
+                    globalCoordinates[i, 2] = element.Nodes[i].Coordinate.Z; // colum of z coordinates
                 }
             }
 
@@ -209,8 +209,10 @@ namespace MeshPoints
                     }
                 }
                 B_local.Add(B_i);
-                K_local.Add(B_i.Transpose().Multiply(C).Multiply(jacobianMatrix.Determinant()));
+                K_local = K_local + B_i.Transpose().Multiply(C).Multiply(B_i).Multiply(jacobianMatrix.Determinant());
             }
+            bool sym = K_local.IsSymmetric();
+
             return Tuple.Create(K_local, B_local);
         }
 
@@ -230,11 +232,11 @@ namespace MeshPoints
                     for (int j = 0; j < connectivity.Count; j++)
                     {
                         // loop relevant local stiffness contribution
-                        for (int row = 0; row < nodeDOFS; row++)
+                        for (int dofRow = 0; dofRow < nodeDOFS; dofRow++)
                         {
-                            for (int column = 0; column < nodeDOFS; column++) // to do: sjekk
+                            for (int dofCol = 0; dofCol < nodeDOFS; dofCol++) // to do: sjekk
                             {
-                                K_global[nodeDOFS * connectivity[i] + row, nodeDOFS * connectivity[j] + column] = K_local[nodeDOFS * row + i, nodeDOFS * column + j];
+                                K_global[nodeDOFS * connectivity[i] + dofRow, nodeDOFS * connectivity[j] + dofCol] = K_local[nodeDOFS * i + dofRow , nodeDOFS * j + dofCol];
                             }
                         }
                     }
@@ -245,25 +247,30 @@ namespace MeshPoints
 
         private Matrix<double> CalculateDisplacement(Matrix<double> K_global, Matrix<double> R, List<List<int>> applyBCToDOF)
         {
-            for (int n = 0; n < applyBCToDOF.Count; n++)
+            for (int n = 0; n < applyBCToDOF.Count; n++) // loop each node
             {
                 List<int> applyBCToNodeDOF = applyBCToDOF[n];
-                foreach (int i in applyBCToNodeDOF)
+                int nodeDOFS = applyBCToNodeDOF.Count;
+                for (int i = 0; i < nodeDOFS; i++) // loop 3 times
                 {
-                    foreach (int j in applyBCToNodeDOF)
+                    for (int j = 0; j < nodeDOFS; j++) // loop 3 times
                     {
-                        if (i != j)
+                        if (applyBCToNodeDOF[i] == 1 | applyBCToNodeDOF[j] == 1)
                         {
-                            K_global[i, j] = 0;
-                        }
-                        else
-                        {
-                            K_global[i, j] = 1;
-                            R[i, 1] = 0;
+                            if (i != j)
+                            {
+                                K_global[nodeDOFS * n + i, nodeDOFS * n + j] = 0;
+                            }
+                            else
+                            {
+                                K_global[nodeDOFS * n + i, nodeDOFS * n + j] = 1;
+                                R[nodeDOFS * n + i, 0] = 0;
+                            }
                         }
                     }
                 }
             }
+            bool sym = K_global.IsSymmetric();
             Matrix<double> u = K_global.Inverse().Multiply(R);
             return u;  
         }
@@ -279,13 +286,18 @@ namespace MeshPoints
             Matrix<double> elementGaussStress = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
             Matrix<double> elementStrain = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
             Matrix<double> elementStress = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
+            Matrix<double> localDeformation = DenseMatrix.Build.Dense(B_local[0].RowCount,0);
 
+            for (int i = 0; i < element.Connectivity.Count; i++)
+            {
+                localDeformation[i,0] = (u[element.Connectivity[i],0]);
+            }
             // get gauss strain and stress
             for (int n = 0; n < B_local.Count; n++)
             {
                 // B-matrix is calculated from gauss points
-                Matrix<double> gaussStrain = B_local[n].Multiply(u);
-                Matrix<double> gaussStress = C.Multiply(B_local[n]).Multiply(u);
+                Matrix<double> gaussStrain = B_local[n].Multiply(localDeformation);
+                Matrix<double> gaussStress = C.Multiply(B_local[n]).Multiply(localDeformation);
 
                 for (int i = 0; i < B_local[0].RowCount; i++)
                 {
@@ -392,7 +404,7 @@ namespace MeshPoints
                     {0, 0, 0, 0, (1-2*possionRatio)/2, 0},
                     {0, 0, 0, 0, 0, (1-2*possionRatio)/2},
                 });
-                C.Multiply((double)youngModulus / ((1 + possionRatio) * (1 - 2 * possionRatio)));
+                C = C.Multiply((double)youngModulus / ((1 + possionRatio) * (1 - 2 * possionRatio)));
                 return C;
             }
         }
