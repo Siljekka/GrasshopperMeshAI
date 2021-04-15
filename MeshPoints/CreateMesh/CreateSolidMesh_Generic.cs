@@ -111,11 +111,7 @@ namespace MeshPoints.CreateMesh
             // 4. Make grid of points in u and v direction at leven nw
             meshPoints = CreateGridOfPointsAtEachFloor(nu, nv, surfaceAtNw, railPoints);
             
-<<<<<<< HEAD
             //5. Create nodes 
-=======
-            // 5. Create nodes and elements
->>>>>>> 38a2254c618c1f9d347b314d050ed90f79f5093f
             nodes = CreateNodes(meshPoints, nu, nv, nw); // assign Coordiantes, GlobalId and Boundary Conditions
 
 
@@ -125,20 +121,12 @@ namespace MeshPoints.CreateMesh
             // 6. Check if brep can be interpret by Abaqus
             //IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
 
-<<<<<<< HEAD
             //7. Create global mesh
             globalMesh = CreateGlobalMesh(elements);
 
-            //8. Add properties to SolidMesh
-            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, globalMesh); // Hilde: ni +1 ?? her
-=======
-            // 7. Create global mesh
-            allMesh = CreateGlobalMesh(elements);
-
             // 8. Add properties to SolidMesh
-            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, allMesh);
+            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, globalMesh);
             solidMesh.Geometry = brepGeometry;
->>>>>>> 38a2254c618c1f9d347b314d050ed90f79f5093f
             solidMesh.inp = true;
 
             // Output
