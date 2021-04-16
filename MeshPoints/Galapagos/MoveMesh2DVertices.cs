@@ -48,41 +48,42 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            // variables
+            // Variables
+            Brep srf = new Brep();
             Mesh2D m = new Mesh2D();
+            List<double> genesU = new List<double>();
+            List<double> genesV = new List<double>();
+
+            // Input
+            DA.GetData(0, ref srf);
+            DA.GetData(1, ref m);
+            DA.GetDataList(2, genesU);
+            DA.GetDataList(3, genesV);
+
             Mesh2D meshUpdated = new Mesh2D();
             Mesh mesh = new Mesh();
             Mesh allMesh = new Mesh();
             Node n = new Node();
             Element e = new Element();
-
-            Brep srf = new Brep();
             BrepEdge edge = null;
             Curve edgeCurve;
-
-            List<double> genesU = new List<double>();
-            List<double> genesV = new List<double>();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
-
             Point3d testPoint = new Point3d();
             Point3d meshPoint = new Point3d();
             Point3d meshPointProjected = new Point3d();
-
             double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
             double distanceToCurve = 1;
             int newRow = 0;
             int counter = 0;
 
 
-            // input
-            DA.GetData(0, ref srf);
-            DA.GetData(1, ref m);
-            DA.GetDataList(2, genesU);
-            DA.GetDataList(3, genesV);
-
             if ( (genesU.Count < m.Nodes.Count) | (genesV.Count < m.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Too few genes"); return; }// add warning message
-
+            
+            /* Todo:
+             *  Fikse inn i metoder, finn ut hvilke metoder som kan vær i klasse
+             *  Fiks sjekk av input
+             */
 
             #region Update nodes
             BrepEdgeList brepEdge = srf.Edges;  //add edges of surface to brepEdge
@@ -243,6 +244,7 @@ namespace MeshPoints
             meshUpdated.Nodes = nodes;
             meshUpdated.Elements = elements;
             meshUpdated.mesh = allMesh;
+            meshUpdated.Geometry = m.Geometry;
             
             // output
             DA.SetData(0, meshUpdated);
