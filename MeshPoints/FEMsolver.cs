@@ -67,22 +67,22 @@ namespace MeshPoints
             int numNodes = nodes.Count;
             int nodeDOFS = 0;
 
-            // shell or solid
+            // 1. Check if mesh is Shell or Solid
             if (String.Equals(mesh.Type, "shell"))  { nodeDOFS = 2;}
             else if (String.Equals( mesh.Type,"solid")) { nodeDOFS = 3;}
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is shell or solid."); }
 
-            // Get global stiffness matrix
+            // 2. Get global stiffness matrix
             Matrix<double> K_global = CalculateGlobalStiffnessMatrix(elements, numNodes, nodeDOFS, material);
 
-            // Get load vector
+            // 3. Get load vector
             Matrix<double> R = DenseMatrix.Build.Dense(numNodes * nodeDOFS, 1);
             for (int i = 0; i < loads.Count; i++)
             {
                 R[i, 0] = loads[i];
             }
 
-            // calculate displacement 
+            // 4. Calculate displacement 
             Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
 
             //var stress = CalculateGlobalStress(elements, u, material, nodeDOFS);
