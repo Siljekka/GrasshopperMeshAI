@@ -77,6 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BrepPoints.cs" />
+    <Compile Include="Classes\CSV.cs" />
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
