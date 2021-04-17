@@ -123,7 +123,7 @@ namespace MeshPoints.CreateMesh
 
             //7. Create global mesh
             globalMesh = CreateGlobalMesh(elements);
-
+            globalMesh = CreateGlobalMeshNew(nodes, nu, nv, nw);
             // 8. Add properties to SolidMesh
             Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, globalMesh);
             solidMesh.Geometry = brepGeometry;
@@ -822,89 +822,6 @@ namespace MeshPoints.CreateMesh
         /// Create Global mesh
         /// </summary>
         /// <returns>Global mesh</returns>
-        /*
-        private Mesh CreateGlobalMesh(List<Node> nodes, int nu, int nv, int nw)
-        {
-            nu++;
-            nv++;
-            nw++; // to do: sjekk disse
-
-
-            Mesh mesh = new Mesh();
-
-            foreach (Node node in nodes)
-            {
-                mesh.Vertices.Add(node.Coordinate);
-            }
-
-            // mesh planes in w -dir
-            int counter = 0;
-            int jump = 0; // new v sequence
-            for (int i = 0; i < nw; i++)
-            {
-                for (int j = 0; j < (nu-1)*(nv-1); j++)
-                {
-                    mesh.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
-
-                    counter++;
-                    jump++;
-                    if (jump == (nu - 1)) // check if done with a v sequence
-                    {
-                        counter++;
-                        jump = 0; // new v sequence
-                    }
-                }
-                counter++;
-            }
-
-
-            // mesh planes in u - dir
-            counter = 0; 
-            jump = 0; // new w sequence
-            for (int i = 0; i < nu; i++)
-            {
-                for (int j = 0; j < (nv - 1) * (nw - 1); j++)
-                {
-                    mesh.Faces.AddFace(counter, counter + 1, counter + nv + 1, counter + nv);
-
-                    counter++;
-                    jump++;
-                    if (jump == (nv - 1)) // check if done with a w sequence
-                    {
-                        counter++;
-                        jump = 0; // new w sequence
-                    }
-                }
-                counter++;
-            }
-
-
-            // mesh planes in v - dir
-            counter++;
-            jump = 0; // new u sequence
-            for (int i = 0; i < nv; i++)
-            {
-                for (int j = 0; j < (nw - 1) * (nu - 1); j++)
-                {
-                    mesh.Faces.AddFace(counter, counter + 1, counter + nw + 1, counter + nw);
-
-                    counter++;
-                    jump++;
-                    if (jump == (nw - 1)) // check if done with a u sequence
-                    {
-                        counter++;
-                        jump = 0; // new u sequence
-                    }
-                }
-                counter++;
-            }
-
-            mesh.Normals.ComputeNormals();  //Control if needed
-            mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-            mesh.Compact(); //to ensure that it calculate
-
-            return mesh;
-        }*/
 
         private Mesh CreateGlobalMesh(List<Element> elements)
         {
@@ -916,6 +833,96 @@ namespace MeshPoints.CreateMesh
             allMesh.Weld(0.01);
 
             return allMesh;
+        }
+
+        private Mesh CreateGlobalMeshNew(List<Node> nodes, int nu, int nv, int nw)
+        {
+            // to do: fix senere. mesh w- dir er riktig
+            nu++;
+            nv++;
+            nw++; 
+
+            Mesh mesh = new Mesh(); 
+
+            foreach (Node node in nodes)
+            {
+                mesh.Vertices.Add(node.Coordinate);
+            }
+       
+            // mesh planes in w -dir
+            int counter = 0;
+            int jump = 0; // new v sequence
+            
+           for (int i = 0; i < nw; i++)
+           {
+               for (int j = 0; j < (nu - 1) * (nv - 1 ); j++)
+               {
+                   if (jump < nu - 1)
+                   {
+
+                       mesh.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
+
+                       counter++;
+                       jump++;
+                   }
+                   else { counter++; jump = 0; j--; }
+               }
+               counter = (i + 1) * nu * nv ;
+               jump = 0;
+           }
+
+           // mesh planes in u - dir
+           counter = 0;
+           jump = 0; // new w sequence
+           for (int i = 0; i < nu; i++)
+           {
+               for (int j = 0; j < (nv - 1) * (nw - 1); j++)
+               {
+                   if (jump < nv - 1)
+                   {
+
+                       mesh.Faces.AddFace(counter, counter + (nu*nv), counter + (nu * nv) + nu, counter + nu );
+
+                       counter += nu;
+                       jump++;
+                   }
+                   else { counter += nu; jump = 0; j--; }
+               }
+               counter = (i + 1);
+               jump = 0;
+           }
+       
+
+            // mesh planes in v - dir
+            counter=0;
+            int counterU = 0;
+            jump = 0; // new u sequence
+            for (int i = 0; i < nv; i++)
+            {
+                for (int j = 0; j < (nu - 1) * (nw - 1); j++)
+                {
+                    if (jump < nw - 1)
+                    {
+
+                        mesh.Faces.AddFace(counter, counter + 1, counter + (nu * nv) + 1, counter + nu*nv);
+
+                        counter += nu*nv;
+                        jump++;
+                    }
+                    else { counterU++; counter = counterU; jump = 0; j--; }
+                }
+                counter = (i + 1)*nu;
+                jump = 0;
+                counterU = counter;
+            }
+
+            
+            
+            mesh.Normals.ComputeNormals();  //Control if needed
+            mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+            mesh.Compact(); //to ensure that it calculate
+
+            return mesh;
         }
 
         #endregion

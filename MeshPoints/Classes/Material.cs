@@ -6,10 +6,6 @@ using System.Threading.Tasks;
 using Rhino.Geometry;
 using Grasshopper.Kernel;
 using MeshPoints.Classes;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics;
-
 
 namespace MeshPoints.Classes
 {
@@ -17,7 +13,7 @@ namespace MeshPoints.Classes
     {
         public double YoungModulus { get; set; }
         public double PossionRatio { get; set; }
-        public double ShellThickness { get; set; }
+        public double YieldingStress { get; set; }
 
         // constructer
         public Material()
@@ -25,10 +21,11 @@ namespace MeshPoints.Classes
              // empty constructer
         }
 
-        public Material(double _youngModulus, double _possionRatio)
+        public Material(double _youngModulus, double _possionRatio, double _yieldingStress)
         {
             YoungModulus = _youngModulus;
             PossionRatio = _possionRatio;
+            YieldingStress = _yieldingStress;
         }
 
     }

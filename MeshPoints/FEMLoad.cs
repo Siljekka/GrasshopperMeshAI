@@ -29,9 +29,8 @@ namespace MeshPoints
             pManager.AddGenericParameter("MeshGeometry", "MeshFeometry", "Input a MeshGeometry", GH_ParamAccess.item); // to do: change name
             pManager.AddIntegerParameter("Load type", "load type", "Point load = 1, Surface load = 2", GH_ParamAccess.item);
             pManager.AddGenericParameter("Position", "pos", "Coordinate for point load", GH_ParamAccess.list); 
-            //pManager.AddIntegerParameter("Surface index", "Input surface index of geometry to apply load to", "", GH_ParamAccess.item);
-            //pManager.AddGenericParameter("Load size", "size", "Load size (kN for point load, kN/mm^2 for surface)", GH_ParamAccess.item); // to do: se om dette skal være en liste ift input i FEMsolver
-            pManager.AddGenericParameter("Load vectors", "vec", "List of vectors for the loads", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Surface index", "Input surface index of geometry to apply load to", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Load vectors", "vec", "List of vectors for the loads. If surface load, only one vector", GH_ParamAccess.list);
 
             pManager[0].Optional = true;
             pManager[1].Optional = true;
@@ -61,21 +60,19 @@ namespace MeshPoints
             int loadType = 0;
             List<Vector3d> loadVectors = new List<Vector3d>();
             List<Point3d> loadPosition = new List<Point3d>();
-            //int surfaceIndex = 0;
+            int surfaceIndex = 0;
 
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref loadType);
             DA.GetDataList(2, loadPosition);
-            //DA.GetData(3, ref surfaceIndex);
-            DA.GetDataList(3, loadVectors);
+            DA.GetData(3, ref surfaceIndex);
+            DA.GetDataList(4, loadVectors);
             #endregion
 
-            // to do: må gjøre noe med vektor til load... 
             #region Code
             List<Node> nodes = mesh.Nodes;
             List<Element> element = mesh.Elements;
             int nodeDOFS = 3;
-            if (String.Equals(mesh.Type, "shell")) { nodeDOFS = 2; }
 
             List<double> globalCoordinateLoadList = new List<double>();
             for (int i = 0; i < mesh.Nodes.Count * nodeDOFS; i++)
@@ -96,18 +93,65 @@ namespace MeshPoints
                     double yLoad = loadVectors[i].Y;
                     double zLoad = loadVectors[i].Z;
 
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS] = globalCoordinateLoadList[nodeIndex * nodeDOFS] + xLoad; // to do: change if for shell
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] + yLoad; // to do: change if for shell
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] + zLoad; // to do: change if for shell
+                    globalCoordinateLoadList[nodeIndex * nodeDOFS] = globalCoordinateLoadList[nodeIndex * nodeDOFS] + xLoad; 
+                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] + yLoad; 
+                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] + zLoad; 
                 }
 
             }
             else if (loadType == 2)
             {
                 // Surface load
-                /*
-                BrepFace surface = mesh.GeometryInformation.Faces[surfaceIndex];
+                
+                BrepFace surface = mesh.Geometry.Faces[surfaceIndex];
                 List<int> nodeIndexOnSurface = GetNodeIndexOnSurface(mesh.Nodes, surface);
+
+                Brep surfaceAsBerep = surface.ToBrep();
+                double area = Rhino.Geometry.AreaMassProperties.Compute(surfaceAsBerep).Area;
+                int loadCounter = 0;
+                foreach (int nodeIndex in nodeIndexOnSurface)
+                {
+                        if (nodes[nodeIndex].BC_U && nodes[nodeIndex].BC_V) // corner node
+                        {
+                            loadCounter++;
+                        }
+                        else if (nodes[nodeIndex].BC_U || nodes[nodeIndex].BC_V) // edge node
+                        {
+                            loadCounter += 2;
+                        }
+                        else
+                        {
+                            loadCounter += 4;
+                        }
+                }
+
+                List<double> nodalLoad = new List<double>();
+                nodalLoad.Add(loadVectors[0].X * area / (double) loadCounter); // assume one load vector
+                nodalLoad.Add(loadVectors[0].Y * area / (double) loadCounter); // assume one load vector
+                nodalLoad.Add(loadVectors[0].Z * area / (double) loadCounter); // assume one load vector
+
+                double addLoad = 0;
+                foreach (int nodeIndex in nodeIndexOnSurface)
+                {
+                    for (int loadDir = 0; loadDir < 3; loadDir++)
+                    {
+                        if (nodes[nodeIndex].BC_U && nodes[nodeIndex].BC_V) // corner node
+                        {
+                            addLoad = nodalLoad[loadDir];
+                        }
+                        else if (nodes[nodeIndex].BC_U || nodes[nodeIndex].BC_V) // edge node
+                        {
+                            addLoad = nodalLoad[loadDir] * 2;
+                        }
+                        else
+                        {
+                            addLoad = nodalLoad[loadDir] * 4;
+                        }
+                        globalCoordinateLoadList[ nodeDOFS * nodeIndex + loadDir] = globalCoordinateLoadList[nodeIndex * nodeDOFS + loadDir] + addLoad; 
+                    }
+                }
+
+                /*
                 List<int> elementIndexOnSurface = GetElementIndexConnectedToNodes(mesh.Elements, nodeIndexOnSurface);
 
                 List<Node> elementNodesToLump = new List<Node>();
@@ -146,9 +190,9 @@ namespace MeshPoints
 
                     }
                     LoadLumping(elementNodesToLump, loadSize, R);
-                }
-  
-                */
+                }*/
+
+
 
             }
             #endregion
@@ -177,19 +221,6 @@ namespace MeshPoints
             return nodeIndex;
         }
 
-        private bool IsPointOnSurface(Point3d point, BrepFace face)
-        {
-            bool nodeIsOnGeometry = false;
-            face.ClosestPoint(point, out double PointOnCurveU, out double PointOnCurveV);
-            Point3d testPoint = face.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
-            double distanceToFace = testPoint.DistanceTo(point); // calculate distance between testPoint and node
-            if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
-            {
-                nodeIsOnGeometry = true;
-            }
-            return nodeIsOnGeometry;
-        }
-
         private double CalculateArea(List<Node> nodes)
         {
             Point3d A = nodes[0].Coordinate;
@@ -210,7 +241,7 @@ namespace MeshPoints
             List<int> nodeIndexOnSurface = new List<int>();
             for (int i = 0; i < nodes.Count; i++)
             {
-                if (IsPointOnSurface(nodes[i].Coordinate, surface))
+                if (nodes[i].IsOnFace(surface))
                 {
                     nodeIndexOnSurface.Add(i);
                 }

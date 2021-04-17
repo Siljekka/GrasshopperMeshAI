@@ -27,8 +27,10 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddNumberParameter("Young modulus", "E", "Input a Young modulus", GH_ParamAccess.item, 210000);
+            pManager.AddNumberParameter("Young modulus", "E", "Input a Young modulus [MPa]", GH_ParamAccess.item, 210000);
             pManager.AddNumberParameter("Possion Ratio", "nu", "Input a Possion Ratio", GH_ParamAccess.item, 0.3);
+            pManager.AddNumberParameter("Yielding stress", "fy", "Input a yield stress [MPa]", GH_ParamAccess.item, 355);
+
         }
 
         /// <summary>
@@ -48,11 +50,14 @@ namespace MeshPoints
             // Input
             double Emodul = 210000;
             double nu = 0.3;
+            double fy = 355;
             DA.GetData(0, ref Emodul);
             DA.GetData(1, ref nu);
+            DA.GetData(2, ref fy);
+
 
             // Code
-            Material material = new Material(Emodul, nu);
+            Material material = new Material(Emodul, nu, fy);
 
             // Output
             DA.SetData(0, material);
