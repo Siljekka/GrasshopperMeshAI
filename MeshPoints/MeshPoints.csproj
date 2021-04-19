@@ -77,15 +77,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BrepPoints.cs" />
-    <Compile Include="Classes\CSV.cs" />
     <Compile Include="Classes\Geometry.cs" />
     <Compile Include="Classes\Material.cs" />
+    <Compile Include="Classes\CSV.cs" />
     <Compile Include="Classes\Node.cs" />
     <Compile Include="Classes\qNode.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
-    <Compile Include="CreateData.cs" />
     <Compile Include="Classes\FEM.cs" />
+    <Compile Include="CreateData.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh_Generic.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
