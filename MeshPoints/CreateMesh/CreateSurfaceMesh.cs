@@ -50,10 +50,10 @@ namespace MeshPoints.CreateMesh
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Brep surface = new Brep();
+            Brep brep = new Brep();
             int nu = 0;
             int nv = 0;
-            DA.GetData(0, ref surface);
+            DA.GetData(0, ref brep);
             DA.GetData(1, ref nu);
             DA.GetData(2, ref nv);
 
@@ -65,13 +65,21 @@ namespace MeshPoints.CreateMesh
             List<Point3d> meshPoints = new List<Point3d>();
             #endregion
 
-            // 1. Check input OK.
-            if (!surface.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid surface input found."); return; } //todo: is this one needed?
+            /* Todo:
+             *  Fikse hvordan punkt blir generert. Gjør som i solidMesh med PointAt(0,0) som referansepunkt.
+             *  Fiks sånn at overflate alltid har u og v i samme rekkefølge uavhengig av hvordan den tegnes.
+             */
+
+            // 0. Check input.
+            if (!DA.GetData(0, ref brep)) return;
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
 
+            // 1. Assign properties to Geometry Class
+            Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
+            
             // 2. Generate grid of points on surface
-            meshPoints = CreateGridOfPointsUV(nu, nv, surface.Faces[0].ToNurbsSurface());
+            meshPoints = CreateGridOfPointsUV(nu, nv, brep.Faces[0].ToNurbsSurface());
 
             // 3. Create nodes and elements
             nodes = CreateNodes(meshPoints, nu, nv);
@@ -82,6 +90,7 @@ namespace MeshPoints.CreateMesh
 
             //5. Add properties to SolidMesh
             surfaceMesh = new Mesh2D(nu+1, nv+1, nodes, elements, globalMesh);
+            surfaceMesh.Geometry = brepGeometry;
 
             // 6. Check if brep can be interpret by Abaqus
             IsBrepCompatibleWithAbaqus(surfaceMesh);
