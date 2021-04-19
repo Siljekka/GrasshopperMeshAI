@@ -40,7 +40,7 @@ namespace MeshPoints.Galapagos
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh3D", "m3D", "Updated solid mesh", GH_ParamAccess.item);
-            //pManager.AddGenericParameter("test", "", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -146,6 +146,7 @@ namespace MeshPoints.Galapagos
 
             // Output
             DA.SetData(0, solidMesh);
+            DA.SetData(1, solidMesh.mesh);
         }
         #region Methods
         /// <summary>
