@@ -13,7 +13,7 @@ namespace MeshPoints
         /// Initializes a new instance of the CreateData class.
         /// </summary>
         public CreateData()
-          : base("CreateData (CSV)", "data",
+          : base("CreateCSV (Quality)", "data",
               "Export data to CSV file.",
               "MyPlugIn", "Data")
         {
@@ -67,7 +67,16 @@ namespace MeshPoints
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append(String.Format("{0}", quality));
 
-                // 2. Add coordiantes of nodes to string.
+                // 2. Normalize coordinates.
+                List<Point3d> points = new List<Point3d>();
+                NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
+                foreach (Node node in mesh.Nodes)
+                {
+                    surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
+                    Point3d newPoint = new Point3d(PointU / surface.Domain(0).T1, PointV / surface.Domain(1).T1, 0);
+                    points.Add(newPoint);
+
+                // 3. Add coordiantes of nodes to string.
                 for (int i = 0; i < nodes.Count; i++)
                 {
                     if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
@@ -75,7 +84,7 @@ namespace MeshPoints
                     stringBuilder.Append(text);
                 }
 
-                // 3. Make CSV-file
+                // 4. Make CSV-file
                 var data = Convert.ToString(stringBuilder);
                 WriteToCSV(data, filePath);
                 //CSV.addRecord(data, filePath);
