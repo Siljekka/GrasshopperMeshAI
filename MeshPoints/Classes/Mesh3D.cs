@@ -31,7 +31,7 @@ namespace MeshPoints.Classes
             Nodes = _nodes;
             Elements = _elements;
             mesh = _mesh;
-            Type = "shell";
+            Type = "Surface";
         }
 
         public Mesh3D(int _nu, int _nv, int _nw, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for solid mesh
@@ -42,7 +42,7 @@ namespace MeshPoints.Classes
             Nodes = _nodes;
             Elements = _elements;
             mesh = _mesh;
-            Type = "solid";
+            Type = "Solid";
         }
 
     }
