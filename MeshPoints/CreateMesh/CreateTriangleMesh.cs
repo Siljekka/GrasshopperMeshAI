@@ -67,6 +67,7 @@ namespace MeshPoints.CreateMesh
 
             // 2. Create points inside the surface by creating a bounding box, populating it with points, and culling all points not inside the surface.
             Brep boundingBoxSurface = CreateBoundingBoxFromBrep(meshSurface);
+            if (boundingBoxSurface == null) { return; }
             List<Point3d> nodeGridBoundingBox = CreatePointGridInBoundingBox(boundingBoxSurface, meshSurface, totalInnerNodeCount);
             List<Point3d> nodesInsideSurface = CullPointsOutsideSurface(nodeGridBoundingBox, flattenedEdgeNodes, meshSurface);
 

@@ -39,8 +39,13 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
+<<<<<<< HEAD
             pManager.AddGenericParameter("SurfaceMesh", "surface", "SurfaceMesh from given points", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
+=======
+            pManager.AddGenericParameter("SurfaceMesh", "surface", "SurfaceMesh from genereated vertices", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Vertices", "v", "Generated mesh vertices", GH_ParamAccess.list);
+>>>>>>> main
         }
 
         /// <summary>
@@ -50,10 +55,14 @@ namespace MeshPoints.CreateMesh
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Surface surface = null;
+            Brep brep = new Brep();
             int nu = 0;
             int nv = 0;
+<<<<<<< HEAD
             DA.GetData(0, ref surface);
+=======
+            DA.GetData(0, ref brep);
+>>>>>>> main
             DA.GetData(1, ref nu);
             DA.GetData(2, ref nv);
 
@@ -65,7 +74,12 @@ namespace MeshPoints.CreateMesh
             List<Point3d> meshPoints = new List<Point3d>();
             #endregion
 
+            /* Todo:
+             *  Fikse hvordan punkt blir generert. Gjør som i solidMesh med PointAt(0,0) som referansepunkt.
+             *  Fiks sånn at overflate alltid har u og v i samme rekkefølge uavhengig av hvordan den tegnes.
+             */
 
+<<<<<<< HEAD
             // 0. Check input OK.
             if (!surface.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid surface input found."); return; } //todo: is this one needed?
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
@@ -73,6 +87,18 @@ namespace MeshPoints.CreateMesh
 
             // 1. Generate grid of points on surface
             meshPoints = CreateGridOfPointsUV(nu, nv, surface.ToNurbsSurface());
+=======
+            // 0. Check input.
+            if (!DA.GetData(0, ref brep)) return;
+            if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
+            if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
+
+            // 1. Assign properties to Geometry Class
+            Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
+            
+            // 2. Generate grid of points on surface
+            meshPoints = CreateGridOfPointsUV(nu, nv, brep.Faces[0].ToNurbsSurface());
+>>>>>>> main
 
             // 2. Create nodes and elements
             nodes = CreateNodes(meshPoints, nu, nv);
@@ -81,8 +107,14 @@ namespace MeshPoints.CreateMesh
             // 3. Create global mesh
             globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
 
+<<<<<<< HEAD
             // 4. Add properties to SolidMesh
             surfaceMesh = new Mesh2D(nu+1, nv+1, nodes, elements, globalMesh);
+=======
+            //5. Add properties to SolidMesh
+            surfaceMesh = new Mesh2D(nu+1, nv+1, nodes, elements, globalMesh);
+            surfaceMesh.Geometry = brepGeometry;
+>>>>>>> main
 
             // 5. Check if brep can be interpret by Abaqus
             IsBrepCompatibleWithAbaqus(surfaceMesh);
