@@ -45,17 +45,20 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             double quality = 100;
-            List<Node> nodes = new List<Node>();
+           // List<Node> nodes = new List<Node>();
             Mesh2D mesh = new Mesh2D();
             string filePath = "empty";
             bool writeData = false;
 
             DA.GetData(0, ref quality);
-            DA.GetDataList(1, nodes);
+            //DA.GetDataList(1, nodes);
             DA.GetData(2, ref mesh);
             DA.GetData(3, ref filePath);
             DA.GetData(4, ref writeData);
 
+            List<Point3d> points = new List<Point3d>();
+            StringBuilder stringBuilder = new StringBuilder();
+            List<Node> nodes = mesh.Nodes;
 
             if (writeData)
             {
@@ -64,23 +67,22 @@ namespace MeshPoints
                 if (filePath == "empty") return;
 
                 // 1. Add quality measure to string.
-                StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append(String.Format("{0}", quality));
 
                 // 2. Normalize coordinates.
-                List<Point3d> points = new List<Point3d>();
-                NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
+                /*NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
                 foreach (Node node in mesh.Nodes)
                 {
                     surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
                     Point3d newPoint = new Point3d(PointU / surface.Domain(0).T1, PointV / surface.Domain(1).T1, 0);
                     points.Add(newPoint);
+                }*/
 
                 // 3. Add coordiantes of nodes to string.
-                for (int i = 0; i < nodes.Count; i++)
+                for (int i = 0; i < points.Count; i++)
                 {
                     if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
-                    string text = String.Format(",{0},{1},{2}", nodes[i].Coordinate.X, nodes[i].Coordinate.Y, nodes[i].Coordinate.Z);
+                    string text = String.Format(",{0},{1},{2}", points[i].X, points[i].Y, points[i].Z);
                     stringBuilder.Append(text);
                 }
 
