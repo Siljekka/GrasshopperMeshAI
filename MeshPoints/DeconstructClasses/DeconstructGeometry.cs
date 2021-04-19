@@ -6,17 +6,14 @@ using MeshPoints.Classes;
 
 namespace MeshPoints.DeconstructClasses
 {
-    public class DeconstructElement3D : GH_Component
+    public class DeconstructGeometry : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the MyComponent1 class.
+        /// Initializes a new instance of the DeconstructGeometry class.
         /// </summary>
-        /// <summary>
-        /// Initializes a new instance of the Deconstruct_Node class.
-        /// </summary>
-        public DeconstructElement3D()
-        : base("Deconstruct Element 3D", "decE3D",
-              "Deconstructing element class for 3D Mesh Class",
+        public DeconstructGeometry()
+          : base("Deconstruct Geometry", "geo",
+              "Deconstructing Geometry class",
               "MyPlugIn", "Deconstruct")
         {
         }
@@ -26,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Element class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Geometry", "geo", "Geometry class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -34,12 +31,11 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Nodes", "nodes", "Nodes of element", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Connectivity", "con", "Connectivity of local to global nodes", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Type", "type", "Element type", GH_ParamAccess.item); //0
-            pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //8
-            pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //9
+            pManager.AddGenericParameter("Faces", "f", "List of faces", GH_ParamAccess.list); //0
+            pManager.AddGenericParameter("Edges", "e", "List of edges", GH_ParamAccess.list); //1
+            pManager.AddGenericParameter("Vertices", "v", "List of vertices", GH_ParamAccess.list); //2
         }
+
 
         /// <summary>
         /// This is the method that actually does the work.
@@ -47,16 +43,14 @@ namespace MeshPoints.DeconstructClasses
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //input
-            Element e = new Element();
-            DA.GetData(0, ref e);
+            // Input
+            Geometry geometry = new Geometry();
+            DA.GetData(0, ref geometry);
 
-            //output
-            DA.SetDataList(0, e.Nodes);
-            DA.SetDataList(1, e.Connectivity);
-            DA.SetData(2, e.Type);
-            DA.SetData(3, e.Id);
-            DA.SetData(4, e.mesh);
+            // Output
+            DA.SetDataList(0, geometry.Faces);
+            DA.SetDataList(1, geometry.Edges);
+            DA.SetDataList(2, geometry.Vertices);
         }
 
         /// <summary>
@@ -68,7 +62,7 @@ namespace MeshPoints.DeconstructClasses
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_DeconstructSolidElement;
+                return null;
             }
         }
 
@@ -77,7 +71,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("df3f3c5f-c32c-44ce-83f1-831a94edd1d8"); }
+            get { return new Guid("bc020810-0e46-4545-a123-a06ed738cb51"); }
         }
     }
 }

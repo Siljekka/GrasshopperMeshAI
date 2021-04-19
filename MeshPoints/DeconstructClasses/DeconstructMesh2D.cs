@@ -14,8 +14,8 @@ namespace MeshPoints
         /// Initializes a new instance of the Deconstruct_Mesh2D class.
         /// </summary>
         public Deconstruct_Mesh2D()
-          : base("Deconstruct Mesh2D", "decM2D",
-              "Deconstructing Mesh2D class",
+          : base("Deconstruct SurfaceMesh", "decSurf",
+              "Deconstruct SurfaceMesh class",
               "MyPlugIn", "Deconstruct")
         {
         }
@@ -48,6 +48,19 @@ namespace MeshPoints
             //input
             Mesh2D m = new Mesh2D();
             DA.GetData(0, ref m);
+
+            /*
+            List<Point3d> points = new List<Point3d>();
+            NurbsSurface surface = m.Geometry.Brep.Faces[0].ToNurbsSurface();
+            foreach (Node node in m.Nodes)
+            {
+                surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
+                Point3d newPoint = new Point3d(PointU/surface.Domain(0).T1, PointV/surface.Domain(1).T1, 0);
+                points.Add(newPoint);
+            }*/
+            
+            
+
 
             //output
             DA.SetDataList(0, m.Elements);

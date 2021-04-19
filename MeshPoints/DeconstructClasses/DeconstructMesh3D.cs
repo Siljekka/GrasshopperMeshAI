@@ -12,8 +12,8 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the DeconstructMesh3d class.
         /// </summary>
         public DeconstructMesh3D()
-          : base("DeconstructMesh3D", "decM3D",
-              "Deconstructing Mesh3D class",
+          : base("Deconstruct SolidMesh", "decSolid",
+              "Deconstructing SolidMesh class",
               "MyPlugIn", "Deconstruct")
         {
         }
@@ -34,6 +34,8 @@ namespace MeshPoints.DeconstructClasses
             pManager.AddGenericParameter("Elements", "e", "List of elements", GH_ParamAccess.list); //0
             pManager.AddGenericParameter("Nodes", "n", "List of nodes", GH_ParamAccess.list); //1
             pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item); //2
+            pManager.AddGenericParameter("Geometry", "geo", "Geometry information", GH_ParamAccess.item); //3
+            pManager.AddGenericParameter("NormalizedCoordinates", "coord", "Coordinates of nodes, normalized", GH_ParamAccess.item); //4
         }
 
         /// <summary>
@@ -46,10 +48,46 @@ namespace MeshPoints.DeconstructClasses
             Mesh3D m = new Mesh3D();
             DA.GetData(0, ref m);
 
+            List<Node> nodes = m.Nodes;
+            List<Point3d> points = new List<Point3d>();
+            List<Point3d> newPoints = new List<Point3d>();
+            double maxX = 0;
+            double maxY = 0;
+            double maxZ = 0;
+            double minX = 0;
+            double minY = 0;
+            double minZ = 0;
+
+
+            foreach (Node node in nodes) { points.Add(node.Coordinate); }
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (points[i].X > maxX) { maxX = points[i].X; }
+                if (points[i].X < minX) { minX = points[i].X; }
+                if (points[i].Y > maxY) { maxY = points[i].Y; }
+                if (points[i].Y < minY) { minY = points[i].Y; }
+                if (points[i].X > maxZ) { maxZ = points[i].Z; }
+                if (points[i].X < minZ) { minZ = points[i].Z; }
+
+            }
+            
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                double lengthofdiagonal = Math.Sqrt((maxX - minX) * (maxX - minX) + (maxY - minY) * (maxY - minY) + (maxZ - minZ) * (maxZ - minZ));
+                double normalizedX = (nodes[i].Coordinate.X - minX) / lengthofdiagonal;
+                double normalizedY = (nodes[i].Coordinate.Y - minY) / lengthofdiagonal;
+                double normalizedZ = (nodes[i].Coordinate.Z - minZ) / lengthofdiagonal;
+                Point3d newPoint = new Point3d(normalizedX, normalizedY, normalizedZ);
+                newPoints.Add(newPoint);
+            }
+           
             //output
             DA.SetDataList(0, m.Elements);
             DA.SetDataList(1, m.Nodes);
             DA.SetData(2, m.mesh);
+            DA.SetData(3, m.Geometry);
+            DA.SetData(4, newPoints);
         }
 
         /// <summary>
