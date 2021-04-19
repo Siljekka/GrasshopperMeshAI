@@ -82,7 +82,7 @@ namespace MeshPoints.CreateMesh
             globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
 
             // 4. Add properties to SolidMesh
-            surfaceMesh = new Mesh2D(nu, nv, nodes, elements, globalMesh);
+            surfaceMesh = new Mesh2D(nu+1, nv+1, nodes, elements, globalMesh);
 
             // 5. Check if brep can be interpret by Abaqus
             IsBrepCompatibleWithAbaqus(surfaceMesh);
