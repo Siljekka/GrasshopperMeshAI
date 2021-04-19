@@ -368,7 +368,7 @@ namespace MeshPoints
                         }
                     }
                 }
-
+                
 
             B_local.Add(B_i);
             K_local = K_local + B_i.Transpose().Multiply(C).Multiply(B_i).Multiply(jacobianMatrix.Determinant());
@@ -659,6 +659,7 @@ namespace MeshPoints
             Matrix<double> elementStress = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
             Matrix<double> localDeformation = DenseMatrix.Build.Dense(nodeDOFS * B_local.Count,1);
             
+            // get deformation of nodes connected to element
             for (int i = 0; i < element.Connectivity.Count; i++)
             {
                 localDeformation[nodeDOFS * i, 0] = u[nodeDOFS * element.Connectivity[i],0];
@@ -680,7 +681,7 @@ namespace MeshPoints
             }
 
             // get node strain and stress by interpolation
-            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3), nodeDOFS); // marcin: ok constant?
+            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(1, nodeDOFS);
 
             for (int n = 0; n < B_local.Count; n++)
             { 
@@ -704,7 +705,7 @@ namespace MeshPoints
 
         private Tuple<Matrix<double>, Vector<double>> CalculateGlobalStress(List<Element> elements, Matrix<double> u, Material material, int nodeDOFS)
         {
-            int numNodes = u.RowCount;
+            int numNodes =  u.RowCount / 3;
             int stressRowDim = 4;
             if (nodeDOFS == 3) { stressRowDim = 6; }
             Matrix<double> globalStress = DenseMatrix.Build.Dense(stressRowDim, numNodes);
@@ -713,9 +714,7 @@ namespace MeshPoints
 
             foreach (Element element in elements)
             {
-                var elementStressStrain = CalculateElementStrainStress(element, u, material, nodeDOFS);
-                Matrix<double> elementStrain = elementStressStrain.Item1;
-                Matrix<double> elementStress = elementStressStrain.Item2;
+                Matrix<double> elementStress = CalculateElementStrainStress(element, u, material, nodeDOFS).Item2;
 
                 List<int> connectivity = element.Connectivity;
 

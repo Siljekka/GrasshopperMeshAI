@@ -12,9 +12,9 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the DeconstructGeometry class.
         /// </summary>
         public DeconstructGeometry()
-          : base("DeconstructGeometry", "Nickname",
-              "Description",
-              "Category", "Subcategory")
+          : base("Deconstruct Geometry", "geo",
+              "Deconstructing Geometry class",
+              "MyPlugIn", "Deconstruct")
         {
         }
 

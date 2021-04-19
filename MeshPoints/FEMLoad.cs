@@ -26,7 +26,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {        
-            pManager.AddGenericParameter("MeshGeometry", "MeshFeometry", "Input a MeshGeometry", GH_ParamAccess.item); // to do: change name
+            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "Input a SmartMesh", GH_ParamAccess.item); 
             pManager.AddIntegerParameter("Load type", "load type", "Point load = 1, Surface load = 2", GH_ParamAccess.item);
             pManager.AddGenericParameter("Position", "pos", "Coordinate for point load", GH_ParamAccess.list); 
             pManager.AddIntegerParameter("Surface index", "Input surface index of geometry to apply load to", "", GH_ParamAccess.item);
@@ -45,13 +45,14 @@ namespace MeshPoints
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
              pManager.AddGenericParameter("Load", "load", "List of residual (R)", GH_ParamAccess.list);
+             pManager.AddGenericParameter("Nodes", "nodes", "List of node coordinates applied load to", GH_ParamAccess.list);
         }
 
-    /// <summary>
-    /// This is the method that actually does the work.
-    /// </summary>
-    /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
-    protected override void SolveInstance(IGH_DataAccess DA)
+        /// <summary>
+        /// This is the method that actually does the work.
+        /// </summary>
+        /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
+        protected override void SolveInstance(IGH_DataAccess DA)
         {
             // assume only perpendicular negativ load
 
@@ -73,6 +74,7 @@ namespace MeshPoints
             List<Node> nodes = mesh.Nodes;
             List<Element> element = mesh.Elements;
             int nodeDOFS = 3;
+            List<Point3d> pointsWithLoad = new List<Point3d>();
 
             List<double> globalCoordinateLoadList = new List<double>();
             for (int i = 0; i < mesh.Nodes.Count * nodeDOFS; i++)
@@ -95,7 +97,8 @@ namespace MeshPoints
 
                     globalCoordinateLoadList[nodeIndex * nodeDOFS] = globalCoordinateLoadList[nodeIndex * nodeDOFS] + xLoad; 
                     globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] + yLoad; 
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] + zLoad; 
+                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] + zLoad;
+                    pointsWithLoad.Add(nodes[nodeIndex].Coordinate);
                 }
 
             }
@@ -111,18 +114,19 @@ namespace MeshPoints
                 int loadCounter = 0;
                 foreach (int nodeIndex in nodeIndexOnSurface)
                 {
-                        if (nodes[nodeIndex].BC_U && nodes[nodeIndex].BC_V) // corner node
-                        {
-                            loadCounter++;
-                        }
-                        else if (nodes[nodeIndex].BC_U || nodes[nodeIndex].BC_V) // edge node
-                        {
-                            loadCounter += 2;
-                        }
-                        else
-                        {
-                            loadCounter += 4;
-                        }
+                    int numBC = 0;
+                    if (nodes[nodeIndex].BC_U){ numBC++; }
+                    if (nodes[nodeIndex].BC_V) { numBC++; }
+                    if (nodes[nodeIndex].BC_W) { numBC++; }
+                    switch (numBC)
+                    {
+                        case 3: // corner node
+                            loadCounter++; break;
+                        case 2: // edge node
+                            loadCounter += 2; break;
+                        case 1: // midle node
+                            loadCounter += 4; break;
+                    }
                 }
 
                 List<double> nodalLoad = new List<double>();
@@ -135,20 +139,23 @@ namespace MeshPoints
                 {
                     for (int loadDir = 0; loadDir < 3; loadDir++)
                     {
-                        if (nodes[nodeIndex].BC_U && nodes[nodeIndex].BC_V) // corner node
+                        int numBC = 0;
+                        if (nodes[nodeIndex].BC_U) { numBC++; }
+                        if (nodes[nodeIndex].BC_V) { numBC++; }
+                        if (nodes[nodeIndex].BC_W) { numBC++; }
+                        switch (numBC)
                         {
-                            addLoad = nodalLoad[loadDir];
+                            case 3: // corner node
+                                addLoad = nodalLoad[loadDir]; break;
+                            case 2: // edge node
+                                addLoad = nodalLoad[loadDir] * 2; break;
+                            case 1: // midle node
+                                addLoad = nodalLoad[loadDir] * 4; ; break;
                         }
-                        else if (nodes[nodeIndex].BC_U || nodes[nodeIndex].BC_V) // edge node
-                        {
-                            addLoad = nodalLoad[loadDir] * 2;
-                        }
-                        else
-                        {
-                            addLoad = nodalLoad[loadDir] * 4;
-                        }
-                        globalCoordinateLoadList[ nodeDOFS * nodeIndex + loadDir] = globalCoordinateLoadList[nodeIndex * nodeDOFS + loadDir] + addLoad; 
+                        globalCoordinateLoadList[ nodeDOFS * nodeIndex + loadDir] = globalCoordinateLoadList[nodeIndex * nodeDOFS + loadDir] + addLoad;
                     }
+                    pointsWithLoad.Add(nodes[nodeIndex].Coordinate);
+
                 }
 
                 /*
@@ -198,6 +205,8 @@ namespace MeshPoints
             #endregion
 
             DA.SetDataList(0, globalCoordinateLoadList) ;
+            DA.SetDataList(1, pointsWithLoad);
+
         }
 
         #region Methods

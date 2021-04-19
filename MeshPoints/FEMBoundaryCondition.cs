@@ -22,21 +22,25 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("MeshGeometry", "MeshFeometry", "Input a MeshGeometry", GH_ParamAccess.item); // to do: change name
-            pManager.AddGenericParameter("Edge/Face indices with BC", "", "", GH_ParamAccess.list); // to do: change name
+            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "Input a SmartMesh", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Face indices with BC", "", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Edge indices with BC", "", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("Tx", "", "", GH_ParamAccess.item);
             pManager.AddGenericParameter("Ty", "", "", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Tw", "", "", GH_ParamAccess.item);
-           // pManager.AddGenericParameter("Rx", "", "", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Tz", "", "", GH_ParamAccess.item);
+            // pManager.AddGenericParameter("Rx", "", "", GH_ParamAccess.item); 
             //pManager.AddGenericParameter("Rv", "", "", GH_ParamAccess.item); 
             //pManager.AddGenericParameter("Rz", "", "", GH_ParamAccess.item);
 
+            pManager[1].Optional = true;
             pManager[2].Optional = true;
             pManager[3].Optional = true;
-            pManager[4].Optional = true; 
-           // pManager[5].Optional = true;
+            pManager[4].Optional = true;
+            pManager[5].Optional = true;
             //pManager[6].Optional = true;
             //pManager[7].Optional = true;
+            // pManager[8].Optional = true;
+
         }
 
         /// <summary>
@@ -45,6 +49,7 @@ namespace MeshPoints
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Boundary conditions", "BC", "List of DOFS that are fixed", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Nodes", "nodes", "List of node coordinates applied boundary conditions to", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -55,7 +60,8 @@ namespace MeshPoints
         {
             #region Input
             Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
-            List<int> indicesOfGeometryWithBC = new List<int>();
+            List<int> indicesOfFaceWithBC = new List<int>();
+            List<int> indicesOfEdgeWithBC = new List<int>();
             bool Tx = false;
             bool Ty = false;
             bool Tz = false;
@@ -64,10 +70,12 @@ namespace MeshPoints
             //bool Rz = false;
 
             DA.GetData(0, ref mesh);
-            DA.GetDataList(1, indicesOfGeometryWithBC);
-            DA.GetData(2, ref Tx);
-            DA.GetData(3, ref Ty);
-            DA.GetData(4, ref Tz);
+            DA.GetDataList(1, indicesOfFaceWithBC);
+            DA.GetDataList(2, indicesOfEdgeWithBC);
+
+            DA.GetData(3, ref Tx);
+            DA.GetData(4, ref Ty);
+            DA.GetData(5, ref Tz);
             //DA.GetData(5, ref Rx);
             //DA.GetData(6, ref Ry);
             //DA.GetData(7, ref Rz);
@@ -79,8 +87,8 @@ namespace MeshPoints
             // Settings
             List<List<int>> applyBCToDOF = new List<List<int>>();
             bool nodeIsOnGeometry = false;
-            int nodeDOFS = 2;
-            if (String.Equals(mesh.Type, "solid")) { nodeDOFS = 3; }
+            int nodeDOFS = 3;
+            List<Point3d> pointsWithBC = new List<Point3d>();
 
             // Loop each dof for each node
             for (int i = 0; i < mesh.Nodes.Count; i++)
@@ -88,26 +96,28 @@ namespace MeshPoints
                 Node node = mesh.Nodes[i];
 
                 // Check if node is on geometry to apply BC to
-                if (String.Equals(mesh.Type, "shell"))
+                if (indicesOfEdgeWithBC.Count > 0)
                 {
-                    for (int n = 0; n < indicesOfGeometryWithBC.Count; n++)
+                    for (int n = 0; n < indicesOfEdgeWithBC.Count; n++)
                     {
-                        BrepEdge edge = mesh.Geometry.Edges[indicesOfGeometryWithBC[n]];
+                        BrepEdge edge = mesh.Geometry.Edges[indicesOfEdgeWithBC[n]];
                         if (IsPointOnEdge(node.Coordinate, edge)) 
                         {
                             nodeIsOnGeometry = true;
+                            pointsWithBC.Add(node.Coordinate);
                             break;
                         }
                     }
                 }
                 else
                 {
-                    for (int n = 0; n < indicesOfGeometryWithBC.Count; n++)
+                    for (int n = 0; n < indicesOfFaceWithBC.Count; n++)
                     {
-                        BrepFace face = mesh.Geometry.Faces[indicesOfGeometryWithBC[n]];
+                        BrepFace face = mesh.Geometry.Faces[indicesOfFaceWithBC[n]];
                         if (IsPointOnSurface(node.Coordinate, face))
                         {
                             nodeIsOnGeometry = true;
+                            pointsWithBC.Add(node.Coordinate);
                             break;
                         }
                     }
@@ -133,6 +143,7 @@ namespace MeshPoints
 
             #region Output
             DA.SetDataList(0, applyBCToDOF);
+            DA.SetDataList(1, pointsWithBC);
             #endregion
         }
 
