@@ -39,8 +39,8 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SurfaceMesh", "surface", "SurfaceMesh from genereated vertices", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Vertices", "v", "Generated mesh vertices", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SurfaceMesh", "surface", "SurfaceMesh from given points", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -70,10 +70,11 @@ namespace MeshPoints.CreateMesh
              *  Fiks sånn at overflate alltid har u og v i samme rekkefølge uavhengig av hvordan den tegnes.
              */
 
-            // 0. Check input.
+            // 1. Check input OK.
             if (!DA.GetData(0, ref brep)) return;
             if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
             if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
+
 
             // 1. Assign properties to Geometry Class
             Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
@@ -81,41 +82,25 @@ namespace MeshPoints.CreateMesh
             // 2. Generate grid of points on surface
             meshPoints = CreateGridOfPointsUV(nu, nv, brep.Faces[0].ToNurbsSurface());
 
-            // 3. Create nodes and elements
+            // 2. Create nodes and elements
             nodes = CreateNodes(meshPoints, nu, nv);
             elements = CreateQuadElements(nodes, nu, nv);
 
-            //4. Create global mesh
+            // 3. Create global mesh
             globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
 
             //5. Add properties to SolidMesh
             surfaceMesh = new Mesh2D(nu+1, nv+1, nodes, elements, globalMesh);
             surfaceMesh.Geometry = brepGeometry;
 
-            // 6. Check if brep can be interpret by Abaqus
-            IsBrepCompatibleWithAbaqus(surfaceMesh);
 
 
             // Output
             DA.SetData(0, surfaceMesh);
             DA.SetData(1, surfaceMesh.mesh);
         }
-        /// <summary>
-        /// Check if mesh is compatible with Abaqus
-        /// </summary>
-        /// <returns> Nothing. Assign propertie to surfaceMesh. </returns>
-        private void IsBrepCompatibleWithAbaqus(Mesh2D surfaceMesh)
-        {
-            BoundingBox bb = surfaceMesh.Elements[0].mesh.GetBoundingBox(false);
-            Vector3d vec1 = bb.GetCorners()[1] - bb.GetCorners()[0];
-            Vector3d vec2 = bb.GetCorners()[3] - bb.GetCorners()[0];
-            Vector3d vector1 = Vector3d.CrossProduct(vec1, vec2);
-            Vector3d vector2 = surfaceMesh.Elements[0].mesh.FaceNormals[0];
-            Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
-            double angle = Vector3d.VectorAngle(vector1, vector2, normal);
-            if (angle < Math.PI / 2) { surfaceMesh.inp = true; }
-            else { surfaceMesh.inp = false; }
-        }
+        
+
         /// <summary>
         /// Makes grid of points in U and V direction
         /// </summary>
@@ -126,47 +111,20 @@ namespace MeshPoints.CreateMesh
 
             var u = surface.Domain(0);
             var v = surface.Domain(1);
+            double stepU = u.Length / (double)nu;
+            double stepV = v.Length / (double)nv;
 
-            double stepU = 1 / ((double)nu) * u.Length;
-            double stepV = 1 / ((double)nv) * v.Length;
-            BoundingBox bb = surface.GetBoundingBox(true);
-            Vector3d vec1 = bb.GetCorners()[1] - bb.GetCorners()[0];
-            Vector3d vec2 = bb.GetCorners()[3] - bb.GetCorners()[0];
-            Vector3d vector1 = Vector3d.CrossProduct(vec1, vec2);
-            Vector3d vector2 = surface.NormalAt(u.T1 * 0.5, v.T1 * 0.5);
-            
-            Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
-            double angle = Vector3d.VectorAngle(vector1, vector2, normal);
-
-            if (angle < Math.PI / 2) 
-            { 
-                double pointU = 0;
-                double pointV = 0;
-                for (double j = 0; j <= nv; j++)
-                {
-                    for (double k = 0; k <= nu; k++)
-                    {
-                        pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
-                        pointU = pointU + stepU;
-                    }
-                    pointV = pointV + stepV;
-                    pointU = 0;
-                }
-            }
-            else
+            double pointU = 0;
+            double pointV = 0;
+            for (double j = 0; j <= nv; j++)
             {
-                double pointU = 0;
-                double pointV = v.Length;
-                for (double j = 0; j <= nv; j++)
+                for (double k = 0; k <= nu; k++)
                 {
-                    for (double k = 0; k <= nu; k++)
-                    {
-                        pt.Add(surface.PointAt(pointU, pointV)); // make point on surface
-                        pointU = pointU + stepU;
-                    }
-                    pointV = pointV - stepV;
-                    pointU = 0; 
+                    pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
+                    pointU = pointU + stepU;
                 }
+                pointV = pointV + stepV;
+                pointU = 0;
             }
             return pt;
         }

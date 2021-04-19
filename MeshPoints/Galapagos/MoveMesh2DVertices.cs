@@ -40,6 +40,7 @@ namespace MeshPoints
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Mesh2D", "m2d", "Updated mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -59,6 +60,11 @@ namespace MeshPoints
             DA.GetData(1, ref m);
             DA.GetDataList(2, genesU);
             DA.GetDataList(3, genesV);
+
+            if (!DA.GetData(0, ref srf)) return;
+            if (!DA.GetData(1, ref m)) return;
+            if (!DA.GetDataList(2, genesU)) return;
+            if (!DA.GetDataList(3, genesV)) return;
 
             Mesh2D meshUpdated = new Mesh2D();
             Mesh mesh = new Mesh();
@@ -248,6 +254,7 @@ namespace MeshPoints
             
             // output
             DA.SetData(0, meshUpdated);
+            DA.SetData(1, meshUpdated.mesh);
         }
 
         /// <summary>
