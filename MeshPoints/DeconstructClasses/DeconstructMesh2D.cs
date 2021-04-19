@@ -37,6 +37,7 @@ namespace MeshPoints
             pManager.AddGenericParameter("Elements", "e", "List of elements", GH_ParamAccess.list); //0
             pManager.AddGenericParameter("Nodes", "n", "List of nodes", GH_ParamAccess.list); //1
             pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item); //2
+            pManager.AddGenericParameter("Geometry", "g", "Geometry information", GH_ParamAccess.item); //3
         }
 
         /// <summary>
@@ -66,6 +67,7 @@ namespace MeshPoints
             DA.SetDataList(0, m.Elements);
             DA.SetDataList(1, m.Nodes);
             DA.SetData(2, m.mesh);
+            DA.SetData(3, m.Geometry);
         }
 
         /// <summary>
