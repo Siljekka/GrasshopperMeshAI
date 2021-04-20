@@ -28,7 +28,7 @@ namespace MeshPoints.MeshQuality
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Insert a SmartMesh class", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Color mesh with quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
             pManager[1].Optional = true; // coloring the mesh is optional
         }
 
@@ -75,8 +75,6 @@ namespace MeshPoints.MeshQuality
                 elementQuality.JacobianRatio = CalculateJacobianRatio(e);                
                 //elementQuality.JacobianRatio = CalculateJacobianOf8NodeElementOLD(e);      // old          
                 //elementQuality.JacobianRatio = CalculateJacobianOfQuadElementOLD(e);    // old             
-
-
 
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
