@@ -16,8 +16,8 @@ namespace MeshPoints.Galapagos
         /// Initializes a new instance of the MoveMesh3DVertices class.
         /// </summary>
         public GalapagosMesh()
-          : base("Move solid nodes", "sm",
-              "Move nodes of a solid SmartMesh with gene pools",
+          : base("Move nodes", "mn",
+              "Move nodes of a SmartMesh with gene pools",
               "MyPlugIn", "Modify Mesh")
         {
         }
@@ -32,6 +32,8 @@ namespace MeshPoints.Galapagos
             pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
+            pManager[4].Optional = true; // if solid
+
         }
 
         /// <summary>
@@ -50,107 +52,78 @@ namespace MeshPoints.Galapagos
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Mesh3D inputMesh = new Mesh3D();
+            Mesh3D oldMesh = new Mesh3D();
             Brep brep = new Brep();
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
             List<double> genesW = new List<double>();
 
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref inputMesh);
+            DA.GetData(1, ref oldMesh);
             DA.GetDataList(2, genesU);
             DA.GetDataList(3, genesV);
             DA.GetDataList(4, genesW);
 
             // Variables
-            Mesh3D solidMesh = new Mesh3D();
             Mesh allMesh = new Mesh();
             Node n = new Node();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
-            //int newRow = 0; old variable
-            //int counter = 0; old variable
-            //Element e = new Element(); old variable
-            //Mesh mesh = new Mesh(); old variable
-            //Mesh globalMesh = new Mesh(); old variable
-            //Mesh3D meshUpdated = new Mesh3D(); old variable
 
-
-            // 1. Write warning and error if wrong input
+            // 1. Write error if wrong input
             if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
-            if (inputMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh input is not valid."); return; }
-            if ((genesU.Count < inputMesh.Nodes.Count) | (genesV.Count < inputMesh.Nodes.Count) | (genesW.Count < inputMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } 
-            if (solidMesh.Type != "Solid") { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh is not solid"); return; }
+            if (oldMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh input is not valid."); return; }
+            if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count) | (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } 
+            if (oldMesh.Type != "Solid") { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh is not solid"); return; }
 
             // 2. Move and make new nodes
-            for (int i = 0; i < inputMesh.Nodes.Count; i++)
+            for (int i = 0; i < oldMesh.Nodes.Count; i++)
             {
                 // a. Check if node is on face or edge.
                 //    if node is on face: true and face is output
                 //    if node is on edge: true and edge is output
-                Tuple<bool, BrepFace> pointFace = PointOnFace(i, inputMesh.Nodes, brep); // Item1: IsOnFace, Item2: face
-                Tuple<bool, BrepEdge> pointEdge = PointOnEdge(i, inputMesh.Nodes, brep); // Item1: IsOnEdge, Item2: edge
+                Tuple<bool, BrepFace> pointFace = PointOnFace(i, oldMesh.Nodes, brep); // Item1: IsOnFace, Item2: face
+                Tuple<bool, BrepEdge> pointEdge = PointOnEdge(i, oldMesh.Nodes, brep); // Item1: IsOnEdge, Item2: edge
 
                 // b. Get coordinates of the moved node.
-                Point3d meshPoint = GetMovedNode(i, pointFace, pointEdge, inputMesh, genesU, genesV, genesW);
+                Point3d meshPoint = GetMovedNode(i, pointFace, pointEdge, oldMesh, genesU, genesV, genesW);
 
                 // c. Make new node from moved node.
-                n = new Node(i, meshPoint, inputMesh.Nodes[i].BC_U, inputMesh.Nodes[i].BC_V, inputMesh.Nodes[i].BC_W); // todo: fix local id;
+                n = new Node(i, meshPoint, oldMesh.Nodes[i].BC_U, oldMesh.Nodes[i].BC_V, oldMesh.Nodes[i].BC_W); // todo: fix local id;
                 nodes.Add(n);
                 //globalMesh.Vertices.Add(meshPoint); old line
             }
 
+
             // 3. Make elements from moved nodes
-            elements = CreateHexElements(nodes, inputMesh.nu, inputMesh.nv, inputMesh.nw);
+            elements = CreateHexElements(nodes, oldMesh.nu, oldMesh.nv, oldMesh.nw);
 
             //4. Create global mesh 
             allMesh = CreateGlobalMesh(elements); //todo: do this without using weld!
 
-            //5. Add properties to Mesh3D
-            solidMesh.Nodes = nodes;
-            solidMesh.Elements = elements;
-            solidMesh.mesh = allMesh;
-
-            #region Old code: Make Element and mesh3D
-            /*m.nu = m.nu + 1;
-            m.nv = m.nv + 1;
-            counter = 0;
-            for (int j = 0; j < m.nw; j++) // loop trough levels
+            //5. Add properties to updated SmartMesh
+            Mesh3D newMesh;
+            if (oldMesh.Type == "Surface")
             {
-                counter = m.nu * m.nv * j;
-                for (int i = 0; i < (m.nu - 1) * (m.nv - 1); i++) // mesh a level
-                {
-                    int id = i * (j + 1); // element id
-                    e = CreateElement(id, nodes, counter, m.nu, m.nv);
-                    elements.Add(e); // add element and mesh to element list
-                    globalMesh = CreateGlobalMesh(globalMesh, counter, m.nu, m.nv);
-
-                    // clear
-                    e = new Element();
-                    mesh = new Mesh();
-
-                    // element counter
-                    counter++;
-                    newRow++; ;
-                    if (newRow == (m.nu - 1)) //new row
-                    {
-                        counter++;
-                        newRow = 0;
-                    }
-                }
-            }*/
-            #endregion
+                 newMesh = new Mesh3D(oldMesh.nu, oldMesh.nv, nodes, elements, allMesh);
+            }
+            else
+            {
+                newMesh = new Mesh3D(oldMesh.nu, oldMesh.nv, oldMesh.nw, nodes, elements, allMesh);
+            }
 
             // Output
-            DA.SetData(0, solidMesh);
-            DA.SetData(1, solidMesh.mesh);
+            DA.SetData(0, newMesh);
+            DA.SetData(1, newMesh.mesh);
         }
         #region Methods
-        /// <summary>
-        /// Create Elements: assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
-        /// </summary>
-        /// <returns>List with elements incl properties</returns>
-        private List<Element> CreateHexElements(List<Node> nodes, int nu, int nv, int nw)
+        /// <summary>Create hexahedral elements.</summary>
+        /// <param name="nodes">List of global nodes</param>
+        /// <param name="nu">Number of points in nu.</param>
+        /// <param name="nv">Number of points in nv.</param>
+        /// <param name="nw">Number of points in nw.</param>
+        /// <returns>Return a list of elements.</returns>
+        private List<Element> CreateHexElements(List<Node> nodes, int nu, int nv, int nw) // to do: endre til ny metode
         {
             Element e = new Element();
             Mesh mesh = new Mesh();
@@ -234,12 +207,11 @@ namespace MeshPoints.Galapagos
             return elements;
         }
 
-        /// <summary>
-        /// Create Global mesh. todo: make without weld
-        /// </summary>
-        /// <returns>Global mesh</returns>
-        private Mesh CreateGlobalMesh(List<Element> elements)
-        {   //todo: make this without weld
+        /// <summary>Create global mesh.</summary>
+        /// <param name="elements">List of elements</param>
+        /// <returns>Return global mesh</returns>
+        private Mesh CreateGlobalMesh(List<Element> elements) // to do: endre til ny metode
+        {  
             Mesh allMesh = new Mesh();
             foreach (Element el in elements)
             {
@@ -249,16 +221,15 @@ namespace MeshPoints.Galapagos
 
             return allMesh;
         }
-        /// <summary>
-        /// todo: write description of method
-        /// </summary>
-        /// <returns> todo: write description of output.</returns>
-        private Mesh MakeConsistent(Mesh mesh)
+        
+        /// <summary>Make mesh consistent</summary>
+        /// <param name="mesh">Mesh to make consistent.</param>
+        /// <returns></returns>
+        private void MakeConsistent(Mesh mesh)
         {   //todo: code used before - remove?
             mesh.Normals.ComputeNormals();  // todo: control if needed
             mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
             mesh.Compact(); // to ensure that it calculate
-            return mesh;
         }
 
         /// <summary>
@@ -320,7 +291,7 @@ namespace MeshPoints.Galapagos
             mesh.Faces.AddFace(3, 0, 4, 7);
             mesh.Faces.AddFace(0, 1, 2, 3);
             mesh.Faces.AddFace(4, 5, 6, 7);
-            mesh = MakeConsistent(mesh);
+            MakeConsistent(mesh);
             e.mesh = mesh;
             return e;
         }
