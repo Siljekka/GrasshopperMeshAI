@@ -47,11 +47,11 @@ namespace MeshPoints.DeconstructClasses
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //input
+            // Input
             Element e = new Element();
             DA.GetData(0, ref e);
 
-            //output
+            // Output
             DA.SetDataList(0, e.Nodes);
             DA.SetDataList(1, e.Connectivity);
             DA.SetData(2, e.Type);
