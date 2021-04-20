@@ -19,7 +19,7 @@ namespace MeshPoints.CreateMesh
         public CreateSolidMesh_OldSweep()
           : base("Create SolidMesh (OldSweep)", "solid",
               "Creates a solid mesh (brep can not be made from box",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 

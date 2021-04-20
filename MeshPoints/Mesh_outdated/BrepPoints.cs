@@ -19,7 +19,7 @@ namespace MeshPoints
         public BrepPoints()
           : base("BrepPoints", "B_pt",
               "Generates points on a Brep",
-              "MyPlugIn", "Points")
+              "MyPlugIn", "Outdated")
         {
         }
 

@@ -18,7 +18,7 @@ namespace MeshPoints.CreateMesh
         public CreateMesh3D_Box()
           : base("Create Mesh3D (box)", "mesh3DBox",
               "Creates a solid mesh for a box-brep",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 

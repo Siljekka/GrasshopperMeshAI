@@ -16,7 +16,7 @@ namespace MeshPoints
         public Deconstruct_Mesh2D()
           : base("Deconstruct SurfaceMesh", "decSurf",
               "Deconstruct SurfaceMesh class",
-              "MyPlugIn", "Deconstruct")
+              "MyPlugIn", "Outdated")
         {
         }
 
