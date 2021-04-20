@@ -96,7 +96,7 @@ namespace MeshPoints.Galapagos
                 Point3d meshPoint = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genesU, genesV, genesW);
 
                 // c. Make new node from moved node.
-                n = new Node(i, meshPoint, oldMesh.Nodes[i].BC_U, oldMesh.Nodes[i].BC_V, oldMesh.Nodes[i].BC_W); // todo: fix local id;
+                n = new Node(i, meshPoint, oldMesh.Nodes[i].BC_U, oldMesh.Nodes[i].BC_V, oldMesh.Nodes[i].BC_W);
                 newNodes.Add(n);
             }
 
