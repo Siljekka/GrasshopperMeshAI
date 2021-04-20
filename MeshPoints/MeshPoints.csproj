@@ -98,7 +98,7 @@
     <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />
     <Compile Include="DeconstructClasses\DeconstructSmartMesh.cs" />
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
-    <Compile Include="DeconstructClasses\DeconstructElement.cs" />
+    <Compile Include="Mesh_outdated\DeconstructElement.cs" />
     <Compile Include="Mesh_outdated\DeconstructMesh2D.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
     <Compile Include="Galapagos\MoveSolidMeshVertices.cs" />
