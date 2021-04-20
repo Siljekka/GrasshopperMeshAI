@@ -57,13 +57,6 @@ namespace MeshPoints.CreateMesh
             DA.GetData(1, ref nu);
             DA.GetData(2, ref nv);
 
-            #region Variables
-            Mesh3D smartMesh = new Mesh3D();
-            Mesh globalMesh = new Mesh();
-            List<Node> nodes = new List<Node>();
-            List<Element> elements = new List<Element>();
-            List<Point3d> meshPoints = new List<Point3d>();
-            #endregion
 
             /* Todo:
              *  Fikse hvordan punkt blir generert. Gjør som i solidMesh med PointAt(0,0) som referansepunkt.
@@ -78,19 +71,19 @@ namespace MeshPoints.CreateMesh
 
             // 1. Assign properties to Geometry Class
             Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
-            
+
             // 2. Generate grid of points on surface
-            meshPoints = CreateGridOfPointsUV(nu, nv, brep.Faces[0].ToNurbsSurface());
+            List<Point3d> meshPoints = CreateGridOfPointsUV(brep.Faces[0].ToNurbsSurface(), nu, nv);
 
             // 2. Create nodes and elements
-            nodes = CreateNodes(meshPoints, nu, nv);
-            elements = CreateQuadElements(nodes, nu, nv);
+            List<Node> nodes = CreateNodes(meshPoints, nu, nv);
+            List<Element> elements = CreateQuadElements(nodes, nu, nv);
 
             // 3. Create global mesh
-            globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
+            Mesh globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
 
             //5. Add properties to SolidMesh
-            smartMesh = new Mesh3D(nu + 1, nv + 1, nodes, elements, globalMesh);
+            Mesh3D smartMesh = new Mesh3D(nu + 1, nv + 1, nodes, elements, globalMesh);
             smartMesh.Geometry = brepGeometry;
 
             // Output
@@ -103,7 +96,7 @@ namespace MeshPoints.CreateMesh
         /// Makes grid of points in U and V direction
         /// </summary>
         /// <returns> List of points in U and V direction</returns>
-        private List<Point3d> CreateGridOfPointsUV(int nu, int nv, NurbsSurface surface)
+        private List<Point3d> CreateGridOfPointsUV(NurbsSurface surface, int nu, int nv)
         {
             List<Point3d> pt = new List<Point3d>();
 
