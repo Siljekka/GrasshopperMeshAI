@@ -40,7 +40,7 @@ namespace MeshPoints.Classes
             Id = _id;
             Nodes = _nodes;
             Connectivity = _connectivity;
-            Type = GetType(Nodes);
+            GetType(Nodes);
         }
 
 
@@ -80,7 +80,7 @@ namespace MeshPoints.Classes
 
 
         // Methods
-        private string GetType(List<Node> Nodes)
+        private void GetType(List<Node> Nodes)
         {
             string type = "null";
             switch (Nodes.Count)
@@ -98,8 +98,7 @@ namespace MeshPoints.Classes
                     type = "Hex";
                     break;
             }
-            return type;
-        
+            this.Type = type;
         }
 
         public List<List<Node>> GetFaces()

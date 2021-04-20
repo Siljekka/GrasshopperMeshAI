@@ -82,6 +82,8 @@ namespace MeshPoints.Galapagos
             newMesh.nv = oldMesh.nv;
             newMesh.nw = oldMesh.nw;
             newMesh.Type = oldMesh.Type;
+            newMesh.Geometry = oldMesh.Geometry;
+            newMesh.inp = oldMesh.inp;
 
             // 3. Create new nodes
             for (int i = 0; i < oldMesh.Nodes.Count; i++)
