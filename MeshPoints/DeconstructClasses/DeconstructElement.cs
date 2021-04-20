@@ -6,7 +6,7 @@ using MeshPoints.Classes;
 
 namespace MeshPoints.DeconstructClasses
 {
-    public class DeconstructElement3D : GH_Component
+    public class DeconstructElement : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MyComponent1 class.
@@ -14,7 +14,7 @@ namespace MeshPoints.DeconstructClasses
         /// <summary>
         /// Initializes a new instance of the Deconstruct_Node class.
         /// </summary>
-        public DeconstructElement3D()
+        public DeconstructElement()
         : base("Deconstruct Element", "decE",
               "Deconstructing element class for SmartMesh Class",
               "MyPlugIn", "Deconstruct")
