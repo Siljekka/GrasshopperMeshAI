@@ -34,7 +34,7 @@ namespace MeshPoints
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("IsSweepable", "Sweepable", "True if brep is sweepable", GH_ParamAccess.item);
-            pManager.AddGenericParameter("SweepableEdges", "Edges", "List of sweepable edges of the brep", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SweepableFaces", "Faces", "List of sweepable faces of the brep", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -43,48 +43,38 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            // Variables
+            // Input
             Brep brep = new Brep();
-            BrepFaceList brepFace;
-            List<BrepFace> brepFaceDuplicate = new List<BrepFace>();
-            List<BrepFace> sweepableEdges = new List<BrepFace>();
-            List<int> indexAdjecentFaces = new List<int>();
-
-            int countRemainingFaces = 0;
-            bool sweepable = false;
-
-            //Input
             DA.GetData(0, ref brep);
 
 
-            //Code
+            // Code
+            bool sweepable = false;
+            List<BrepFace> brepFaceDuplicate = new List<BrepFace>();
+            List<BrepFace> sweepableFaces = new List<BrepFace>();
+            BrepFaceList brepFace = brep.Faces;
 
-            #region Check if brep is sweepable
-            brepFace = brep.Faces;
             for (int i = 0; i < brepFace.Count; i++) // loop through every face of brep
             {
-                indexAdjecentFaces = (brepFace[i].AdjacentFaces()).ToList();  // find index to faces adjacent to face i
-
+                List<int> indexAdjecentFaces = (brepFace[i].AdjacentFaces()).ToList();  // find index to faces adjacent to face i
                 foreach (int j in indexAdjecentFaces)
                 {
                     brepFaceDuplicate.Add(brepFace[j]); // make new list with faces adjacent to face i
                 }
                 brepFaceDuplicate.Add(brepFace[i]); // add face i to the list
 
-
-                countRemainingFaces = brepFace.Count - brepFaceDuplicate.Count; // count number of faces which are not adjacent to face i
-                if (countRemainingFaces == 1) { sweepable = true; sweepableEdges.Add(brepFace[i]); } // check if brep is sweepable, and add sweepable face to list
-
+                int countRemainingFaces = brepFace.Count - brepFaceDuplicate.Count; // count number of faces which are not adjacent to face i
+                if (countRemainingFaces == 1) { sweepable = true; sweepableFaces.Add(brepFace[i]); } // check if brep is sweepable, and add sweepable face to list
                 indexAdjecentFaces.Clear(); // clear list
                 brepFaceDuplicate.Clear(); // clear list
             }
 
-            if (!sweepable) { sweepableEdges.Add(null); } // if brep not sweepable; list of sweepable faces = null
-            #endregion
+            if (!sweepable) { sweepableFaces.Add(null); } // if brep not sweepable; list of sweepable faces = null
 
-            //Output
+
+            // Output
             DA.SetData(0, sweepable);
-            DA.SetDataList(1, sweepableEdges);
+            DA.SetDataList(1, sweepableFaces);
         }
 
         /// <summary>
