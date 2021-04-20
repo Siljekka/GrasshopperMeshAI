@@ -27,14 +27,9 @@ namespace MeshPoints.MeshQuality
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh2D", "m", "Insert Mesh2D class", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh3D", "m", "Insert Mesh3D class", GH_ParamAccess.item);
-
-            pManager.AddIntegerParameter("Quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
-
-            pManager[0].Optional = true; // mesh2D is optional
-            pManager[1].Optional = true; // mesh3D is optional
-            pManager[2].Optional = true; // coloring the mesh is optional
+            pManager.AddGenericParameter("SmartMesh", "sm", "Insert a SmartMesh class", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Color mesh with quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            pManager[1].Optional = true; // coloring the mesh is optional
         }
 
         /// <summary>
@@ -55,141 +50,114 @@ namespace MeshPoints.MeshQuality
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            #region Variables
-            Mesh2D mesh2D = new Mesh2D();
-            Mesh3D mesh3D = new Mesh3D();
-            Mesh colorMesh = new Mesh();
-
-            // Determines which quality check type to color mesh with
-            // 1 = aspect ratio, 2 = skewness, 3 = jacobian
+            // Input
+            Mesh3D mesh = new Mesh3D(); 
             int qualityCheckType = 0;
+            DA.GetData(0, ref mesh);
+            DA.GetData(1, ref qualityCheckType);
 
+            if (mesh == null) { return; }
+
+            // Code
             List<Quality> qualityList = new List<Quality>(); // list of Quality for each element in the mesh
-            Quality elementQuality = new Quality(); 
-            List<Element> elements = new List<Element>();
+            Quality elementQuality = new Quality();
+            List<Element> elements = mesh.Elements;
+            Mesh colorMesh = new Mesh();
 
             double sumAspectRatio = 0;
             double sumSkewness = 0;
             double sumJacobianRatio = 0;
-            double avgAspectRatio = 0;
-            double avgSkewness = 0;
-            double avgJacobianRatio = 0;
 
-            #endregion
+            foreach (Element e in elements)
+            {
+                elementQuality.AspectRatio = CalculateAspectRatio(e);
+                elementQuality.Skewness = CalculateSkewness(e);
+                elementQuality.JacobianRatio = CalculateJacobianRatio(e);                
+                //elementQuality.JacobianRatio = CalculateJacobianOf8NodeElementOLD(e);      // old          
+                //elementQuality.JacobianRatio = CalculateJacobianOfQuadElementOLD(e);    // old             
 
-            #region Inputs
-            DA.GetData(0, ref mesh2D);
-            DA.GetData(1, ref mesh3D);
-            DA.GetData(2, ref qualityCheckType);
-            #endregion
+                elementQuality.element = e;
+                e.MeshQuality = elementQuality;
 
-            #region Calculate mesh quality
-            elements = GetElements(mesh2D, mesh3D);
+                sumAspectRatio += elementQuality.AspectRatio;
+                sumSkewness += elementQuality.Skewness;
+                sumJacobianRatio += elementQuality.JacobianRatio;
 
-            if (elements != null) {
-                foreach (Element e in elements)
-                {
-                    elementQuality.AspectRatio = CalculateAspectRatio(e);
-                    elementQuality.Skewness = CalculateSkewness(e);
-                    elementQuality.JacobianRatio = CalculateJacobianRatio(e);
-
-                    elementQuality.element = e;
-                    e.MeshQuality = elementQuality;
-
-                    sumAspectRatio += elementQuality.AspectRatio;
-                    sumSkewness += elementQuality.Skewness;
-                    sumJacobianRatio += elementQuality.JacobianRatio;
-
-                    qualityList.Add(elementQuality); // todo: check if this is needed
-                    elementQuality = new Quality();
-                }
-
-                avgAspectRatio = Math.Round(sumAspectRatio / elements.Count, 3);
-                avgSkewness = Math.Round(sumSkewness / elements.Count, 3);
-                avgJacobianRatio = Math.Round(sumJacobianRatio / elements.Count, 3);
-                #endregion
-
-                // Color the mesh based on quality type
-                ColorMesh(colorMesh, qualityList, qualityCheckType);
+                qualityList.Add(elementQuality); // todo: check if this is needed
+                elementQuality = new Quality();
             }
 
-            #region Outputs
+            double avgAspectRatio = Math.Round(sumAspectRatio / (double)elements.Count, 3);
+            double avgSkewness = Math.Round(sumSkewness / (double)elements.Count, 3);
+            double avgJacobianRatio = Math.Round(sumJacobianRatio / (double )elements.Count, 3);
+
+            // Color the mesh based on quality type
+            ColorMesh(colorMesh, qualityList, qualityCheckType);
+
+            // Output
             DA.SetDataList(0, qualityList);
             DA.SetData(1, avgAspectRatio);
             DA.SetData(2, avgSkewness);
             DA.SetData(3, avgJacobianRatio);
             DA.SetData(4, colorMesh);
-            #endregion
         }
 
         #region Component methods
-        /// <summary>
-        /// Gets the elements from a mesh, independent of the mesh type is Mesh2D or Mesh3D.
-        /// </summary>
-        List<Element> GetElements(Mesh2D mesh2D, Mesh3D mesh3D)
-        {
-            List<Element> elements = new List<Element>();
-
-            // check mesh type
-            if (mesh2D.Elements != null) { elements = mesh2D.Elements; } // mesh2D input
-            else { elements = mesh3D.Elements; } // mesh3D input
-
-            // if no elements are found
-            if (elements == null)
-            {
-                //throw new ArgumentNullException(
-                //    message: "No elements found.",
-                //    paramName: "elements");
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Zero mesh inputs found.");
-            }
-            return elements;
-        }
 
         /// <summary>
         /// Calculates the Aspect Ratio of an element.
         /// </summary>
-        double CalculateAspectRatio(Element e)
+        double CalculateAspectRatio(Element element)
         {
             double AR = 0;
             double maxDistance = 0;
             double minDistance = 0;
             double idealAR = 0.5 / Math.Sqrt(Math.Pow(0.5, 2) * 3);
 
-            List<double> cornerToCornerDistance = new List<double>();
-            List<double> cornerToCentroidDistance = new List<double>();
+            List<double> nodeToNodeDistance = new List<double>();
+            List<double> nodeToCentroidDistance = new List<double>();
             List<double> faceToCentroidDistance = new List<double>();
 
-            List<Point3d> faceCenterPts = GetFaceCenter(e);
-            Point3d centroidPt = GetCentroidOfElement(e);
-            List<Point3d> elementCornerPtsDublicated = GetCoordinatesOfNodesDublicated(e);
+            List<Point3d> faceCenterPts = GetFaceCenter(element);
+            Point3d centroidPt = GetCentroidOfElement(element);
+            List<Node> nodes = new List<Node>(element.Nodes);
 
-            // find distances from corners to centroid
-            for (int n = 0; n < elementCornerPtsDublicated.Count / 2; n++)
+            // List of nodes 
+            List<Point3d> nodeCoordinates = new List<Point3d>(); ;
+            foreach (Node node in nodes)
             {
-                cornerToCentroidDistance.Add(elementCornerPtsDublicated[n].DistanceTo(centroidPt));
-                cornerToCornerDistance.Add(elementCornerPtsDublicated[n].DistanceTo(elementCornerPtsDublicated[n + 1])); // add the distance between the points, following mesh edges CCW
+                nodeCoordinates.Add(node.Coordinate);
+            }
+            nodeCoordinates.Add(nodeCoordinates[0]);
+
+
+            // Find distances from corners to centroid
+            for (int n = 0; n < nodeCoordinates.Count - 1 ; n++)
+            {
+                nodeToCentroidDistance.Add(nodeCoordinates[n].DistanceTo(centroidPt));
+                nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1])); // add the distance between the points, following mesh edges CCW
             }
 
-            // find distances from face center to centroid
+            // Find distances from face center to centroid
             for (int n = 0; n < faceCenterPts.Count; n++)
             {
                 faceToCentroidDistance.Add(faceCenterPts[n].DistanceTo(centroidPt));
             }
 
-            cornerToCentroidDistance.Sort();
-            cornerToCornerDistance.Sort();
+            nodeToCentroidDistance.Sort();
+            nodeToNodeDistance.Sort();
             faceToCentroidDistance.Sort();
 
-            if (!e.IsCube) // mesh2d
+            if (element.Type == "Quad") // surface
             {
-                minDistance = cornerToCornerDistance[0];
-                maxDistance = cornerToCornerDistance[cornerToCornerDistance.Count - 1];
+                minDistance = nodeToNodeDistance[0];
+                maxDistance = nodeToNodeDistance[nodeToNodeDistance.Count - 1];
                 AR = minDistance / maxDistance;
             }
-            else // mesh3d
+            else // solid
             {
-                minDistance = Math.Min(cornerToCentroidDistance[0], faceToCentroidDistance[0]);
-                maxDistance = Math.Max(cornerToCentroidDistance[cornerToCentroidDistance.Count - 1], faceToCentroidDistance[faceToCentroidDistance.Count - 1]);
+                minDistance = Math.Min(nodeToCentroidDistance[0], faceToCentroidDistance[0]);
+                maxDistance = Math.Max(nodeToCentroidDistance[nodeToCentroidDistance.Count - 1], faceToCentroidDistance[faceToCentroidDistance.Count - 1]);
                 AR = (minDistance / maxDistance) / idealAR; // normalized AR
             }
             return AR;
@@ -198,108 +166,76 @@ namespace MeshPoints.MeshQuality
         /// <summary>
         /// Calculates the Skewness of an element.
         /// </summary>
-        double CalculateSkewness(Element e)
+        double CalculateSkewness(Element element)
         {
-            double SK = 0;
-            double maxAngle = 0;
-            double minAngle = 0;
-            double idealAngle = 90; //ideal angle in degrees
-            int neighborPoint = 3; //variable used in skewness calculation
-            Vector3d vec1 = Vector3d.Zero;
-            Vector3d vec2 = Vector3d.Zero;
+            double idealAngle = 90; // ideal angle in degrees
+            int neighborPoint = 3; // variable used in skewness calculation
             List<double> elementAngles = new List<double>();
+            List<List<Node>> faces = element.GetFaces();
 
-            int numFaces = 1; // mesh2D
-            if (e.IsCube) { numFaces = 6; } // mesh3D
-
-            for (int i = 0; i < numFaces; i++)
+            for (int i = 0; i < faces.Count; i++)
             {
-                e.mesh.Faces.GetFaceVertices(i, out Point3f n1, out Point3f n2, out Point3f n3, out Point3f n4); // todo: sjekk rekkefølge // todo: rett opp i rekkefølge og point3f til point3d
-                List<Point3d> faceCornersDublicated = new List<Point3d>()
+                // Create dublicated list of node
+                List<Node> nodesOfFace = new List<Node>(faces[i]);
+                int numNodesOfFace = nodesOfFace.Count;
+                for (int n = 0; n < numNodesOfFace; n++)
                 {
-                        n1, n2, n3, n4,
-                        n1, n2, n3, n4
-                };
+                    nodesOfFace.Add(nodesOfFace[n]);
+                }
 
-                for (int n = 0; n < faceCornersDublicated.Count / 2; n++)
+                for (int n = 0; n < numNodesOfFace ; n++)
                 {
-                    //create a vector from a vertex to a neighbouring vertex
-                    vec1 = faceCornersDublicated[n] - faceCornersDublicated[n + 1];
-                    vec2 = faceCornersDublicated[n] - faceCornersDublicated[n + neighborPoint];
+                    // Create a vector from a vertex to a neighbouring vertex
+                    Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
+                    Vector3d vec2 = nodesOfFace[n].Coordinate - nodesOfFace[n + neighborPoint].Coordinate;
 
-                    //calculate angles between vectors
-                    double angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(vec1, vec2) / (vec1.Length * vec2.Length)));
-                    double angleDegree = angleRad * 180 / Math.PI;//convert from rad to deg
+                    // Calculate angles between vectors
+                    double angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(vec1, vec2) / (vec1.Length * vec2.Length))); // to do: fix correct
+                    double angleDegree = angleRad * 180 / Math.PI; //convert from rad to deg
                     elementAngles.Add(angleDegree);
                 }
 
             }
             elementAngles.Sort();
-            minAngle = Math.Abs(elementAngles[0]); // todo: controll if abs ok
-            maxAngle = Math.Abs(elementAngles[elementAngles.Count - 1]);
-            SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle));
+            double minAngle = Math.Abs(elementAngles[0]); // todo: controll if abs ok
+            double maxAngle = Math.Abs(elementAngles[elementAngles.Count - 1]);
+            double SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle));
             return SK;
         }
 
         /// <summary>
         /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="Mesh3D"/>.
         /// </summary>
-        /// <param name="e">A single <see cref="Element"/> object from a mesh.</param>
+        /// <param name="element">A single <see cref="Element"/> object from a mesh.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0 describing the ratio between the min and max values of the determinants of the Jacobian matrix of the element, evaluated in the corner nodes.</returns>
-        private double CalculateJacobianRatio(Element e)
+        private double CalculateJacobianRatioOLD(Element element)
         {
-            double jacobian;
-            if (e.IsCube) // returns true if the Element e stems from a Mesh3D.
+            // to do: slett
+            double jacobian = 0;
+            if (element.Type == "Quad") // surface
             {
-                jacobian = CalculateJacobianOf8NodeElement(e);
+                // jacobian = CalculateJacobianOfQuadElementOLD(element); magnus
             }
-            else
+            else // solid
             {
-                jacobian = CalculateJacobianOfQuadElement(e);
+                // jacobian = CalculateJacobianOf8NodeElementOLD(element); magnus
             }
             return jacobian;
-        }
+        } // to do: slett
 
-        /// <summary>
-        /// Returns a list of node coordinated that is dublicate.
-        /// </summary>
-        List<Point3d> GetCoordinatesOfNodesDublicated(Element e)
-        {
-            List<Point3d> pts = new List<Point3d>();
-            if (!e.IsCube) // mesh2D
-            {
-                pts = new List<Point3d>()
-                {
-                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
-                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
-                };
-            }
-            else // mesh3D
-            {
-                pts = new List<Point3d>()
-                {
-                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
-                    e.Node5.Coordinate, e.Node6.Coordinate, e.Node7.Coordinate, e.Node8.Coordinate,
-                    e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate,
-                    e.Node5.Coordinate, e.Node6.Coordinate, e.Node7.Coordinate, e.Node8.Coordinate,
-                };
-
-            }
-            return pts;
-        }
 
         /// <summary>
         /// Returns a list of the face centroid to an element
         /// </summary>
-        List<Point3d> GetFaceCenter(Element e)
+        private List<Point3d> GetFaceCenter(Element element)
         {
             List<Point3d> faceCenterPts = new List<Point3d>();
-            int numFaces = 1; // if mesh2D
-            if (e.IsCube) { numFaces = 6; } // if mesh3D
+            int numFaces = 1; // surface
+            if (element.Type == "Hex") { numFaces = 6; } // solid
 
             for (int i = 0; i < numFaces; i++)
             {
-                faceCenterPts.Add(e.mesh.Faces.GetFaceCenter(i));
+                faceCenterPts.Add(element.mesh.Faces.GetFaceCenter(i));
             }
             return faceCenterPts;
         }
@@ -307,53 +243,115 @@ namespace MeshPoints.MeshQuality
         /// <summary>
         /// Return the centroid of an element
         /// </summary>
-        Point3d GetCentroidOfElement(Element e)
+        Point3d GetCentroidOfElement(Element element)
         {
             double sx = 0;
             double sy = 0;
             double sz = 0;
-            List<Point3d> pts = GetCoordinatesOfNodesDublicated(e);
-            foreach (Point3d pt in pts)
+            List<Node> nodes = element.Nodes;
+            List<Point3d> pts = new List<Point3d>(); ;
+
+            foreach (Node node in nodes)
             {
+                Point3d pt = node.Coordinate;
                 sx = sx + pt.X;
                 sy = sy + pt.Y;
-                sz = sz + pt.Z;
+                sz = sz + pt.Z; 
             }
-            int n = pts.Count;
+            int n = nodes.Count;
             Point3d centroidPt = new Point3d(sx / n, sy / n, sz / n);
 
             return centroidPt;
         }
 
         /// <summary>
+        /// Calculate the Jacobian Ratio
+        /// </summary>
+        private double CalculateJacobianRatio(Element element) // to do: fix negative jacobian
+        {
+            FEM _FEM = new FEM();
+            int nodeDOFS = 2;
+            if (element.Type == "Hex") { nodeDOFS = 3; }
+
+            //List<Point3d> localPoints = TransformQuadSurfaceTo2DPoints(cornerPoints); to do: implement non-planar elements
+
+            Matrix<double> globalCoordinates = Matrix<double>.Build.Dense(element.Nodes.Count, nodeDOFS);
+            for (int i = 0; i < element.Nodes.Count; i++)
+            {
+                globalCoordinates[i, 0] = element.Nodes[i].Coordinate.X; // column of x coordinates
+                globalCoordinates[i, 1] = element.Nodes[i].Coordinate.Y; // column of y coordinates
+                if (nodeDOFS == 3)
+                {
+                    globalCoordinates[i, 2] = element.Nodes[i].Coordinate.Z; // colum of z coordinates
+                }
+            }
+
+            // Calculate the Jacobian determinant of each node
+            List<double> jacobiansOfElement = new List<double>();
+            Matrix<double> gaussNodes = _FEM.GetGaussPoints(1, nodeDOFS);
+
+            for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
+            {
+                // Substitute the natural coordinates into the symbolic expression
+                var r = gaussNodes.Row(n)[0];
+                var s = gaussNodes.Row(n)[1];
+                double t = 0;
+                if (nodeDOFS == 3) { t = gaussNodes.Row(n)[2]; }
+
+                // Partial derivatives of the shape functions
+                Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, nodeDOFS);
+
+                // Calculate Jacobian determinant
+                Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
+                double jacobianDeterminant = jacobianMatrix.Determinant();
+                jacobiansOfElement.Add(jacobianDeterminant);
+            }
+
+            double jacobianRatio = 0;
+            // If any of the determinants are negative, we have to divide the maximum with the minimum
+            if (jacobiansOfElement.Any(x => x < 0))
+            {
+                jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
+
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
+                if (jacobianRatio < 0)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {element.Id} is negative.");
+                }
+            }
+            else
+            {
+                jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
+            }
+
+            return jacobianRatio;
+        }
+
+        /// <summary>
         /// Calculates the Jacobian Ratio of a hexahedral 8-node 3D element.
         /// </summary>
-        /// <param name="e">An 8 node <see cref="Element"/> that is part of a <see cref="Mesh3D"/></param>
+        /// <param name="element">An 8 node <see cref="Element"/> that is part of a <see cref="Mesh3D"/></param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
-        private double CalculateJacobianOf8NodeElement(Element e)
+        private double CalculateJacobianOf8NodeElementOLD(Element element)
         {
-            var naturalNodes = new List<List<Double>>
+                var naturalNodes = new List<List<Double>>
             {
                 new List<double> { -1, -1, -1 }, new List<double> { 1, -1, -1}, new List<double> { 1, 1, -1 }, new List<double> { -1, 1, -1 },
                 new List<double> { -1, -1, 1 }, new List<double> { 1, -1, 1 }, new List<double> { 1, 1, 1 }, new List<double> { -1, 1, 1 }
             };
 
             // Global X, Y, and Z-coordinates of the corner nodes of the actual element
-            List<double> gX = new List<double>()
-                {
-                    e.Node1.Coordinate.X, e.Node2.Coordinate.X, e.Node3.Coordinate.X, e.Node4.Coordinate.X,
-                    e.Node5.Coordinate.X, e.Node6.Coordinate.X, e.Node7.Coordinate.X, e.Node8.Coordinate.X
-                };
-            List<double> gY = new List<double>()
-                {
-                    e.Node1.Coordinate.Y, e.Node2.Coordinate.Y, e.Node3.Coordinate.Y, e.Node4.Coordinate.Y,
-                    e.Node5.Coordinate.Y, e.Node6.Coordinate.Y, e.Node7.Coordinate.Y, e.Node8.Coordinate.Y
-                };
-            List<double> gZ = new List<double>()
-                {
-                    e.Node1.Coordinate.Z, e.Node2.Coordinate.Z, e.Node3.Coordinate.Z, e.Node4.Coordinate.Z,
-                    e.Node5.Coordinate.Z, e.Node6.Coordinate.Z, e.Node7.Coordinate.Z, e.Node8.Coordinate.Z
-                };
+            List<double> gX = new List<double>();
+            List<double> gY = new List<double>();
+            List<double> gZ = new List<double>();
+            foreach (Node node in element.Nodes)
+            {
+                gX.Add(node.Coordinate.X);
+                gY.Add(node.Coordinate.Y);
+                gZ.Add(node.Coordinate.Z);
+
+
+            }
 
             // Evaluate in each of the corner nodes.
             List<double> jacobiansOfElement = new List<double>();
@@ -440,19 +438,19 @@ namespace MeshPoints.MeshQuality
 
                 var jacobianDeterminant = jacobianMatrix.Determinant();
                 jacobiansOfElement.Add(jacobianDeterminant);
-                
+
             }
-            
+
             double jacobianRatio = 0;
             // If any of the determinants are negative, we have to divide the maximum with the minimum
             if (jacobiansOfElement.Any(x => x < 0))
             {
                 jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
 
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {e.Id} is negative.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
                 if (jacobianRatio < 0)
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {e.Id} is negative.");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {element.Id} is negative.");
                 }
             }
             else
@@ -461,14 +459,16 @@ namespace MeshPoints.MeshQuality
             }
 
             return jacobianRatio;
-        }
+        } // to do: slett
 
         /// <summary>
         /// Calculates the Jacobian ratio of a simple quadrilateral mesh element.
         /// </summary>
-        /// <param name="e">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
+        /// <param name="element">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
-        double CalculateJacobianOfQuadElement(Element e)
+        
+        
+        double CalculateJacobianOfQuadElementOLD(Element e)
         {
             /*
              * This method uses the idea of shape functions and natural coordinate system to 
@@ -481,9 +481,12 @@ namespace MeshPoints.MeshQuality
              * 4. The ratio is the ratio of the minimum and maximum Jacobian calculated, given as a double from 0.0 to 1.0.
              *    A negative Jacobian indicates a self-intersecting or convex element and should not happen.
                 */
-            List<Point3d> cornerPoints = new List<Point3d>(){
-                e.Node1.Coordinate, e.Node2.Coordinate, e.Node3.Coordinate, e.Node4.Coordinate
-            };
+            List<Point3d> cornerPoints = new List<Point3d>();
+            foreach (Node node in e.Nodes)
+            {
+                cornerPoints.Add(node.Coordinate);
+            }
+
             List<Point3d> localPoints = TransformQuadSurfaceTo2DPoints(cornerPoints);
 
             var gX = new List<Double>()
@@ -549,7 +552,8 @@ namespace MeshPoints.MeshQuality
             }
 
             return jacobianRatio;
-        }
+        } // to do: slett
+
 
         /// <summary>
         /// Transforms the corner points of an arbitrary 3D quad surface to a 2D plane.
