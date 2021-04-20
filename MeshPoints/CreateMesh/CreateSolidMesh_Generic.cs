@@ -760,8 +760,6 @@ namespace MeshPoints.CreateMesh
 
                 for (int j = 0; j < meshPoints.Branch(0).Count - nu - 1; j++) // loop elements in a level
                 {
-                    e.Id = elemId;
-                    e.IsCube = true;
                     List<Node> elementNodes = new List<Node>();
                     List<int> connectivity = new List<int>();
 
