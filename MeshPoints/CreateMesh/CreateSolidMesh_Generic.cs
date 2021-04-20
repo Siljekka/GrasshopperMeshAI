@@ -760,19 +760,15 @@ namespace MeshPoints.CreateMesh
 
                 for (int j = 0; j < meshPoints.Branch(0).Count - nu - 1; j++) // loop elements in a level
                 {
-                    e.Id = elemId;
-                    e.IsCube = true;
                     List<Node> elementNodes = new List<Node>();
                     List<int> connectivity = new List<int>();
 
                     if (count2 < nu - 1)
                     {
-
                         connectivity.Add(counter);
                         connectivity.Add(counter + 1);
                         connectivity.Add(counter + nu + 1);
                         connectivity.Add(counter + nu);
-
                         connectivity.Add(counter + nu * nv);
                         connectivity.Add(counter + 1 + nu * nv);
                         connectivity.Add(counter + nu + 1 + nu * nv);
@@ -783,7 +779,7 @@ namespace MeshPoints.CreateMesh
                             elementNodes.Add(nodes[id]);
                         }
 
-                        Element element = new Element(i, elementNodes, connectivity);
+                        Element element = new Element(elemId, elementNodes, connectivity);
 
                         // create local mesh
                         Mesh localMesh = new Mesh();
