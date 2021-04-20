@@ -781,7 +781,7 @@ namespace MeshPoints.CreateMesh
                             elementNodes.Add(nodes[id]);
                         }
 
-                        Element element = new Element(i, elementNodes, connectivity);
+                        Element element = new Element(elemId, elementNodes, connectivity);
 
                         // create local mesh
                         Mesh localMesh = new Mesh();
