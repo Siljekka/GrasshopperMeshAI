@@ -3,7 +3,8 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
-namespace MeshPoints
+
+namespace MeshPoints.FiniteElementMethod
 {
     public class FEMBoundaryCondition : GH_Component
     {

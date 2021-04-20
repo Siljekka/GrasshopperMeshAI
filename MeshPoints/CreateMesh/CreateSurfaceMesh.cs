@@ -70,24 +70,25 @@ namespace MeshPoints.CreateMesh
             if (u == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "u cannot be zero."); return; }
             if (v == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "v cannot be zero."); return; }
 
-            // 1. Assign geometrical properties to mesh
+            // 2. Assign geometrical properties to mesh
             Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
             smartMesh.nu = u + 1;
             smartMesh.nv = v + 1;
             smartMesh.nw = 1;
             smartMesh.Type = "Surface";
-            smartMesh.Geometry = brepGeometry;
+            smartMesh.Geometry = brepGeometry; 
+            // smartMesh.inp = true; to do: Hilde, sjekk om inp ok ?
 
-            // 2. Generate grid of points on surface
+            // 3. Generate grid of points on surface
             List<Point3d> meshPoints = CreateGridOfPointsUV(brep.Faces[0].ToNurbsSurface(), u, v);
 
-            // 2. Create nodes 
+            // 4. Create nodes 
             smartMesh.Nodes = CreateNodes(meshPoints, smartMesh.nu, smartMesh.nv);
 
-            // 3. Set elements
+            // 5. Set elements
             smartMesh.SetQuadElements();
 
-            // 4. Set global mesh
+            // 6. Set global mesh
             smartMesh.SetMesh();
 
             // Output

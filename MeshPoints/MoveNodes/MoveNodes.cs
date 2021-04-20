@@ -6,7 +6,7 @@ using Rhino.Geometry.Collections;
 using MeshPoints.Classes;
 
 
-namespace MeshPoints.Galapagos
+namespace MeshPoints.MoveNodes
 {
     public class GalapagosMesh : GH_Component
     {
@@ -61,6 +61,8 @@ namespace MeshPoints.Galapagos
             DA.GetDataList(2, genesU);
             DA.GetDataList(3, genesV);
             DA.GetDataList(4, genesW);
+            if (brep == null | oldMesh.Elements == null) { return; }
+
 
             // Variables
             Mesh3D newMesh = new Mesh3D();
@@ -69,6 +71,7 @@ namespace MeshPoints.Galapagos
             List<Node> newNodes = new List<Node>();
             List<Element> elements = new List<Element>();
 
+            
             // 1. Write error if wrong input
             if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
             if (oldMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh input is not valid."); return; }

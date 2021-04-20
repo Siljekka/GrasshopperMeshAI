@@ -20,9 +20,7 @@ namespace MeshPoints.Classes
         public Node Node8 { get; set; } // delete
         public List<Node> Nodes { get; set; }
         public List<int> Connectivity { get; set; }
-
         public string Type { get; set; }
-
         public Quality MeshQuality { get; set; }
         public int Id { get; set; }
         public Mesh mesh { get; set; }
@@ -42,42 +40,6 @@ namespace MeshPoints.Classes
             Connectivity = _connectivity;
             GetType(Nodes);
         }
-
-
-        //_for 2D - triangle
-        public Element(int _id, Node _node1, Node _node2, Node _node3, Mesh _mesh)
-        {
-            Id = _id;
-            Node1 = _node1;
-            Node2 = _node2;
-            Node3 = _node3;
-            mesh = _mesh;
-        }
-        //_for 2D - quad
-        public Element(int _id, Node _node1, Node _node2, Node _node3, Node _node4, Mesh _mesh)
-        {
-            Id = _id;
-            Node1 = _node1;
-            Node2 = _node2;
-            Node3 = _node3;
-            Node4 = _node4;
-            mesh = _mesh;
-        }
-
-        //_for 3D
-        public Element(int _id, Node _node1, Node _node2, Node _node3, Node _node4, Node _node5, Node _node6, Node _node7, Node _node8)
-        {
-            Id = _id;
-            Node1 = _node1;
-            Node2 = _node2;
-            Node3 = _node3;
-            Node4 = _node4;
-            Node5 = _node5;
-            Node6 = _node6;
-            Node7 = _node7;
-            Node8 = _node8;
-        }
-
 
         // Methods
         private void GetType(List<Node> Nodes)

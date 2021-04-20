@@ -5,11 +5,9 @@ using System.Collections.Generic;
 using MeshPoints.Classes;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics;
 using System.Drawing;
-using System.Linq;
 
-namespace MeshPoints
+namespace MeshPoints.FiniteElementMethod
 {
     public class FEMsolver : GH_Component
     {
