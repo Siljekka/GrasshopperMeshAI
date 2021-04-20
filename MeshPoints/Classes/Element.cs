@@ -25,9 +25,6 @@ namespace MeshPoints.Classes
 
         public Quality MeshQuality { get; set; }
         public int Id { get; set; }
-        public bool IsCube { get; set; } // to do: change to type
-
-        public bool IsQuad { get; } // to do: change to type
         public Mesh mesh { get; set; }
 
         //Constructer

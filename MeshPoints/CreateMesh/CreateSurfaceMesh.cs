@@ -83,7 +83,7 @@ namespace MeshPoints.CreateMesh
             Mesh globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
 
             //5. Add properties to SolidMesh
-            Mesh3D smartMesh = new Mesh3D(nu + 1, nv + 1, nodes, elements, globalMesh);
+            Mesh3D smartMesh = new Mesh3D(nu+1, nv+1, nodes, elements, globalMesh);
             smartMesh.Geometry = brepGeometry;
 
             // Output

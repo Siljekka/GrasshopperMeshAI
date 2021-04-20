@@ -16,7 +16,7 @@ namespace MeshPoints.Galapagos
         /// Initializes a new instance of the MoveMesh3DVertices class.
         /// </summary>
         public GalapagosMesh()
-          : base("Move nodes", "mn",
+          : base("Move Nodes", "mn",
               "Move nodes of a SmartMesh with gene pools",
               "MyPlugIn", "Modify Mesh")
         {
@@ -65,16 +65,22 @@ namespace MeshPoints.Galapagos
             DA.GetDataList(4, genesW);
 
             // Variables
+            Mesh3D newMesh = new Mesh3D();
             Mesh allMesh = new Mesh();
             Node n = new Node();
-            List<Node> nodes = new List<Node>();
+            List<Node> newNodes = new List<Node>();
             List<Element> elements = new List<Element>();
+
+            newMesh.nu = oldMesh.nu;
+            newMesh.nv = oldMesh.nv;
+            newMesh.nw = oldMesh.nw;
+            newMesh.Type = oldMesh.Type;
 
             // 1. Write error if wrong input
             if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
             if (oldMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh input is not valid."); return; }
-            if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count) | (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } 
-            if (oldMesh.Type != "Solid") { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh is not solid"); return; }
+            if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } 
+            if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
 
             // 2. Move and make new nodes
             for (int i = 0; i < oldMesh.Nodes.Count; i++)
@@ -90,120 +96,61 @@ namespace MeshPoints.Galapagos
 
                 // c. Make new node from moved node.
                 n = new Node(i, meshPoint, oldMesh.Nodes[i].BC_U, oldMesh.Nodes[i].BC_V, oldMesh.Nodes[i].BC_W); // todo: fix local id;
-                nodes.Add(n);
-                //globalMesh.Vertices.Add(meshPoint); old line
+                newNodes.Add(n);
             }
 
-
             // 3. Make elements from moved nodes
-            elements = CreateHexElements(nodes, oldMesh.nu, oldMesh.nv, oldMesh.nw);
-
-            //4. Create global mesh 
-            allMesh = CreateGlobalMesh(elements); //todo: do this without using weld!
-
-            //5. Add properties to updated SmartMesh
-            Mesh3D newMesh;
-            if (oldMesh.Type == "Surface")
+            newMesh.Nodes = newNodes;
+            if (newMesh.Type == "Surface")
             {
-                 newMesh = new Mesh3D(oldMesh.nu, oldMesh.nv, nodes, elements, allMesh);
+                newMesh.SetQuadElements();
             }
             else
             {
-                newMesh = new Mesh3D(oldMesh.nu, oldMesh.nv, oldMesh.nw, nodes, elements, allMesh);
+                newMesh.SetHexElements();
             }
+            //elements = CreateNewElements(newNodes, oldMesh);
+
+
+            //4. Create global mesh 
+            allMesh = CreateGlobalMesh(newMesh.Elements); //todo: do this without using weld!
+            newMesh.mesh = allMesh;
+            //5. Add properties to updated SmartMesh
+            
+            /*Mesh3D newMesh;
+            if (oldMesh.Type == "Surface")
+            {
+                 newMesh = new Mesh3D(oldMesh.nu, oldMesh.nv, newNodes, elements, allMesh);
+            }
+            else
+            {
+                newMesh = new Mesh3D(oldMesh.nu, oldMesh.nv, oldMesh.nw, newNodes, elements, allMesh);
+            }
+            */
 
             // Output
             DA.SetData(0, newMesh);
             DA.SetData(1, newMesh.mesh);
         }
         #region Methods
-        /// <summary>Create hexahedral elements.</summary>
-        /// <param name="nodes">List of global nodes</param>
+        /// <summary>Create hexahedral or quadlateral elements depending on a the input mesh.</summary>
+        /// <param name="newNodes">List of global nodes</param>
         /// <param name="nu">Number of points in nu.</param>
         /// <param name="nv">Number of points in nv.</param>
         /// <param name="nw">Number of points in nw.</param>
         /// <returns>Return a list of elements.</returns>
-        private List<Element> CreateHexElements(List<Node> nodes, int nu, int nv, int nw) // to do: endre til ny metode
+        private List<Element> CreateNewElements(List<Node> newNodes, Mesh3D oldMesh) // to do: endre til ny metode
         {
-            Element e = new Element();
-            Mesh mesh = new Mesh();
             List<Element> elements = new List<Element>();
-            int elemId = 0;
 
-            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
-            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
-            nw = nw + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
-
-            for (int i = 0; i < nw - 1; i++)  // loop levels
+            if (oldMesh.Type == "Surface")
             {
-                int count2 = 0;
-                int counter = (nu * nv) * i;
-
-                for (int j = 0; j < (nu * nv) - nu - 1; j++) // loop elements in a level
-                {
-                    e.Id = elemId;
-                    e.IsCube = true;
-                    if (count2 < nu - 1)
-                    {
-                        Node n1 = new Node(1, nodes[counter].GlobalId, nodes[counter].Coordinate, nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
-                        e.Node1 = n1;
-
-                        Node n2 = new Node(2, nodes[counter + 1].GlobalId, nodes[counter + 1].Coordinate, nodes[counter + 1].BC_U, nodes[counter + 1].BC_V, nodes[counter + 1].BC_W);
-                        e.Node2 = n2;
-
-                        Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, nodes[counter + nu + 1].Coordinate, nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V, nodes[counter + nu + 1].BC_W);
-                        e.Node3 = n3;
-
-                        Node n4 = new Node(4, nodes[counter + nu].GlobalId, nodes[counter + nu].Coordinate, nodes[counter + nu].BC_U, nodes[counter + nu].BC_V, nodes[counter + nu].BC_W);
-                        e.Node4 = n4;
-
-                        Node n5 = new Node(5, nodes[counter + nu * nv].GlobalId, nodes[counter + nu*nv].Coordinate, nodes[counter + nu * nv].BC_U, nodes[counter + nu * nv].BC_V, nodes[counter + nu * nv].BC_W);
-                        e.Node5 = n5;
-
-                        Node n6 = new Node(6, nodes[counter + 1 + nu * nv].GlobalId, nodes[counter + 1 + nu*nv].Coordinate, nodes[counter + 1 + nu * nv].BC_U, nodes[counter + 1 + nu * nv].BC_V, nodes[counter + 1 + nu * nv].BC_W);
-                        e.Node6 = n6;
-
-                        Node n7 = new Node(7, nodes[counter + nu + 1 + nu * nv].GlobalId, nodes[counter + nu + 1 + nu*nv].Coordinate, nodes[counter + nu + 1 + nu * nv].BC_U, nodes[counter + nu + 1 + nu * nv].BC_V, nodes[counter + nu + 1 + nu * nv].BC_W);
-                        e.Node7 = n7;
-
-                        Node n8 = new Node(8, nodes[counter + nu + nu * nv].GlobalId, nodes[counter + nu + nu*nv].Coordinate, nodes[counter + nu + nu * nv].BC_U, nodes[counter + nu + nu * nv].BC_V, nodes[counter + nu + nu * nv].BC_W);
-                        e.Node8 = n8;
-
-                        mesh.Vertices.Add(e.Node1.Coordinate); //0
-                        mesh.Vertices.Add(e.Node2.Coordinate); //1
-                        mesh.Vertices.Add(e.Node3.Coordinate); //2
-                        mesh.Vertices.Add(e.Node4.Coordinate); //3
-                        mesh.Vertices.Add(e.Node5.Coordinate); //4
-                        mesh.Vertices.Add(e.Node6.Coordinate); //5
-                        mesh.Vertices.Add(e.Node7.Coordinate); //6
-                        mesh.Vertices.Add(e.Node8.Coordinate); //7
-
-                        mesh.Faces.AddFace(0, 1, 5, 4);
-                        mesh.Faces.AddFace(1, 2, 6, 5);
-                        mesh.Faces.AddFace(2, 3, 7, 6);
-                        mesh.Faces.AddFace(3, 0, 4, 7);
-                        mesh.Faces.AddFace(0, 1, 2, 3);
-                        mesh.Faces.AddFace(4, 5, 6, 7);
-
-                        mesh.Normals.ComputeNormals();  //Control if needed
-                        mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                        mesh.Compact(); //to ensure that it calculate
-                        e.mesh = mesh;
-
-                        //add element and mesh to element list
-                        elements.Add(e);
-
-                        //clear
-                        e = new Element();
-                        mesh = new Mesh();
-
-                        count2++;
-                        elemId++;
-                        counter++;
-                    }
-                    else { count2 = 0; counter++; }
-                }
+                //elements = CreateQuadElements(newNodes, oldMesh.nu, oldMesh.nv);
             }
+            else
+            {
+                //elements = CreateHexElementsOld(newNodes, oldMesh.nu, oldMesh.nv, oldMesh.nw);
+            } 
             return elements;
         }
 
@@ -246,54 +193,6 @@ namespace MeshPoints.Galapagos
             m.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
             m.Faces.AddFace(counter + meshPtsAtLevel, counter + meshPtsAtLevel + 1, counter + meshPtsAtLevel + nu + 1, counter + meshPtsAtLevel + nu);
             return m;
-        }
-
-        /// <summary>
-        /// todo: write description of method
-        /// </summary>
-        /// <returns> todo: write description of output.</returns>
-        private Element CreateElement(int id, List<Node> nodes, int counter, int nu, int nv)
-        {   //todo: code used before - remove?
-            Element e = new Element();
-            int meshPtsAtLevel = nu * nv;
-
-            e.Id = id;
-            e.Node1 = nodes[counter];
-            e.Node1.LocalId = 1;
-            e.Node2 = nodes[counter + 1];
-            e.Node2.LocalId = 2;
-            e.Node3 = nodes[counter + nu + 1];
-            e.Node3.LocalId = 3;
-            e.Node4 = nodes[counter + nu];
-            e.Node4.LocalId = 4;
-            e.Node5 = nodes[counter + meshPtsAtLevel];
-            e.Node5.LocalId = 5;
-            e.Node6 = nodes[counter + meshPtsAtLevel + 1];
-            e.Node6.LocalId = 6;
-            e.Node7 = nodes[counter + meshPtsAtLevel + nu + 1];
-            e.Node7.LocalId = 7;
-            e.Node8 = nodes[counter + meshPtsAtLevel + nu];
-            e.Node8.LocalId = 8;
-
-            Mesh mesh = new Mesh();
-            mesh.Vertices.Add(e.Node1.Coordinate); //0
-            mesh.Vertices.Add(e.Node2.Coordinate); //1
-            mesh.Vertices.Add(e.Node3.Coordinate); //2
-            mesh.Vertices.Add(e.Node4.Coordinate); //3
-            mesh.Vertices.Add(e.Node5.Coordinate); //4
-            mesh.Vertices.Add(e.Node6.Coordinate); //5
-            mesh.Vertices.Add(e.Node7.Coordinate); //6
-            mesh.Vertices.Add(e.Node8.Coordinate); //7
-
-            mesh.Faces.AddFace(0, 1, 5, 4);
-            mesh.Faces.AddFace(1, 2, 6, 5);
-            mesh.Faces.AddFace(2, 3, 7, 6);
-            mesh.Faces.AddFace(3, 0, 4, 7);
-            mesh.Faces.AddFace(0, 1, 2, 3);
-            mesh.Faces.AddFace(4, 5, 6, 7);
-            MakeConsistent(mesh);
-            e.mesh = mesh;
-            return e;
         }
 
         /// <summary>
@@ -378,12 +277,12 @@ namespace MeshPoints.Galapagos
             if (genesU[i] >= 0 & !m.Nodes[i].BC_U) // 1. if
             {
                 translationVectorU = 0.5 * (m.Nodes[i + 1].Coordinate - m.Nodes[i].Coordinate) * genesU[i]; // make vector translating node in U-direction
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesU[i], i, i + 1); } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesU[i], i, i + 1); return movedNode; } // make meshPoint
             }
             else if (genesU[i] <= 0 & !m.Nodes[i].BC_U)  // 2. if
             {
                 translationVectorU = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - 1].Coordinate) * genesU[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesU[i], i, i - 1); } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesU[i], i, i - 1); return movedNode; } // make meshPoint
             }
             else { translationVectorU = translationVectorU * 0; }  // 3. if
 
@@ -394,13 +293,13 @@ namespace MeshPoints.Galapagos
             // Note: if point is on edge not restrained in V direction - meshPoint is made
             if (genesV[i] >= 0 & !m.Nodes[i].BC_V) // 1. if
             {
-                translationVectorV = 0.5 * (m.Nodes[i + (m.nu + 1)].Coordinate - m.Nodes[i].Coordinate) * genesV[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesV[i], i, i + (m.nu + 1)); } // make meshPoint
+                translationVectorV = 0.5 * (m.Nodes[i + m.nu].Coordinate - m.Nodes[i].Coordinate) * genesV[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesV[i], i, i + m.nu); return movedNode; } // make meshPoint
             }
             else if (genesV[i] <= 0 & !m.Nodes[i].BC_V) // 2. if
             {
-                translationVectorV = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu + 1)].Coordinate) * genesV[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesV[i], i, i - (m.nu + 1)); } // make meshPoint
+                translationVectorV = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - m.nu ].Coordinate) * genesV[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesV[i], i, i - m.nu); return movedNode; } // make meshPoint
             }
             else { translationVectorV = translationVectorV * 0; } // 3. if
 
@@ -409,31 +308,34 @@ namespace MeshPoints.Galapagos
             // 2. if: Node not restrained in W direction and genes negative.
             // 3. if: Node restrained in W direction.
             // Note: if point is on edge not restrained in W direction - meshPoint is made
-            if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
+            if (m.Type == "Solid")
             {
-                translationVectorW = 0.5 * (m.Nodes[i + (m.nu + 1) * (m.nv + 1)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu + 1) * (m.nv + 1)); } // make meshPoint
+                if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
+                {
+                    translationVectorW = 0.5 * (m.Nodes[i + (m.nu) * (m.nv)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                }
+                else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
+                {
+                    translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu) * (m.nv)].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                }
+                else { translationVectorW = translationVectorW * 0; } // 3. if
             }
-            else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
-            {
-                translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu + 1) * (m.nv + 1)].Coordinate ) * genesW[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu + 1) * (m.nv + 1)); } // make meshPoint
-            }
-            else { translationVectorW = translationVectorW * 0; } // 3. if
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
-            if (IsOnFace | !IsOnEdge)
-            {
-                double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
-                movedNode = new Point3d(m.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
-                    m.Nodes[i].Coordinate.Y + (translationVectorU.Y + translationVectorV.Y + translationVectorW.Y) * overlapTolerance,
-                    m.Nodes[i].Coordinate.Z + (translationVectorU.Z + translationVectorV.Z + translationVectorW.Z) * overlapTolerance);
+            double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
+            movedNode = new Point3d
+                (
+                m.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
+                m.Nodes[i].Coordinate.Y + (translationVectorU.Y + translationVectorV.Y + translationVectorW.Y) * overlapTolerance,
+                m.Nodes[i].Coordinate.Z + (translationVectorU.Z + translationVectorV.Z + translationVectorW.Z) * overlapTolerance
+                );
                 
-                if (IsOnFace) // If node is on face: ensure it stays on face
-                {
-                    Brep srf = face.DuplicateFace(false);
-                    movedNode = srf.ClosestPoint(movedNode); // "Project" meshPoint to surface.
-                }
+            if (IsOnFace) // If node is on face: ensure it stays on face
+            {// to do: slett?
+                Brep srf = face.DuplicateFace(false);
+                movedNode = srf.ClosestPoint(movedNode); // "Project" meshPoint to surface.
             }
             return movedNode;
 
@@ -478,7 +380,110 @@ namespace MeshPoints.Galapagos
             return movedNode;
         }
 
+        private List<Element> CreateQuadElementsOld(List<Node> nodes, int nu, int nv) // to do: erstatt med Mesh3D metode
+        {
+            List<Element> elements = new List<Element>();
+            int uSequence = 0;
+            int counter = 0;
 
+            for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
+            {
+                Mesh mesh = new Mesh();
+                List<Node> elementNodes = new List<Node>();
+                List<int> connectivity = new List<int>();
+                connectivity.Add(counter);
+                connectivity.Add(counter + 1);
+                connectivity.Add(counter + nu + 1);
+                connectivity.Add(counter + nu);
+
+                foreach (int id in connectivity)
+                {
+                    elementNodes.Add(nodes[id]);
+                    mesh.Vertices.Add(nodes[id].Coordinate);
+                };
+
+                Element element = new Element(i, elementNodes, connectivity);
+
+                mesh.Faces.AddFace(0, 1, 2, 3);
+                mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
+                element.mesh = mesh;
+
+                elements.Add(element); // add element to list of elements
+
+                counter++;
+                uSequence++;
+                if (uSequence == (nu - 1)) // check if done with a v sequence
+                {
+                    counter++;
+                    uSequence = 0; // new v sequence
+                }
+            }
+            return elements;
+        }
+
+        private List<Element> CreateHexElementsOld(List<Node> nodes, int nu, int nv, int nw)// to do: erstatt medh Mesh3d
+        {
+            List<Element> elements = new List<Element>();
+            int elemId = 0;
+
+            for (int i = 0; i < nw - 1; i++)  // loop levels
+            {
+                int sequence = 0;
+                int counter = (nu * nv) * i;
+
+                for (int j = 0; j < (nu * nv) - nu - 1; j++) // loop elements in a level
+                {
+                    List<Node> elementNodes = new List<Node>();
+                    List<int> connectivity = new List<int>();
+
+                    if (sequence < nu - 1)
+                    {
+                        connectivity.Add(counter);
+                        connectivity.Add(counter + 1);
+                        connectivity.Add(counter + nu + 1);
+                        connectivity.Add(counter + nu);
+                        connectivity.Add(counter + nu * nv);
+                        connectivity.Add(counter + 1 + nu * nv);
+                        connectivity.Add(counter + nu + 1 + nu * nv);
+                        connectivity.Add(counter + nu + nu * nv);
+
+                        foreach (int id in connectivity)
+                        {
+                            elementNodes.Add(nodes[id]);
+                        }
+
+                        Element element = new Element(elemId, elementNodes, connectivity);
+
+                        // create local mesh
+                        Mesh localMesh = new Mesh();
+                        foreach (Node node in elementNodes)
+                        {
+                            localMesh.Vertices.Add(node.Coordinate); //0
+                        }
+                        localMesh.Faces.AddFace(0, 1, 5, 4);
+                        localMesh.Faces.AddFace(1, 2, 6, 5);
+                        localMesh.Faces.AddFace(2, 3, 7, 6);
+                        localMesh.Faces.AddFace(3, 0, 4, 7);
+                        localMesh.Faces.AddFace(0, 1, 2, 3);
+                        localMesh.Faces.AddFace(4, 5, 6, 7);
+
+                        localMesh.Normals.ComputeNormals();  //Control if needed
+                        localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                        localMesh.Compact(); //to ensure that it calculate
+                        element.mesh = localMesh;
+
+                        //add element and mesh to element list
+                        elements.Add(element);
+
+                        sequence++;
+                        elemId++;
+                        counter++;
+                    }
+                    else { sequence = 0; counter++; }
+                }
+            }
+            return elements;
+        }
         #endregion
 
         /// <summary>

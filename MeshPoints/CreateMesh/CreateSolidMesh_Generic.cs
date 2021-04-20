@@ -125,7 +125,7 @@ namespace MeshPoints.CreateMesh
             globalMesh = CreateGlobalMesh(elements);
             globalMesh = CreateGlobalMeshNew(nodes, nu, nv, nw);
             // 8. Add properties to SolidMesh
-            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, globalMesh);
+            Mesh3D solidMesh = new Mesh3D(nu+1, nv+1, nw+1, nodes, elements, globalMesh);
             solidMesh.Geometry = brepGeometry;
             solidMesh.inp = true;
 
