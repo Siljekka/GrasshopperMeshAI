@@ -96,7 +96,7 @@
     <Compile Include="Mesh_outdated\CreateMesh3D_Box.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh_OldSweep.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />
-    <Compile Include="DeconstructClasses\DeconstructMesh3D.cs" />
+    <Compile Include="DeconstructClasses\DeconstructSmartMesh.cs" />
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement.cs" />
     <Compile Include="DeconstructClasses\DeconstructMesh2D.cs" />
