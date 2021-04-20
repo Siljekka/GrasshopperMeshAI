@@ -159,26 +159,31 @@ namespace MeshPoints.CreateMesh
         /// <returns></returns>
         List<Element> CreateQuadElements(List<Node> nodes, int nu, int nv)
         {
-            Element e = new Element();
+            Mesh mesh = new Mesh();
             List<Element> elements = new List<Element>();
             int uSequence = 0;
             int counter = 0;
 
             for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
             {
-                Node n1 = new Node(1, nodes[counter].GlobalId, nodes[counter].Coordinate, nodes[counter].BC_U, nodes[counter].BC_V);
-                Node n2 = new Node(2, nodes[counter + 1].GlobalId, nodes[counter + 1].Coordinate, nodes[counter + 1].BC_U, nodes[counter + 1].BC_V);
-                Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, nodes[counter + nu + 1].Coordinate, nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V);
-                Node n4 = new Node(4, nodes[counter + nu].GlobalId, nodes[counter + nu].Coordinate, nodes[counter + nu].BC_U, nodes[counter + nu].BC_V);
-                Mesh m = new Mesh();
-                m.Vertices.Add(n1.Coordinate);
-                m.Vertices.Add(n2.Coordinate);
-                m.Vertices.Add(n3.Coordinate);
-                m.Vertices.Add(n4.Coordinate);
-                m.Faces.AddFace(0, 1, 2, 3);
+                List<Node> elementNodes = new List<Node>();
+                List<int> connectivity = new List<int>();
+                connectivity.Add(counter);
+                connectivity.Add(counter + 1);
+                connectivity.Add(counter + nu + 1);
+                connectivity.Add(counter + nu);
 
-                e = new Element(i, n1, n2, n3, n4, m);
-                elements.Add(e); // add element to list of elements
+                foreach (int id in connectivity)
+                {
+                    elementNodes.Add(nodes[id]);
+                    mesh.Vertices.Add(nodes[id].Coordinate);
+                };
+                
+                Element element = new Element(i, elementNodes, connectivity);
+                mesh.Faces.AddFace(0, 1, 2, 3);
+                element.mesh = mesh;
+
+                elements.Add(element); // add element to list of elements
 
                 counter++;
                 uSequence++;

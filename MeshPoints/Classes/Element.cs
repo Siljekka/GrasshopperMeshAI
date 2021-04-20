@@ -89,20 +89,51 @@ namespace MeshPoints.Classes
             switch (Nodes.Count)
             {
                 case 3:
-                    type = "triangle";
+                    type = "Triangle";
                     break;
                 case 4:
-                    type = "quad";
+                    type = "Quad";
                     break;
                 case 6:
-                    type = "tet";
+                    type = "Tet";
                     break;
                 case 8:
-                    type = "hex";
+                    type = "Hex";
                     break;
             }
             return type;
         
         }
+
+        public List<List<Node>> GetFaces()
+        {
+            List<List<Node>> Faces = new List<List<Node>>();
+            List<Node> nodes = this.Nodes;
+
+            if (this.Type == "Quad") // surface
+            {
+                Faces.Add(nodes);
+            }
+            else // solid
+            {
+                List<List<int>> nodeIndex = new List<List<int>>
+                {
+                      new List<int> {0, 1, 5, 4}, new List<int> {1, 2, 6, 5}, new List<int> {2, 3, 7, 6},
+                      new List<int> { 3, 0, 4, 7 }, new List<int> { 0, 1, 2, 3 },  new List<int> { 4, 5, 6, 7 }
+                };
+  
+                foreach (List<int> indices in nodeIndex)
+                {
+                    List<Node> nodesOfFace = new List<Node>();
+                    foreach (int i in indices)
+                    {
+                        nodesOfFace.Add(nodes[i]);
+                    }
+                    Faces.Add(nodesOfFace);
+                }
+            }
+            return Faces;
+        }
+
     }
 }

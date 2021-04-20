@@ -39,7 +39,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SurfaceMesh", "surface", "SurfaceMesh from given points", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "SmartMesh generated", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
         }
 
@@ -58,7 +58,7 @@ namespace MeshPoints.CreateMesh
             DA.GetData(2, ref nv);
 
             #region Variables
-            Mesh2D surfaceMesh = new Mesh2D();
+            Mesh3D smartMesh = new Mesh3D();
             Mesh globalMesh = new Mesh();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
@@ -90,14 +90,12 @@ namespace MeshPoints.CreateMesh
             globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
 
             //5. Add properties to SolidMesh
-            surfaceMesh = new Mesh2D(nu+1, nv+1, nodes, elements, globalMesh);
-            surfaceMesh.Geometry = brepGeometry;
-
-
+            smartMesh = new Mesh3D(nu + 1, nv + 1, nodes, elements, globalMesh);
+            smartMesh.Geometry = brepGeometry;
 
             // Output
-            DA.SetData(0, surfaceMesh);
-            DA.SetData(1, surfaceMesh.mesh);
+            DA.SetData(0, smartMesh);
+            DA.SetData(1, smartMesh.mesh);
         }
         
 
@@ -163,9 +161,8 @@ namespace MeshPoints.CreateMesh
         /// Creates quad elements by assigning id, local nodes and mesh.
         /// </summary>
         /// <returns></returns>
-        List<Element> CreateQuadElements(List<Node> nodes, int nu, int nv)
+        List<Element> CreateQuadElements(List<Node> nodes, int nu, int nv) // to do: erstatt med Mesh3D metode
         {
-            Element e = new Element();
             List<Element> elements = new List<Element>();
             int uSequence = 0;
             int counter = 0;
@@ -174,20 +171,27 @@ namespace MeshPoints.CreateMesh
 
             for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
             {
-                Node n1 = new Node(1, nodes[counter].GlobalId, nodes[counter].Coordinate, nodes[counter].BC_U, nodes[counter].BC_V);
-                Node n2 = new Node(2, nodes[counter + 1].GlobalId, nodes[counter + 1].Coordinate, nodes[counter + 1].BC_U, nodes[counter + 1].BC_V);
-                Node n3 = new Node(3, nodes[counter + nu + 1].GlobalId, nodes[counter + nu + 1].Coordinate, nodes[counter + nu + 1].BC_U, nodes[counter + nu + 1].BC_V);
-                Node n4 = new Node(4, nodes[counter + nu].GlobalId, nodes[counter + nu].Coordinate, nodes[counter + nu].BC_U, nodes[counter + nu].BC_V);
                 Mesh mesh = new Mesh();
-                mesh.Vertices.Add(n1.Coordinate);
-                mesh.Vertices.Add(n2.Coordinate);
-                mesh.Vertices.Add(n3.Coordinate);
-                mesh.Vertices.Add(n4.Coordinate);
+                List<Node> elementNodes = new List<Node>();
+                List<int> connectivity = new List<int>();
+                connectivity.Add(counter);
+                connectivity.Add(counter + 1);
+                connectivity.Add(counter + nu + 1);
+                connectivity.Add(counter + nu);
+
+                foreach (int id in connectivity)
+                {
+                    elementNodes.Add(nodes[id]);
+                    mesh.Vertices.Add(nodes[id].Coordinate);
+                };
+
+                Element element = new Element(i, elementNodes, connectivity);
+
                 mesh.Faces.AddFace(0, 1, 2, 3);
                 mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
+                element.mesh = mesh;
 
-                e = new Element(i, n1, n2, n3, n4, mesh);
-                elements.Add(e); // add element to list of elements
+                elements.Add(element); // add element to list of elements
                 
                 counter++;
                 uSequence++;
@@ -204,7 +208,7 @@ namespace MeshPoints.CreateMesh
         /// Creates a global mesh for the geometry.
         /// </summary>
         /// <returns></returns>
-        Mesh CreateGlobalMesh(List<Point3d> meshPoints, int nu, int nv)
+        Mesh CreateGlobalMesh(List<Point3d> meshPoints, int nu, int nv) // to do: erstatt 
         {
             Mesh globalMesh = new Mesh();
             int counter = 0;

@@ -25,10 +25,10 @@ namespace MeshPoints.Classes
             {
                 Vector<double> N = DenseVector.OfArray(new double[]
                 {
-                    (1-r)*(s-1),
-                    (1+r)*(s-1),
-                    (1+r)*(s+1),
-                    (1-r)*(s+1),
+                    (1-r)*(1-s),
+                    (1+r)*(1-s),
+                    (1+r)*(1+s),
+                    (1-r)*(1+s),
                 });
                 N=N.Multiply(0.25);
                 return N;
@@ -51,7 +51,7 @@ namespace MeshPoints.Classes
             }
 
         }
-        public Matrix<double> GetNMatrix(double r, double s, double t)
+        public Matrix<double> GetNMatrix(double r, double s, double t) // to do: feil og slett?
         {
             // Shapefunctions on matrix form
             Matrix<double> N = DenseMatrix.OfArray(new double[,]
@@ -69,8 +69,8 @@ namespace MeshPoints.Classes
             {
                 Matrix<double> shapeFunctionsDerivatedNatural = DenseMatrix.OfArray(new double[,]
                 {
-                    //{-(s-1), (s-1), (s+1), -(s+1)}, // to do: sjekk med magnus, usikker på om dette er riktig..
-                    //{-(r-1), -(r+1), (r+1), (r-1)}
+                    {-(1-s), (1-s), (1+s), -(1+s)},
+                    {-(1-r), -(1+r), (1+r), (1-r)}
                 });
                 shapeFunctionsDerivatedNatural = shapeFunctionsDerivatedNatural.Multiply(0.25);
                 return shapeFunctionsDerivatedNatural;
