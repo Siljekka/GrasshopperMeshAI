@@ -17,8 +17,8 @@ namespace MeshPoints
         /// Initializes a new instance of the MoveMesh2DVertices class.
         /// </summary>
         public GalapagosMesh()
-          : base("Move Mesh Vertices", "mmv",
-              "Move mesh vertices with gene pools",
+          : base("Move surface nodes", "mmv",
+              "Move nodes of a surface SmartMesh with gene pools",
               "MyPlugIn", "Modify Mesh")
         {
         }

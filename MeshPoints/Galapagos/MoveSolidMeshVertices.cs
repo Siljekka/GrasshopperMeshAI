@@ -16,8 +16,8 @@ namespace MeshPoints.Galapagos
         /// Initializes a new instance of the MoveMesh3DVertices class.
         /// </summary>
         public GalapagosMesh()
-          : base("Move nodes of SmartMesh Solid", "sm",
-              "Move nodes with gene pools",
+          : base("Move solid nodes", "sm",
+              "Move nodes of a solid SmartMesh with gene pools",
               "MyPlugIn", "Modify Mesh")
         {
         }
