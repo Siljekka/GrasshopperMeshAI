@@ -3,6 +3,7 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
+using System.IO;
 
 namespace MeshPoints
 {
@@ -23,16 +24,17 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            //pManager.AddGenericParameter("SolidMesh", "solid", "Solid mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
-            //pManager.AddGenericParameter("SurfaceMesh", "surface", "Surface mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
             pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh Class. Geometry must have been modelled in mm.", GH_ParamAccess.item);
             pManager.AddGenericParameter("FilePath", "path", "", GH_ParamAccess.item);
             pManager.AddGenericParameter("Save", "save", "", GH_ParamAccess.item);
             pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 10 mm", GH_ParamAccess.item);
-            //pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8, S4 (Solid, Shell)", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item);
-            
+            //pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8, S4 (Solid, Shell)", GH_ParamAccess.item);
+
+
+            pManager[1].Optional = true; // Write to file is optional
+            pManager[2].Optional = true; // Write to file is optional
             pManager[3].Optional = true; // Shell thickness is optional
             pManager[4].Optional = true; // Young modulus is optional
             pManager[5].Optional = true; // Poisson Ratio is optional
@@ -43,7 +45,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("inp-file", "inp", "String containing inp-file", GH_ParamAccess.list);
+            pManager.AddGenericParameter("inp", "inp", "String containing inp-file", GH_ParamAccess.list); //todo: change name.
         }
 
         /// <summary>
@@ -56,15 +58,10 @@ namespace MeshPoints
             Mesh3D smartMesh = new Mesh3D();
             string filePath = "Empty";
             bool writeFile = false;
-            //Mesh3D solidMesh = new Mesh3D();
-            //Mesh2D surfaceMesh = new Mesh2D();
             double sectionThickness = 10;
             double Emodul = 210000;
             double nu = 0.3;
             
-
-            //DA.GetData(0, ref solidMesh);
-            //DA.GetData(1, ref surfaceMesh);
             DA.GetData(0, ref smartMesh);
             DA.GetData(1, ref filePath);
             DA.GetData(2, ref writeFile);
@@ -83,7 +80,7 @@ namespace MeshPoints
 
             // 0. Check input.
             if (!DA.GetData(0, ref smartMesh)) return;
-
+            
 
             // 1. Set material properties.
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
@@ -105,35 +102,18 @@ namespace MeshPoints
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Double mesh input. Remove one mesh input."); return; }
 
             // 4. Write to .txt-file
-            foreach (string text in inpText)
+            int a = 0;
+            if (writeFile)
             {
-                WriteTextFile(text, filePath);
+                var file = @filePath;
+                File.WriteAllLines(file, inpText.ToArray());
             }
             
             // Output
-            DA.SetDataList(0, inpText);
+            DA.SetData(0, a);
         }
 
         #region Methods
-        /// <summary> Write text string to .txt-file </summary>
-        /// <param name="variable"> Text string </param>
-        /// <param name="filepath"> File path to where text is saved. </param>
-
-        /*Referer til: https://www.youtube.com/watch?v=vDpww7HsdnM */
-        public void WriteTextFile(string variable, string filepath)
-        {
-            try
-            {
-                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@filepath, true))
-                {
-                    file.WriteLine(variable);
-                }
-            }
-            catch (Exception exeption)
-            {
-                throw new ApplicationException("Something went wrong.", exeption);
-            }
-        }
 
         /// <summary> Generate inp file for solid models. </summary>
         /// <param name="solidMesh"> SmartMesh Class. </param>
