@@ -1,5 +1,7 @@
 import tensorflow as tf
+import tensorflow_transform as tft
 from tensorflow.keras import layers, metrics
+from tensorflow.keras.layers.experimental import preprocessing as prepro
 from tensorflow import feature_column
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -21,10 +23,14 @@ def nn1():
 
     with tf.device('/cpu:0'):
 
-        polygons = pd.read_csv("data/6-gon-mesh-dataset.csv")
+        tmp_polygons = pd.read_csv("data/6-gon-mesh-dataset.csv")
+        polygons = tmp_polygons.copy()
+
+        # Pre-processing of labels
+        label_scaler = skpp.MinMaxScaler()
+        polygons['internal_nodes'] = label_scaler.fit_transform(np.array(tmp_polygons['internal_nodes']).reshape(-1, 1))
 
         polygons = sklearn.utils.shuffle(polygons)
-
         # Split dataset into 80/20 training/test
         polygon_train = polygons.sample(frac=0.8, random_state=0)
         polygon_test = polygons.drop(polygon_train.index)
@@ -36,54 +42,46 @@ def nn1():
         test_labels = test_features.pop('internal_nodes')
 
         polygon_model = tf.keras.Sequential([
-            tf.keras.Input(shape=(13,)),
+            layers.Dense(24, input_shape=(13,)),
+            layers.Activation('relu'),
             layers.BatchNormalization(),
-            layers.Dense(24, activation="relu"),
+            layers.Dropout(0.5),
 
+            layers.Dense(24),
+            layers.Activation('relu'),
             layers.BatchNormalization(),
-            layers.Dense(24, activation="relu"),
+            layers.Dropout(0.5),
 
+            layers.Dense(1),
             layers.BatchNormalization(),
-            layers.Dense(24, activation="relu"),
-
-            layers.Dense(1)
         ])
 
         polygon_model.summary()
         polygon_model.compile(loss = tf.losses.MeanAbsoluteError(),
                               optimizer=tf.optimizers.Adam(
-                                  # learning_rate=learning_rate, decay=weight_decay
+                                  learning_rate=learning_rate, decay=weight_decay
                               ),
-                              metrics=['accuracy']
                               )
 
         history = polygon_model.fit(train_features,
                                     train_labels,
                                     epochs=epochs,
                                     batch_size=batch_size,
-                                    validation_data=(test_features, test_labels),
+                                    # validation_split=0.18,
                                     verbose=2,
                                     )
 
         # Evaluate the model
-        _, train_acc = polygon_model.evaluate(train_features, train_labels, verbose=0)
-        _, test_acc = polygon_model.evaluate(test_features, test_labels, verbose=0)
-        print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
+        train_acc = polygon_model.evaluate(train_features, train_labels, verbose=0)
+        test_acc = polygon_model.evaluate(test_features, test_labels, verbose=0)
+        print('Training data loss: %.3f, Test data loss: %.3f' % (train_acc, test_acc))
 
         # plot history
-        plt.plot(history.history['loss'], label='train')
-        plt.plot(history.history['val_loss'], label='test')
+        plt.plot(history.history['loss'], label='training loss')
+        plt.plot(history.history['val_loss'], label='validation loss')
         plt.legend()
         plt.show()
 
-        # test_results = {}
-        # test_results['polygon_model'] = polygon_model.evaluate(
-        #     test_features,
-        #     test_labels
-        # )
-        # print(test_results)
 
 if __name__ == '__main__':
-    start_time = time.time()
-    nn1()
-    print(f"Time elapsed: {round(time.time() - start_time, 5)} seconds")
+    pass

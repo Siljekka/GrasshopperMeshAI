@@ -4,8 +4,8 @@ import numpy as np
 from scipy import linalg
 import matplotlib.pyplot as plt
 import gmsh
-import sys
 import csv
+import sys
 
 
 def procrustes(contour: np.array) -> dict:
@@ -136,7 +136,7 @@ def mesh_contour(contour: np.array, target_edge_length: float):
 def mesh_contour_all_lc(contour: np.array):
     # Meshes one contour with all the edge lengths
 
-    edge_lengths = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    edge_lengths = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     features = []
     for k, target_edge_length in enumerate(edge_lengths):
         tmp_features = np.zeros(len(contour)+1)
@@ -215,10 +215,21 @@ def plot_polygon(np_coords: np.array, style="") -> None:
 
     plt.plot(coords[0], coords[1], style)
 
-import numpy as np
-import csv
-import pre_processing as pp
-import gmsh
+
+def point_grid(grid_resolution: int) -> list:
+    # 1. Generate a point grid G of resolution N_g = n_g x n_g within a bounding box of size [-1.2, 1.2].
+    #    Grid size 20 x 20 deemed adequate in papag. et al.
+    # 2. Each grid point is assigned a score equalling the distance to the closest vertex.
+    point_grid = []
+    min_val = 1.2
+    val_range = 2.4
+    for i in range(grid_resolution+1):
+        x_coord = i/grid_resolution * val_range - min_val
+        for j in range(grid_resolution+1):
+            y_coord = j/grid_resolution * val_range - min_val
+            point_grid.append((x_coord, y_coord))
+
+    return point_grid
 
 
 def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: float) -> list:
@@ -227,11 +238,11 @@ def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: floa
     gmsh.initialize()
     dataset = []
     for _ in range(dataset_size):
-        test_polygon = pp.create_random_ngon(num_sides)
-        procrustes = pp.procrustes(test_polygon)
+        test_polygon = create_random_ngon(num_sides)
+        transformed_polygon = procrustes(test_polygon)
 
-        dataset.append(pp.mesh_contour(
-            procrustes["transformed_contour"], target_edge_length))
+        dataset.append(mesh_contour(
+            transformed_polygon["transformed_contour"], target_edge_length))
 
     # Close API call
     gmsh.finalize()
@@ -243,13 +254,15 @@ def generate_dataset_all_lc(dataset_size: int, num_sides: int) -> list:
 
     # Start a gmsh API session
     gmsh.initialize()
+    gmsh.option.set_number("General.Verbosity", 0)  # suppress console output during generation
 
     dataset = []
-    for _ in range(dataset_size):
-        test_polygon = pp.create_random_ngon(num_sides)
-        procrustes = pp.procrustes(test_polygon)
+    for i in range(dataset_size):
+        print("meshing contour", i, "of", dataset_size, end="\r")
+        test_polygon = create_random_ngon(num_sides)
+        transformed_polygon = procrustes(test_polygon)
 
-        dataset_nested = pp.mesh_contour_all_lc(procrustes["transformed_contour"])
+        dataset_nested = mesh_contour_all_lc(transformed_polygon["transformed_contour"])
         for l in dataset_nested:
             dataset.append(l)
 
