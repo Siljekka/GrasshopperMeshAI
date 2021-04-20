@@ -3,9 +3,7 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using Rhino.Geometry.Collections;
-using System.Drawing;
 using MeshPoints.Classes;
-using Rhino.Geometry.Intersect;
 
 
 namespace MeshPoints.Galapagos

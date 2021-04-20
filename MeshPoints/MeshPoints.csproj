@@ -101,7 +101,7 @@
     <Compile Include="Mesh_outdated\DeconstructMesh2D.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
     <Compile Include="MoveNodes\MoveNodes.cs" />
-    <Compile Include="MoveNodes\MoveMesh2DVertices.cs" />
+    <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
     <Compile Include="GenerateINPfile.cs" />
