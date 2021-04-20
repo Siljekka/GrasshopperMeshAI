@@ -765,12 +765,10 @@ namespace MeshPoints.CreateMesh
 
                     if (count2 < nu - 1)
                     {
-
                         connectivity.Add(counter);
                         connectivity.Add(counter + 1);
                         connectivity.Add(counter + nu + 1);
                         connectivity.Add(counter + nu);
-
                         connectivity.Add(counter + nu * nv);
                         connectivity.Add(counter + 1 + nu * nv);
                         connectivity.Add(counter + nu + 1 + nu * nv);
