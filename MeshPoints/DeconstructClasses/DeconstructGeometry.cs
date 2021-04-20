@@ -13,7 +13,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         public DeconstructGeometry()
           : base("Deconstruct Geometry", "geo",
-              "Deconstructing Geometry class",
+              "Deconstructing Geometry Class",
               "MyPlugIn", "Deconstruct")
         {
         }
