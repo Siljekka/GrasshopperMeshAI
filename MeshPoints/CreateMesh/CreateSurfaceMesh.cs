@@ -161,7 +161,7 @@ namespace MeshPoints.CreateMesh
         /// Creates quad elements by assigning id, local nodes and mesh.
         /// </summary>
         /// <returns></returns>
-        List<Element> CreateQuadElements(List<Node> nodes, int nu, int nv)
+        List<Element> CreateQuadElements(List<Node> nodes, int nu, int nv) // to do: erstatt med Mesh3D metode
         {
             List<Element> elements = new List<Element>();
             int uSequence = 0;
@@ -208,7 +208,7 @@ namespace MeshPoints.CreateMesh
         /// Creates a global mesh for the geometry.
         /// </summary>
         /// <returns></returns>
-        Mesh CreateGlobalMesh(List<Point3d> meshPoints, int nu, int nv)
+        Mesh CreateGlobalMesh(List<Point3d> meshPoints, int nu, int nv) // to do: erstatt 
         {
             Mesh globalMesh = new Mesh();
             int counter = 0;

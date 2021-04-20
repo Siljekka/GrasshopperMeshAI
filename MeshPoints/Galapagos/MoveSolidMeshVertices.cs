@@ -16,8 +16,8 @@ namespace MeshPoints.Galapagos
         /// Initializes a new instance of the MoveMesh3DVertices class.
         /// </summary>
         public GalapagosMesh()
-          : base("Move SolidMesh Vertices", "m3dv",
-              "Move mesh vertices with gene pools",
+          : base("Move solid nodes", "sm",
+              "Move nodes of a solid SmartMesh with gene pools",
               "MyPlugIn", "Modify Mesh")
         {
         }
@@ -27,8 +27,8 @@ namespace MeshPoints.Galapagos
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "bp", "Input source brep", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh3D", "m2d", "Input Mesh2D", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Geometry", "geo", "Input source geometry", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "sm", "Input a SmartMesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
@@ -39,7 +39,7 @@ namespace MeshPoints.Galapagos
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh3D", "m3D", "Updated solid mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "sm", "Updated mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
         }
 
@@ -49,7 +49,6 @@ namespace MeshPoints.Galapagos
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            #region Input
             // Input
             Mesh3D inputMesh = new Mesh3D();
             Brep brep = new Brep();
@@ -62,9 +61,7 @@ namespace MeshPoints.Galapagos
             DA.GetDataList(2, genesU);
             DA.GetDataList(3, genesV);
             DA.GetDataList(4, genesW);
-            #endregion
 
-            #region Variables
             // Variables
             Mesh3D solidMesh = new Mesh3D();
             Mesh allMesh = new Mesh();
@@ -77,13 +74,13 @@ namespace MeshPoints.Galapagos
             //Mesh mesh = new Mesh(); old variable
             //Mesh globalMesh = new Mesh(); old variable
             //Mesh3D meshUpdated = new Mesh3D(); old variable
-            #endregion
+
 
             // 1. Write warning and error if wrong input
             if (!brep.IsValid) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Brep input is not valid."); return; }
-            if (inputMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mesh3D input is not valid."); return; }
-            if ((genesU.Count < inputMesh.Nodes.Count) | (genesV.Count < inputMesh.Nodes.Count) | (genesW.Count < inputMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } //todo: add warning message
-
+            if (inputMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh input is not valid."); return; }
+            if ((genesU.Count < inputMesh.Nodes.Count) | (genesV.Count < inputMesh.Nodes.Count) | (genesW.Count < inputMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; } 
+            if (solidMesh.Type != "Solid") { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh is not solid"); return; }
 
             // 2. Move and make new nodes
             for (int i = 0; i < inputMesh.Nodes.Count; i++)

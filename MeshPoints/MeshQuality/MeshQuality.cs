@@ -312,12 +312,14 @@ namespace MeshPoints.MeshQuality
             if (jacobiansOfElement.Any(x => x < 0))
             {
                 jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
-
+                jacobianRatio = 0; // to do: check, må settes lik null i utregning
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
                 if (jacobianRatio < 0)
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {element.Id} is negative.");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"The Jacobian Ratio of element {element.Id} is negative.");
                 }
+                jacobianRatio = 0; // to do: check, må settes lik null i utregning
+
             }
             else
             {
