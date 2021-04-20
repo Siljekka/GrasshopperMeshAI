@@ -76,7 +76,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BrepPoints.cs" />
+    <Compile Include="Mesh_outdated\BrepPoints.cs" />
     <Compile Include="Classes\Geometry.cs" />
     <Compile Include="Classes\Material.cs" />
     <Compile Include="Classes\CSV.cs" />
