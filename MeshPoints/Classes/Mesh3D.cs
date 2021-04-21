@@ -45,6 +45,13 @@ namespace MeshPoints.Classes
             mesh = _mesh;
             Type = "Solid";
         }
+        public Mesh3D(List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for unstructured surface mesh
+        {
+            Nodes = _nodes;
+            Elements = _elements;
+            mesh = _mesh;
+            Type = "Surface";
+        }
 
         public void CreateQuadElements() 
         {
