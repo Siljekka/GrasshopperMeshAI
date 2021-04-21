@@ -94,7 +94,7 @@ namespace MeshPoints.QuadRemesh
                 Point3d pointToTransform = new Point3d();
                 tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
 
-                meshToTransform.mesh.Transform(tranformation); // transform mesh, to do: check if needed
+                meshToTransform.Mesh.Transform(tranformation); // transform mesh, to do: check if needed
 
                 // transform global nodes
                 foreach (Node nodeToTransform in meshToTransform.Nodes)

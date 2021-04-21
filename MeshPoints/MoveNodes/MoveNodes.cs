@@ -118,7 +118,7 @@ namespace MeshPoints.MoveNodes
 
             // Output
             DA.SetData(0, newMesh);
-            DA.SetData(1, newMesh.mesh);
+            DA.SetData(1, newMesh.Mesh);
         }
         #region Methods
 

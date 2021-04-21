@@ -130,7 +130,7 @@ namespace MeshPoints.CreateMesh
 
             // Output
             DA.SetData(0, smartMesh);
-            DA.SetData(1, smartMesh.mesh);
+            DA.SetData(1, smartMesh.Mesh);
         }
 
         #region Methods

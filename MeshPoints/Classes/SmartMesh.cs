@@ -12,18 +12,19 @@ namespace MeshPoints.Classes
     {
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
-        public Mesh mesh { get; set; } //mesh
+        public Mesh Mesh { get; set; } //mesh
         public int nu { get; set; } //number of nodes in x-dir
         public int nv { get; set; } //number of nodes in y-dir
         public int nw { get; set; } //number of nodes in z-dir
         public bool inp { get; set; }
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
+
+        // Constructors
         public SmartMesh()
         {
             //Empty constructor
         }
-
         public SmartMesh(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for shell mesh
         {
             nu = _nu;
@@ -31,10 +32,9 @@ namespace MeshPoints.Classes
             nw = 1;
             Nodes = _nodes;
             Elements = _elements;
-            mesh = _mesh;
+            Mesh = _mesh;
             Type = "Surface";
         }
-
         public SmartMesh(int _nu, int _nv, int _nw, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for solid mesh
         {
             nu = _nu;
@@ -42,17 +42,18 @@ namespace MeshPoints.Classes
             nw = _nw;
             Nodes = _nodes;
             Elements = _elements;
-            mesh = _mesh;
+            Mesh = _mesh;
             Type = "Solid";
         }
         public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for unstructured surface mesh
         {
             Nodes = _nodes;
             Elements = _elements;
-            mesh = _mesh;
+            Mesh = _mesh;
             Type = "Surface";
         }
 
+        // Methods
         public void CreateQuadElements() 
         {
             List<Node> nodes = this.Nodes;
@@ -97,7 +98,6 @@ namespace MeshPoints.Classes
             }
             this.Elements = elements;
         }
-
         public void CreateHexElements()
         {
             int nu = this.nu;
@@ -166,7 +166,6 @@ namespace MeshPoints.Classes
             }
             this.Elements = elements;
         }
-
         public void CreateMesh()
         {
             int nu = this.nu;
@@ -251,7 +250,7 @@ namespace MeshPoints.Classes
             mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
             mesh.Compact(); //to ensure that it calculate
 
-            this.mesh = mesh; ;
+            this.Mesh = mesh; ;
         }
     }
 }
