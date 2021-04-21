@@ -25,7 +25,6 @@ namespace MeshPoints.MoveNodes
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            //pManager.AddGenericParameter("Geometry", "geo", "Input source geometry", GH_ParamAccess.item); Silje: slett, for vi har Geometry klassen i SmartMesh
             pManager.AddGenericParameter("SmartMesh", "sm", "Input a SmartMesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
@@ -51,37 +50,24 @@ namespace MeshPoints.MoveNodes
         {
             // Input
             SmartMesh oldMesh = new SmartMesh();
-            //Brep brep1 = new Brep(); // Silje: Fjerne denne inputen?
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
             List<double> genesW = new List<double>();
 
-            //DA.GetData(0, ref brep1);
             DA.GetData(0, ref oldMesh);
             DA.GetDataList(1, genesU);
             DA.GetDataList(2, genesV);
             DA.GetDataList(3, genesW);
-            //if (brep1 == null | oldMesh.Elements == null) { return; } //Silje: slette?
 
-            // to do: fix
             // Variables
             SmartMesh newMesh = new SmartMesh();
             List<Node> newNodes = new List<Node>();
-            //Mesh allMesh = new Mesh(); // Silje: slett?
-            //List<Element> elements = new List<Element>(); // Silje: slett?
-            //Node node = new Node();  Silje: slett? har flytta Node
-
-
-
-            Brep brep = oldMesh.Geometry.Brep; // Silje: la til denne istedenfor inputen "Geometry"
 
             // 1. Write error if wrong input
-            if (!DA.GetData(0, ref brep)) return;
-            if (!DA.GetData(1, ref oldMesh)) return; // Silje: endret til denne (før var den under).
-            //if (oldMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh input is not valid."); return; }
-            if (oldMesh.Type == "Solid" & !DA.GetDataList(4, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
+            if (!DA.GetData(0, ref oldMesh)) return;
+
+            if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
             if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
-            if (oldMesh.Type == "Solid" & !DA.GetDataList(4, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; } //Silje: la til denne
             if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
 
             // 2. Inherit properties from old mesh
@@ -90,13 +76,13 @@ namespace MeshPoints.MoveNodes
             newMesh.nw = oldMesh.nw;
             newMesh.Type = oldMesh.Type;
             newMesh.Geometry = oldMesh.Geometry;
+            Brep brep = oldMesh.Geometry.Brep;
+
 
             // 3. Create new nodes
             for (int i = 0; i < oldMesh.Nodes.Count; i++)
             {
                 // a. Check if node is on face or edge.
-                //    if node is on face: true and face is output
-                //    if node is on edge: true and edge is output
                 Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse?
                 Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse?
 
@@ -199,6 +185,7 @@ namespace MeshPoints.MoveNodes
             // 2. if: Node not restrained in U direction and gen negative.
             // 3. if: Node restrained in U direction.
             // Note: if point is on edge not restrained in U direction - meshPoint is made
+
             if (genesU[i] >= 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genesU[i]; // make vector translating node in U-direction
@@ -233,19 +220,34 @@ namespace MeshPoints.MoveNodes
             // 2. if: Node not restrained in W direction and gen negative.
             // 3. if: Node restrained in W direction.
             // Note: if point is on edge not restrained in W direction - meshPoint is made
-            if (m.Type == "Solid")
+
+            if (mesh.Type == "Solid")
             {
-                if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
+                if (genesW[i] >= 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
-                    translationVectorW = 0.5 * (m.Nodes[i + (m.nu) * (m.nv)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                    translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
                 }
-                else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
+                else if (genesW[i] <= 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
-                    translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu) * (m.nv)].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                    translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
                 }
-                else { translationVectorW = translationVectorW * 0; } // 3. if
+
+                if (mesh.Type == "Solid")
+                {
+                    if (genesW[i] >= 0 & !mesh.Nodes[i].BC_W) // 1. if
+                    {
+                        translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genesW[i];
+                        if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    }
+                    else if (genesW[i] <= 0 & !mesh.Nodes[i].BC_W) // 1. if
+                    {
+                        translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genesW[i];
+                        if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    }
+                    else { translationVectorW = translationVectorW * 0; } // 3. if
+                }
             }
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
@@ -291,7 +293,7 @@ namespace MeshPoints.MoveNodes
                     edgeCurve2.Reverse();
                     movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes));
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve}
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve
             }
             else if (genes <= 0)
             {
