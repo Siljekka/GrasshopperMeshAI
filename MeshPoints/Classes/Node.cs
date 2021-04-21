@@ -13,11 +13,9 @@ namespace MeshPoints.Classes
         public int LocalId { get; set; } // delete
         public int GlobalId { get; set; }
         public Point3d Coordinate { get; set; }
-
         public bool BC_U { get; set; } // to do: change if time
         public bool BC_V { get; set; } // to do: change if time
         public bool BC_W { get; set; } // to do: change if time
-
         public string Type { get; set; }
 
         //Constructor
@@ -25,7 +23,6 @@ namespace MeshPoints.Classes
         {
             //Empty constructor
         }
-
         public Node(int _globalId, Point3d _coord)
         {
             GlobalId = _globalId;
@@ -40,7 +37,6 @@ namespace MeshPoints.Classes
             BC_W = true;
             this.SetType();
         }
-
         public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V) // to do: slett
         {
             LocalId = _locald;
@@ -51,7 +47,6 @@ namespace MeshPoints.Classes
             BC_W = true; // to do: sjekk om ok
             this.SetType();
         }
-
         public Node(int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool  _BC_W)
         {
             GlobalId = _globalId;
