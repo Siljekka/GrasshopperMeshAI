@@ -134,15 +134,26 @@ namespace MeshPoints.MoveNodes
 
             foreach (BrepFace bFace in brepFace) // check if node is on face
             {
-                IsOnFace = node.IsOnFace(bFace);
-                face = bFace;
-                if (node.BC_U & node.BC_V & node.BC_W) { IsOnFace = false; } // cornerpoints
+                if (node.Type == "Face")
+                {
+                    IsOnFace = node.IsOnFace(bFace);
+                    if (IsOnFace)
+                    {
+                        face = bFace;
+                        return new Tuple<bool, BrepFace>(IsOnFace, face);
+                    }
+                }
+
+                /*
+                if (node.Type == "Corner") { IsOnFace = false; } // cornerpoints
+                else if (node.Type == "Edge") { IsOnFace = false; } // edge
 
                 if (IsOnFace) 
                 {
                     return new Tuple<bool, BrepFace>(IsOnFace, face);
                 }
-                // to do: Hilde: hva er if greiene her?
+                */
+                // to do: slett
                 /*
                 bFace.ClosestPoint(node.Coordinate, out double PointOnCurveU, out double PointOnCurveV);
                 Point3d testPoint = bFace.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
@@ -157,7 +168,6 @@ namespace MeshPoints.MoveNodes
                     }
                 }*/
             }
-
             return new Tuple<bool, BrepFace>(IsOnFace, face);
         }
 
@@ -171,9 +181,19 @@ namespace MeshPoints.MoveNodes
             BrepEdge edge = null;
             BrepEdgeList brepEdge = brep.Edges;
 
-            IsOnEdge = false;
             foreach (BrepEdge bEdge in brepEdge) // check if node is on edge
             {
+                if (node.Type == "Edge")
+                {
+                    IsOnEdge = node.IsOnEdge(bEdge);
+                    if (IsOnEdge)
+                    {
+                        edge = bEdge;
+                        return new Tuple<bool, BrepEdge>(IsOnEdge, edge);
+                    }
+                }
+
+                /*
                 IsOnEdge = node.IsOnEdge(bEdge);
                 edge = bEdge;
                 if (node.BC_U & node.BC_V & node.BC_W) { IsOnEdge = false; } // cornerpoints: IsOnCurve must be false
@@ -182,7 +202,7 @@ namespace MeshPoints.MoveNodes
                 {
                     return new Tuple<bool, BrepEdge>(IsOnEdge, edge);
                 }
-
+                */
                 // to do: Hilde
                 /*
                 bEdge.ClosestPoint(nodes[i].Coordinate, out double PointOnCurve);

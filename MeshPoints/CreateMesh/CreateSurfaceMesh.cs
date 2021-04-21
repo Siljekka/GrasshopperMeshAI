@@ -128,11 +128,14 @@ namespace MeshPoints.CreateMesh
             int vSequence = 0;
             for (int i = 0; i < meshPoints.Count; i++)
             {
-                Node node = new Node(i, meshPoints[i]); // assign global id and cooridinates
+                bool BC_U = false;
+                bool BC_V = false;
 
                 // assign boundary condition
-                if (uSequence == 0 | uSequence == nu - 1) { node.BC_U = true; } // assign BC u-dir
-                if (vSequence == 0 | vSequence == nv - 1) { node.BC_V = true; } // assign BC v-dir
+                if (uSequence == 0 | uSequence == nu - 1) { BC_U = true; } // assign BC u-dir
+                if (vSequence == 0 | vSequence == nv - 1) { BC_V = true; } // assign BC v-dir
+
+                Node node = new Node(i, meshPoints[i], BC_U, BC_V); // assign global id and cooridinates
 
                 uSequence++;
                 if (uSequence == nu)

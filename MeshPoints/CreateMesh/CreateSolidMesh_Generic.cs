@@ -591,13 +591,13 @@ namespace MeshPoints.CreateMesh
         /// Create Nodes: assign Coordiantes, GlobalId and Boundary Conditions
         /// </summary>
         /// <returns> List with nodes incl properties</returns>
-        private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int nu, int nv, int nw)
+        private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int u, int v, int w)
         {
             List<Node> nodes = new List<Node>();
             int id = 0;
-            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
-            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
-            nw = nw + 1; //input nw = nw - 1. Exs: nw = 3, total points in w-direction is 4;
+            int nu = u + 1; // number nodes in u dir
+            int nv = v + 1; // number nodes in v dir 
+            int nw = w + 1; // number nodes in w dir 
 
             for (int i = 0; i < nw; i++)
             {
@@ -605,12 +605,16 @@ namespace MeshPoints.CreateMesh
                 int column = 0;
                 for (int j = 0; j < meshPoints.Branch(i).Count; j++)
                 {
-                    Node node = new Node(id, meshPoints.Branch(i)[j]); // assign Global ID and cooridinates
-                    id++;
+                    bool BC_U = false;
+                    bool BC_V = false;
+                    bool BC_W = false;
 
-                    if (column == 0 | column == nu - 1) { node.BC_U = true; } // assign BCU
-                    if (row == 0 | row == nv - 1) { node.BC_V = true; } // assign BCV
-                    if (i == 0 | i == nw - 1) { node.BC_W = true; } // assign BCW
+                    if (column == 0 | column == nu - 1) { BC_U = true; } // assign BCU
+                    if (row == 0 | row == nv - 1) { BC_V = true; } // assign BCV
+                    if (i == 0 | i == nw - 1) { BC_W = true; } // assign BCW
+
+                    Node node = new Node(id, meshPoints.Branch(i)[j], BC_U, BC_V, BC_W);
+                    id++;
 
                     column++;
                     if (column == nu)
