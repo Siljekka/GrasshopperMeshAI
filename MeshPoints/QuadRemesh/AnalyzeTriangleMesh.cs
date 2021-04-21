@@ -362,7 +362,7 @@ namespace MeshPoints.QuadRemesh
                     elementMesh.Faces.AddFace(0, 1, 2, 3);
                 }
                 elementMesh.Faces.AddFace(0, 1, 2);
-                element.mesh = elementMesh;
+                element.Mesh = elementMesh;
 
                 // Add element to element list
                 elements.Add(element);

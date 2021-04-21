@@ -235,7 +235,7 @@ namespace MeshPoints.MeshQuality
 
             for (int i = 0; i < numFaces; i++)
             {
-                faceCenterPts.Add(element.mesh.Faces.GetFaceCenter(i));
+                faceCenterPts.Add(element.Mesh.Faces.GetFaceCenter(i));
             }
             return faceCenterPts;
         }
@@ -656,21 +656,21 @@ namespace MeshPoints.MeshQuality
                     {
                         if (q.AspectRatio > 0.9)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
                         else if (q.AspectRatio > 0.7)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
                         else if (q.AspectRatio > 0.6)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.AspectRatio > 0)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
-                        colorMesh.Append(q.element.mesh);
+                        colorMesh.Append(q.element.Mesh);
                     }
                     break;
                 // 2 = Skewness
@@ -679,21 +679,21 @@ namespace MeshPoints.MeshQuality
                     {
                         if (q.Skewness > 0.9)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
                         else if (q.Skewness > 0.75)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
                         else if (q.Skewness > 0.6)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.Skewness > 0)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
-                        colorMesh.Append(q.element.mesh);
+                        colorMesh.Append(q.element.Mesh);
                     }
                     break;
                 // 3 = Jacobian
@@ -702,25 +702,25 @@ namespace MeshPoints.MeshQuality
                     {
                         if (q.JacobianRatio > 0.8)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
                         else if (q.JacobianRatio > 0.5)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
                         else if (q.JacobianRatio > 0.03)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.JacobianRatio >= 0)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
                         else
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
                         }
-                        colorMesh.Append(q.element.mesh);
+                        colorMesh.Append(q.element.Mesh);
                     }
                     break;
             }

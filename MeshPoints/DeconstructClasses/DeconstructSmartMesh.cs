@@ -52,7 +52,7 @@ namespace MeshPoints.DeconstructClasses
             DA.SetDataList(0, mesh.Elements);
             DA.SetDataList(1, mesh.Nodes);
             DA.SetData(2, mesh.Geometry);
-            DA.SetData(3, mesh.mesh);
+            DA.SetData(3, mesh.Mesh);
         }
 
         /// <summary>

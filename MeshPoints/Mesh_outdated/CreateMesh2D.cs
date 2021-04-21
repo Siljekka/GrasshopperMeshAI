@@ -184,7 +184,7 @@ namespace MeshPoints.CreateMesh
                 
                 Element element = new Element(i, elementNodes, connectivity);
                 mesh.Faces.AddFace(0, 1, 2, 3);
-                element.mesh = mesh;
+                element.Mesh = mesh;
 
                 elements.Add(element); // add element to list of elements
 

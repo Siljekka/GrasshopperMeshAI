@@ -819,7 +819,7 @@ namespace MeshPoints.FiniteElementMethod
                 else if (mises[i] < minValue + 12 * range) color = Color.OrangeRed;
                 else color = Color.Red;
 
-                mesh.mesh.VertexColors.Add(color);
+                mesh.Mesh.VertexColors.Add(color);
             }
         }
         #endregion

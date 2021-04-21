@@ -12,7 +12,7 @@ namespace MeshPoints.Classes
     {
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
-        public Mesh mesh { get; set; } //mesh
+        public Mesh Mesh { get; set; } //mesh
         public int nu { get; set; } //number of nodes in x-dir
         public int nv { get; set; } //number of nodes in y-dir
         public int nw { get; set; } //number of nodes in z-dir
@@ -22,7 +22,6 @@ namespace MeshPoints.Classes
         {
             //Empty constructor
         }
-
         public SmartMesh(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for shell mesh
         {
             nu = _nu;
@@ -30,10 +29,9 @@ namespace MeshPoints.Classes
             nw = 1;
             Nodes = _nodes;
             Elements = _elements;
-            mesh = _mesh;
+            Mesh = _mesh;
             Type = "Surface";
         }
-
         public SmartMesh(int _nu, int _nv, int _nw, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for solid mesh
         {
             nu = _nu;
@@ -41,17 +39,18 @@ namespace MeshPoints.Classes
             nw = _nw;
             Nodes = _nodes;
             Elements = _elements;
-            mesh = _mesh;
+            Mesh = _mesh;
             Type = "Solid";
         }
         public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for unstructured surface mesh
         {
             Nodes = _nodes;
             Elements = _elements;
-            mesh = _mesh;
+            Mesh = _mesh;
             Type = "Surface";
         }
 
+        // Methods
         public void CreateQuadElements() 
         {
             List<Node> nodes = this.Nodes;
@@ -82,7 +81,7 @@ namespace MeshPoints.Classes
 
                 mesh.Faces.AddFace(0, 1, 2, 3);
                 mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-                element.mesh = mesh;
+                element.Mesh = mesh;
 
                 elements.Add(element); // add element to list of elements
 
@@ -96,7 +95,6 @@ namespace MeshPoints.Classes
             }
             this.Elements = elements;
         }
-
         public void CreateHexElements()
         {
             int nu = this.nu;
@@ -151,7 +149,7 @@ namespace MeshPoints.Classes
                         localMesh.Normals.ComputeNormals();  //Control if needed
                         localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
                         localMesh.Compact(); //to ensure that it calculate
-                        element.mesh = localMesh;
+                        element.Mesh = localMesh;
 
                         //add element and mesh to element list
                         elements.Add(element);
@@ -165,7 +163,6 @@ namespace MeshPoints.Classes
             }
             this.Elements = elements;
         }
-
         public void CreateMesh()
         {
             int nu = this.nu;
@@ -250,7 +247,7 @@ namespace MeshPoints.Classes
             mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
             mesh.Compact(); //to ensure that it calculate
 
-            this.mesh = mesh; ;
+            this.Mesh = mesh; ;
         }
     }
 }
