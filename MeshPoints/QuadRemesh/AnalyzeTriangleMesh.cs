@@ -252,7 +252,7 @@ namespace MeshPoints.QuadRemesh
 
 
             // Assign properties to surfaceMesh:
-            Mesh2D surfaceMesh = new Mesh2D(nodes, elements, colorMesh);
+            Mesh3D surfaceMesh = new Mesh3D(nodes, elements, colorMesh);
             
 
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;

@@ -51,7 +51,7 @@ namespace MeshPoints.QuadRemesh
             Brep brep = new Brep();
             int bottomFace = 0;
             int nw = 0;
-            Mesh2D mesh = new Mesh2D();
+            Mesh3D mesh = new Mesh3D();
 
             DA.GetData(0, ref brep);
             DA.GetData(1, ref bottomFace);
@@ -81,13 +81,13 @@ namespace MeshPoints.QuadRemesh
 
             // copy mesh to planes
             int globalNodeIndexAddition = mesh.Nodes.Count;
-            List<Mesh2D> meshOnPlanes = new List<Mesh2D>();
+            List<Mesh3D> meshOnPlanes = new List<Mesh3D>();
             meshOnPlanes.Add(mesh);
             Plane basePlane = planes[0];
 
             for (int i = 1; i < planes.Count; i++)
             {
-                Mesh2D meshToTransform = new Mesh2D();
+                Mesh3D meshToTransform = new Mesh3D();
                 Transform tranformation = new Transform();
                 meshToTransform = mesh;
                 globalNodeIndexAddition = globalNodeIndexAddition * i;
