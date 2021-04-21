@@ -143,30 +143,6 @@ namespace MeshPoints.MoveNodes
                         return new Tuple<bool, BrepFace>(IsOnFace, face);
                     }
                 }
-
-                /*
-                if (node.Type == "Corner") { IsOnFace = false; } // cornerpoints
-                else if (node.Type == "Edge") { IsOnFace = false; } // edge
-
-                if (IsOnFace) 
-                {
-                    return new Tuple<bool, BrepFace>(IsOnFace, face);
-                }
-                */
-                // to do: slett
-                /*
-                bFace.ClosestPoint(node.Coordinate, out double PointOnCurveU, out double PointOnCurveV);
-                Point3d testPoint = bFace.PointAt(PointOnCurveU, PointOnCurveV);  // make test point 
-                double distanceToFace = testPoint.DistanceTo(node.Coordinate); // calculate distance between testPoint and node
-                if (distanceToFace <= 0.0001 & distanceToFace >= -0.0001) // if distance = 0: node is on edge
-                {
-                    if (node.BC_U & node.BC_V & node.BC_W) { IsOnFace = false; } // cornerpoints
-                    else if ((!node.BC_U & !node.BC_V) | (!node.BC_U & !node.BC_W) | (!node.BC_V & !node.BC_W))
-                    {
-                        IsOnFace = true;
-                        face = bFace;
-                    }
-                }*/
             }
             return new Tuple<bool, BrepFace>(IsOnFace, face);
         }
@@ -192,32 +168,6 @@ namespace MeshPoints.MoveNodes
                         return new Tuple<bool, BrepEdge>(IsOnEdge, edge);
                     }
                 }
-
-                /*
-                IsOnEdge = node.IsOnEdge(bEdge);
-                edge = bEdge;
-                if (node.BC_U & node.BC_V & node.BC_W) { IsOnEdge = false; } // cornerpoints: IsOnCurve must be false
-
-                if (IsOnEdge)
-                {
-                    return new Tuple<bool, BrepEdge>(IsOnEdge, edge);
-                }
-                */
-                // to do: Hilde
-                /*
-                bEdge.ClosestPoint(nodes[i].Coordinate, out double PointOnCurve);
-                Point3d testPoint = bEdge.PointAt(PointOnCurve);  // make test point 
-                double distanceToEdge = testPoint.DistanceTo(nodes[i].Coordinate); // calculate distance between testPoint and node
-                if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
-                {
-                    if (nodes[i].BC_U & nodes[i].BC_V & nodes[i].BC_W) { IsOnEdge = false; } // cornerpoints: IsOnCurve must be false
-                    else if ((nodes[i].BC_U & nodes[i].BC_V) | (nodes[i].BC_U & nodes[i].BC_W) | (nodes[i].BC_V & nodes[i].BC_W))
-                    {
-                        IsOnEdge = true;
-                        edge = bEdge;
-                    }
-                }
-                */
             }
             return new Tuple<bool, BrepEdge>(IsOnEdge, edge);
         }
@@ -277,20 +227,18 @@ namespace MeshPoints.MoveNodes
             // 2. if: Node not restrained in W direction and gen negative.
             // 3. if: Node restrained in W direction.
             // Note: if point is on edge not restrained in W direction - meshPoint is made
-            if (m.Type == "Solid")
+
+            if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
             {
-                if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
-                {
-                    translationVectorW = 0.5 * (m.Nodes[i + (m.nu) * (m.nv)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu) * (m.nv)); return movedNode; } // make meshPoint
-                }
-                else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
-                {
-                    translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu) * (m.nv)].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu) * (m.nv)); return movedNode; } // make meshPoint
-                }
-                else { translationVectorW = translationVectorW * 0; } // 3. if
+                translationVectorW = 0.5 * (m.Nodes[i + (m.nu) * (m.nv)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu) * (m.nv)); return movedNode; } // make meshPoint
             }
+            else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
+            {
+                translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu) * (m.nv)].Coordinate) * genesW[i];
+                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+            }
+            else { translationVectorW = translationVectorW * 0; } // 3. if
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
             double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
