@@ -10,6 +10,7 @@ namespace MeshPoints.Classes
 {
     class Element
     {
+        /*
         public Node Node1 { get; set; } // delete
         public Node Node2 { get; set; } // delete
         public Node Node3 { get; set; } // delete
@@ -18,12 +19,13 @@ namespace MeshPoints.Classes
         public Node Node6 { get; set; } // delete
         public Node Node7 { get; set; } // delete
         public Node Node8 { get; set; } // delete
+        */
         public List<Node> Nodes { get; set; }
         public List<int> Connectivity { get; set; }
         public string Type { get; set; }
         public Quality MeshQuality { get; set; }
         public int Id { get; set; }
-        public Mesh mesh { get; set; }
+        public Mesh Mesh { get; set; }
 
         //Constructer
 

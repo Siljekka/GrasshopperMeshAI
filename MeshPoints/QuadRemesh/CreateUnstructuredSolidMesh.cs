@@ -108,10 +108,10 @@ namespace MeshPoints.QuadRemesh
                 for (int j = 0; j < meshToTransform.Elements.Count; j++)
                 {
                     Element elementToTransform = meshToTransform.Elements[j];
-                    elementToTransform.mesh.Transform(tranformation); // fix mesh face of element, to do: check if needed
+                    elementToTransform.Mesh.Transform(tranformation); // fix mesh face of element, to do: check if needed
 
-                    List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Node1, elementToTransform.Node2, elementToTransform.Node3 };
-                    if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Node4); }
+                    List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Nodes[0], elementToTransform.Nodes[1], elementToTransform.Nodes[2] };
+                    if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Nodes[3]); }
 
                     foreach (Node nodeToTransform in nodesOfElementToTransform)
                     {

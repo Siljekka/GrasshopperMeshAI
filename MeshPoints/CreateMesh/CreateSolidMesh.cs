@@ -689,7 +689,7 @@ namespace MeshPoints.CreateMesh
                         localMesh.Compact(); //to ensure that it calculate
 
                         //add element and mesh to element list
-                        element.mesh = localMesh;
+                        element.Mesh = localMesh;
                         elements.Add(element);
 
                         count2++;
@@ -713,7 +713,7 @@ namespace MeshPoints.CreateMesh
             Mesh allMesh = new Mesh();
             foreach (Element el in elements)
             {
-                allMesh.Append(el.mesh);
+                allMesh.Append(el.Mesh);
             }
             allMesh.Weld(0.01);
 
