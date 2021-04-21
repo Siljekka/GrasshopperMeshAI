@@ -3,11 +3,8 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics;
 
-namespace MeshPoints
+namespace MeshPoints.FiniteElementMethod
 {
     public class FEMLoad : GH_Component
     {

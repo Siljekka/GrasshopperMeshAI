@@ -238,7 +238,7 @@ namespace MeshPoints.QuadRemesh
 
 
             // ___________Transform to main mesh classes_______________
-            var meshProperties = TransformToMainMeshClasses(globalElementList);
+            var meshProperties = ConvertToMainMeshClasses(globalElementList);
             List<Node> nodes = meshProperties.Item1;
             List<Element> elements = meshProperties.Item2;
 
@@ -291,80 +291,81 @@ namespace MeshPoints.QuadRemesh
         }
 
         #region Methods
-        private Tuple<List<Node>, List<Element>> TransformToMainMeshClasses(List<qElement> globalElementList)
+        private Tuple<List<Node>, List<Element>> ConvertToMainMeshClasses(List<qElement> globalqElementList)
         {
-            List<Node> nodes = new List<Node>();
-            List<Element> elements = new List<Element>();
-            List<Node> elementNodes = new List<Node>();
-            List<Point3d> nodesCoord = new List<Point3d>();
-            int nodeId = 0;
-            int elementId = 0;
-            foreach (qElement qrElement in globalElementList)
+            // Create global qNode list
+            List<qNode> globalqNodeList = new List<qNode>();
+            foreach (qElement qrElement in globalqElementList)
             {
                 List<qNode> qrElementNodes = GetNodesOfElement(qrElement);
-
-                // Create Nodes:
                 foreach (qNode qrNode in qrElementNodes)
                 {
-                    Node newNode = new Node(qrNode.Coordinate);
-
-                    if (nodesCoord.Contains(newNode.Coordinate)) // node already exist.
+                    if (!globalqNodeList.Contains(qrNode))
                     {
-                        int index = nodesCoord.IndexOf(newNode.Coordinate);
-
-                        // Assign "old" properties
-                        newNode.GlobalId = nodes[index].GlobalId;
-                        newNode.BC_U = nodes[index].BC_U;
-                        newNode.BC_U = nodes[index].BC_V;
-                        elementNodes.Add(newNode);
-                    }
-                    else
-                    {
-                        // Assign properties
-                        if (qrNode.BoundaryNode) { newNode.BC_U = true; newNode.BC_V = true; }
-                        newNode.GlobalId = nodeId;
-
-                        // Add node to list
-                        nodesCoord.Add(newNode.Coordinate);
-                        elementNodes.Add(newNode);
-                        nodes.Add(newNode);
-                        nodeId++;
+                        globalqNodeList.Add(qrNode);
                     }
                 }
+            }
 
-                // Create Elements
-                if (qrElementNodes.Count == 3) // for triangles
+            // Get node list
+            List<Node> nodes = new List<Node>();
+            Node newNode = new Node();
+            for (int i = 0; i < globalqNodeList.Count; i++)
+            {
+                qNode qrNode = globalqNodeList[i];
+
+                // Assign properties
+                if (qrNode.BoundaryNode)
                 {
-                    Node n1 = new Node(1, elementNodes[0].GlobalId, elementNodes[0].Coordinate, elementNodes[0].BC_U, elementNodes[0].BC_V);
-                    Node n2 = new Node(2, elementNodes[1].GlobalId, elementNodes[1].Coordinate, elementNodes[1].BC_U, elementNodes[1].BC_V);
-                    Node n3 = new Node(3, elementNodes[2].GlobalId, elementNodes[2].Coordinate, elementNodes[2].BC_U, elementNodes[2].BC_V);
+                    newNode = new Node(i, qrNode.Coordinate, true, true);
+                }
+                else
+                {
+                    newNode = new Node(i, qrNode.Coordinate, false, false);
+                }
+                nodes.Add(newNode);
+            }
 
-                    Mesh elementMesh = new Mesh();
-                    elementMesh.Vertices.Add(n1.Coordinate);
-                    elementMesh.Vertices.Add(n2.Coordinate);
-                    elementMesh.Vertices.Add(n3.Coordinate);
+            // Get element list
+            List<Element> elements = new List<Element>();
+            for (int  i = 0; i < globalqElementList.Count; i++)
+            {
+
+                List<qNode> qrElementNodes = GetNodesOfElement(globalqElementList[i]);
+                List<int> connectivity = new List<int>();
+
+                // Get element connectivity:
+                foreach (qNode qrNode in qrElementNodes)
+                {
+                    int id = globalqNodeList.IndexOf(qrNode);
+                    connectivity.Add(id);
+                }
+
+                // Create elements
+                List<Node> elementNodes = new List<Node>();
+                Mesh elementMesh = new Mesh();
+
+                foreach (int index in connectivity)
+                {
+                    elementNodes.Add(nodes[index]);
+                    elementMesh.Vertices.Add(nodes[index].Coordinate);
+                }
+                Element element = new Element(i, elementNodes, connectivity);
+
+                // Assign mesh
+                if (element.Type == "Triangle")
+                {
                     elementMesh.Faces.AddFace(0, 1, 2);
-                    Element e = new Element(elementId, n1, n2, n3, elementMesh);
-                    elements.Add(e);
                 }
-                else  // for quads
+                else
                 {
-                    Node n1 = new Node(1, elementNodes[0].GlobalId, elementNodes[0].Coordinate, elementNodes[0].BC_U, elementNodes[0].BC_V);
-                    Node n2 = new Node(2, elementNodes[1].GlobalId, elementNodes[1].Coordinate, elementNodes[1].BC_U, elementNodes[1].BC_V);
-                    Node n3 = new Node(3, elementNodes[2].GlobalId, elementNodes[2].Coordinate, elementNodes[2].BC_U, elementNodes[2].BC_V);
-                    Node n4 = new Node(4, elementNodes[3].GlobalId, elementNodes[3].Coordinate, elementNodes[3].BC_U, elementNodes[3].BC_V);
-
-                    Mesh elementMesh = new Mesh();
-                    elementMesh.Vertices.Add(n1.Coordinate);
-                    elementMesh.Vertices.Add(n2.Coordinate);
-                    elementMesh.Vertices.Add(n3.Coordinate);
-                    elementMesh.Vertices.Add(n4.Coordinate);
                     elementMesh.Faces.AddFace(0, 1, 2, 3);
-                    Element e = new Element(elementId, n1, n2, n3, n4, elementMesh);
-                    elements.Add(e);
                 }
-                elementId++;
-                elementNodes.Clear();
+                elementMesh.Faces.AddFace(0, 1, 2);
+                element.mesh = elementMesh;
+
+                // Add element to element list
+                elements.Add(element);
             }
             return Tuple.Create(nodes, elements);
         }

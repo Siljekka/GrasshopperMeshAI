@@ -90,9 +90,9 @@
     <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
     <Compile Include="DeconstructClasses\DeconstructGeometry.cs" />
-    <Compile Include="FEMBoundaryCondition.cs" />
-    <Compile Include="FEMLoad.cs" />
-    <Compile Include="FEMMaterial.cs" />
+    <Compile Include="FiniteElementMethod\FEMBoundaryCondition.cs" />
+    <Compile Include="FiniteElementMethod\FEMLoad.cs" />
+    <Compile Include="FiniteElementMethod\FEMMaterial.cs" />
     <Compile Include="Mesh_outdated\CreateMesh3D_Box.cs" />
     <Compile Include="Mesh_outdated\CreateSolidMesh_OldSweep.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement.cs" />
@@ -100,12 +100,12 @@
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="Mesh_outdated\DeconstructMesh2D.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
-    <Compile Include="Galapagos\MoveSolidMeshVertices.cs" />
-    <Compile Include="Galapagos\MoveMesh2DVertices.cs" />
+    <Compile Include="MoveNodes\MoveNodes.cs" />
+    <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\Mesh3D.cs" />
     <Compile Include="GenerateINPfile.cs" />
-    <Compile Include="MeshQuality\JacobianRatio3D.cs" />
+    <Compile Include="Mesh_outdated\JacobianRatio3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh_outdated\CreateMesh2D.cs" />
     <Compile Include="Classes\MeshQualityOLD.cs" />
@@ -124,7 +124,7 @@
     <Compile Include="QuadRemesh\DeconstructQEdge.cs" />
     <Compile Include="QuadRemesh\DeconstructQElement.cs" />
     <Compile Include="QuadRemesh\DeconstructQNode.cs" />
-    <Compile Include="FEMsolver.cs" />
+    <Compile Include="FiniteElementMethod\FEMsolver.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

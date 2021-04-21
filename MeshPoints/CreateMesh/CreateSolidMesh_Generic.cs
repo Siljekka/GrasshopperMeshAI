@@ -57,14 +57,14 @@ namespace MeshPoints.CreateMesh
             // Input
             Brep brep = new Brep();
             int bottomFace = 0;
-            int nu = 0;
-            int nv = 0;
-            int nw = 0;
+            int u = 0;
+            int v = 0;
+            int w = 0;
             DA.GetData(0, ref brep);
             DA.GetData(1, ref bottomFace);
-            DA.GetData(2, ref nu);
-            DA.GetData(3, ref nv);
-            DA.GetData(4, ref nw);
+            DA.GetData(2, ref u);
+            DA.GetData(3, ref v);
+            DA.GetData(4, ref w);
 
             #region Variables
             //Variables
@@ -79,59 +79,62 @@ namespace MeshPoints.CreateMesh
             List<Plane> planes = new List<Plane>();
             #endregion
 
-            if (!DA.GetData(0, ref brep)) return;
-            if (!DA.GetData(1, ref bottomFace)) return;
-            if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
-            if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
-            if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nw can not be zero."); return; }
-
-
-
             /* Todo:
-             * Fjern bottomFace og brep og ha heller brepGeometry som input
-             * kan erstatte FindRails
-             * vurder å lage en tuple for sortbrepProperties, evt legg metode inn i Geometry-klassen
+            * Fjern bottomFace og brep og ha heller brepGeometry som input
+            * kan erstatte FindRails
+            * vurder å lage en tuple for sortbrepProperties, evt legg metode inn i Geometry-klassen
             */
 
+            // 1. Check input OK
+            if (!DA.GetData(0, ref brep)) return;
+            if (!DA.GetData(1, ref bottomFace)) return;
+            if (u == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "u can not be zero."); return; }
+            if (v == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "v can not be zero."); return; }
+            if (w == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "w can not be zero."); return; }
 
-            // 0. Add properties to Geometry
+            Mesh3D smartMesh = new Mesh3D();
+
+            // 2. Add properties to Geometry
             Geometry brepGeometry = new Geometry(brep, SortBrepFaces(brep, bottomFace), SortBrepEdges(brep, bottomFace), SortBrepVertex(brep, bottomFace));
-
-            // 1. Find Rails
+            smartMesh.nu = u + 1;
+            smartMesh.nv = v + 1;
+            smartMesh.nw = w + 1;
+            smartMesh.Type = "Solid";
+            smartMesh.Geometry = brepGeometry;
+            //smartMesh.inp = true; // to do: Hilde, sjekk ut
+            
+            // 3. Find Rails
             List<Curve> rails = FindRails(brep, bottomFace);
 
-            // 2. Divide each brep edge in w direction (rail) into nw points.
-            railPoints = DivideRailIntoNwPoints(rails, brep, nw, bottomFace);
+            // 4. Divide each brep edge in w direction (rail) into nw points.
+            railPoints = DivideRailIntoNwPoints(rails, brep, w, bottomFace);
 
-            // 3. Create NurbsSurface for each nw-floor
+            // 5. Create NurbsSurface for each nw-floor
             intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
             if (intersectionCurve == null) return;
             surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
          
-            // 4. Make grid of points in u and v direction at leven nw
-            meshPoints = CreateGridOfPointsAtEachFloor(nu, nv, surfaceAtNw, railPoints);
+            // 6. Make grid of points in u and v direction at leven nw
+            meshPoints = CreateGridOfPointsAtEachFloor(u, v, surfaceAtNw, railPoints);
             
-            //5. Create nodes 
-            nodes = CreateNodes(meshPoints, nu, nv, nw); // assign Coordiantes, GlobalId and Boundary Conditions
+            // 7. Create nodes 
+            smartMesh.Nodes = CreateNodes(meshPoints, u, v, w); // assign Coordiantes, GlobalId and Boundary Conditions
 
-
-            //6. create elements
-            elements = CreateHexElements(meshPoints, nodes, nu, nv); // assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
+            //8. create elements
+            smartMesh.SetHexElements();
+            // elements = CreateHexElements(meshPoints, nodes, u, v); // to do: slett?
 
             // 6. Check if brep can be interpret by Abaqus
             //IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
 
             //7. Create global mesh
-            globalMesh = CreateGlobalMesh(elements);
-            globalMesh = CreateGlobalMeshNew(nodes, nu, nv, nw);
-            // 8. Add properties to SolidMesh
-            Mesh3D solidMesh = new Mesh3D(nu, nv, nw, nodes, elements, globalMesh);
-            solidMesh.Geometry = brepGeometry;
-            solidMesh.inp = true;
+            smartMesh.SetMesh();
+            //globalMesh = CreateGlobalMesh(elements);
+            //globalMesh = CreateGlobalMeshNew(nodes, u, v, w);
 
             // Output
-            DA.SetData(0, solidMesh);
-            DA.SetData(1, solidMesh.mesh);
+            DA.SetData(0, smartMesh);
+            DA.SetData(1, smartMesh.mesh);
         }
 
         #region Methods
@@ -656,89 +659,6 @@ namespace MeshPoints.CreateMesh
             return nodes;
         }
 
-
-        /*
-        /// <summary>
-        /// Create Elements: assign ElementId, ElementMesh and Nodes incl. Coordiantes, GlobalId, LocalId and Boundary Conditions), elementId, elementMesh.
-        /// </summary>
-        /// <returns>List with elements incl properties</returns>
-        private List<Element> CreateHexElements(List<Node> nodes, int nu, int nv, int nw)
-        {
-            List<Element> elements = new List<Element>();
-
-            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
-            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
-            nw = nw + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4; // Hilde: riktig ?
-            int counter = 0;
-            int jumpInPlane = 0;
-            int numNodeInLevel = nu*nv;
-            for (int i = 0; i < (nu - 1) * (nv - 1) * (nw - 1); i++)  // loop levels
-            {
-                if (jumpInPlane < (nu - 1))
-                {
-                    List<int> connectivity = new List<int>();
-
-                    connectivity.Add(counter);
-                    connectivity.Add(counter + 1);
-                    connectivity.Add(counter + 1 + nu);
-                    connectivity.Add(counter + nu);
-                    connectivity.Add(counter + numNodeInLevel);
-                    connectivity.Add(counter + 1 + numNodeInLevel);
-                    connectivity.Add(counter + 1 + nu + numNodeInLevel);
-                    connectivity.Add(counter + nu + numNodeInLevel);
-
-                    counter++;
-                    jumpInPlane++;
-
-
-                    List<Node> elementNodes = new List<Node>();
-                    foreach (int id in connectivity)
-                    {
-                        elementNodes.Add(nodes[id]);
-                    }
-
-                    Element element = new Element(i, elementNodes, connectivity);
-
-                    // create local mesh
-                    Mesh localMesh = new Mesh();
-                    foreach (Node node in elementNodes)
-                    {
-                        localMesh.Vertices.Add(node.Coordinate); //0
-                    }
-
-                    localMesh.Faces.AddFace(0, 1, 5, 4);
-                    localMesh.Faces.AddFace(1, 2, 6, 5);
-                    localMesh.Faces.AddFace(2, 3, 7, 6);
-                    localMesh.Faces.AddFace(3, 0, 4, 7);
-                    localMesh.Faces.AddFace(0, 1, 2, 3);
-                    localMesh.Faces.AddFace(4, 5, 6, 7);
-                    /*
-                    mesh.Faces.AddFace(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
-                    mesh.Faces.AddFace(connectivity[4], connectivity[5], connectivity[6], connectivity[7]);
-                    mesh.Faces.AddFace(connectivity[0], connectivity[1], connectivity[5], connectivity[4]);
-                    mesh.Faces.AddFace(connectivity[1], connectivity[2], connectivity[6], connectivity[5]);
-                    mesh.Faces.AddFace(connectivity[2], connectivity[3], connectivity[7], connectivity[6]);
-                    mesh.Faces.AddFace(connectivity[3], connectivity[0], connectivity[4], connectivity[7]);
-                    
-                    localMesh.Normals.ComputeNormals();  //Control if needed
-                    localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                    localMesh.Compact(); //to ensure that it calculate
-
-                    //add element and mesh to element list
-                    element.mesh = localMesh;
-                    elements.Add(element);
-                }
-                else
-                {
-                    jumpInPlane = 0;
-                    counter++;
-                }
-            }                
-            
-            return elements;
-        }
-        */
-
         private List<Element> CreateHexElements(DataTree<Point3d> meshPoints, List<Node> nodes, int nu, int nv)
         {
             Element e = new Element();
@@ -812,7 +732,7 @@ namespace MeshPoints.CreateMesh
 
             }
             return elements;
-        }
+        }// to do: slett
 
         /// <summary>
         /// Create Global mesh
@@ -829,7 +749,7 @@ namespace MeshPoints.CreateMesh
             allMesh.Weld(0.01);
 
             return allMesh;
-        }
+        } // to do: slett
 
         private Mesh CreateGlobalMeshNew(List<Node> nodes, int nu, int nv, int nw)
         {
@@ -919,7 +839,7 @@ namespace MeshPoints.CreateMesh
             mesh.Compact(); //to ensure that it calculate
 
             return mesh;
-        }
+        }// to do: slett
 
         #endregion
 

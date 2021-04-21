@@ -111,7 +111,7 @@ namespace MeshPoints.QuadRemesh
                     elementToTransform.mesh.Transform(tranformation); // fix mesh face of element, to do: check if needed
 
                     List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Node1, elementToTransform.Node2, elementToTransform.Node3 };
-                    if (elementToTransform.IsQuad) { nodesOfElementToTransform.Add(elementToTransform.Node4); }
+                    if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Node4); }
 
                     foreach (Node nodeToTransform in nodesOfElementToTransform)
                     {
