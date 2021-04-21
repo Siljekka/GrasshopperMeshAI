@@ -13,18 +13,13 @@ namespace MeshPoints.Classes
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
         public Mesh Mesh { get; set; } //mesh
-        public int nu { get; set; } //number of nodes in x-dir
-        public int nv { get; set; } //number of nodes in y-dir
-        public int nw { get; set; } //number of nodes in z-dir
-<<<<<<< HEAD
+        public int nu { get; set; } //number of nodes in u-dir
+        public int nv { get; set; } //number of nodes in v-dir
+        public int nw { get; set; } //number of nodes in w-dir
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
 
         // Constructors
-=======
-        public string Type { get; set; }
-        public Geometry Geometry { get; set; }
->>>>>>> da8bc7ba78011baf3746d5cec8d8365d6e414f4b
         public SmartMesh()
         {
             //Empty constructor
