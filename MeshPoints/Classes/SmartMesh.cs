@@ -16,7 +16,6 @@ namespace MeshPoints.Classes
         public int nu { get; set; } //number of nodes in x-dir
         public int nv { get; set; } //number of nodes in y-dir
         public int nw { get; set; } //number of nodes in z-dir
-        public bool inp { get; set; }
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
 
@@ -84,6 +83,7 @@ namespace MeshPoints.Classes
 
                 mesh.Faces.AddFace(0, 1, 2, 3);
                 mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
+                
                 element.Mesh = mesh;
 
                 elements.Add(element); // add element to list of elements
