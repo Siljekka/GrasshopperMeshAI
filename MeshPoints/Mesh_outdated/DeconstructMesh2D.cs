@@ -46,6 +46,7 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             //input
             SmartMesh m = new SmartMesh();
             DA.GetData(0, ref m);          
@@ -57,6 +58,7 @@ namespace MeshPoints
             DA.SetDataList(1, m.Nodes);
             DA.SetData(2, m.mesh);
             DA.SetData(3, m.Geometry);
+            */
         }
 
         /// <summary>

@@ -47,6 +47,7 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             // Variables
 
             //Point3d[] nwPt;
@@ -283,12 +284,13 @@ namespace MeshPoints.CreateMesh
             }
             pts.Add(vert[vert.Count-1]);
             */
+            /*
             #endregion
 
             // Output
             DA.SetData(0, m3D);
             //DA.SetDataList(1, nodes);
-
+            */
 
         }
         /// <summary>

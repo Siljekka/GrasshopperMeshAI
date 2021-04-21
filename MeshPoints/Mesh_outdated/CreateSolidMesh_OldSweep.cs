@@ -49,6 +49,7 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             // Input
             Brep brep = new Brep();
             int nu = 0;
@@ -112,8 +113,9 @@ namespace MeshPoints.CreateMesh
             // Output
             DA.SetData(0, solidMesh);
             DA.SetData(1, solidMesh.mesh);
+            */
         }
-
+        /*
         #region Methods
 
         /// <summary>
@@ -258,6 +260,7 @@ namespace MeshPoints.CreateMesh
             surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 1-direction
             double stepU = 1 / ((double)nu - 1);
             double stepV = 1 / ((double)nv - 1);*/
+        /*
             string curveOrientation = (intersectionCurve[0].ToNurbsCurve()).ClosedCurveOrientation(plane).ToString();
             if (curveOrientation == "CounterClockwise")
             {
@@ -439,7 +442,7 @@ namespace MeshPoints.CreateMesh
         }
 
         #endregion
-
+        */
 
         /// <summary>
         /// Provides an Icon for the component.

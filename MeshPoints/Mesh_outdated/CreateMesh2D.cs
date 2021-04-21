@@ -46,6 +46,7 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             #region Variables
             SmartMesh m = new SmartMesh();
             Element e = new Element();
@@ -77,6 +78,7 @@ namespace MeshPoints.CreateMesh
                     paramName: "meshPt");
             }
             */
+            /*
             #endregion
 
             var numberOfGrids = GetNumberOfGrids(meshPts);
@@ -90,6 +92,7 @@ namespace MeshPoints.CreateMesh
             m = new SmartMesh(nu, nv, nodes, elements, globalMesh);
             // output
             DA.SetData(0, m);
+            */
         }
 
         /// <summary>

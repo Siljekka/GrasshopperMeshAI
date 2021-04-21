@@ -49,6 +49,7 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             // Variables
             Brep srf = new Brep();
             SmartMesh inputMesh = new SmartMesh();
@@ -89,7 +90,7 @@ namespace MeshPoints
              *  Fikse inn i metoder, finn ut hvilke metoder som kan vær i klasse
              *  Fiks sjekk av input
              */
-
+            /*
             #region Update nodes
             BrepEdgeList brepEdge = srf.Edges;  //add edges of surface to brepEdge
             Vector3d translationVectorUDirection = Vector3d.Zero; //dummy-vector: only to be able to assign value later
@@ -116,6 +117,7 @@ namespace MeshPoints
                         if (inputMesh.Nodes[i].BC_U & inputMesh.Nodes[i].BC_V) { IsOnCurve = false; } // cornerpoints: IsOnCurve must be false
                         else { IsOnCurve = true; edge = bEdge; }
                     }*/
+            /*
                 }
                 
                 // translation in u direction
@@ -190,7 +192,7 @@ namespace MeshPoints
                     new Vector3d(0, 0, 1), // project on Z axis
                     0.01);
                 */
-
+            /*
                 n = new Node(i, meshPointProjected, inputMesh.Nodes[i].BC_U, inputMesh.Nodes[i].BC_V);
                 nodes.Add(n);
                 allMesh.Vertices.Add(meshPointProjected);
@@ -253,6 +255,7 @@ namespace MeshPoints
             // output
             DA.SetData(0, meshUpdated);
             DA.SetData(1, meshUpdated.mesh);
+            */
         }
 
         /// <summary>
