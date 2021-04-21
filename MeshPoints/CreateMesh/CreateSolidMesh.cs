@@ -40,8 +40,8 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SolidMesh", "solid", "Creates a SolidMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("mesh", "m", "Mesh (solid elements).", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "solid", "Creates a SolidMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "m", "Mesh (solid elements).", GH_ParamAccess.item);
             //pManager.AddGenericParameter("test2", "", "", GH_ParamAccess.list);
         }
 
@@ -66,18 +66,7 @@ namespace MeshPoints.CreateMesh
             DA.GetData(3, ref v);
             DA.GetData(4, ref w);
 
-            #region Variables
-            //Variables
-            //Mesh3D solidMesh = new Mesh3D();
-            Mesh globalMesh = new Mesh();
-            List<Node> nodes = new List<Node>();
-            List<Element> elements = new List<Element>();
-            List<NurbsSurface> surfaceAtNw = new List<NurbsSurface>();
-            DataTree<Curve> intersectionCurve = new DataTree<Curve>();
-            DataTree<Point3d> railPoints = new DataTree<Point3d>();
-            DataTree<Point3d> meshPoints = new DataTree<Point3d>();
-            List<Plane> planes = new List<Plane>();
-            #endregion
+
 
             /* Todo:
             * Fjern bottomFace og brep og ha heller brepGeometry som input
@@ -106,27 +95,24 @@ namespace MeshPoints.CreateMesh
             List<Curve> rails = FindRails(brep, bottomFace);
 
             // 4. Divide each brep edge in w direction (rail) into nw points.
-            railPoints = DivideRailIntoNwPoints(rails, brep, w, bottomFace);
+            DataTree<Point3d> railPoints = DivideRailIntoWPoints(rails, brep, w, bottomFace);
 
             // 5. Create NurbsSurface for each nw-floor
-            intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
+            DataTree<Curve> intersectionCurve = GetIntersectionCurveBrepAndRailPoints(railPoints, brep);
             if (intersectionCurve == null) return;
-            surfaceAtNw = CreateNurbSurfaceAtEachFloor(intersectionCurve);
-         
+            List<NurbsSurface> surfaceAtW = CreateNurbSurfaceAtEachFloor(intersectionCurve);
+
             // 6. Make grid of points in u and v direction at leven nw
-            meshPoints = CreateGridOfPointsAtEachFloor(u, v, surfaceAtNw, railPoints);
+            DataTree<Point3d> meshPoints = CreateGridOfPointsAtEachFloor(u, v, surfaceAtW, railPoints);
             
             // 7. Create nodes 
             smartMesh.Nodes = CreateNodes(meshPoints, u, v, w); // assign Coordiantes, GlobalId and Boundary Conditions
 
             //8. create elements
             smartMesh.CreateHexElements();
-            // elements = CreateHexElements(meshPoints, nodes, u, v); // to do: slett?
 
             //9. Create global mesh
             smartMesh.CreateMesh();
-            //globalMesh = CreateGlobalMesh(elements); // to do: slett
-            //globalMesh = CreateGlobalMeshNew(nodes, u, v, w); // to do: slett
 
             // Output
             DA.SetData(0, smartMesh);
@@ -285,14 +271,14 @@ namespace MeshPoints.CreateMesh
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.
         /// </summary>
         /// <returns> DataTree with points on each rail. Branch: floor level.</returns>
-        private DataTree<Point3d> DivideRailIntoNwPoints(List<Curve> rails, Brep brep, int nw, int bottomFace)
+        private DataTree<Point3d> DivideRailIntoWPoints(List<Curve> rails, Brep brep, int w, int bottomFace)
         {
             DataTree<Point3d> railPoints = new DataTree<Point3d>(); // todo: erstatt brep og bottomFace med geometry
             BrepFace brepBottomFace = brep.Faces[bottomFace]; //todo: fix input.
 
             for (int i = 0; i < rails.Count; i++)
             {
-                rails[i].DivideByCount(nw, true, out Point3d[] pt);
+                rails[i].DivideByCount(w, true, out Point3d[] pt);
                 List<Point3d> point = pt.ToList();
                 brepBottomFace.ClosestPoint(point[0], out double PointOnCurveU, out double PointOnCurveV);
                 Point3d testPoint = brepBottomFace.PointAt(PointOnCurveU, PointOnCurveV);
@@ -308,7 +294,7 @@ namespace MeshPoints.CreateMesh
 
             // Check if the rails must be re-oredered to generate elements with nodes counting ccw
             Curve testCurve = Curve.CreateControlPointCurve(railPoints.Branch(0), 1);
-            Vector3d direction = railPoints.Branch(nw)[0] - railPoints.Branch(0)[0];
+            Vector3d direction = railPoints.Branch(w)[0] - railPoints.Branch(0)[0];
             string curveOrientation = testCurve.ClosedCurveOrientation(direction).ToString();
             if (curveOrientation == "Clockwise")
             {
@@ -364,7 +350,6 @@ namespace MeshPoints.CreateMesh
             {
                 Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
                 Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
-                //Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
                 Plane plane = new Plane(railPoints.Branch(i)[0], vec1, vec2);
                 Intersection.BrepPlane(brep, plane, 0.0001, out Curve[] iCrv, out Point3d[] iPt); // make intersection curve between brep and plane on floor i
                 List<Curve> intCrv = iCrv.ToList();
@@ -404,9 +389,8 @@ namespace MeshPoints.CreateMesh
         /// Copy a grid of points in u and v direction onto every floor.
         /// </summary>
         /// <returns> DataTree with points on Brep. Branch: floor level.</returns>
-        private DataTree<Point3d> CreateGridOfPointsAtEachFloor(int nu, int nv, List<NurbsSurface> surfaceAtNw, DataTree<Point3d> railPoints)
+        private DataTree<Point3d> CreateGridOfPointsAtEachFloor(int u, int v, List<NurbsSurface> surfaceAtNw, DataTree<Point3d> railPoints)
         {
-            List<Point3d> pt = new List<Point3d>();
             DataTree<Point3d> points = new DataTree<Point3d>();
             Vector3d direction = Vector3d.Zero;
             for (int i = 0; i < surfaceAtNw.Count; i++) // loop floors
@@ -420,7 +404,7 @@ namespace MeshPoints.CreateMesh
                 {
                     direction = (railPoints.Branch(i + 1)[0] - railPoints.Branch(i)[0]);
                 }
-                pt = CreateGridOfPointsUV(nu, nv, surfaceAtNw[i], railPoints.Branch(i)[0], direction);
+                List<Point3d> pt = CreateGridOfPointsUV(u, v, surfaceAtNw[i], railPoints.Branch(i)[0], direction);
                 points.AddRange(pt, new GH_Path(i)); // add points to datatree. Branch: floor level
                 pt.Clear();
             }
@@ -432,59 +416,59 @@ namespace MeshPoints.CreateMesh
         /// Makes grid of points in U and V direction
         /// </summary>
         /// <returns> List of points in U and V direction</returns>
-        private List<Point3d> CreateGridOfPointsUV(int nu, int nv, NurbsSurface surface, Point3d railPoint, Vector3d direction)
+        private List<Point3d> CreateGridOfPointsUV(int u, int v, NurbsSurface surface, Point3d railPoint, Vector3d direction)
         {
-            var u = surface.Domain(0);
-            var v = surface.Domain(1);
+            var domU = surface.Domain(0);
+            var domV = surface.Domain(1);
             surface.UVNDirectionsAt(0, 0, out Vector3d uDir, out Vector3d vDir, out Vector3d nDir);
-            if (Point3d.Subtract(surface.PointAt(u.T1, v.T0), railPoint).Length < 0.1)
+            if (Point3d.Subtract(surface.PointAt(domU.T1, domV.T0), railPoint).Length < 0.1)
             {
              /*   Vector3d vec1 = surface.PointAt(u.T1, v.T0) - surface.PointAt(u.T0, v.T0);
                 Vector3d vec2 = surface.PointAt(u.T0, v.T1) - surface.PointAt(u.T0, v.T0);*/
 
                 if (Vector3d.VectorAngle(Vector3d.CrossProduct(uDir, vDir), direction) > Math.PI / 2)
                 {
-                    u = new Interval(u.T1, u.T0);
-                    List<Point3d> points = GeneratePoints(0, surface, u, v, nu, nv);
+                    domU = new Interval(domU.T1, domU.T0);
+                    List<Point3d> points = GeneratePoints(0, surface, domU, domV, u, v);
                     return points; 
                 }
                 else
                 {
-                    u = new Interval(u.T1, u.T0);
-                    List<Point3d> points = GeneratePoints(1, surface, u, v, nu, nv);
+                    domU = new Interval(domU.T1, domU.T0);
+                    List<Point3d> points = GeneratePoints(1, surface, domU, domV, u, v);
                     return points;
                 }
             }
-            else if (Point3d.Subtract(surface.PointAt(u.T0, v.T1), railPoint).Length < 0.1)
+            else if (Point3d.Subtract(surface.PointAt(domU.T0, domV.T1), railPoint).Length < 0.1)
             {
                 if (Vector3d.VectorAngle(Vector3d.CrossProduct(uDir, vDir), direction) > Math.PI / 2)
                 {
-                    v = new Interval(v.T1, v.T0);
-                    List<Point3d> points = GeneratePoints(0, surface, u, v, nu, nv);
+                    domV = new Interval(domV.T1, domV.T0);
+                    List<Point3d> points = GeneratePoints(0, surface, domU, domV, u, v);
                     return points;
                 }
                 else
                 {
-                    v = new Interval(v.T1, v.T0);
-                    List<Point3d> points = GeneratePoints(1, surface, u, v, nu, nv);
+                    domV = new Interval(domV.T1, domV.T0);
+                    List<Point3d> points = GeneratePoints(1, surface, domU, domV, u, v);
                     return points;
                 }
 
             }
-            else if (Point3d.Subtract(surface.PointAt(u.T1, v.T1), railPoint).Length < 0.1)
+            else if (Point3d.Subtract(surface.PointAt(domU.T1, domV.T1), railPoint).Length < 0.1)
             {
                 if (Vector3d.VectorAngle(Vector3d.CrossProduct(uDir, vDir), direction) > Math.PI / 2)
-                { 
-                    u = new Interval(u.T1, u.T0);
-                    v = new Interval(v.T1, v.T0);
-                    List<Point3d> points = GeneratePoints(1, surface, u, v, nu, nv);
+                {
+                    domU = new Interval(domU.T1, domU.T0);
+                    domV = new Interval(domV.T1, domV.T0);
+                    List<Point3d> points = GeneratePoints(1, surface, domU, domV, u, v);
                     return points;
                 }
                 else 
                 {
-                    u = new Interval(u.T1, u.T0);
-                    v = new Interval(v.T1, v.T0);
-                    List<Point3d> points = GeneratePoints(0, surface, u, v, nu, nv);
+                    domU = new Interval(domU.T1, domU.T0);
+                    domV = new Interval(domV.T1, domV.T0);
+                    List<Point3d> points = GeneratePoints(0, surface, domU, domV, u, v);
                     return points;
                 }
             }
@@ -492,95 +476,55 @@ namespace MeshPoints.CreateMesh
             {
                 if (Vector3d.VectorAngle(Vector3d.CrossProduct(uDir, vDir), direction) > Math.PI / 2)
                 {
-                    List<Point3d> points = GeneratePoints(1, surface, u, v, nu, nv);
+                    List<Point3d> points = GeneratePoints(1, surface, domU, domV, u, v);
                     return points;
                 }
                 else
                 {
-                    List<Point3d> points = GeneratePoints(0, surface, u, v, nu, nv);
+                    List<Point3d> points = GeneratePoints(0, surface, domU, domV, u, v);
                     return points;
                 }
             }
-            #region Old Code
-            /*
-            var u = surface.Domain(0);
-            var v = surface.Domain(1);
-
-            double stepU = 1 / ((double)nu) * u.Length;
-            double stepV = 1 / ((double)nv) * v.Length;
-
-            string curveOrientation = (intersectionCurve[0].ToNurbsCurve()).ClosedCurveOrientation(plane).ToString();
-            if (curveOrientation == "CounterClockwise")
-            {
-
-                double pointU = 0;
-                double pointV = 0;
-                for (double j = 0; j <= nv; j++)
-                {
-                    for (double k = 0; k <= nu; k++)
-                    {
-                        pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
-                        pointU = pointU + stepU;
-                    }
-                    pointV = pointV + stepV;
-                    pointU = 0;
-                }
-            }
-            else
-            {
-                double pointU = 0; //u.Length;
-                double pointV = v.Length;
-                for (double j = 0; j <= nv; j++)
-                {
-                    for (double k = 0; k <= nu; k++)
-                    {
-                        pt.Add(surface.PointAt(pointU, pointV)); // make point on surface
-                        pointU = pointU + stepU;
-                    }
-                    pointV = pointV - stepV;
-                    pointU = 0;//u.Length;
-                }
-            }*/
-            #endregion
+           
         }
-        private List<Point3d> GeneratePoints(int Case, NurbsSurface surface, Interval u, Interval v, int nu, int nv)
+        private List<Point3d> GeneratePoints(int Case, NurbsSurface surface, Interval domainU, Interval domainV, int u, int v)
         {
             List<Point3d> pt = new List<Point3d>();
 
             if (Case == 0)
             {
-                double stepU = u.Length / (double)nu;
-                double stepV = v.Length / (double)nv;
+                double stepU = domainU.Length / (double)u;
+                double stepV = domainV.Length / (double)v;
 
-                double pointU = u.T0;
-                double pointV = v.T0;
-                for (double j = 0; j <= nv; j++)
+                double pointU = domainU.T0;
+                double pointV = domainV.T0;
+                for (double j = 0; j <= v; j++)
                 {
-                    for (double k = 0; k <= nu; k++)
+                    for (double k = 0; k <= u; k++)
                     {
                         pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
                         pointU = pointU + stepU;
                     }
                     pointV = pointV + stepV;
-                    pointU = u.T0;
+                    pointU = domainU.T0;
                 }
             }
             else if (Case == 1)
             {
-                double stepU = u.Length / (double)nv;
-                double stepV = v.Length / (double)nu;
+                double stepU = domainU.Length / (double)v;
+                double stepV = domainV.Length / (double)u;
 
-                double pointU = u.T0;
-                double pointV = v.T0;
-                for (double j = 0; j <= nv; j++)
+                double pointU = domainU.T0;
+                double pointV = domainV.T0;
+                for (double j = 0; j <= v; j++)
                 {
-                    for (double k = 0; k <= nu; k++)
+                    for (double k = 0; k <= u; k++)
                     {
                         pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
                         pointV = pointV + stepV;
                     }
                     pointU = pointU + stepU;
-                    pointV = v.T0;
+                    pointV = domainV.T0;
                 }
             }
             else { pt = null; }
