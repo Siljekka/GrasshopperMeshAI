@@ -227,18 +227,20 @@ namespace MeshPoints.MoveNodes
             // 2. if: Node not restrained in W direction and gen negative.
             // 3. if: Node restrained in W direction.
             // Note: if point is on edge not restrained in W direction - meshPoint is made
-
-            if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
+            if (m.Type == "Solid")
             {
-                translationVectorW = 0.5 * (m.Nodes[i + (m.nu) * (m.nv)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
+                {
+                    translationVectorW = 0.5 * (m.Nodes[i + (m.nu) * (m.nv)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                }
+                else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
+                {
+                    translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu) * (m.nv)].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                }
+                else { translationVectorW = translationVectorW * 0; } // 3. if
             }
-            else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
-            {
-                translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu) * (m.nv)].Coordinate) * genesW[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu) * (m.nv)); return movedNode; } // make meshPoint
-            }
-            else { translationVectorW = translationVectorW * 0; } // 3. if
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
             double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
