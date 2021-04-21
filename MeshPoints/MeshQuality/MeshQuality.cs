@@ -103,12 +103,39 @@ namespace MeshPoints.MeshQuality
         }
 
         #region Component methods
+        double CalculateAspectRatio(Element element)
+        {
+            // Calculate Aspact Ratio like Abaqus
 
+            // List of nodes
+            List<Point3d> nodeCoordinates = new List<Point3d>(); ;
+            foreach (Node node in element.Nodes)
+            {
+                nodeCoordinates.Add(node.Coordinate);
+            }
+            nodeCoordinates.Add(nodeCoordinates[0]);
+
+            // Find distances from corners to centroid
+            List<double> nodeToNodeDistance = new List<double>();
+
+            for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+            {
+                nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1]));
+            }
+
+            nodeToNodeDistance.Sort();
+
+            double minDistance = nodeToNodeDistance[0];
+            double maxDistance = nodeToNodeDistance[nodeToNodeDistance.Count - 1];
+            double AR = minDistance / maxDistance;
+            return AR;
+        }
         /// <summary>
         /// Calculates the Aspect Ratio of an element.
         /// </summary>
-        double CalculateAspectRatio(Element element)
+        double CalculateAspectRatioAnsys(Element element)
         {
+            // Calculate Aspect Ratio like Ansys
             double AR = 0;
             double maxDistance = 0;
             double minDistance = 0;
@@ -197,10 +224,16 @@ namespace MeshPoints.MeshQuality
                 }
 
             }
+
             elementAngles.Sort();
             double minAngle = elementAngles[0];
             double maxAngle = elementAngles[elementAngles.Count - 1];
             double SK;
+
+            if (minAngle < 0) 
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Skewness: one or more angles are negative");
+            }
             if (maxAngle > 180) // if chevron element
             { 
                 SK = -1; return SK;
