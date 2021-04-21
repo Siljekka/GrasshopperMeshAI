@@ -44,6 +44,7 @@ namespace MeshPoints.MeshQuality
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             // Input 
             SmartMesh mesh3D = new SmartMesh();
             DA.GetData(0, ref mesh3D);
@@ -52,9 +53,10 @@ namespace MeshPoints.MeshQuality
 
             // Output
             DA.SetDataList(0, jacobianRatios);
+            */
 
         }
-
+        /*
         private List<double> CalculateJacobianRatioOfmesh3D(SmartMesh mesh)
         {
             // Corner nodes of the isoparametric element
@@ -181,7 +183,8 @@ namespace MeshPoints.MeshQuality
                 jacobianRatios.Add(jacobianRatio);
             }
             return jacobianRatios;
-        }
+            
+        }*/
 
         /// <summary>
         /// Provides an Icon for the component.
