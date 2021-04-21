@@ -8,7 +8,7 @@ using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.Classes
 {
-    class SmartMesh // to do: change to shell and solid
+    class SmartMesh
     {
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
@@ -16,10 +16,15 @@ namespace MeshPoints.Classes
         public int nu { get; set; } //number of nodes in x-dir
         public int nv { get; set; } //number of nodes in y-dir
         public int nw { get; set; } //number of nodes in z-dir
+<<<<<<< HEAD
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
 
         // Constructors
+=======
+        public string Type { get; set; }
+        public Geometry Geometry { get; set; }
+>>>>>>> da8bc7ba78011baf3746d5cec8d8365d6e414f4b
         public SmartMesh()
         {
             //Empty constructor

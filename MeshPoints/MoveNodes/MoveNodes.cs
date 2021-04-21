@@ -8,12 +8,12 @@ using MeshPoints.Classes;
 
 namespace MeshPoints.MoveNodes
 {
-    public class GalapagosMesh : GH_Component
+    public class MoveNodes : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MoveMesh3DVertices class.
         /// </summary>
-        public GalapagosMesh()
+        public MoveNodes()
           : base("Move Nodes", "mn",
               "Move nodes of a SmartMesh with gene pools",
               "MyPlugIn", "Modify Mesh")
