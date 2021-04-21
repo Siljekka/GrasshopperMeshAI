@@ -51,7 +51,7 @@ namespace MeshPoints.MeshQuality
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Mesh3D mesh = new Mesh3D(); 
+            SmartMesh mesh = new SmartMesh(); 
             int qualityCheckType = 0;
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref qualityCheckType);
@@ -204,7 +204,7 @@ namespace MeshPoints.MeshQuality
         }
 
         /// <summary>
-        /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="Mesh3D"/>.
+        /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="SmartMesh"/>.
         /// </summary>
         /// <param name="element">A single <see cref="Element"/> object from a mesh.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0 describing the ratio between the min and max values of the determinants of the Jacobian matrix of the element, evaluated in the corner nodes.</returns>
@@ -332,7 +332,7 @@ namespace MeshPoints.MeshQuality
         /// <summary>
         /// Calculates the Jacobian Ratio of a hexahedral 8-node 3D element.
         /// </summary>
-        /// <param name="element">An 8 node <see cref="Element"/> that is part of a <see cref="Mesh3D"/></param>
+        /// <param name="element">An 8 node <see cref="Element"/> that is part of a <see cref="SmartMesh"/></param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
         private double CalculateJacobianOf8NodeElementOLD(Element element)
         {

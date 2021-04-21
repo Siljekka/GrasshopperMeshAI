@@ -85,7 +85,7 @@
     <Compile Include="Classes\Element.cs" />
     <Compile Include="Classes\FEM.cs" />
     <Compile Include="CreateData.cs" />
-    <Compile Include="CreateMesh\CreateSolidMesh_Generic.cs" />
+    <Compile Include="CreateMesh\CreateSolidMesh.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
     <Compile Include="DeconstructClasses\DeconstructGeometry.cs" />
@@ -102,7 +102,7 @@
     <Compile Include="MoveNodes\MoveNodes.cs" />
     <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
-    <Compile Include="Classes\Mesh3D.cs" />
+    <Compile Include="Classes\SmartMesh.cs" />
     <Compile Include="GenerateINPfile.cs" />
     <Compile Include="Mesh_outdated\JacobianRatio3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />

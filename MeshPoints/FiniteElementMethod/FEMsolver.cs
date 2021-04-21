@@ -51,7 +51,7 @@ namespace MeshPoints.FiniteElementMethod
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             #region Input
-            Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
+            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
             List<double> loads = new List<double>();
             List<List<int>> boundaryConditions = new List<List<int>>();
             Material material = new Material();
@@ -795,7 +795,7 @@ namespace MeshPoints.FiniteElementMethod
             }
         }
 
-        private void ColorMeshAfterStress(Mesh3D mesh, Vector<double> mises, Material material)
+        private void ColorMeshAfterStress(SmartMesh mesh, Vector<double> mises, Material material)
         {
             double maxValue = material.YieldingStress / 1.05; // to do: sjekk denne
             double minValue = 0;

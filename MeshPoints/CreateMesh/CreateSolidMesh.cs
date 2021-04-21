@@ -11,12 +11,12 @@ using Rhino.Geometry.Collections;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateSolidMesh_Generic : GH_Component
+    public class CreateSolidMesh : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the CreateSolidMesh_Sweep class.
         /// </summary>
-        public CreateSolidMesh_Generic()
+        public CreateSolidMesh()
           : base("CreateSolidMesh", "solid",
               "Generate solid mesh. Independent on how surface composing the brep is made.",
               "MyPlugIn", "Mesh")
@@ -92,7 +92,7 @@ namespace MeshPoints.CreateMesh
             if (v == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "v can not be zero."); return; }
             if (w == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "w can not be zero."); return; }
 
-            Mesh3D smartMesh = new Mesh3D();
+            SmartMesh smartMesh = new SmartMesh();
 
             // 2. Assign geometrical properties to mesh
             Geometry brepGeometry = new Geometry(brep, SortBrepFaces(brep, bottomFace), SortBrepEdges(brep, bottomFace), SortBrepVertex(brep, bottomFace));

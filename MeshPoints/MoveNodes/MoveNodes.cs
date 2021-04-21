@@ -50,7 +50,7 @@ namespace MeshPoints.MoveNodes
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Mesh3D oldMesh = new Mesh3D();
+            SmartMesh oldMesh = new SmartMesh();
             Brep brep = new Brep();
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
@@ -65,7 +65,7 @@ namespace MeshPoints.MoveNodes
 
             // to do: fix
             // Variables
-            Mesh3D newMesh = new Mesh3D();
+            SmartMesh newMesh = new SmartMesh();
             Mesh allMesh = new Mesh();
             Node n = new Node();
             List<Node> newNodes = new List<Node>();
@@ -176,7 +176,7 @@ namespace MeshPoints.MoveNodes
         /// Move the old node in allowable directions.
         /// </summary>
         /// <returns> Returns coordinates of moved node.</returns>
-        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, Mesh3D m, List<double> genesU, List<double> genesV, List<double> genesW)
+        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh m, List<double> genesU, List<double> genesV, List<double> genesW)
         {
             Point3d movedNode = new Point3d();
             bool IsOnEdge = pointEdge.Item1;
@@ -262,7 +262,7 @@ namespace MeshPoints.MoveNodes
         /// Make new node if point is on edge.
         /// </summary>
         /// <returns> Returns coordinates of moved node on edge.</returns>
-        private Point3d EdgeNode(BrepEdge edge, Mesh3D m, double genes, int start, int stop)
+        private Point3d EdgeNode(BrepEdge edge, SmartMesh m, double genes, int start, int stop)
         {
             Point3d movedNode = new Point3d();
             Curve edgeCurve1;

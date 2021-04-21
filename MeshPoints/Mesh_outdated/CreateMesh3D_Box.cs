@@ -52,8 +52,8 @@ namespace MeshPoints.CreateMesh
             //Point3d[] nwPt;
             Brep bp = new Brep();
 
-            Mesh2D m2D = new Mesh2D();
-            Mesh3D m3D = new Mesh3D();
+            SmartMesh m2D = new SmartMesh();
+            SmartMesh m3D = new SmartMesh();
             Element e = new Element();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();

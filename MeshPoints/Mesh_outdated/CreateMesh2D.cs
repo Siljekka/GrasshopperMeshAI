@@ -47,7 +47,7 @@ namespace MeshPoints.CreateMesh
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             #region Variables
-            Mesh2D m = new Mesh2D();
+            SmartMesh m = new SmartMesh();
             Element e = new Element();
             Mesh globalMesh = new Mesh();
 
@@ -87,7 +87,7 @@ namespace MeshPoints.CreateMesh
             elements = CreateQuadElements(nodes, nu, nv);
             globalMesh = CreateGlobalMesh(meshPts, nu, nv);
 
-            m = new Mesh2D(nu, nv, nodes, elements, globalMesh);
+            m = new SmartMesh(nu, nv, nodes, elements, globalMesh);
             // output
             DA.SetData(0, m);
         }

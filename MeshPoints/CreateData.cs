@@ -44,7 +44,7 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             double quality = 100;
-            Mesh3D mesh = new Mesh3D();
+            SmartMesh mesh = new SmartMesh();
             string filePath = "empty";
             bool writeData = false;
 

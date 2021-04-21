@@ -21,6 +21,7 @@ namespace MeshPoints.Classes
         {
             //Empty constructor
         }
+        /*
         public Mesh2D(List<Node> _nodes, List<Element> _elements, Mesh _mesh)
         {
             Nodes = _nodes;
@@ -42,6 +43,6 @@ namespace MeshPoints.Classes
             Nodes = _mesh2D.Nodes;
             Elements = _mesh2D.Elements;
             mesh = _mesh2D.mesh;
-        }
+        }*/
     }
 }

@@ -54,7 +54,7 @@ namespace MeshPoints.FiniteElementMethod
             // assume only perpendicular negativ load
 
             #region Input
-            Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
+            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
             int loadType = 0;
             List<Vector3d> loadVectors = new List<Vector3d>();
             List<Point3d> loadPosition = new List<Point3d>();

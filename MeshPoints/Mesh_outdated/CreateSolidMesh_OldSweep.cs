@@ -61,7 +61,7 @@ namespace MeshPoints.CreateMesh
 
             #region Variables
             //Variables
-            Mesh3D solidMesh = new Mesh3D();
+            SmartMesh solidMesh = new SmartMesh();
             Mesh allMesh = new Mesh();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
@@ -120,7 +120,7 @@ namespace MeshPoints.CreateMesh
         /// Check if mesh is compatible with Abaqus
         /// </summary>
         /// <returns> Nothing. Assign propertie to solidMesh. </returns>
-        private void IsBrepCompatibleWithAbaqus(Element element, Mesh3D solidMesh)
+        private void IsBrepCompatibleWithAbaqus(Element element, SmartMesh solidMesh)
         {
             List<Point3d> nodes = new List<Point3d> { element.Node1.Coordinate, element.Node2.Coordinate, element.Node3.Coordinate, element.Node4.Coordinate };
 

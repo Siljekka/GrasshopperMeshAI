@@ -51,7 +51,7 @@ namespace MeshPoints
         {
             // Variables
             Brep srf = new Brep();
-            Mesh3D inputMesh = new Mesh3D();
+            SmartMesh inputMesh = new SmartMesh();
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
 
@@ -66,7 +66,7 @@ namespace MeshPoints
             if (!DA.GetDataList(2, genesU)) return;
             if (!DA.GetDataList(3, genesV)) return;
 
-            Mesh3D meshUpdated = new Mesh3D();
+            SmartMesh meshUpdated = new SmartMesh();
             Mesh allMesh = new Mesh();
             Node n = new Node();
             Element e = new Element();

@@ -45,7 +45,7 @@ namespace MeshPoints.DeconstructClasses
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Mesh3D mesh = new Mesh3D();
+            SmartMesh mesh = new SmartMesh();
             DA.GetData(0, ref mesh);
 
             // Output

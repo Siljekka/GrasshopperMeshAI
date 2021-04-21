@@ -45,7 +45,7 @@ namespace MeshPoints.MeshQuality
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input 
-            Mesh3D mesh3D = new Mesh3D();
+            SmartMesh mesh3D = new SmartMesh();
             DA.GetData(0, ref mesh3D);
 
             List<double> jacobianRatios = CalculateJacobianRatioOfmesh3D(mesh3D);
@@ -55,7 +55,7 @@ namespace MeshPoints.MeshQuality
 
         }
 
-        private List<double> CalculateJacobianRatioOfmesh3D(Mesh3D mesh)
+        private List<double> CalculateJacobianRatioOfmesh3D(SmartMesh mesh)
         {
             // Corner nodes of the isoparametric element
             var naturalNodes = new List<List<Double>>

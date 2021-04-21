@@ -8,7 +8,7 @@ using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.Classes
 {
-    class Mesh3D // to do: change to shell and solid
+    class SmartMesh // to do: change to shell and solid
     {
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
@@ -19,12 +19,12 @@ namespace MeshPoints.Classes
         public bool inp { get; set; }
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
-        public Mesh3D()
+        public SmartMesh()
         {
             //Empty constructor
         }
 
-        public Mesh3D(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for shell mesh
+        public SmartMesh(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for shell mesh
         {
             nu = _nu;
             nv = _nv;
@@ -35,7 +35,7 @@ namespace MeshPoints.Classes
             Type = "Surface";
         }
 
-        public Mesh3D(int _nu, int _nv, int _nw, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for solid mesh
+        public SmartMesh(int _nu, int _nv, int _nw, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for solid mesh
         {
             nu = _nu;
             nv = _nv;
@@ -45,7 +45,7 @@ namespace MeshPoints.Classes
             mesh = _mesh;
             Type = "Solid";
         }
-        public Mesh3D(List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for unstructured surface mesh
+        public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for unstructured surface mesh
         {
             Nodes = _nodes;
             Elements = _elements;

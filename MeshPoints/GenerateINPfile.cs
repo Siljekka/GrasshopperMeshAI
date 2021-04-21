@@ -26,7 +26,7 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh Class. Geometry must have been modelled in mm.", GH_ParamAccess.item);
             pManager.AddGenericParameter("FilePath", "path", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Save", "save", "", GH_ParamAccess.item);
+            //pManager.AddGenericParameter("Save", "save", "", GH_ParamAccess.item);
             pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 10 mm", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item);
@@ -34,10 +34,10 @@ namespace MeshPoints
 
 
             pManager[1].Optional = true; // Write to file is optional
-            pManager[2].Optional = true; // Write to file is optional
-            pManager[3].Optional = true; // Shell thickness is optional
-            pManager[4].Optional = true; // Young modulus is optional
-            pManager[5].Optional = true; // Poisson Ratio is optional
+            //pManager[2].Optional = true; // Write to file is optional
+            pManager[2].Optional = true; // Shell thickness is optional
+            pManager[3].Optional = true; // Young modulus is optional
+            pManager[4].Optional = true; // Poisson Ratio is optional
         }
 
         /// <summary>
@@ -55,19 +55,19 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Mesh3D smartMesh = new Mesh3D();
+            SmartMesh smartMesh = new SmartMesh();
             string filePath = "Empty";
-            bool writeFile = false;
+            //bool writeFile = false;
             double sectionThickness = 10;
             double Emodul = 210000;
             double nu = 0.3;
             
             DA.GetData(0, ref smartMesh);
             DA.GetData(1, ref filePath);
-            DA.GetData(2, ref writeFile);
-            DA.GetData(3, ref sectionThickness);
-            DA.GetData(4, ref Emodul);
-            DA.GetData(5, ref nu);
+            //DA.GetData(2, ref writeFile);
+            DA.GetData(2, ref sectionThickness);
+            DA.GetData(3, ref Emodul);
+            DA.GetData(4, ref nu);
             
 
             // Variables
@@ -101,7 +101,7 @@ namespace MeshPoints
             }
 
             // 4. Write to .txt-file
-            if (writeFile)
+            if (DA.GetData(1, ref filePath))
             {
                 var file = @filePath;
                 File.WriteAllLines(file, inpText.ToArray());
@@ -122,7 +122,7 @@ namespace MeshPoints
         /// <param name="sectionName"> Name of the Section. </param>
         /// <param name="materialName"> Name of the Material. </param>
         /// <returns> .txt-file that can be converted to an .inp-file </returns>
-        private List<string> GenerateSolidfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
+        private List<string> GenerateSolidfile(SmartMesh solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
             //Transform.ChangeBasis(Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis, Vector3d.ZAxis, Vector3d.XAxis, Vector3d.YAxis);
             List<string> inpText = new List<string>();
@@ -269,7 +269,7 @@ namespace MeshPoints
         /// <param name="sectionName"> Name of the Section. </param>
         /// <param name="materialName"> Name of the Material. </param>
         /// <returns> .txt-file that can be converted to an .inp-file </returns>
-        private List<string> GenerateSurfacefile(Mesh3D surfaceMesh, string elementType, double sectionThickness, double Emodul, double nu, string partName, string sectionName, string materialName)
+        private List<string> GenerateSurfacefile(SmartMesh surfaceMesh, string elementType, double sectionThickness, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
             List<string> inpText = new List<string>();
             List<Node> nodes = surfaceMesh.Nodes;

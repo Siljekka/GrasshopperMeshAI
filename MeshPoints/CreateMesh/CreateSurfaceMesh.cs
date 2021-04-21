@@ -63,7 +63,7 @@ namespace MeshPoints.CreateMesh
             if (v == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "v cannot be zero."); return; }
 
             // 2. Assign geometrical properties to mesh
-            Mesh3D smartMesh = new Mesh3D();
+            SmartMesh smartMesh = new SmartMesh();
             Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
             smartMesh.nu = u + 1;
             smartMesh.nv = v + 1;
