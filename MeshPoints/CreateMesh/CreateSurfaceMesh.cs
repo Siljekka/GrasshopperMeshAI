@@ -39,7 +39,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "SmartMesh generated", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "surface", "SmartMesh generated", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
         }
 
@@ -69,10 +69,13 @@ namespace MeshPoints.CreateMesh
             smartMesh.nv = v + 1;
             smartMesh.nw = 1;
             smartMesh.Type = "Surface";
-            smartMesh.Geometry = brepGeometry; 
+            smartMesh.Geometry = brepGeometry;
+
 
             // 3. Generate grid of points on surface
-            List<Point3d> meshPoints = CreateGridOfPointsUV(brep.Faces[0].ToNurbsSurface(), u, v);
+            Brep[] planarBrep = Brep.CreatePlanarBreps(brep.Edges, 0.0001); // make planar brep on floor i     
+            NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[0].Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
+            List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v); //brep.Faces[0].ToNurbsSurface()
 
             // 4. Create nodes 
             smartMesh.Nodes = CreateNodes(meshPoints, smartMesh.nu, smartMesh.nv);
