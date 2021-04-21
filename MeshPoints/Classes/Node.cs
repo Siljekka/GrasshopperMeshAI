@@ -18,14 +18,12 @@ namespace MeshPoints.Classes
         public bool BC_V { get; set; } // to do: change if time
         public bool BC_W { get; set; } // to do: change if time
 
+        public string Type { get; set; }
+
         //Constructor
         public Node()
         {
             //Empty constructor
-        }
-        public Node(Point3d _coord)
-        {
-            Coordinate = _coord;
         }
 
         public Node(int _globalId, Point3d _coord)
@@ -39,15 +37,19 @@ namespace MeshPoints.Classes
             Coordinate = _coord;
             BC_U = _BC_U;
             BC_V = _BC_V;
+            BC_W = true;
+            this.SetType();
         }
 
-        public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V)
+        public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V) // to do: slett
         {
             LocalId = _locald;
             GlobalId = _globalId;
             Coordinate = _coord;
             BC_U = _BC_U;
             BC_V = _BC_V;
+            BC_W = true; // to do: sjekk om ok
+            this.SetType();
         }
 
         public Node(int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool  _BC_W)
@@ -57,9 +59,10 @@ namespace MeshPoints.Classes
             BC_U = _BC_U;
             BC_V = _BC_V;
             BC_W = _BC_W;
+            this.SetType();
         }
 
-        public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool _BC_W)
+        public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool _BC_W) // to do: slett
         {
             LocalId = _locald;
             GlobalId = _globalId;
@@ -67,6 +70,7 @@ namespace MeshPoints.Classes
             BC_U = _BC_U;
             BC_V = _BC_V;
             BC_W = _BC_W;
+            this.SetType();
         }
 
         //Methods
@@ -100,7 +104,7 @@ namespace MeshPoints.Classes
             return isOnEdge;
         }
 
-        public void GetType()
+        public void SetType()
         {
             int counter = 0;
             if (this.BC_U) { counter++; }
@@ -109,15 +113,16 @@ namespace MeshPoints.Classes
 
             switch (counter)
             {
-                case 3:
-                    { 
-                        
-                    }
-
+                case 3: // corner node
+                    this.Type = "Corner"; break;
+                case 2: // edge node
+                    this.Type = "Edge"; break;
+                case 1: // midle node
+                    this.Type = "Face"; break;
+                case 0:
+                    this.Type = "Interior"; break;
             }
-
         }
-
     }
 
 }
