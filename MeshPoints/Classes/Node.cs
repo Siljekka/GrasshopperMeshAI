@@ -37,29 +37,8 @@ namespace MeshPoints.Classes
             BC_W = true;
             this.SetType();
         }
-        public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V) // to do: slett
-        {
-            LocalId = _locald;
-            GlobalId = _globalId;
-            Coordinate = _coord;
-            BC_U = _BC_U;
-            BC_V = _BC_V;
-            BC_W = true; // to do: sjekk om ok
-            this.SetType();
-        }
         public Node(int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool  _BC_W)
         {
-            GlobalId = _globalId;
-            Coordinate = _coord;
-            BC_U = _BC_U;
-            BC_V = _BC_V;
-            BC_W = _BC_W;
-            this.SetType();
-        }
-
-        public Node(int _locald, int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool _BC_W) // to do: slett
-        {
-            LocalId = _locald;
             GlobalId = _globalId;
             Coordinate = _coord;
             BC_U = _BC_U;
