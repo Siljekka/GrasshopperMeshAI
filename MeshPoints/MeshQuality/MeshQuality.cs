@@ -71,10 +71,11 @@ namespace MeshPoints.MeshQuality
             foreach (Element e in elements)
             {
                 elementQuality.AspectRatio = CalculateAspectRatio(e);
+                //elementQuality.AspectRatio = CalculateAspectRatioAnsys(e); // to do: slett, old
                 elementQuality.Skewness = CalculateSkewness(e);
                 elementQuality.JacobianRatio = CalculateJacobianRatio(e);                
-                //elementQuality.JacobianRatio = CalculateJacobianOf8NodeElementOLD(e);      // old          
-                //elementQuality.JacobianRatio = CalculateJacobianOfQuadElementOLD(e);    // old             
+                //elementQuality.JacobianRatio = CalculateJacobianOf8NodeElementOLD(e); // to do: slett, old          
+                //elementQuality.JacobianRatio = CalculateJacobianOfQuadElementOLD(e);    // to do: slett, old             
 
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
