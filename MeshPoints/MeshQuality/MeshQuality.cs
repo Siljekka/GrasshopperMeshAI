@@ -169,7 +169,7 @@ namespace MeshPoints.MeshQuality
         double CalculateSkewness(Element element)
         {
             double idealAngle = 90; // ideal angle in degrees
-            int neighborPoint = 3; // variable used in skewness calculation
+            int neighborPoint = 3; // variable used in skewness calculation, assume quad
             List<double> elementAngles = new List<double>();
             List<List<Node>> faces = element.GetFaces();
 
