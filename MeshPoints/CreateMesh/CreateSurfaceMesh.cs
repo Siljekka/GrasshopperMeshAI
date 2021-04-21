@@ -39,7 +39,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "SmartMesh generated", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "surface", "SmartMesh generated", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
         }
 
@@ -51,51 +51,44 @@ namespace MeshPoints.CreateMesh
         {
             // Input
             Brep brep = new Brep();
-            int nu = 0;
-            int nv = 0;
+            int u = 0;
+            int v = 0;
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref nu);
-            DA.GetData(2, ref nv);
-
-            #region Variables
-            Mesh3D smartMesh = new Mesh3D();
-            Mesh globalMesh = new Mesh();
-            List<Node> nodes = new List<Node>();
-            List<Element> elements = new List<Element>();
-            List<Point3d> meshPoints = new List<Point3d>();
-            #endregion
-
-            /* Todo:
-             *  Fikse hvordan punkt blir generert. Gjør som i solidMesh med PointAt(0,0) som referansepunkt.
-             *  Fiks sånn at overflate alltid har u og v i samme rekkefølge uavhengig av hvordan den tegnes.
-             */
+            DA.GetData(1, ref u);
+            DA.GetData(2, ref v);
 
             // 1. Check input OK.
             if (!DA.GetData(0, ref brep)) return;
-            if (nu == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nu can not be zero."); return; }
-            if (nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "nv can not be zero."); return; }
+            if (u == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "u cannot be zero."); return; }
+            if (v == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "v cannot be zero."); return; }
 
-
-            // 1. Assign properties to Geometry Class
+            // 2. Assign geometrical properties to mesh
+            SmartMesh smartMesh = new SmartMesh();
             Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
-            
-            // 2. Generate grid of points on surface
-            meshPoints = CreateGridOfPointsUV(nu, nv, brep.Faces[0].ToNurbsSurface());
-
-            // 2. Create nodes and elements
-            nodes = CreateNodes(meshPoints, nu, nv);
-            elements = CreateQuadElements(nodes, nu, nv);
-
-            // 3. Create global mesh
-            globalMesh = CreateGlobalMesh(meshPoints, nu, nv);
-
-            //5. Add properties to SolidMesh
-            smartMesh = new Mesh3D(nu + 1, nv + 1, nodes, elements, globalMesh);
+            smartMesh.nu = u + 1;
+            smartMesh.nv = v + 1;
+            smartMesh.nw = 1;
+            smartMesh.Type = "Surface";
             smartMesh.Geometry = brepGeometry;
+
+
+            // 3. Generate grid of points on surface
+            Brep[] planarBrep = Brep.CreatePlanarBreps(brep.Edges, 0.0001); // make planar brep on floor i     
+            NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[0].Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
+            List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v); //brep.Faces[0].ToNurbsSurface()
+
+            // 4. Create nodes 
+            smartMesh.Nodes = CreateNodes(meshPoints, smartMesh.nu, smartMesh.nv);
+
+            // 5. Set elements
+            smartMesh.CreateQuadElements();
+
+            // 6. Set global mesh
+            smartMesh.CreateMesh();
 
             // Output
             DA.SetData(0, smartMesh);
-            DA.SetData(1, smartMesh.mesh);
+            DA.SetData(1, smartMesh.Mesh);
         }
         
 
@@ -103,20 +96,20 @@ namespace MeshPoints.CreateMesh
         /// Makes grid of points in U and V direction
         /// </summary>
         /// <returns> List of points in U and V direction</returns>
-        private List<Point3d> CreateGridOfPointsUV(int nu, int nv, NurbsSurface surface)
+        private List<Point3d> CreateGridOfPointsUV(NurbsSurface surface, int u, int v)
         {
             List<Point3d> pt = new List<Point3d>();
 
-            var u = surface.Domain(0);
-            var v = surface.Domain(1);
-            double stepU = u.Length / (double)nu;
-            double stepV = v.Length / (double)nv;
+            var uDomain = surface.Domain(0);
+            var vDomain = surface.Domain(1);
+            double stepU = uDomain.Length / (double)u;
+            double stepV = vDomain.Length / (double)v;
 
             double pointU = 0;
             double pointV = 0;
-            for (double j = 0; j <= nv; j++)
+            for (double j = 0; j <= v; j++)
             {
-                for (double k = 0; k <= nu; k++)
+                for (double k = 0; k <= u; k++)
                 {
                     pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
                     pointU = pointU + stepU;
@@ -125,7 +118,7 @@ namespace MeshPoints.CreateMesh
                 pointU = 0;
             }
             return pt;
-        }
+        } 
 
         /// <summary>
         /// Create global nodes by assigning global id, coordinate, boundary condiditon in u and v direction
@@ -134,17 +127,18 @@ namespace MeshPoints.CreateMesh
         List<Node> CreateNodes(List<Point3d> meshPoints, int nu, int nv)
         {
             List<Node> nodes = new List<Node>();
-            nu = nu + 1;
-            nv = nv + 1;
             int uSequence = 0;
             int vSequence = 0;
             for (int i = 0; i < meshPoints.Count; i++)
             {
-                Node node = new Node(i, meshPoints[i]); // assign global id and cooridinates
+                bool BC_U = false;
+                bool BC_V = false;
 
                 // assign boundary condition
-                if (uSequence == 0 | uSequence == nu - 1) { node.BC_U = true; } // assign BC u-dir
-                if (vSequence == 0 | vSequence == nv - 1) { node.BC_V = true; } // assign BC v-dir
+                if (uSequence == 0 | uSequence == nu - 1) { BC_U = true; } // assign BC u-dir
+                if (vSequence == 0 | vSequence == nv - 1) { BC_V = true; } // assign BC v-dir
+
+                Node node = new Node(i, meshPoints[i], BC_U, BC_V); // assign global id and cooridinates
 
                 uSequence++;
                 if (uSequence == nu)
@@ -155,88 +149,6 @@ namespace MeshPoints.CreateMesh
                 nodes.Add(node);
             }
             return nodes;
-        }
-
-        /// <summary>
-        /// Creates quad elements by assigning id, local nodes and mesh.
-        /// </summary>
-        /// <returns></returns>
-        List<Element> CreateQuadElements(List<Node> nodes, int nu, int nv) // to do: erstatt med Mesh3D metode
-        {
-            List<Element> elements = new List<Element>();
-            int uSequence = 0;
-            int counter = 0;
-            nu = nu + 1;
-            nv = nv + 1;
-
-            for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
-            {
-                Mesh mesh = new Mesh();
-                List<Node> elementNodes = new List<Node>();
-                List<int> connectivity = new List<int>();
-                connectivity.Add(counter);
-                connectivity.Add(counter + 1);
-                connectivity.Add(counter + nu + 1);
-                connectivity.Add(counter + nu);
-
-                foreach (int id in connectivity)
-                {
-                    elementNodes.Add(nodes[id]);
-                    mesh.Vertices.Add(nodes[id].Coordinate);
-                };
-
-                Element element = new Element(i, elementNodes, connectivity);
-
-                mesh.Faces.AddFace(0, 1, 2, 3);
-                mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-                element.mesh = mesh;
-
-                elements.Add(element); // add element to list of elements
-                
-                counter++;
-                uSequence++;
-                if (uSequence == (nu - 1)) // check if done with a v sequence
-                {
-                    counter++;
-                    uSequence = 0; // new v sequence
-                }
-            }
-            return elements;
-        }
-
-        /// <summary>
-        /// Creates a global mesh for the geometry.
-        /// </summary>
-        /// <returns></returns>
-        Mesh CreateGlobalMesh(List<Point3d> meshPoints, int nu, int nv) // to do: erstatt 
-        {
-            Mesh globalMesh = new Mesh();
-            int counter = 0;
-            int uSequence = 0;
-            nu = nu + 1;
-            nv = nv + 1;
-
-            foreach (Point3d pt in meshPoints)
-            {
-                globalMesh.Vertices.Add(pt);
-            }
-            for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
-            {
-                globalMesh.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
-
-                counter++;
-                uSequence++;
-                if (uSequence == (nu - 1)) // check if done with a v sequence
-                {
-                    counter++;
-                    uSequence = 0; // new v sequence
-                }
-            }
-            globalMesh.Normals.ComputeNormals();  // todo: control if needed
-            globalMesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-            globalMesh.Compact(); // to ensure that it calculate
-
-            return globalMesh;
         }
 
         /// <summary>

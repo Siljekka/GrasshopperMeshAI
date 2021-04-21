@@ -3,22 +3,18 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics;
 
-
-namespace MeshPoints
+namespace MeshPoints.DeconstructClasses
 {
-    public class FEMMaterial : GH_Component
+    public class DeconstructSmartMesh : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the FEMMaterial class.
+        /// Initializes a new instance of the DeconstructMesh3d class.
         /// </summary>
-        public FEMMaterial()
-          : base("FEM Material", "FEM",
-              "Create material to input Finite Element Solver.",
-              "MyPlugIn", "FEM")
+        public DeconstructSmartMesh()
+          : base("Deconstruct SmartMesh", "decMesh",
+              "Deconstructing SmartMesh class",
+              "MyPlugIn", "Deconstruct")
         {
         }
 
@@ -27,10 +23,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddNumberParameter("Young modulus", "E", "Input a Young modulus [MPa]", GH_ParamAccess.item, 210000);
-            pManager.AddNumberParameter("Possion Ratio", "nu", "Input a Possion Ratio", GH_ParamAccess.item, 0.3);
-            pManager.AddNumberParameter("Yielding stress", "fy", "Input a yield stress [MPa]", GH_ParamAccess.item, 355);
-
+            pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -38,7 +31,11 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Material", "mat", "Material", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Elements", "e", "List of elements", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("Nodes", "n", "List of nodes", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("Geometry", "geo", "Geometry information", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item); 
+
         }
 
         /// <summary>
@@ -48,19 +45,14 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            double Emodul = 210000;
-            double nu = 0.3;
-            double fy = 355;
-            DA.GetData(0, ref Emodul);
-            DA.GetData(1, ref nu);
-            DA.GetData(2, ref fy);
-
-
-            // Code
-            Material material = new Material(Emodul, nu, fy);
+            SmartMesh mesh = new SmartMesh();
+            DA.GetData(0, ref mesh);
 
             // Output
-            DA.SetData(0, material);
+            DA.SetDataList(0, mesh.Elements);
+            DA.SetDataList(1, mesh.Nodes);
+            DA.SetData(2, mesh.Geometry);
+            DA.SetData(3, mesh.Mesh);
         }
 
         /// <summary>
@@ -72,7 +64,7 @@ namespace MeshPoints
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_DeconstructSolidMesh;
             }
         }
 
@@ -81,7 +73,7 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("6198afae-8cd5-4b28-a841-5b1a48de93ec"); }
+            get { return new Guid("97c30c27-48c9-41ac-b09d-d02f80e806f6"); }
         }
     }
 }

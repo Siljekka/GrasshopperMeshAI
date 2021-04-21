@@ -19,7 +19,7 @@ namespace MeshPoints.CreateMesh
         public MeshPoints2D()
           : base("Create Mesh2D", "mp2D",
               "Mesh list with flatten points in 2D",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 
@@ -46,8 +46,9 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             #region Variables
-            Mesh2D m = new Mesh2D();
+            SmartMesh m = new SmartMesh();
             Element e = new Element();
             Mesh globalMesh = new Mesh();
 
@@ -77,6 +78,7 @@ namespace MeshPoints.CreateMesh
                     paramName: "meshPt");
             }
             */
+            /*
             #endregion
 
             var numberOfGrids = GetNumberOfGrids(meshPts);
@@ -87,9 +89,10 @@ namespace MeshPoints.CreateMesh
             elements = CreateQuadElements(nodes, nu, nv);
             globalMesh = CreateGlobalMesh(meshPts, nu, nv);
 
-            m = new Mesh2D(nu, nv, nodes, elements, globalMesh);
+            m = new SmartMesh(nu, nv, nodes, elements, globalMesh);
             // output
             DA.SetData(0, m);
+            */
         }
 
         /// <summary>
@@ -181,7 +184,7 @@ namespace MeshPoints.CreateMesh
                 
                 Element element = new Element(i, elementNodes, connectivity);
                 mesh.Faces.AddFace(0, 1, 2, 3);
-                element.mesh = mesh;
+                element.Mesh = mesh;
 
                 elements.Add(element); // add element to list of elements
 
@@ -241,7 +244,7 @@ namespace MeshPoints.CreateMesh
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_SurfaceMesh;
+                return null;
             }
         }
 

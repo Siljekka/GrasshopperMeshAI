@@ -3,11 +3,8 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics;
 
-namespace MeshPoints
+namespace MeshPoints.FiniteElementMethod
 {
     public class FEMLoad : GH_Component
     {
@@ -57,7 +54,7 @@ namespace MeshPoints
             // assume only perpendicular negativ load
 
             #region Input
-            Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
+            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
             int loadType = 0;
             List<Vector3d> loadVectors = new List<Vector3d>();
             List<Point3d> loadPosition = new List<Point3d>();
@@ -114,7 +111,7 @@ namespace MeshPoints
                 int loadCounter = 0;
                 foreach (int nodeIndex in nodeIndexOnSurface)
                 {
-                    int numBC = 0;
+                    int numBC = 0; // to do: gjør om til methode i klasse
                     if (nodes[nodeIndex].BC_U){ numBC++; }
                     if (nodes[nodeIndex].BC_V) { numBC++; }
                     if (nodes[nodeIndex].BC_W) { numBC++; }

@@ -18,7 +18,7 @@ namespace MeshPoints.CreateMesh
         public CreateMesh3D_Box()
           : base("Create Mesh3D (box)", "mesh3DBox",
               "Creates a solid mesh for a box-brep",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 
@@ -47,13 +47,14 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             // Variables
 
             //Point3d[] nwPt;
             Brep bp = new Brep();
 
-            Mesh2D m2D = new Mesh2D();
-            Mesh3D m3D = new Mesh3D();
+            SmartMesh m2D = new SmartMesh();
+            SmartMesh m3D = new SmartMesh();
             Element e = new Element();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
@@ -283,12 +284,13 @@ namespace MeshPoints.CreateMesh
             }
             pts.Add(vert[vert.Count-1]);
             */
+            /*
             #endregion
 
             // Output
             DA.SetData(0, m3D);
             //DA.SetDataList(1, nodes);
-
+            */
 
         }
         /// <summary>

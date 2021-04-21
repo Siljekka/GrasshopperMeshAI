@@ -51,7 +51,7 @@ namespace MeshPoints.QuadRemesh
             Brep brep = new Brep();
             int bottomFace = 0;
             int nw = 0;
-            Mesh2D mesh = new Mesh2D();
+            SmartMesh mesh = new SmartMesh();
 
             DA.GetData(0, ref brep);
             DA.GetData(1, ref bottomFace);
@@ -81,20 +81,20 @@ namespace MeshPoints.QuadRemesh
 
             // copy mesh to planes
             int globalNodeIndexAddition = mesh.Nodes.Count;
-            List<Mesh2D> meshOnPlanes = new List<Mesh2D>();
+            List<SmartMesh> meshOnPlanes = new List<SmartMesh>();
             meshOnPlanes.Add(mesh);
             Plane basePlane = planes[0];
 
             for (int i = 1; i < planes.Count; i++)
             {
-                Mesh2D meshToTransform = new Mesh2D();
+                SmartMesh meshToTransform = new SmartMesh();
                 Transform tranformation = new Transform();
                 meshToTransform = mesh;
                 globalNodeIndexAddition = globalNodeIndexAddition * i;
                 Point3d pointToTransform = new Point3d();
                 tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
 
-                meshToTransform.mesh.Transform(tranformation); // transform mesh, to do: check if needed
+                meshToTransform.Mesh.Transform(tranformation); // transform mesh, to do: check if needed
 
                 // transform global nodes
                 foreach (Node nodeToTransform in meshToTransform.Nodes)
@@ -108,10 +108,10 @@ namespace MeshPoints.QuadRemesh
                 for (int j = 0; j < meshToTransform.Elements.Count; j++)
                 {
                     Element elementToTransform = meshToTransform.Elements[j];
-                    elementToTransform.mesh.Transform(tranformation); // fix mesh face of element, to do: check if needed
+                    elementToTransform.Mesh.Transform(tranformation); // fix mesh face of element, to do: check if needed
 
-                    List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Node1, elementToTransform.Node2, elementToTransform.Node3 };
-                    if (elementToTransform.IsQuad) { nodesOfElementToTransform.Add(elementToTransform.Node4); }
+                    List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Nodes[0], elementToTransform.Nodes[1], elementToTransform.Nodes[2] };
+                    if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Nodes[3]); }
 
                     foreach (Node nodeToTransform in nodesOfElementToTransform)
                     {

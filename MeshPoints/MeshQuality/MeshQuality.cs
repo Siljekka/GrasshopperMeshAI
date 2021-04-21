@@ -51,7 +51,7 @@ namespace MeshPoints.MeshQuality
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Mesh3D mesh = new Mesh3D(); 
+            SmartMesh mesh = new SmartMesh(); 
             int qualityCheckType = 0;
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref qualityCheckType);
@@ -169,7 +169,7 @@ namespace MeshPoints.MeshQuality
         double CalculateSkewness(Element element)
         {
             double idealAngle = 90; // ideal angle in degrees
-            int neighborPoint = 3; // variable used in skewness calculation
+            int neighborPoint = 3; // variable used in skewness calculation, assume quad
             List<double> elementAngles = new List<double>();
             List<List<Node>> faces = element.GetFaces();
 
@@ -188,9 +188,9 @@ namespace MeshPoints.MeshQuality
                     // Create a vector from a vertex to a neighbouring vertex
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
                     Vector3d vec2 = nodesOfFace[n].Coordinate - nodesOfFace[n + neighborPoint].Coordinate;
-
+                    Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+                    double angleRad = Vector3d.VectorAngle(vec1, vec2, normal); 
                     // Calculate angles between vectors
-                    double angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(vec1, vec2) / (vec1.Length * vec2.Length))); // to do: fix correct
                     double angleDegree = angleRad * 180 / Math.PI; //convert from rad to deg
                     elementAngles.Add(angleDegree);
                 }
@@ -204,11 +204,11 @@ namespace MeshPoints.MeshQuality
         }
 
         /// <summary>
-        /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="Mesh3D"/>.
+        /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="SmartMesh"/>.
         /// </summary>
         /// <param name="element">A single <see cref="Element"/> object from a mesh.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0 describing the ratio between the min and max values of the determinants of the Jacobian matrix of the element, evaluated in the corner nodes.</returns>
-        private double CalculateJacobianRatioOLD(Element element)
+        private double CalculateJacobianRatioOLD(Element element) // to do: slett
         {
             // to do: slett
             double jacobian = 0;
@@ -235,7 +235,7 @@ namespace MeshPoints.MeshQuality
 
             for (int i = 0; i < numFaces; i++)
             {
-                faceCenterPts.Add(element.mesh.Faces.GetFaceCenter(i));
+                faceCenterPts.Add(element.Mesh.Faces.GetFaceCenter(i));
             }
             return faceCenterPts;
         }
@@ -267,7 +267,7 @@ namespace MeshPoints.MeshQuality
         /// <summary>
         /// Calculate the Jacobian Ratio
         /// </summary>
-        private double CalculateJacobianRatio(Element element) // to do: fix negative jacobian
+        private double CalculateJacobianRatio(Element element) 
         {
             FEM _FEM = new FEM();
             int nodeDOFS = 2;
@@ -312,14 +312,11 @@ namespace MeshPoints.MeshQuality
             if (jacobiansOfElement.Any(x => x < 0))
             {
                 jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
-                jacobianRatio = 0; // to do: check, må settes lik null i utregning
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
                 if (jacobianRatio < 0)
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"The Jacobian Ratio of element {element.Id} is negative.");
                 }
-                jacobianRatio = 0; // to do: check, må settes lik null i utregning
-
             }
             else
             {
@@ -332,7 +329,7 @@ namespace MeshPoints.MeshQuality
         /// <summary>
         /// Calculates the Jacobian Ratio of a hexahedral 8-node 3D element.
         /// </summary>
-        /// <param name="element">An 8 node <see cref="Element"/> that is part of a <see cref="Mesh3D"/></param>
+        /// <param name="element">An 8 node <see cref="Element"/> that is part of a <see cref="SmartMesh"/></param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
         private double CalculateJacobianOf8NodeElementOLD(Element element)
         {
@@ -656,21 +653,21 @@ namespace MeshPoints.MeshQuality
                     {
                         if (q.AspectRatio > 0.9)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
                         else if (q.AspectRatio > 0.7)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
                         else if (q.AspectRatio > 0.6)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.AspectRatio > 0)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
-                        colorMesh.Append(q.element.mesh);
+                        colorMesh.Append(q.element.Mesh);
                     }
                     break;
                 // 2 = Skewness
@@ -679,21 +676,21 @@ namespace MeshPoints.MeshQuality
                     {
                         if (q.Skewness > 0.9)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
                         else if (q.Skewness > 0.75)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
                         else if (q.Skewness > 0.6)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.Skewness > 0)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
-                        colorMesh.Append(q.element.mesh);
+                        colorMesh.Append(q.element.Mesh);
                     }
                     break;
                 // 3 = Jacobian
@@ -702,25 +699,25 @@ namespace MeshPoints.MeshQuality
                     {
                         if (q.JacobianRatio > 0.8)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Green);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
                         else if (q.JacobianRatio > 0.5)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
                         else if (q.JacobianRatio > 0.03)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.JacobianRatio >= 0)
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
                         else
                         {
-                            q.element.mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
                         }
-                        colorMesh.Append(q.element.mesh);
+                        colorMesh.Append(q.element.Mesh);
                     }
                     break;
             }

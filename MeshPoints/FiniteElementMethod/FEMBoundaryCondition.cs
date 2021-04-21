@@ -3,7 +3,8 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
-namespace MeshPoints
+
+namespace MeshPoints.FiniteElementMethod
 {
     public class FEMBoundaryCondition : GH_Component
     {
@@ -59,7 +60,7 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             #region Input
-            Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
+            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
             List<int> indicesOfFaceWithBC = new List<int>();
             List<int> indicesOfEdgeWithBC = new List<int>();
             bool Tx = false;

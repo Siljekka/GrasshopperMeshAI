@@ -4,20 +4,19 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-namespace MeshPoints.DeconstructClasses
+//Deconstruct the class Mesh2D
+
+namespace MeshPoints
 {
-    public class DeconstructElement3D : GH_Component
+    public class Deconstruct_Mesh2D : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the MyComponent1 class.
+        /// Initializes a new instance of the Deconstruct_Mesh2D class.
         /// </summary>
-        /// <summary>
-        /// Initializes a new instance of the Deconstruct_Node class.
-        /// </summary>
-        public DeconstructElement3D()
-        : base("Deconstruct Element", "decE",
-              "Deconstructing element class for SmartMesh Class",
-              "MyPlugIn", "Deconstruct")
+        public Deconstruct_Mesh2D()
+          : base("Deconstruct SurfaceMesh", "decSurf",
+              "Deconstruct SurfaceMesh class",
+              "MyPlugIn", "Outdated")
         {
         }
 
@@ -26,7 +25,8 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Element class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh2D", "m2D", "Mesh2D class", GH_ParamAccess.item);
+
         }
 
         /// <summary>
@@ -34,11 +34,10 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Nodes", "nodes", "Nodes of element", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Connectivity", "con", "Connectivity of local to global nodes", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Type", "type", "Element type", GH_ParamAccess.item); //0
-            pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //8
-            pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //9
+            pManager.AddGenericParameter("Elements", "e", "List of elements", GH_ParamAccess.list); //0
+            pManager.AddGenericParameter("Nodes", "n", "List of nodes", GH_ParamAccess.list); //1
+            pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item); //2
+            pManager.AddGenericParameter("Geometry", "g", "Geometry information", GH_ParamAccess.item); //3
         }
 
         /// <summary>
@@ -47,16 +46,19 @@ namespace MeshPoints.DeconstructClasses
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             //input
-            Element e = new Element();
-            DA.GetData(0, ref e);
+            SmartMesh m = new SmartMesh();
+            DA.GetData(0, ref m);          
+            
+
 
             //output
-            DA.SetDataList(0, e.Nodes);
-            DA.SetDataList(1, e.Connectivity);
-            DA.SetData(2, e.Type);
-            DA.SetData(3, e.Id);
-            DA.SetData(4, e.mesh);
+            DA.SetDataList(0, m.Elements);
+            DA.SetDataList(1, m.Nodes);
+            DA.SetData(2, m.mesh);
+            DA.SetData(3, m.Geometry);
+            */
         }
 
         /// <summary>
@@ -68,7 +70,7 @@ namespace MeshPoints.DeconstructClasses
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_DeconstructSolidElement;
+                return Properties.Resources.Icon_DeconstructSurfaceMesh;
             }
         }
 
@@ -77,7 +79,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("df3f3c5f-c32c-44ce-83f1-831a94edd1d8"); }
+            get { return new Guid("6cb2b0ff-e396-4fb5-a0b9-33ff368636ac"); }
         }
     }
 }

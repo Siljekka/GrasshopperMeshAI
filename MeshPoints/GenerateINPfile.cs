@@ -3,6 +3,7 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
+using System.IO;
 
 namespace MeshPoints
 {
@@ -13,7 +14,7 @@ namespace MeshPoints
         /// </summary>
         public GenerateINPfile()
           : base("Generate inp-file", "inp",
-              "Generate inp-file for 3D analysis. Solid elements are used for SolidMesh and shell elements are made for SurfaceMesh. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
+              "Generate inp-file for 3D analysis. Solid elements (C3D8) and shell elements (S4) are made for SmartMesh dependent on mesh type. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
               "MyPlugIn", "inp-file")
         {
         }
@@ -23,19 +24,20 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SolidMesh", "solid", "Solid mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("SurfaceMesh", "surface", "Surface mesh. Geometry must have been modelled in mm.", GH_ParamAccess.item);
-            pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8, S4 (Solid, Shell)", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh Class. Geometry must have been modelled in mm.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("FilePath", "path", "", GH_ParamAccess.item);
+            //pManager.AddGenericParameter("Save", "save", "", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 10 mm", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 10 mm", GH_ParamAccess.item);
+            //pManager.AddTextParameter("ElementType", "element", "String with element type from Abaqus (IMPORTANT: must be written exactly as given in Abaqus). Default is: C3D8, S4 (Solid, Shell)", GH_ParamAccess.item);
 
-            pManager[0].Optional = true; // SolidMesh is optional
-            pManager[1].Optional = true; // SurfaceMesh is optional
-            pManager[2].Optional = true; // ElementType is optional
+
+            pManager[1].Optional = true; // Write to file is optional
+            //pManager[2].Optional = true; // Write to file is optional
+            pManager[2].Optional = true; // Shell thickness is optional
             pManager[3].Optional = true; // Young modulus is optional
             pManager[4].Optional = true; // Poisson Ratio is optional
-            pManager[5].Optional = true; // Shell thickness is optional
         }
 
         /// <summary>
@@ -43,7 +45,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("inp-file", "inp", "String containing inp-file", GH_ParamAccess.list);
+            pManager.AddGenericParameter("inp", "inp", "String containing inp-file", GH_ParamAccess.list); //todo: change name.
         }
 
         /// <summary>
@@ -53,65 +55,74 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Mesh3D solidMesh = new Mesh3D();
-            Mesh2D surfaceMesh = new Mesh2D();
-            string elementType = "Empty";
+            SmartMesh smartMesh = new SmartMesh();
+            string filePath = "Empty";
+            //bool writeFile = false;
+            double sectionThickness = 10;
             double Emodul = 210000;
             double nu = 0.3;
-            double sectionThickness = 10;
-            DA.GetData(0, ref solidMesh);
-            DA.GetData(1, ref surfaceMesh);
-            DA.GetData(2, ref elementType);
+            
+            DA.GetData(0, ref smartMesh);
+            DA.GetData(1, ref filePath);
+            //DA.GetData(2, ref writeFile);
+            DA.GetData(2, ref sectionThickness);
             DA.GetData(3, ref Emodul);
             DA.GetData(4, ref nu);
-            DA.GetData(5, ref sectionThickness);
-
-
-            if (!DA.GetData(0, ref solidMesh) & !DA.GetData(1, ref surfaceMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Failed to collect data from mesh. Must input either solidMesh or surfaceMesh."); }
+            
 
             // Variables
             List<string> inpText = new List<string>();
+            string elementType = "Empty";
             string partName = "Geometry"; //todo: fix name
             string sectionName = "Section"; //todo: fix name
             string materialName = "Steel";
 
+
+            // 0. Check input.
+            if (!DA.GetData(0, ref smartMesh)) return;
             
 
-            // 0. Check if inp-file can be made. 
-           
-
-            // 1. Set material properties
+            // 1. Set material properties.
             if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
 
-            // 2. Set element type dependent on solid or surface mesh
-            if (DA.GetData(0, ref solidMesh) & elementType == "Empty") { elementType = "C3D8"; }
-            if (DA.GetData(1, ref surfaceMesh) & elementType == "Empty") { elementType = "S4"; }
-
-            // 3. Generate inp-file
-            if (DA.GetData(0, ref solidMesh) & !DA.GetData(1, ref surfaceMesh))
+            // 2. Set element type dependent on solid or surface mesh.
+            if (smartMesh.Type == "Solid") { elementType = "C3D8"; }
+            else if (smartMesh.Type == "Surface") { elementType = "S4"; }
+            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No element type has been assigned."); }
+            
+            // 3. Generate inp-file.
+            if (smartMesh.Type == "Solid")
             {
-                inpText = GenerateSolidfile(solidMesh, elementType, Emodul, nu, partName, sectionName, materialName);
-                if (!solidMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
+                inpText = GenerateSolidfile(smartMesh, elementType, Emodul, nu, partName, sectionName, materialName);
             }
-            else if (DA.GetData(1, ref surfaceMesh) & !DA.GetData(0, ref solidMesh))
+            else if (smartMesh.Type == "Surface")
             {
-                inpText = GenerateSurfacefile(surfaceMesh, elementType, sectionThickness, Emodul, nu, partName, sectionName, materialName);
-                if (!surfaceMesh.inp) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Can not generate inp-file. See component creating solidMesh."); }
+                inpText = GenerateSurfacefile(smartMesh, elementType, sectionThickness, Emodul, nu, partName, sectionName, materialName);
             }
-            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Double mesh input. Remove one mesh input."); return; }
 
-
+            // 4. Write to .txt-file
+            if (DA.GetData(1, ref filePath))
+            {
+                var file = @filePath;
+                File.WriteAllLines(file, inpText.ToArray());
+            }
+            
             // Output
-            DA.SetDataList(0, inpText);
+            DA.SetData(0, inpText);
         }
 
         #region Methods
 
-        /// <summary>
-        /// Generate inp file for solid models.
-        /// </summary>
-        /// <returns> inp text file </returns>
-        private List<string> GenerateSolidfile(Mesh3D solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
+        /// <summary> Generate inp file for solid models. </summary>
+        /// <param name="solidMesh"> SmartMesh Class. </param>
+        /// <param name="elementType"> Element type used for the solid elements. </param>
+        /// <param name="Emodul"> Modulus of Elasticity. </param>
+        /// <param name="nu"> Poisson Ratio. </param>
+        /// <param name="partName"> Name of the Part. </param>
+        /// <param name="sectionName"> Name of the Section. </param>
+        /// <param name="materialName"> Name of the Material. </param>
+        /// <returns> .txt-file that can be converted to an .inp-file </returns>
+        private List<string> GenerateSolidfile(SmartMesh solidMesh, string elementType, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
             //Transform.ChangeBasis(Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis, Vector3d.ZAxis, Vector3d.XAxis, Vector3d.YAxis);
             List<string> inpText = new List<string>();
@@ -146,14 +157,14 @@ namespace MeshPoints
             foreach (Element e in elements)
             {
                 int elementId = e.Id+1;
-                int n1 = e.Node1.GlobalId + 1;
-                int n2 = e.Node2.GlobalId + 1;
-                int n3 = e.Node3.GlobalId + 1;
-                int n4 = e.Node4.GlobalId + 1;
-                int n5 = e.Node5.GlobalId + 1;
-                int n6 = e.Node6.GlobalId + 1;
-                int n7 = e.Node7.GlobalId + 1;
-                int n8 = e.Node8.GlobalId + 1;
+                int n1 = e.Nodes[0].GlobalId + 1;
+                int n2 = e.Nodes[1].GlobalId + 1;
+                int n3 = e.Nodes[2].GlobalId + 1;
+                int n4 = e.Nodes[3].GlobalId + 1;
+                int n5 = e.Nodes[4].GlobalId + 1;
+                int n6 = e.Nodes[5].GlobalId + 1;
+                int n7 = e.Nodes[6].GlobalId + 1;
+                int n8 = e.Nodes[7].GlobalId + 1;
                 inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", elementId, n4, n3, n2, n1, n8, n7, n6, n5)); //ElementId, nodes. Count cw because of transformation of coordsyst. between rhino and abaqus.
             }
             inpText.Add("**");
@@ -248,11 +259,17 @@ namespace MeshPoints
             return inpText;
         }
 
-        /// <summary>
-        /// Generate inp file for surface models.
-        /// </summary>
-        /// <returns> inp text file </returns>
-        private List<string> GenerateSurfacefile(Mesh2D surfaceMesh, string elementType, double sectionThickness, double Emodul, double nu, string partName, string sectionName, string materialName)
+        /// <summary> Generate inp file for surface models. </summary>
+        /// <param name="solidMesh"> SmartMesh Class. </param>
+        /// <param name="elementType"> Element type used for the shell elements. </param>
+        /// <param name="sectionThickness"> Thickness of the shell element. </param>
+        /// <param name="Emodul"> Modulus of Elasticity. </param>
+        /// <param name="nu"> Poisson Ratio. </param>
+        /// <param name="partName"> Name of the Part. </param>
+        /// <param name="sectionName"> Name of the Section. </param>
+        /// <param name="materialName"> Name of the Material. </param>
+        /// <returns> .txt-file that can be converted to an .inp-file </returns>
+        private List<string> GenerateSurfacefile(SmartMesh surfaceMesh, string elementType, double sectionThickness, double Emodul, double nu, string partName, string sectionName, string materialName)
         {
             List<string> inpText = new List<string>();
             List<Node> nodes = surfaceMesh.Nodes;
@@ -285,10 +302,10 @@ namespace MeshPoints
             foreach (Element e in elements)
             {
                 int elementId = e.Id + 1;
-                int n1 = e.Node1.GlobalId + 1;
-                int n2 = e.Node2.GlobalId + 1;
-                int n3 = e.Node3.GlobalId + 1;
-                int n4 = e.Node4.GlobalId + 1;
+                int n1 = e.Nodes[0].GlobalId + 1;
+                int n2 = e.Nodes[1].GlobalId + 1;
+                int n3 = e.Nodes[2].GlobalId + 1;
+                int n4 = e.Nodes[3].GlobalId + 1;
                 inpText.Add(String.Format("{0}, {1}, {2}, {3}, {4}", elementId, n1, n2, n3, n4)); //ElementId, n1, n2, n3, n4
             }
             inpText.Add("**");

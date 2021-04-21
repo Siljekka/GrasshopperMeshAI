@@ -1,20 +1,18 @@
 ﻿using Grasshopper.Kernel;
-using Rhino.Geometry;
 using System;
-using System.Collections.Generic;
 using MeshPoints.Classes;
 
-namespace MeshPoints.DeconstructClasses
+namespace MeshPoints.FiniteElementMethod
 {
-    public class DeconstructGeometry : GH_Component
+    public class FEMMaterial : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the DeconstructGeometry class.
+        /// Initializes a new instance of the FEMMaterial class.
         /// </summary>
-        public DeconstructGeometry()
-          : base("Deconstruct Geometry", "geo",
-              "Deconstructing Geometry Class",
-              "MyPlugIn", "Deconstruct")
+        public FEMMaterial()
+          : base("FEM Material", "FEM",
+              "Create material to input Finite Element Solver.",
+              "MyPlugIn", "FEM")
         {
         }
 
@@ -23,7 +21,10 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Geometry", "geo", "Geometry class", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Young modulus", "E", "Input a Young modulus [MPa]", GH_ParamAccess.item, 210000);
+            pManager.AddNumberParameter("Possion Ratio", "nu", "Input a Possion Ratio", GH_ParamAccess.item, 0.3);
+            pManager.AddNumberParameter("Yielding stress", "fy", "Input a yield stress [MPa]", GH_ParamAccess.item, 355);
+
         }
 
         /// <summary>
@@ -31,11 +32,8 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Faces", "f", "List of faces", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Edges", "e", "List of edges", GH_ParamAccess.list); //1
-            pManager.AddGenericParameter("Vertices", "v", "List of vertices", GH_ParamAccess.list); //2
+            pManager.AddGenericParameter("Material", "mat", "Material", GH_ParamAccess.list);
         }
-
 
         /// <summary>
         /// This is the method that actually does the work.
@@ -44,13 +42,19 @@ namespace MeshPoints.DeconstructClasses
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            Geometry geometry = new Geometry();
-            DA.GetData(0, ref geometry);
+            double Emodul = 210000;
+            double nu = 0.3;
+            double fy = 355;
+            DA.GetData(0, ref Emodul);
+            DA.GetData(1, ref nu);
+            DA.GetData(2, ref fy);
+
+
+            // Code
+            Material material = new Material(Emodul, nu, fy);
 
             // Output
-            DA.SetDataList(0, geometry.Faces);
-            DA.SetDataList(1, geometry.Edges);
-            DA.SetDataList(2, geometry.Vertices);
+            DA.SetData(0, material);
         }
 
         /// <summary>
@@ -71,7 +75,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("bc020810-0e46-4545-a123-a06ed738cb51"); }
+            get { return new Guid("6198afae-8cd5-4b28-a841-5b1a48de93ec"); }
         }
     }
 }

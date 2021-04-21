@@ -44,7 +44,7 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             double quality = 100;
-            Mesh2D mesh = new Mesh2D();
+            SmartMesh mesh = new SmartMesh();
             string filePath = "empty";
             bool writeData = false;
 
@@ -89,13 +89,13 @@ namespace MeshPoints
 
                 // 4. Make CSV-file
                 var data = Convert.ToString(stringBuilder);
-                WriteToCSV(data, filePath);
+                WriteTextFile(data, filePath);
                 //CSV.addRecord(data, filePath);
             }
             else { return; }
         }
 
-        private void WriteToCSV(string variable, string filepath)
+        private void WriteTextFile(string variable, string filepath)
         {
             try
             {

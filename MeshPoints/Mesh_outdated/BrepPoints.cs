@@ -19,7 +19,7 @@ namespace MeshPoints
         public BrepPoints()
           : base("BrepPoints", "B_pt",
               "Generates points on a Brep",
-              "MyPlugIn", "Points")
+              "MyPlugIn", "Outdated")
         {
         }
 
@@ -48,6 +48,7 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             // Variables
             Brep bp = new Brep();
             int u = 0;
@@ -120,7 +121,7 @@ namespace MeshPoints
 
             //Output
             DA.SetDataList(0, pts);
-
+            */
         }
 
         /// <summary>

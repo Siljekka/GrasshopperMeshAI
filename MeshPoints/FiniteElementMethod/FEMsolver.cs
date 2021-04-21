@@ -5,11 +5,9 @@ using System.Collections.Generic;
 using MeshPoints.Classes;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics;
 using System.Drawing;
-using System.Linq;
 
-namespace MeshPoints
+namespace MeshPoints.FiniteElementMethod
 {
     public class FEMsolver : GH_Component
     {
@@ -28,7 +26,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "solidmesh", "Input a SmartMesh", GH_ParamAccess.item); // to do: change name
+            pManager.AddGenericParameter("SmartMesh", "smartMesh", "Input a SmartMesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("Loads", "loads", "Input a load vector", GH_ParamAccess.list);
             pManager.AddGenericParameter("Boundary conditions", "BC", "Input a boundary condition vector", GH_ParamAccess.list);
             pManager.AddGenericParameter("Material", "material", "Input a list of material sorted: Young modulus, Poisson Ratio", GH_ParamAccess.item);
@@ -53,7 +51,7 @@ namespace MeshPoints
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             #region Input
-            Mesh3D mesh = new Mesh3D(); // to do: change to MeshGeometry elns
+            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
             List<double> loads = new List<double>();
             List<List<int>> boundaryConditions = new List<List<int>>();
             Material material = new Material();
@@ -70,10 +68,10 @@ namespace MeshPoints
             int numNodes = nodes.Count;
             int nodeDOFS = 0;
 
-            // 1. Check if mesh is Shell or Solid
-            if (String.Equals(mesh.Type, "shell"))  { nodeDOFS = 2;}
-            else if (String.Equals( mesh.Type,"solid")) { nodeDOFS = 3;}
-            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is shell or solid."); }
+            // 1. Check if mesh is Surface or Solid
+            if (String.Equals(mesh.Type, "Surface"))  { nodeDOFS = 2;}
+            else if (String.Equals( mesh.Type,"Solid")) { nodeDOFS = 3;}
+            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is surface or solid."); }
 
             // 2. Get global stiffness matrix
             Matrix<double> K_global = CalculateGlobalStiffnessMatrix(elements, numNodes, nodeDOFS, material);
@@ -332,7 +330,7 @@ namespace MeshPoints
                 {
                     for (int j = 0; j < nodeDOFS; j++)
                     {
-                        if (nodeDOFS == 2) // shell
+                        if (nodeDOFS == 2) // surface
                         {
                             if (j == 0)
                             {
@@ -534,7 +532,7 @@ namespace MeshPoints
                 {
                     for (int j = 0; j < nodeDOFS; j++)
                     {
-                        if (nodeDOFS == 2) // shell
+                        if (nodeDOFS == 2) // surface
                         {
                             if (j == 0)
                             {
@@ -797,7 +795,7 @@ namespace MeshPoints
             }
         }
 
-        private void ColorMeshAfterStress(Mesh3D mesh, Vector<double> mises, Material material)
+        private void ColorMeshAfterStress(SmartMesh mesh, Vector<double> mises, Material material)
         {
             double maxValue = material.YieldingStress / 1.05; // to do: sjekk denne
             double minValue = 0;
@@ -821,7 +819,7 @@ namespace MeshPoints
                 else if (mises[i] < minValue + 12 * range) color = Color.OrangeRed;
                 else color = Color.Red;
 
-                mesh.mesh.VertexColors.Add(color);
+                mesh.Mesh.VertexColors.Add(color);
             }
         }
         #endregion

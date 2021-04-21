@@ -19,7 +19,7 @@ namespace MeshPoints.CreateMesh
         public CreateSolidMesh_OldSweep()
           : base("Create SolidMesh (OldSweep)", "solid",
               "Creates a solid mesh (brep can not be made from box",
-              "MyPlugIn", "Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 
@@ -49,6 +49,7 @@ namespace MeshPoints.CreateMesh
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            /*
             // Input
             Brep brep = new Brep();
             int nu = 0;
@@ -61,7 +62,7 @@ namespace MeshPoints.CreateMesh
 
             #region Variables
             //Variables
-            Mesh3D solidMesh = new Mesh3D();
+            SmartMesh solidMesh = new SmartMesh();
             Mesh allMesh = new Mesh();
             List<Node> nodes = new List<Node>();
             List<Element> elements = new List<Element>();
@@ -112,15 +113,16 @@ namespace MeshPoints.CreateMesh
             // Output
             DA.SetData(0, solidMesh);
             DA.SetData(1, solidMesh.mesh);
+            */
         }
-
+        /*
         #region Methods
 
         /// <summary>
         /// Check if mesh is compatible with Abaqus
         /// </summary>
         /// <returns> Nothing. Assign propertie to solidMesh. </returns>
-        private void IsBrepCompatibleWithAbaqus(Element element, Mesh3D solidMesh)
+        private void IsBrepCompatibleWithAbaqus(Element element, SmartMesh solidMesh)
         {
             List<Point3d> nodes = new List<Point3d> { element.Node1.Coordinate, element.Node2.Coordinate, element.Node3.Coordinate, element.Node4.Coordinate };
 
@@ -258,6 +260,7 @@ namespace MeshPoints.CreateMesh
             surface.SetDomain(1, new Interval(0, 1)); // set domain for surface 1-direction
             double stepU = 1 / ((double)nu - 1);
             double stepV = 1 / ((double)nv - 1);*/
+        /*
             string curveOrientation = (intersectionCurve[0].ToNurbsCurve()).ClosedCurveOrientation(plane).ToString();
             if (curveOrientation == "CounterClockwise")
             {
@@ -356,7 +359,7 @@ namespace MeshPoints.CreateMesh
                 for (int j = 0; j < meshPoints.Branch(0).Count - nu - 1; j++) // loop elements in a level
                 {
                     e.Id = elemId;
-                    e.IsCube = true;
+                    //e.IsCube = true;
                     if (count2 < nu - 1)
                     {
                         Node n1 = new Node(1, nodes[counter].GlobalId, ptsBot[j], nodes[counter].BC_U, nodes[counter].BC_V, nodes[counter].BC_W);
@@ -439,7 +442,7 @@ namespace MeshPoints.CreateMesh
         }
 
         #endregion
-
+        */
 
         /// <summary>
         /// Provides an Icon for the component.
@@ -450,7 +453,7 @@ namespace MeshPoints.CreateMesh
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_SolidMesh;
+                return null;
             }
         }
 
