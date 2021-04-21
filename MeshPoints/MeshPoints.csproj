@@ -107,7 +107,6 @@
     <Compile Include="Mesh_outdated\JacobianRatio3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh_outdated\CreateMesh2D.cs" />
-    <Compile Include="Classes\MeshQualityOLD.cs" />
     <Compile Include="MeshPointsInfo.cs" />
     <Compile Include="IsSweepable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
