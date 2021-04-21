@@ -14,7 +14,7 @@ namespace MeshPoints
         /// </summary>
         public GenerateINPfile()
           : base("Generate inp-file", "inp",
-              "Generate inp-file for 3D analysis. Solid elements are used for SolidMesh and shell elements are made for SurfaceMesh. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
+              "Generate inp-file for 3D analysis. Solid elements (C3D8) and shell elements (S4) are made for SmartMesh dependent on mesh type. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
               "MyPlugIn", "inp-file")
         {
         }
@@ -99,10 +99,8 @@ namespace MeshPoints
             {
                 inpText = GenerateSurfacefile(smartMesh, elementType, sectionThickness, Emodul, nu, partName, sectionName, materialName);
             }
-            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Double mesh input. Remove one mesh input."); return; }
 
             // 4. Write to .txt-file
-            int a = 0;
             if (writeFile)
             {
                 var file = @filePath;
@@ -110,7 +108,7 @@ namespace MeshPoints
             }
             
             // Output
-            DA.SetData(0, a);
+            DA.SetData(0, inpText);
         }
 
         #region Methods
