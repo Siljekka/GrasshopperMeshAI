@@ -94,14 +94,13 @@ namespace MeshPoints.CreateMesh
 
             Mesh3D smartMesh = new Mesh3D();
 
-            // 2. Add properties to Geometry
+            // 2. Assign geometrical properties to mesh
             Geometry brepGeometry = new Geometry(brep, SortBrepFaces(brep, bottomFace), SortBrepEdges(brep, bottomFace), SortBrepVertex(brep, bottomFace));
             smartMesh.nu = u + 1;
             smartMesh.nv = v + 1;
             smartMesh.nw = w + 1;
             smartMesh.Type = "Solid";
             smartMesh.Geometry = brepGeometry;
-            //smartMesh.inp = true; // to do: Hilde, sjekk ut
             
             // 3. Find Rails
             List<Curve> rails = FindRails(brep, bottomFace);
@@ -121,16 +120,13 @@ namespace MeshPoints.CreateMesh
             smartMesh.Nodes = CreateNodes(meshPoints, u, v, w); // assign Coordiantes, GlobalId and Boundary Conditions
 
             //8. create elements
-            smartMesh.SetHexElements();
+            smartMesh.CreateHexElements();
             // elements = CreateHexElements(meshPoints, nodes, u, v); // to do: slett?
 
-            // 6. Check if brep can be interpret by Abaqus
-            //IsBrepCompatibleWithAbaqus(elements[0], solidMesh);
-
-            //7. Create global mesh
-            smartMesh.SetMesh();
-            //globalMesh = CreateGlobalMesh(elements);
-            //globalMesh = CreateGlobalMeshNew(nodes, u, v, w);
+            //9. Create global mesh
+            smartMesh.CreateMesh();
+            //globalMesh = CreateGlobalMesh(elements); // to do: slett
+            //globalMesh = CreateGlobalMeshNew(nodes, u, v, w); // to do: slett
 
             // Output
             DA.SetData(0, smartMesh);
@@ -212,19 +208,6 @@ namespace MeshPoints.CreateMesh
             }
             return isOnFace;
         }
-        private bool IsOnEdge(Point3d point, BrepEdge edge)
-        {
-            bool isOnEdge = false;
-
-            edge.ClosestPoint(point, out double PointOnCurve);
-            Point3d testPoint = edge.PointAt(PointOnCurve);  // make test point 
-            double distanceToEdge = (testPoint - point).Length; // calculate distance between testPoint and node
-            if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
-            {
-                isOnEdge = true;
-            }
-            return isOnEdge;
-        }
 
         /// <summary>
         /// Find the edges of brep composing rails
@@ -297,24 +280,6 @@ namespace MeshPoints.CreateMesh
             return rails;
         }
 
-        /// <summary>
-        /// Check if mesh is compatible with Abaqus
-        /// </summary>
-        /// <returns> Nothing. Assign propertie to solidMesh. </returns>
-        private void IsBrepCompatibleWithAbaqus(Element element, Mesh3D solidMesh)
-        {
-            List<Point3d> nodes = new List<Point3d> { element.Node1.Coordinate, element.Node2.Coordinate, element.Node3.Coordinate, element.Node4.Coordinate };
-            NurbsCurve curve = PolyCurve.CreateControlPointCurve(nodes, 2).ToNurbsCurve();
-            Vector3d direction = element.Node5.Coordinate - element.Node1.Coordinate;
-            curve.MakeClosed(0.001);
-            string curveOrientation = curve.ClosedCurveOrientation(direction).ToString();
-            if (curveOrientation == "Clockwise")
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Abaqus can not interpret order of nodes. Error in brep input. ");
-                solidMesh.inp = false;
-            }
-            else { solidMesh.inp = true; }
-        }
 
         /// <summary>
         /// Divide each brep edge w-direction into nw points. The brep edges in w-direction are named rail.

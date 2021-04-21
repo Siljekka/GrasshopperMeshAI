@@ -46,7 +46,7 @@ namespace MeshPoints.Classes
             Type = "Solid";
         }
 
-        public void SetQuadElements() 
+        public void CreateQuadElements() 
         {
             List<Node> nodes = this.Nodes;
             int nu = this.nu;
@@ -91,7 +91,7 @@ namespace MeshPoints.Classes
             this.Elements = elements;
         }
 
-        public void SetHexElements()
+        public void CreateHexElements()
         {
             int nu = this.nu;
             int nv = this.nv;
@@ -160,7 +160,7 @@ namespace MeshPoints.Classes
             this.Elements = elements;
         }
 
-        public void SetMesh()
+        public void CreateMesh()
         {
             int nu = this.nu;
             int nv = this.nv;

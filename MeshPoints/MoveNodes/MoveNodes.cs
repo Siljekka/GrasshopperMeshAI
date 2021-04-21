@@ -63,7 +63,7 @@ namespace MeshPoints.MoveNodes
             DA.GetDataList(4, genesW);
             if (brep == null | oldMesh.Elements == null) { return; }
 
-
+            // to do: fix
             // Variables
             Mesh3D newMesh = new Mesh3D();
             Mesh allMesh = new Mesh();
@@ -84,7 +84,6 @@ namespace MeshPoints.MoveNodes
             newMesh.nw = oldMesh.nw;
             newMesh.Type = oldMesh.Type;
             newMesh.Geometry = oldMesh.Geometry;
-            newMesh.inp = oldMesh.inp;
 
             // 3. Create new nodes
             for (int i = 0; i < oldMesh.Nodes.Count; i++)
@@ -107,15 +106,15 @@ namespace MeshPoints.MoveNodes
             newMesh.Nodes = newNodes;
             if (newMesh.Type == "Surface")
             {
-                newMesh.SetQuadElements();
+                newMesh.CreateQuadElements();
             }
             else
             {
-                newMesh.SetHexElements();
+                newMesh.CreateHexElements();
             }
 
             //4. Set new mesh 
-            newMesh.SetMesh();
+            newMesh.CreateMesh();
 
             // Output
             DA.SetData(0, newMesh);
@@ -133,7 +132,7 @@ namespace MeshPoints.MoveNodes
             BrepFace face = null;
             BrepFaceList brepFace = brep.Faces;
 
-            foreach (BrepFace bFace in brepFace) // check if node is on edge
+            foreach (BrepFace bFace in brepFace) // check if node is on face
             {
                 IsOnFace = node.IsOnFace(bFace);
                 face = bFace;
