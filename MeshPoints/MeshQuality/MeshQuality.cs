@@ -83,7 +83,7 @@ namespace MeshPoints.MeshQuality
                 sumSkewness += elementQuality.Skewness;
                 sumJacobianRatio += elementQuality.JacobianRatio;
 
-                qualityList.Add(elementQuality); // todo: check if this is needed
+                qualityList.Add(elementQuality);
                 elementQuality = new Quality();
             }
 
@@ -189,18 +189,26 @@ namespace MeshPoints.MeshQuality
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
                     Vector3d vec2 = nodesOfFace[n].Coordinate - nodesOfFace[n + neighborPoint].Coordinate;
                     Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+
+                    // Calculate angle
                     double angleRad = Vector3d.VectorAngle(vec1, vec2, normal); 
-                    // Calculate angles between vectors
                     double angleDegree = angleRad * 180 / Math.PI; //convert from rad to deg
                     elementAngles.Add(angleDegree);
                 }
 
             }
             elementAngles.Sort();
-            double minAngle = Math.Abs(elementAngles[0]); // todo: controll if abs ok
-            double maxAngle = Math.Abs(elementAngles[elementAngles.Count - 1]);
-            double SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle));
-            return SK;
+            double minAngle = elementAngles[0];
+            double maxAngle = elementAngles[elementAngles.Count - 1];
+            double SK;
+            if (maxAngle > 180) // if chevron element
+            { 
+                SK = -1; return SK;
+            }
+            else
+            {
+                SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle)); return SK;
+            }
         }
 
         /// <summary>
@@ -221,7 +229,7 @@ namespace MeshPoints.MeshQuality
                 // jacobian = CalculateJacobianOf8NodeElementOLD(element); magnus
             }
             return jacobian;
-        } // to do: slett
+        } 
 
 
         /// <summary>
@@ -315,7 +323,8 @@ namespace MeshPoints.MeshQuality
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
                 if (jacobianRatio < 0)
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"The Jacobian Ratio of element {element.Id} is negative.");
+                    jacobianRatio = -1;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"The Jacobian Ratio of element {element.Id} is negative.");
                 }
             }
             else
