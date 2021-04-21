@@ -155,6 +155,7 @@
     <Content Include="Properties\Resources\Icon-QuadRemesh.png" />
     <Content Include="Properties\Resources\Icon-SolidMesh.png" />
     <Content Include="Properties\Resources\Icon-SurfaceMesh.png" />
+    <Content Include="Properties\Resources\Icon_NormalizeSurface.png" />
     <Content Include="Properties\Resources\MeshQuality.png" />
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>

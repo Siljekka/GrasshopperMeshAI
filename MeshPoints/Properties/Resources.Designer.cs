@@ -193,6 +193,16 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Icon_NormalizeSurface {
+            get {
+                object obj = ResourceManager.GetObject("Icon_NormalizeSurface", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Icon_QuadRemesh {
             get {
                 object obj = ResourceManager.GetObject("Icon_QuadRemesh", resourceCulture);
