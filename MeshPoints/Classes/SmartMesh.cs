@@ -13,9 +13,9 @@ namespace MeshPoints.Classes
         public List<Element> Elements { get; set; } //list of elements
         public List<Node> Nodes { get; set; } //list of nodes
         public Mesh Mesh { get; set; } //mesh
-        public int nu { get; set; } //number of nodes in u-dir
-        public int nv { get; set; } //number of nodes in v-dir
-        public int nw { get; set; } //number of nodes in w-dir
+        public int nu { get; set; } //number of nodes in x-dir
+        public int nv { get; set; } //number of nodes in y-dir
+        public int nw { get; set; } //number of nodes in z-dir
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
 
