@@ -25,12 +25,12 @@ namespace MeshPoints.MoveNodes
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Geometry", "geo", "Input source geometry", GH_ParamAccess.item);
+            //pManager.AddGenericParameter("Geometry", "geo", "Input source geometry", GH_ParamAccess.item); Silje: slett, for vi har Geometry klassen i SmartMesh
             pManager.AddGenericParameter("SmartMesh", "sm", "Input a SmartMesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
-            pManager[4].Optional = true; // if solid
+            pManager[3].Optional = true; // if solid
 
         }
 
@@ -51,27 +51,29 @@ namespace MeshPoints.MoveNodes
         {
             // Input
             SmartMesh oldMesh = new SmartMesh();
-            Brep brep1 = new Brep(); // Silje:Fjerne denne inputen?
+            //Brep brep1 = new Brep(); // Silje: Fjerne denne inputen?
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
             List<double> genesW = new List<double>();
 
-            DA.GetData(0, ref brep1);
-            DA.GetData(1, ref oldMesh);
-            DA.GetDataList(2, genesU);
-            DA.GetDataList(3, genesV);
-            DA.GetDataList(4, genesW);
-            if (brep1 == null | oldMesh.Elements == null) { return; } //Silje: slette?
+            //DA.GetData(0, ref brep1);
+            DA.GetData(0, ref oldMesh);
+            DA.GetDataList(1, genesU);
+            DA.GetDataList(2, genesV);
+            DA.GetDataList(3, genesW);
+            //if (brep1 == null | oldMesh.Elements == null) { return; } //Silje: slette?
 
             // to do: fix
             // Variables
             SmartMesh newMesh = new SmartMesh();
-            Mesh allMesh = new Mesh(); // Silje: slett?
-            Node node = new Node(); 
             List<Node> newNodes = new List<Node>();
-            List<Element> elements = new List<Element>(); // Silje: slett?
+            //Mesh allMesh = new Mesh(); // Silje: slett?
+            //List<Element> elements = new List<Element>(); // Silje: slett?
+            //Node node = new Node();  Silje: slett? har flytta Node
 
-            Brep brep = oldMesh.Geometry.Brep;
+
+
+            Brep brep = oldMesh.Geometry.Brep; // Silje: la til denne istedenfor inputen "Geometry"
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref brep)) return;
@@ -79,8 +81,7 @@ namespace MeshPoints.MoveNodes
             //if (oldMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh input is not valid."); return; }
             if (oldMesh.Type == "Solid" & !DA.GetDataList(4, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
             if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
-            //if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
-            if (oldMesh.Type == "Solid" & !DA.GetDataList(4, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
+            if (oldMesh.Type == "Solid" & !DA.GetDataList(4, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; } //Silje: la til denne
             if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
 
             // 2. Inherit properties from old mesh
@@ -103,7 +104,7 @@ namespace MeshPoints.MoveNodes
                 Point3d meshPoint = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genesU, genesV, genesW);
 
                 // c. Make new node from moved node.
-                node = new Node(i, meshPoint, oldMesh.Nodes[i].BC_U, oldMesh.Nodes[i].BC_V, oldMesh.Nodes[i].BC_W);
+                Node node = new Node(i, meshPoint, oldMesh.Nodes[i].BC_U, oldMesh.Nodes[i].BC_V, oldMesh.Nodes[i].BC_W);
                 newNodes.Add(node);
             }
 
