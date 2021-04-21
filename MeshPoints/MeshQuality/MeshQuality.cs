@@ -169,7 +169,7 @@ namespace MeshPoints.MeshQuality
         double CalculateSkewness(Element element)
         {
             double idealAngle = 90; // ideal angle in degrees
-            int neighborPoint = 3; // variable used in skewness calculation
+            int neighborPoint = 3; // variable used in skewness calculation, assume quad
             List<double> elementAngles = new List<double>();
             List<List<Node>> faces = element.GetFaces();
 
@@ -188,9 +188,9 @@ namespace MeshPoints.MeshQuality
                     // Create a vector from a vertex to a neighbouring vertex
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
                     Vector3d vec2 = nodesOfFace[n].Coordinate - nodesOfFace[n + neighborPoint].Coordinate;
-
+                    Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+                    double angleRad = Vector3d.VectorAngle(vec1, vec2, normal); 
                     // Calculate angles between vectors
-                    double angleRad = Math.Abs(Math.Acos(Vector3d.Multiply(vec1, vec2) / (vec1.Length * vec2.Length))); // to do: fix correct
                     double angleDegree = angleRad * 180 / Math.PI; //convert from rad to deg
                     elementAngles.Add(angleDegree);
                 }
@@ -208,7 +208,7 @@ namespace MeshPoints.MeshQuality
         /// </summary>
         /// <param name="element">A single <see cref="Element"/> object from a mesh.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0 describing the ratio between the min and max values of the determinants of the Jacobian matrix of the element, evaluated in the corner nodes.</returns>
-        private double CalculateJacobianRatioOLD(Element element)
+        private double CalculateJacobianRatioOLD(Element element) // to do: slett
         {
             // to do: slett
             double jacobian = 0;
@@ -267,7 +267,7 @@ namespace MeshPoints.MeshQuality
         /// <summary>
         /// Calculate the Jacobian Ratio
         /// </summary>
-        private double CalculateJacobianRatio(Element element) // to do: fix negative jacobian
+        private double CalculateJacobianRatio(Element element) 
         {
             FEM _FEM = new FEM();
             int nodeDOFS = 2;
@@ -312,14 +312,11 @@ namespace MeshPoints.MeshQuality
             if (jacobiansOfElement.Any(x => x < 0))
             {
                 jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
-                jacobianRatio = 0; // to do: check, må settes lik null i utregning
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
                 if (jacobianRatio < 0)
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"The Jacobian Ratio of element {element.Id} is negative.");
                 }
-                jacobianRatio = 0; // to do: check, må settes lik null i utregning
-
             }
             else
             {

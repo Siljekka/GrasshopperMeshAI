@@ -68,10 +68,10 @@ namespace MeshPoints.FiniteElementMethod
             int numNodes = nodes.Count;
             int nodeDOFS = 0;
 
-            // 1. Check if mesh is Shell or Solid
-            if (String.Equals(mesh.Type, "shell"))  { nodeDOFS = 2;}
-            else if (String.Equals( mesh.Type,"solid")) { nodeDOFS = 3;}
-            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is shell or solid."); }
+            // 1. Check if mesh is Surface or Solid
+            if (String.Equals(mesh.Type, "Surface"))  { nodeDOFS = 2;}
+            else if (String.Equals( mesh.Type,"Solid")) { nodeDOFS = 3;}
+            else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is surface or solid."); }
 
             // 2. Get global stiffness matrix
             Matrix<double> K_global = CalculateGlobalStiffnessMatrix(elements, numNodes, nodeDOFS, material);
@@ -330,7 +330,7 @@ namespace MeshPoints.FiniteElementMethod
                 {
                     for (int j = 0; j < nodeDOFS; j++)
                     {
-                        if (nodeDOFS == 2) // shell
+                        if (nodeDOFS == 2) // surface
                         {
                             if (j == 0)
                             {
@@ -532,7 +532,7 @@ namespace MeshPoints.FiniteElementMethod
                 {
                     for (int j = 0; j < nodeDOFS; j++)
                     {
-                        if (nodeDOFS == 2) // shell
+                        if (nodeDOFS == 2) // surface
                         {
                             if (j == 0)
                             {

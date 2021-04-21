@@ -233,6 +233,19 @@ namespace MeshPoints.MoveNodes
             // 2. if: Node not restrained in W direction and gen negative.
             // 3. if: Node restrained in W direction.
             // Note: if point is on edge not restrained in W direction - meshPoint is made
+<<<<<<< HEAD
+            if (m.Type == "Solid")
+            {
+                if (genesW[i] >= 0 & !m.Nodes[i].BC_W) // 1. if
+                {
+                    translationVectorW = 0.5 * (m.Nodes[i + (m.nu) * (m.nv)].Coordinate - m.Nodes[i].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i + (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+                }
+                else if (genesW[i] <= 0 & !m.Nodes[i].BC_W) // 1. if
+                {
+                    translationVectorW = 0.5 * (m.Nodes[i].Coordinate - m.Nodes[i - (m.nu) * (m.nv)].Coordinate) * genesW[i];
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, m, genesW[i], i, i - (m.nu) * (m.nv)); return movedNode; } // make meshPoint
+=======
             if (mesh.Type == "Solid")
             {
                 if (genesW[i] >= 0 & !mesh.Nodes[i].BC_W) // 1. if
@@ -244,6 +257,7 @@ namespace MeshPoints.MoveNodes
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genesW[i];
                     if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+>>>>>>> e7c8238347ea06a5d044315134edbbdb699c1b36
                 }
                 else { translationVectorW = translationVectorW * 0; } // 3. if
             }
