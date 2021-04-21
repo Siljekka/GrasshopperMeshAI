@@ -111,7 +111,7 @@ namespace MeshPoints.FiniteElementMethod
                 int loadCounter = 0;
                 foreach (int nodeIndex in nodeIndexOnSurface)
                 {
-                    int numBC = 0;
+                    int numBC = 0; // to do: gjør om til methode i klasse
                     if (nodes[nodeIndex].BC_U){ numBC++; }
                     if (nodes[nodeIndex].BC_V) { numBC++; }
                     if (nodes[nodeIndex].BC_W) { numBC++; }

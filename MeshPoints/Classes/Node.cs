@@ -99,6 +99,25 @@ namespace MeshPoints.Classes
             }
             return isOnEdge;
         }
+
+        public void GetType()
+        {
+            int counter = 0;
+            if (this.BC_U) { counter++; }
+            if (this.BC_V) { counter++; }
+            if (this.BC_W) { counter++; }
+
+            switch (counter)
+            {
+                case 3:
+                    { 
+                        
+                    }
+
+            }
+
+        }
+
     }
 
 }

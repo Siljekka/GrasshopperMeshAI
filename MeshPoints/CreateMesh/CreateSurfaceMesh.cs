@@ -57,27 +57,19 @@ namespace MeshPoints.CreateMesh
             DA.GetData(1, ref u);
             DA.GetData(2, ref v);
 
-            Mesh3D smartMesh = new Mesh3D();
-
-            // 
-            /* To do: Hilde, slette dette?
-             *  Fikse hvordan punkt blir generert. Gjør som i solidMesh med PointAt(0,0) som referansepunkt.
-             *  Fiks sånn at overflate alltid har u og v i samme rekkefølge uavhengig av hvordan den tegnes.
-             */
-
             // 1. Check input OK.
             if (!DA.GetData(0, ref brep)) return;
             if (u == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "u cannot be zero."); return; }
             if (v == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "v cannot be zero."); return; }
 
             // 2. Assign geometrical properties to mesh
+            Mesh3D smartMesh = new Mesh3D();
             Geometry brepGeometry = new Geometry(brep, brep.Faces.ToList(), brep.Edges.ToList(), brep.Vertices.ToList());
             smartMesh.nu = u + 1;
             smartMesh.nv = v + 1;
             smartMesh.nw = 1;
             smartMesh.Type = "Surface";
             smartMesh.Geometry = brepGeometry; 
-            // smartMesh.inp = true; to do: Hilde, sjekk om inp ok ?
 
             // 3. Generate grid of points on surface
             List<Point3d> meshPoints = CreateGridOfPointsUV(brep.Faces[0].ToNurbsSurface(), u, v);
@@ -86,10 +78,10 @@ namespace MeshPoints.CreateMesh
             smartMesh.Nodes = CreateNodes(meshPoints, smartMesh.nu, smartMesh.nv);
 
             // 5. Set elements
-            smartMesh.SetQuadElements();
+            smartMesh.CreateQuadElements();
 
             // 6. Set global mesh
-            smartMesh.SetMesh();
+            smartMesh.CreateMesh();
 
             // Output
             DA.SetData(0, smartMesh);

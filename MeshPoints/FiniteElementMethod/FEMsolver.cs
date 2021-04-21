@@ -26,7 +26,7 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "solidmesh", "Input a SmartMesh", GH_ParamAccess.item); // to do: change name
+            pManager.AddGenericParameter("SmartMesh", "smartMesh", "Input a SmartMesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("Loads", "loads", "Input a load vector", GH_ParamAccess.list);
             pManager.AddGenericParameter("Boundary conditions", "BC", "Input a boundary condition vector", GH_ParamAccess.list);
             pManager.AddGenericParameter("Material", "material", "Input a list of material sorted: Young modulus, Poisson Ratio", GH_ParamAccess.item);
