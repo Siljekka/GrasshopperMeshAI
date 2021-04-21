@@ -105,12 +105,12 @@
     <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\SmartMesh.cs" />
-    <Compile Include="GenerateINPfile.cs" />
+    <Compile Include="Tools\GenerateINPfile.cs" />
     <Compile Include="Mesh_outdated\JacobianRatio3D.cs" />
     <Compile Include="MeshQuality\MeshQuality.cs" />
     <Compile Include="Mesh_outdated\CreateMesh2D.cs" />
-    <Compile Include="MeshPointsInfo.cs" />
-    <Compile Include="IsSweepable.cs" />
+    <Compile Include="Tools\MeshPointsInfo.cs" />
+    <Compile Include="Tools\IsSweepable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -125,6 +125,7 @@
     <Compile Include="QuadRemesh\DeconstructQElement.cs" />
     <Compile Include="QuadRemesh\DeconstructQNode.cs" />
     <Compile Include="FiniteElementMethod\FEMsolver.cs" />
+    <Compile Include="Tools\NormalizeSurface.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -154,6 +155,7 @@
     <Content Include="Properties\Resources\Icon-QuadRemesh.png" />
     <Content Include="Properties\Resources\Icon-SolidMesh.png" />
     <Content Include="Properties\Resources\Icon-SurfaceMesh.png" />
+    <Content Include="Properties\Resources\Icon_NormalizeSurface.png" />
     <Content Include="Properties\Resources\MeshQuality.png" />
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>
