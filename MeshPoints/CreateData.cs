@@ -59,7 +59,6 @@ namespace MeshPoints
             if (!DA.GetData(2, ref filePath)) return;
 
 
-            List<Point3d> points = new List<Point3d>();
             StringBuilder stringBuilder = new StringBuilder();
             List<Node> nodes = mesh.Nodes;
 
@@ -68,29 +67,18 @@ namespace MeshPoints
                 // 1. Add quality measure to string.
                 stringBuilder.Append(String.Format("{0}", quality));
 
-                // 2. Normalize coordinates.
-                NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
-                surface.SetDomain(0, new Interval(0, 1));
-                surface.SetDomain(1, new Interval(0, 1));
-                foreach (Node node in mesh.Nodes)
-                {
-                    surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
-                    Point3d newPoint = new Point3d(PointU, PointV, 0);
-                    points.Add(newPoint);
-                }
-
-                // 3. Add normalized coordiantes to string.
-                for (int i = 0; i < points.Count; i++)
+                // 2. Add coordiantes of nodes to string.
+                for (int i = 0; i < nodes.Count; i++)
                 {
                     if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
-                    string text = String.Format(",{0},{1},{2}", points[i].X, points[i].Y, 0);
+                    //if (nodes[i].Coordinate.X < 0.0001) {  }
+                    string text = String.Format(",{0},{1},{2}", nodes[i].Coordinate[i].X, nodes[i].Coordinate[i].Y, 0);
                     stringBuilder.Append(text);
                 }
 
                 // 4. Make CSV-file
                 var data = Convert.ToString(stringBuilder);
                 WriteTextFile(data, filePath);
-                //CSV.addRecord(data, filePath);
             }
             else { return; }
         }
