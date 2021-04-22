@@ -15,8 +15,7 @@ namespace MeshPoints.Classes
         public bool IsQuad { get; }
 
 
-        // Constructer
-
+        // Constructors:
         public qElement()
         {
             // empty constructor
@@ -33,7 +32,6 @@ namespace MeshPoints.Classes
         }
 
         // Methods
-        
         public List<double> CalculateAngles(List<qEdge> _edgeList)
         {
             Vector3d vec1 = Vector3d.Zero;
@@ -60,7 +58,6 @@ namespace MeshPoints.Classes
             return angList;
         
         }
-
         public List<Line> GetContourOfElement(List<qEdge> _edgeList)
         {
             List<Line> contour = new List<Line>();
@@ -71,6 +68,91 @@ namespace MeshPoints.Classes
             }
             return contour;
         }
+        public Point3d GetElementCenter()
+        {
+            qElement element = this;
+            // summary: get center of an element
+            double sx = 0;
+            double sy = 0;
+            double sz = 0;
+
+            List<qEdge> edgeList = element.EdgeList;
+            foreach (qEdge edge in edgeList)
+            {
+                Point3d startPoint = edge.StartNode.Coordinate;
+                Point3d endPoint = edge.EndNode.Coordinate;
+                List<Point3d> pts = new List<Point3d>() { startPoint, endPoint };
+                foreach (Point3d pt in pts)
+                {
+                    sx = sx + pt.X;
+                    sy = sy + pt.Y;
+                    sz = sz + pt.Z;
+                }
+            }
+            int n = edgeList.Count * 2;
+            Point3d centerPt = new Point3d(sx / n, sy / n, sz / n);
+            return centerPt;
+        } // class: kan bli implementert i: qElement
+        public List<qNode> GetNodesOfElement()
+        {
+            qElement element = this;
+            // summary: get nodes of an element
+            List<qNode> nodeList = new List<qNode>();
+            if (!element.IsQuad)
+            {
+                foreach (qEdge edge in element.EdgeList)
+                {
+                    if (!nodeList.Contains(edge.StartNode))
+                    {
+                        nodeList.Add(edge.StartNode);
+                    }
+
+                    if (!nodeList.Contains(edge.EndNode))
+                    {
+                        nodeList.Add(edge.EndNode);
+                    }
+                }
+            }
+            else if (element.IsQuad) //todo: test function
+            {
+                List<qEdge> quadEdges = element.EdgeList;
+
+                qEdge baseEdge = quadEdges[0];
+                qEdge rightEdge = quadEdges[1];
+                qEdge leftEdge = quadEdges[2];
+                qEdge topEdge = quadEdges[3];
+
+                qNode node1 = new qNode();
+                qNode node2 = new qNode();
+                qNode node3 = new qNode();
+                qNode node4 = new qNode();
+
+                if (baseEdge.StartNode == leftEdge.StartNode | baseEdge.StartNode == leftEdge.EndNode)
+                {
+                    node1 = baseEdge.StartNode;
+                    node2 = baseEdge.EndNode;
+                }
+                else if (baseEdge.EndNode == leftEdge.StartNode | baseEdge.EndNode == leftEdge.EndNode)
+                {
+                    node1 = baseEdge.EndNode;
+                    node2 = baseEdge.StartNode;
+                }
+
+                if (topEdge.StartNode == leftEdge.StartNode | topEdge.StartNode == leftEdge.EndNode)
+                {
+                    node3 = topEdge.EndNode;
+                    node4 = topEdge.StartNode;
+                }
+                else if (topEdge.EndNode == leftEdge.StartNode | topEdge.EndNode == leftEdge.EndNode)
+                {
+                    node3 = topEdge.StartNode;
+                    node4 = topEdge.EndNode;
+                }
+
+                nodeList = new List<qNode> { node1, node2, node3, node4 }; // n1: bottom left, n2: bottom right, n2: top right, n3: top left
+            }
+            return nodeList;
+        } // class: kan bli implementert i: qElement
 
 
     }

@@ -24,7 +24,7 @@ namespace MeshPoints.Classes
 
 
 
-
+        // Constructors:
         public qEdge()
         {
             // empty constructor
@@ -49,6 +49,47 @@ namespace MeshPoints.Classes
             return new Line(_startNode.Coordinate, _endNode.Coordinate);
         }
 
+        // Methods:
+        public bool IsFrontEdge()
+        {
+            qEdge edge = this;
+            // summary: check if an edge is a front edge
+            bool check = false;
+            List<qElement> connectedElements = this.GetConnectedElements();
+            if (connectedElements.Count == 1)
+            {
+                if (!edge.Element1.IsQuad)
+                {
+                    check = true;
+                }
+            }
+            else if (connectedElements.Count != 1)
+            {
+                if (!edge.Element1.IsQuad & edge.Element2.IsQuad) { check = true; }
+                else if (edge.Element1.IsQuad & !edge.Element2.IsQuad) { check = true; }
+            }
 
+            return check;
+        } // class: kan bli implementert i: qEdge.
+        public List<qElement> GetConnectedElements()
+        {
+            qEdge edge = this;
+            // summary: get conneccted elements to an edge. Assume edge has updated elements element 1 and/or element 2.
+            List<qElement> connectedElements = new List<qElement>();
+            connectedElements.Add(edge.Element1);
+            if (edge.Element2 != null)
+            {
+                connectedElements.Add(edge.Element2);
+            }
+            return connectedElements;
+        } // class: kan bli implementert i: qEdge
+        public qNode GetOppositeNode(qNode node)
+        {
+            qEdge edge = this;
+            qNode oppositeNode = new qNode();
+            if (node == edge.StartNode) { oppositeNode = edge.EndNode; }
+            else if (node == edge.EndNode) { oppositeNode = edge.StartNode; }
+            return oppositeNode;
+        } // class: kan bli implementert i: qEdge
     }
 }
