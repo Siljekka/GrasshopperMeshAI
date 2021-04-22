@@ -43,9 +43,18 @@ namespace MeshPoints.Tools
             SmartMesh mesh = new SmartMesh();
             DA.GetData(0, ref mesh);
 
-            Brep brep = mesh.Geometry.Brep;
+            List<Point3d> points = new List<Point3d>();
+            NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
+            surface.SetDomain(0, new Interval(0, 1));
+            surface.SetDomain(1, new Interval(0, 1));
+            foreach (Node node in mesh.Nodes)
+            {
+                surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
+                Point3d newPoint = new Point3d(PointU, PointV, 0);
+                points.Add(newPoint);
+            }
 
-
+            DA.SetDataList(0, points);
         }
 
         /// <summary>
