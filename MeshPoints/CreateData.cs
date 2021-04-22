@@ -101,10 +101,37 @@ namespace MeshPoints
                         string.Format("{0:00}", x);
                         string.Format("{0:00}", y);
                         string.Format("{0:00}", z);
-                        string xString = x.ToString("00");
-                        string yString = y.ToString("00");
-                        string zString = z.ToString("00");
+                        string xString;
+                        string yString;
+                        string zString;
 
+                        if (x < 0)
+                        {
+                            x = (double)(-1) * x;
+                            xString = "0" + x.ToString("00");
+                        }
+                        else
+                        {
+                            xString = "1" + x.ToString("00");
+                        }
+                        if (y < 0)
+                        {
+                            y = (double)(-1) * y;
+                            yString = "0" + y.ToString("00");
+                        }
+                        else
+                        {
+                            yString = "1" + y.ToString("00");
+                        }
+                        if (z < 0)
+                        {
+                            z = (double)(-1) * z;
+                            zString = "0" + z.ToString("00");
+                        }
+                        else
+                        {
+                            zString = "1" + z.ToString("00");
+                        }
 
                         string text = String.Format("{0}{1}{2}", xString, yString, zString);
                         stringBuilder.Append(text);
@@ -115,7 +142,7 @@ namespace MeshPoints
                         }
                     }
 
-
+              
                 }
                 // 4. Make CSV-file
                 var data = Convert.ToString(stringBuilder);
