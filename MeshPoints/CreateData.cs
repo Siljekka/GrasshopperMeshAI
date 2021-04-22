@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Text;
+using MathNet;
 
 namespace MeshPoints
 {
@@ -26,8 +27,10 @@ namespace MeshPoints
         {
             pManager.AddGenericParameter("Quality", "q", "Average quality of mesh.", GH_ParamAccess.item);
             pManager.AddGenericParameter("SmartMesh", "m", "Surface mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Coordinate structure", "cs", "1: feautre for each x and y node coordinate. 2: one feature for all nodes.", GH_ParamAccess.item);
             pManager.AddGenericParameter("filePath", "fp", "File path to where data are saved", GH_ParamAccess.item);
             pManager.AddBooleanParameter("WriteData", "w", "True: data is written to file, False: data is not written to file.", GH_ParamAccess.item);
+
         }
 
         /// <summary>
@@ -45,18 +48,22 @@ namespace MeshPoints
         {
             double quality = 100;
             SmartMesh mesh = new SmartMesh();
+            int structureType = 0;
             string filePath = "empty";
             bool writeData = false;
 
+
             DA.GetData(0, ref quality);
             DA.GetData(1, ref mesh);
-            DA.GetData(2, ref filePath);
-            DA.GetData(3, ref writeData);
+            DA.GetData(2, ref structureType);
+            DA.GetData(3, ref filePath);
+            DA.GetData(4, ref writeData);
 
             // 0. Check input
             if (!DA.GetData(0, ref quality)) return;
             if (!DA.GetData(1, ref mesh)) return;
-            if (!DA.GetData(2, ref filePath)) return;
+            if (!DA.GetData(2, ref structureType)) return;
+            if (!DA.GetData(3, ref filePath)) return;
 
 
             StringBuilder stringBuilder = new StringBuilder();
@@ -67,15 +74,31 @@ namespace MeshPoints
                 // 1. Add quality measure to string.
                 stringBuilder.Append(String.Format("{0}", quality));
 
-                // 2. Add coordiantes of nodes to string.
-                for (int i = 0; i < nodes.Count; i++)
+                if (structureType == 1)
                 {
-                    if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
-                    //if (nodes[i].Coordinate.X < 0.0001) {  }
-                    string text = String.Format(",{0},{1},{2}", nodes[i].Coordinate.X, nodes[i].Coordinate.Y, 0);
-                    stringBuilder.Append(text);
+                    // 2. Feature for each x and y node coordinate
+                    for (int i = 0; i < nodes.Count; i++)
+                    {
+                        if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
+                        //if (nodes[i].Coordinate.X < 0.0001) {  }
+                        string text = String.Format(",{0},{1},{2}", nodes[i].Coordinate.X, nodes[i].Coordinate.Y, 0); // temporary 0
+                        stringBuilder.Append(text);
+                    }
                 }
+                else if (structureType == 2)
+                {
+                    // 2. One feature for all nodes
+                    for (int i = 0; i < nodes.Count; i++)
+                    {
+                        if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
+                        double x = Math.Round(nodes[i].Coordinate.X, 1) * (double) 10;
+                        double y = Math.Round(nodes[i].Coordinate.Y, 1) * (double) 10;
+                        string text = String.Format("{0}{1}{2}", x, y, 0); // temporary 0
+                        stringBuilder.Append(text);
+                    }
 
+
+                }
                 // 4. Make CSV-file
                 var data = Convert.ToString(stringBuilder);
                 WriteTextFile(data, filePath);
