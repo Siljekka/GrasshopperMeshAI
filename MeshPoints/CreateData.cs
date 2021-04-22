@@ -15,7 +15,7 @@ namespace MeshPoints
         public CreateData()
           : base("CreateCSV (Quality)", "data",
               "Export data to CSV file.",
-              "MyPlugIn", "Data")
+              "MyPlugIn", "Tools")
         {
         }
 
