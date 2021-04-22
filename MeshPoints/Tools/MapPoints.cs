@@ -31,7 +31,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Normalized points", "np", "List with normalized points.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SmartMesh", "np", "SmartMesh Class with normalized node coordinates.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace MeshPoints.Tools
             SmartMesh mesh = new SmartMesh();
             DA.GetData(0, ref mesh);
 
-            List<Point3d> points = new List<Point3d>();
+
             NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
             surface.SetDomain(0, new Interval(0, 1));
             surface.SetDomain(1, new Interval(0, 1));
@@ -51,10 +51,11 @@ namespace MeshPoints.Tools
             {
                 surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
                 Point3d newPoint = new Point3d(PointU, PointV, 0);
-                points.Add(newPoint);
+                int id = mesh.Nodes.IndexOf(node);
+                mesh.Nodes[id].Coordinate = newPoint;
             }
 
-            DA.SetDataList(0, points);
+            DA.SetData(0, mesh);
         }
 
         /// <summary>

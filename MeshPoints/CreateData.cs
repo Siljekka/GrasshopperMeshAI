@@ -82,8 +82,9 @@ namespace MeshPoints
                     for (int i = 0; i < nodes.Count; i++)
                     {
                         if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
-                        //if (nodes[i].Coordinate.X < 0.0001) {  }
-                        string text = String.Format(",{0},{1},{2}", nodes[i].Coordinate.X, nodes[i].Coordinate.Y, 0); // temporary 0
+                        double x = Math.Round(nodes[i].Coordinate.X, 2);
+                        double y = Math.Round(nodes[i].Coordinate.Y, 2);
+                        string text = String.Format(",{0},{1},{2}", x, y, 0); // temporary 0
                         stringBuilder.Append(text);
                     }
                 }
