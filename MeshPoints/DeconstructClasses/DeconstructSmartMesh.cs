@@ -34,7 +34,8 @@ namespace MeshPoints.DeconstructClasses
             pManager.AddGenericParameter("Elements", "e", "List of elements", GH_ParamAccess.list); 
             pManager.AddGenericParameter("Nodes", "n", "List of nodes", GH_ParamAccess.list); 
             pManager.AddGenericParameter("Geometry", "geo", "Geometry information", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Normalized points", "", "", GH_ParamAccess.list);
 
         }
 
@@ -48,11 +49,23 @@ namespace MeshPoints.DeconstructClasses
             SmartMesh mesh = new SmartMesh();
             DA.GetData(0, ref mesh);
 
+            List<Point3d> points = new List<Point3d>();
+            NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
+            surface.SetDomain(0, new Interval(0, 1));
+            surface.SetDomain(1, new Interval(0, 1));
+            foreach (Node node in mesh.Nodes)
+            {
+                surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
+                Point3d newPoint = new Point3d(PointU, PointV, 0);
+                points.Add(newPoint);
+            }
+
             // Output
             DA.SetDataList(0, mesh.Elements);
             DA.SetDataList(1, mesh.Nodes);
             DA.SetData(2, mesh.Geometry);
             DA.SetData(3, mesh.Mesh);
+            DA.SetDataList(4, points);
         }
 
         /// <summary>
