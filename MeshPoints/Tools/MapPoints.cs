@@ -4,17 +4,17 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-namespace MeshPoints.DeconstructClasses
+namespace MeshPoints.Tools
 {
-    public class DeconstructSmartMesh : GH_Component
+    public class MapPoints : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the DeconstructMesh3d class.
+        /// Initializes a new instance of the MapPoints class.
         /// </summary>
-        public DeconstructSmartMesh()
-          : base("Deconstruct SmartMesh", "decMesh",
-              "Deconstructing SmartMesh class",
-              "MyPlugIn", "Deconstruct")
+        public MapPoints()
+          : base("MapPoints", "map",
+              "Map points of a surface to a perfect quad/cube.",
+              "MyPlugIn", "Tools")
         {
         }
 
@@ -23,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "sm", "SmartMesh Class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,11 +31,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Elements", "e", "List of elements", GH_ParamAccess.list); 
-            pManager.AddGenericParameter("Nodes", "n", "List of nodes", GH_ParamAccess.list); 
-            pManager.AddGenericParameter("Geometry", "geo", "Geometry information", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item);
-
+            pManager.AddGenericParameter("SmartMesh", "np", "SmartMesh Class with normalized node coordinates.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -44,15 +40,22 @@ namespace MeshPoints.DeconstructClasses
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            // Input
             SmartMesh mesh = new SmartMesh();
             DA.GetData(0, ref mesh);
 
-            // Output
-            DA.SetDataList(0, mesh.Elements);
-            DA.SetDataList(1, mesh.Nodes);
-            DA.SetData(2, mesh.Geometry);
-            DA.SetData(3, mesh.Mesh);
+
+            NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
+            surface.SetDomain(0, new Interval(0, 1));
+            surface.SetDomain(1, new Interval(0, 1));
+            foreach (Node node in mesh.Nodes)
+            {
+                surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
+                Point3d newPoint = new Point3d(PointU, PointV, 0);
+                int id = mesh.Nodes.IndexOf(node);
+                mesh.Nodes[id].Coordinate = newPoint;
+            }
+
+            DA.SetData(0, mesh);
         }
 
         /// <summary>
@@ -64,7 +67,7 @@ namespace MeshPoints.DeconstructClasses
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_DeconstructSolidMesh;
+                return null;
             }
         }
 
@@ -73,7 +76,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("97c30c27-48c9-41ac-b09d-d02f80e806f6"); }
+            get { return new Guid("14c464b4-b62c-4dec-9420-8bf9826578f0"); }
         }
     }
 }
