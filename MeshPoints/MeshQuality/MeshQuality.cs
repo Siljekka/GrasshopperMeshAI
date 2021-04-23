@@ -67,7 +67,7 @@ namespace MeshPoints.MeshQuality
             double sumAspectRatio = 0;
             double sumSkewness = 0;
             double sumJacobianRatio = 0;
-
+            
             foreach (Element e in elements)
             {
                 elementQuality.AspectRatio = CalculateAspectRatio(e);
@@ -114,16 +114,38 @@ namespace MeshPoints.MeshQuality
             {
                 nodeCoordinates.Add(node.Coordinate);
             }
-            nodeCoordinates.Add(nodeCoordinates[0]);
 
-            // Find distances from corners to centroid
+            // New AR:
+            // Find distances from corners to centroid (Abaqus)
             List<double> nodeToNodeDistance = new List<double>();
-
-            for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+            if (element.Type != "Hex")
             {
-                nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1]));
+                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                {
+                    if (n == nodeCoordinates.Count - 1)
+                    {
+                        nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n - 3]));
+                        continue;
+                    }
+                    nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1])); // add the distance between the points, following mesh edges CCW
+                }
             }
-
+            else
+            {
+                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                {
+                    if (n < 0.5 * nodeCoordinates.Count)
+                    {
+                        nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + nodeCoordinates.Count / 2]));
+                    }
+                    if (n == (0.5 * nodeCoordinates.Count - 1) | n == (nodeCoordinates.Count - 1))
+                    {
+                        nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n - 3]));
+                        continue;
+                    }
+                    nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1]));
+                }
+            }
             nodeToNodeDistance.Sort();
 
             double minDistance = nodeToNodeDistance[0];
