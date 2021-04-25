@@ -106,7 +106,7 @@ namespace MeshPoints.QuadRemesh
             for (int n = 0; n < numberElementsToRemesh; n++)
             {
                 // Temporary stop
-                if (iterationCounter == iterationsToPerformBeforeStop) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Iteration stop"); break; }
+                if (iterationCounter == iterationsToPerformBeforeStop) { AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Iteration stop"); break; }
                 iterationCounter++;
 
                 // logical values for succesful selection of edges
@@ -117,12 +117,18 @@ namespace MeshPoints.QuadRemesh
                 // back up if selected E_front is not to selectable
                 List<qElement> globalElementListBackUp = globalElementList;
                 List<qEdge> globalEdgeListBackUp = globalEdgeList;
-
+                if (iterationCounter == 28)
+                {
+                   // break;
+                    //debug stop 
+                }
 
                 //________________ select next front edge________________
                 var E_frontAndEdgeState = SelectNextFrontEdge(frontEdges);
                 E_front = E_frontAndEdgeState.Item1;
                 var edgeState = E_frontAndEdgeState.Item2;
+
+
                 if (E_front == null)
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "QuadRemesh is complete");
@@ -139,18 +145,12 @@ namespace MeshPoints.QuadRemesh
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "QuadRemesh is complete");
                     break;
                 }
-                /*if (iterationCounter == 116)
-                {
-                    DoLocalSmoothing(globalElementList[141], globalEdgeList, frontEdges, globalElementList);
-
-                    //break;
-                    //debug stop 
-                }*/
 
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
+
 
 
                 //________________ get side edges ________________
@@ -250,10 +250,8 @@ namespace MeshPoints.QuadRemesh
             double badestQuality = meshValues.Item2;
             Mesh colorMesh = meshValues.Item3;
 
-
             // Assign properties to surfaceMesh:
             SmartMesh surfaceMesh = new SmartMesh(nodes, elements, colorMesh);
-            
 
             // todo: when new Level: check if we need to change back to qEdge.IsQuadSideEdge = false;
             // to do: temporay solution for E_frontFail
@@ -265,8 +263,8 @@ namespace MeshPoints.QuadRemesh
             List<bool> a = new List<bool>();
             foreach (qElement con in connectedTrinagles)
             {
-                bool b = IsInverted(con);
-                a.Add(b);
+            bool b = IsInverted(con);
+            a.Add(b);
             }*/
 
 
@@ -280,7 +278,7 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(6, E_k_right);
             //DA.SetData(7, avgQuality);
             //DA.SetData(8, badestQuality);
-            DA.SetData(9, surfaceMesh);
+            //DA.SetData(9, surfaceMesh.Mesh);
 
 
             /*
@@ -734,7 +732,7 @@ namespace MeshPoints.QuadRemesh
             
             if (E_front.Length / E_front.LeftFrontNeighbor.Length > transitionTolerance & !E_front.LeftFrontNeighbor.IsQuadSideEdge)
             {
-                if (!list11.Contains(E_front.LeftFrontNeighbor))
+                if (!list11.Contains(E_front))
                 {
                     E_front = E_front.LeftFrontNeighbor;
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to left neighor. Switched."); }
@@ -742,7 +740,7 @@ namespace MeshPoints.QuadRemesh
             }
             else if (E_front.Length / E_front.RightFrontNeighbor.Length > transitionTolerance & !E_front.RightFrontNeighbor.IsQuadSideEdge)
             {
-                if (!list11.Contains(E_front.RightFrontNeighbor))
+                if (!list11.Contains(E_front))
                 {
                     E_front = E_front.RightFrontNeighbor;
                     { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "SelectNextFrontEdge: Large transision to right neighor. Switched."); }
@@ -760,12 +758,6 @@ namespace MeshPoints.QuadRemesh
 
             // ensure side edge is not selected
             List<qEdge> selectableEdges = new List<qEdge>(edgeStateList);
-
-            foreach (qEdge edge in edgeStateList) // to do: delete
-            {
-                //if (edge.IsQuadSideEdge) { selectableEdges.Remove(edge); }
-            }
-
 
             // get edges of lowest level
             List<qEdge> edgesOfLowestLevel = new List<qEdge>();
@@ -1302,7 +1294,7 @@ namespace MeshPoints.QuadRemesh
                 }*/
                 return existingEdgeIsClosingFront;
         }
-        private Tuple<double, double, Mesh> CalculateQuality(List<qElement> globalElementList)
+        private Tuple<double, double, Mesh> CalculateQuality(List<qElement> globalElementList) // to do: more qualities?
         {
             // summary: calculate quality aspect ratio and create color mesh
             double avgQuality = 0;
