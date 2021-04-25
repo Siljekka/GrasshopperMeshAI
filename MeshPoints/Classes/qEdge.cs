@@ -49,6 +49,47 @@ namespace MeshPoints.Classes
             return new Line(_startNode.Coordinate, _endNode.Coordinate);
         }
 
+        public qNode GetOppositeNode(qNode node)
+        {
+            qNode oppositeNode = new qNode();
+            if (node == this.StartNode) { oppositeNode = this.EndNode; }
+            else if (node == this.EndNode) { oppositeNode = this.StartNode; }
+            return oppositeNode;
+        }
+        public bool IsFrontEdge()
+        {
+            // summary: check if an edge is a front edge
+            bool check = false;
+            List<qElement> connectedElements = this.GetConnectedElements();
+            if (connectedElements.Count == 1)
+            {
+                if (!this.Element1.IsQuad)
+                {
+                    check = true;
+                }
+            }
+            else if (connectedElements.Count != 1)
+            {
+                if (!this.Element1.IsQuad & this.Element2.IsQuad) { check = true; }
+                else if (this.Element1.IsQuad & !this.Element2.IsQuad) { check = true; }
+            }
+
+            return check;
+        }
+
+        public List<qElement> GetConnectedElements()
+        {
+            // summary: get conneccted elements to an edge. Assume edge has updated elements element 1 and/or element 2.
+            List<qElement> connectedElements = new List<qElement>();
+            connectedElements.Add(this.Element1);
+            if (this.Element2 != null)
+            {
+                connectedElements.Add(this.Element2);
+            }
+            return connectedElements;
+        } 
+
+
 
     }
 }
