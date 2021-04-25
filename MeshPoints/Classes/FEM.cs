@@ -89,7 +89,7 @@ namespace MeshPoints.Classes
             }
 
         }
-        public Matrix<double> GetGaussPoints(double scaleFactor, int nodeDOFS)
+        public Matrix<double> GetGaussPoints(double scaleFactor, int nodeDOFS) // to do: endre navn til natrual points elns
         {
             double gp = scaleFactor;
 

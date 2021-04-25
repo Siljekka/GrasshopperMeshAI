@@ -38,6 +38,7 @@ namespace MeshPoints.DeconstructClasses
             pManager.AddGenericParameter("Connectivity", "con", "Connectivity of local to global nodes", GH_ParamAccess.list); //0
             pManager.AddGenericParameter("Type", "type", "Element type", GH_ParamAccess.item); //0
             pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //8
+            pManager.AddGenericParameter("Quality", "qu", "Mesh quality of element", GH_ParamAccess.item); //8
             pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //9
         }
 
@@ -56,7 +57,8 @@ namespace MeshPoints.DeconstructClasses
             DA.SetDataList(1, e.Connectivity);
             DA.SetData(2, e.Type);
             DA.SetData(3, e.Id);
-            DA.SetData(4, e.Mesh);
+            DA.SetData(4, e.MeshQuality);
+            DA.SetData(5, e.Mesh);
         }
 
         /// <summary>
