@@ -90,7 +90,7 @@ def create_random_ngon(number_of_sides: int) -> np.array:
 
 def mesh_contour(contour: np.array, target_edge_length: float):
     # Meshes a contour with a given edge length
-
+    # gmsh.initialize()
     # Create a new model
     gmsh.model.add("1")
 
@@ -117,6 +117,7 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     # Synchronize CAD entities (point, line, surface) with the gmsh-model
     gmsh.model.geo.synchronize()
     gmsh.option.set_number("Mesh.MeshSizeMax", target_edge_length)
+    gmsh.option.set_number("Mesh.Algorithm", 5)
 
     # Generate 2D mesh
     mesh = gmsh.model.mesh.generate(2)
@@ -128,7 +129,16 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     features = np.append(contour.copy(), target_edge_length)
     features = np.append(features, internal_nodes)
 
+    # GUI (buggy on macOS)
+    # Display options:
+    # gmsh.option.set_number("Mesh.Nodes", 1)
+    # gmsh.option.set_number("Mesh.NodeSize", 10)
+    # gmsh.option.set_number("Mesh.NodeLabels", 1)
+    # if "-nopopup" not in sys.argv:
+    #     gmsh.fltk.run()
+
     gmsh.clear()
+    # gmsh.finalize()
 
     return features
 
@@ -169,7 +179,7 @@ def mesh_contour_all_lc(contour: np.array):
 
         # ! Unsure about this line !!!!
         gmsh.option.set_number("Mesh.MeshSizeMax", target_edge_length)
-        gmsh.option.set_number("Mesh.Algorithm", 5)
+        gmsh.option.set_number("Mesh.Algorithm", 2)
 
         # Generate 2D mesh
         mesh = gmsh.model.mesh.generate(2)
@@ -185,11 +195,11 @@ def mesh_contour_all_lc(contour: np.array):
 
         # GUI (buggy on macOS)
         # Display options:
-        # gmsh.option.set_number("Mesh.Nodes", 1)
-        # gmsh.option.set_number("Mesh.NodeSize", 10)
-        # gmsh.option.set_number("Mesh.NodeLabels", 1)
-        # if "-nopopup" not in sys.argv:
-        #     gmsh.fltk.run()
+        gmsh.option.set_number("Mesh.Nodes", 1)
+        gmsh.option.set_number("Mesh.NodeSize", 10)
+        gmsh.option.set_number("Mesh.NodeLabels", 1)
+        if "-nopopup" not in sys.argv:
+            gmsh.fltk.run()
 
         # print(f"edge length: {target_edge_length}")
         # print(f"internal nodes: {internal_nodes}")
@@ -236,6 +246,9 @@ def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: floa
 
     # Start a gmsh API session
     gmsh.initialize()
+
+    # suppress console output during generation
+    gmsh.option.set_number("General.Verbosity", 0)
     dataset = []
     for _ in range(dataset_size):
         test_polygon = create_random_ngon(num_sides)
@@ -254,7 +267,8 @@ def generate_dataset_all_lc(dataset_size: int, num_sides: int) -> list:
 
     # Start a gmsh API session
     gmsh.initialize()
-    gmsh.option.set_number("General.Verbosity", 0)  # suppress console output during generation
+    # suppress console output during generation
+    gmsh.option.set_number("General.Verbosity", 0)
 
     dataset = []
     for i in range(dataset_size):
@@ -262,7 +276,8 @@ def generate_dataset_all_lc(dataset_size: int, num_sides: int) -> list:
         test_polygon = create_random_ngon(num_sides)
         transformed_polygon = procrustes(test_polygon)
 
-        dataset_nested = mesh_contour_all_lc(transformed_polygon["transformed_contour"])
+        dataset_nested = mesh_contour_all_lc(
+            transformed_polygon["transformed_contour"])
         for l in dataset_nested:
             dataset.append(l)
 
