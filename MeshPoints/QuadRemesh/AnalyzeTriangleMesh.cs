@@ -167,7 +167,7 @@ namespace MeshPoints.QuadRemesh
                             E_k_left_performed = leftSideEdgeValues.Item2;  // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge, and swap edge fails
                             break;
                         case 1:
-                            qNode sharedNode = CalculateVectorsFromSharedNode(E_front, E_front.LeftFrontNeighbor).Item3;
+                            qNode sharedNode = E_front.GetSharedNode(E_front.LeftFrontNeighbor);
                             if (IsEdgeClosingFront(sharedNode, E_front.LeftFrontNeighbor, frontEdges, globalEdgeList, E_front))
                             {
                                 E_k_left = CloseFront(frontEdges, globalEdgeList, globalElementList, E_front.LeftFrontNeighbor, sharedNode);
@@ -189,7 +189,7 @@ namespace MeshPoints.QuadRemesh
                             E_k_right_performed = rightSideEdgeValues.Item2; // false only when split/swap is performed on an closing edge, i.e. E_0 is a front edge, and swap edge fails
                             break;
                         case 1:
-                            qNode sharedNode = CalculateVectorsFromSharedNode(E_front, E_front.RightFrontNeighbor).Item3;
+                            qNode sharedNode = E_front.GetSharedNode(E_front.RightFrontNeighbor);
                             if (IsEdgeClosingFront(sharedNode, E_front.RightFrontNeighbor, frontEdges, globalEdgeList, E_front))
                             {
                                 E_k_right = CloseFront(frontEdges, globalEdgeList, globalElementList, E_front.RightFrontNeighbor, sharedNode);
@@ -552,8 +552,8 @@ namespace MeshPoints.QuadRemesh
 
             for (int i = 0; i < frontEdges.Count; i++)
             {
-                double leftAngle = CalculateAngleOfNeighborFrontEdges(0, frontEdges[i]);
-                double rightAngle = CalculateAngleOfNeighborFrontEdges(1, frontEdges[i]);
+                double leftAngle = frontEdges[i].CalculateAngleOfNeighborFrontEdges("left");
+                double rightAngle = frontEdges[i].CalculateAngleOfNeighborFrontEdges("right");
 
                 if (leftAngle < angleTolerance & rightAngle < angleTolerance) { list11.Add(frontEdges[i]); }
                 else if (leftAngle >= angleTolerance & rightAngle < angleTolerance) { list01.Add(frontEdges[i]); }
@@ -583,72 +583,7 @@ namespace MeshPoints.QuadRemesh
 
             return edgeState;
         }
-        private double CalculateAngleOfNeighborFrontEdges(int nodeToCalculate, qEdge edge)
-        {
-            // summary: calculate the angle between front edges with a shared point, i.e. neighbor front edges
-
-            if (!edge.IsFrontEdge())
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The edge is not a front edge."); }
-
-            qEdge edgeNeighbor = new qEdge();
-            double angle = 0;
-
-            // Get neighbor nodes
-            if (nodeToCalculate == 0) { edgeNeighbor = edge.LeftFrontNeighbor; }
-            else { edgeNeighbor = edge.RightFrontNeighbor; }
-
-            // Create vectors from shared node
-            var vectors = CalculateVectorsFromSharedNode(edge, edgeNeighbor);
-            Vector3d vec1 = vectors.Item1;
-            Vector3d vec2 = vectors.Item2;
-
-            if (nodeToCalculate == 0)
-            {
-                angle = Vector3d.VectorAngle(vec1, vec2, Vector3d.ZAxis); // to do: make normal more general
-            }
-            else
-            {
-                angle = Vector3d.VectorAngle(vec2, vec1, Vector3d.ZAxis); // to do: make normal more general
-            }
-
-            /* to do: CHECK IF NEEDED
-            qNode sharedNode = vectors.Item3;
-            Vector3d V_k = vec1.Length * vec2 + vec2.Length * vec1; // angle bisector
-            if (V_k == Vector3d.Zero) // create V_k if zero vector
-            {
-                if (nodeToCalculate == 0) { V_k = vec1; }
-                else { V_k = vec2; }
-
-                Vector3d rotationAxis = Vector3d.CrossProduct(vec1, vec2);
-                V_k.Rotate(0.5 * Math.PI, rotationAxis);
-            }
-            V_k = V_k / V_k.Length; // normalize
-
-            // check with domain
-            Point3d endPointV_k = Point3d.Add(sharedNode.Coordinate, V_k); // endpoint of V_k from sharedNode
-            Point3d endPointV_kNegative = Point3d.Add(sharedNode.Coordinate, -V_k); // endpoint of -V_k from sharedNode
-
-            // distance to domain
-            Point3d edgeFaceCenter = GetElementCenter(GetFrontElement(edge));
-            Point3d edgeNeighborFaceCenter = GetElementCenter(GetFrontElement(edgeNeighbor));
-            Point3d midFaceCenter = (edgeFaceCenter + edgeNeighborFaceCenter) / 2; // mid face center
-
-            double distanceEndPoint = midFaceCenter.DistanceTo(endPointV_k); // todo: ok for all cases?
-            double distanceEndPointNegative = midFaceCenter.DistanceTo(endPointV_kNegative); // todo: ok for all cases?
-            double alpha = Vector3d.VectorAngle(vec1, vec2);
-
-            if (distanceEndPoint < distanceEndPointNegative)
-            {
-                // V_k is inside domain
-                angle = alpha;
-            }
-            else
-            {
-                // V_k is outside domain
-                angle = 2 * Math.PI - alpha;
-            }*/
-            return angle;
-        } // to do: class qEdge
+       
         private Tuple<qEdge, int[]> SelectNextFrontEdge(List<qEdge> frontEdges)
         {
             // summary: select next front edge with the hierarchy: list -> lowest level -> shortest length and switch to neighbor if large transision
@@ -775,38 +710,6 @@ namespace MeshPoints.QuadRemesh
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No shared nodes"); }
             return sharedNode;
         }
-        private Tuple<Vector3d, Vector3d, qNode> CalculateVectorsFromSharedNode(qEdge edge1, qEdge edge2)
-        {
-            // summary: calculate vectors for two edges with a shared node with direction away from the shared node.
-            Vector3d vec1 = Vector3d.Zero;
-            Vector3d vec2 = Vector3d.Zero;
-            qNode sharedNode = new qNode();
-            if (edge1.StartNode == edge2.StartNode)
-            {
-                sharedNode = edge1.StartNode;
-                vec1 = edge1.EndNode.Coordinate - edge1.StartNode.Coordinate;
-                vec2 = edge2.EndNode.Coordinate - edge2.StartNode.Coordinate;
-            }
-            else if (edge1.StartNode == edge2.EndNode)
-            {
-                sharedNode = edge1.StartNode;
-                vec1 = edge1.EndNode.Coordinate - edge1.StartNode.Coordinate;
-                vec2 = edge2.StartNode.Coordinate - edge2.EndNode.Coordinate;
-            }
-            else if (edge1.EndNode == edge2.StartNode)
-            {
-                sharedNode = edge1.EndNode;
-                vec1 = edge1.StartNode.Coordinate - edge1.EndNode.Coordinate;
-                vec2 = edge2.EndNode.Coordinate - edge2.StartNode.Coordinate;
-            }
-            else if (edge1.EndNode == edge2.EndNode)
-            {
-                sharedNode = edge1.EndNode;
-                vec1 = edge1.StartNode.Coordinate - edge1.EndNode.Coordinate;
-                vec2 = edge2.StartNode.Coordinate - edge2.EndNode.Coordinate;
-            }
-            return Tuple.Create(vec1, vec2, sharedNode);
-        }
         private List<qNode> GetSwapedNodes(qEdge E_0)
         {
             // summary: get the new nodes of E_0 if swaped. Assume E_0 is swapable, i.e. two adjacent triangles.
@@ -884,7 +787,7 @@ namespace MeshPoints.QuadRemesh
             #region Check left side
 
             qNode leftNode = GetNodeOfFrontEdge(0, E_front);
-            double leftAngle = CalculateAngleOfNeighborFrontEdges(0, E_front);
+            double leftAngle = E_front.CalculateAngleOfNeighborFrontEdges("left");
             int numberConnectedQuad = leftNode.GetQuadsConnectedToNode(globalEdgeList).Count;
 
             // ensure length ratio is > 1
@@ -944,7 +847,7 @@ namespace MeshPoints.QuadRemesh
             #region Check right side
 
             qNode rightNode = GetNodeOfFrontEdge(1, E_front);
-            double rightAngle = CalculateAngleOfNeighborFrontEdges(1, E_front);
+            double rightAngle = E_front.CalculateAngleOfNeighborFrontEdges("right");
             numberConnectedQuad = rightNode.GetQuadsConnectedToNode(globalEdgeList).Count;
 
             // ensure length ratio is > 1
@@ -992,7 +895,7 @@ namespace MeshPoints.QuadRemesh
                 if (E_k_right != null)
                 {
                     specialCase = true;
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a split of  right edge.");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "CheckSpecialCase: performed a split of right edge.");
                     return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
                 }
                 else { specialCase = false; }
@@ -1225,9 +1128,9 @@ namespace MeshPoints.QuadRemesh
             // summary: check if a triangle element is inverted
             bool isInverted = false;
 
-            Point3d A = CalculateVectorsFromSharedNode(element.EdgeList[0], element.EdgeList[1]).Item3.Coordinate;
-            Point3d B = CalculateVectorsFromSharedNode(element.EdgeList[1], element.EdgeList[2]).Item3.Coordinate;
-            Point3d C = CalculateVectorsFromSharedNode(element.EdgeList[2], element.EdgeList[0]).Item3.Coordinate;
+            Point3d A = element.EdgeList[0].GetSharedNode(element.EdgeList[1]).Coordinate;
+            Point3d B = element.EdgeList[1].GetSharedNode(element.EdgeList[2]).Coordinate;
+            Point3d C = element.EdgeList[2].GetSharedNode(element.EdgeList[0]).Coordinate;
 
             // check area
             double area = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
@@ -1261,10 +1164,10 @@ namespace MeshPoints.QuadRemesh
             else { E_neighborFront = E_front.RightFrontNeighbor; }
 
             #region Get V_k
-            var vectorsAndSharedNode = CalculateVectorsFromSharedNode(E_front, E_neighborFront);
-            Vector3d vec1 = vectorsAndSharedNode.Item1; // get vector for E_front
-            Vector3d vec2 = vectorsAndSharedNode.Item2; // get vector for E_neighborFront
-            qNode N_k = vectorsAndSharedNode.Item3; // shared node
+            qNode N_k = E_front.GetSharedNode(E_neighborFront); // shared node
+            var vectors = E_front.CalculateVectorsFromSharedNode(E_neighborFront);
+            Vector3d vec1 = vectors.Item1; // get vector for E_front
+            Vector3d vec2 = vectors.Item2; // get vector for E_neighborFront
             Vector3d V_k = Vector3d.Zero;
 
             if (nodeToEvaluate == 0)
@@ -1973,7 +1876,7 @@ namespace MeshPoints.QuadRemesh
                     else { E_i = elementEdge; }
                 }
 
-                var vectors = CalculateVectorsFromSharedNode(E_kCandidates[0], E_kCandidates[1]);
+                var vectors = E_kCandidates[0].CalculateVectorsFromSharedNode(E_kCandidates[1]);
                 Vector3d vec1 = vectors.Item1;
                 Vector3d vec2 = vectors.Item2;
                 Vector3d cros = Vector3d.CrossProduct(vec1, vec2);
@@ -2073,7 +1976,7 @@ namespace MeshPoints.QuadRemesh
                     return Tuple.Create(E_recovered, performed);
                 }
 
-                var vectors = CalculateVectorsFromSharedNode(E_nCandidates[0], E_nCandidates[1]);
+                var vectors = E_nCandidates[0].CalculateVectorsFromSharedNode(E_nCandidates[1]);
                 Vector3d vec1 = vectors.Item1;
                 Vector3d vec2 = vectors.Item2;
                 qEdge E_n = new qEdge();
@@ -2147,8 +2050,7 @@ namespace MeshPoints.QuadRemesh
             // summary: seam right edge and left edge together to a new seam edge with the adjacent quad elements
 
             // get needed nodes for seaming
-            var vectorsAndShareNode = CalculateVectorsFromSharedNode(rightEdgeToSeam, leftEdgeToSeam);
-            qNode N_k = vectorsAndShareNode.Item3;
+            qNode N_k = rightEdgeToSeam.GetSharedNode(leftEdgeToSeam);
             qNode N_k_left = leftEdgeToSeam.GetOppositeNode(N_k);
             qNode N_k_right = rightEdgeToSeam.GetOppositeNode(N_k);
 
@@ -2335,7 +2237,7 @@ namespace MeshPoints.QuadRemesh
             else { E_short = edge2; E_long = edge1; }
 
             // nodes to use
-            qNode N_k = CalculateVectorsFromSharedNode(edge1, edge2).Item3;
+            qNode N_k = edge1.GetSharedNode(edge2);
             qNode N_k_short = E_short.GetOppositeNode(N_k);
             qNode N_k_long = E_long.GetOppositeNode(N_k);
 
@@ -2557,7 +2459,7 @@ namespace MeshPoints.QuadRemesh
             else { E_short = edge2; E_long = edge1; }
 
             // nodes to use
-            qNode N_k = CalculateVectorsFromSharedNode(edge1, edge2).Item3;
+            qNode N_k = edge1.GetSharedNode(edge2);
             qNode N_k_short = E_short.GetOppositeNode(N_k);
             qNode N_k_long = E_long.GetOppositeNode(N_k);
 
@@ -2987,7 +2889,7 @@ namespace MeshPoints.QuadRemesh
                             if ((edge2.StartNode == concavNode | edge2.EndNode == concavNode) & edge2 != edgeToUse)
                             {
                                 qEdge edge1 = FindEdge(globalEdgeList, n1, concavNode);
-                                var vectors = CalculateVectorsFromSharedNode(edge1, edge2);
+                                var vectors = edge1.CalculateVectorsFromSharedNode(edge2);
                                 Vector3d vec1 = vectors.Item1;
                                 Vector3d vec2 = vectors.Item2;
                                 double angleToCheck = 0;

@@ -28,7 +28,7 @@ namespace MeshPoints.MeshQuality
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Insert a SmartMesh class", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Color mesh", "q", "Color mesh with quality metric: Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Quality to color", "q", "Color mesh with quality metric: Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
             pManager[1].Optional = true; // coloring the mesh is optional
         }
 
