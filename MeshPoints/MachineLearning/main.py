@@ -3,6 +3,7 @@ import dataset_generation as dg
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import nn2
 import nn_tests as nn
 
 if __name__ == "__main__":
