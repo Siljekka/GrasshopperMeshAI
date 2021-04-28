@@ -182,7 +182,7 @@ namespace MeshPoints.QuadRemesh
                         Node n = new Node(nodeToTransform.GlobalId + mesh.Nodes.Count * i, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
                         newElementNodes.Add(n);
                     }
-                    
+                    /*
                     mesh.Elements[j].Nodes = new List<>newElementNodes
                     element.Nodes
 
@@ -202,7 +202,7 @@ namespace MeshPoints.QuadRemesh
                     localMesh.Normals.ComputeNormals();  //Control if needed
                     localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
                     localMesh.Compact(); //to ensure that it calculate
-                    element.Mesh = localMesh;
+                    element.Mesh = localMesh;*/
                 }
                 //meshOnPlanes.Add(meshToTransform); // add to list of mesh
             

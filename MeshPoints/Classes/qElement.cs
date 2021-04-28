@@ -20,7 +20,6 @@ namespace MeshPoints.Classes
         {
             // empty constructor
         }
-
         public qElement(List<qEdge> _edgeList)
         {
             EdgeList = _edgeList;
@@ -92,7 +91,7 @@ namespace MeshPoints.Classes
             int n = edgeList.Count * 2;
             Point3d centerPt = new Point3d(sx / n, sy / n, sz / n);
             return centerPt;
-        } // class: kan bli implementert i: qElement
+        } 
         public List<qNode> GetNodesOfElement()
         {
             qElement element = this;
@@ -152,7 +151,7 @@ namespace MeshPoints.Classes
                 nodeList = new List<qNode> { node1, node2, node3, node4 }; // n1: bottom left, n2: bottom right, n2: top right, n3: top left
             }
             return nodeList;
-        } // class: kan bli implementert i: qElement
+        } 
 
 
     }
