@@ -79,32 +79,35 @@ namespace MeshPoints.QuadRemesh
 
             // 5. Create elements
 
-            // copy mesh to planes
+            #region Old code
+            /*SmartMesh solidMesh = new SmartMesh();
             int globalNodeIndexAddition = mesh.Nodes.Count;
-            List<SmartMesh> meshOnPlanes = new List<SmartMesh>();
-            meshOnPlanes.Add(mesh);
+            //List<SmartMesh> meshOnPlanes = new List<SmartMesh>();
+            //meshOnPlanes.Add(mesh);
+            List<Node> nodes = new List<Node>();
             Plane basePlane = planes[0];
+            DataTree<Point3d> points = new DataTree<Point3d>();
+            List<Element> elements = new List<Element>();
 
-            for (int i = 1; i < planes.Count; i++)
+            for (int i = 0; i < planes.Count; i++)
             {
-                SmartMesh meshToTransform = new SmartMesh();
-                Transform tranformation = new Transform();
-                meshToTransform = mesh;
+                SmartMesh meshToTransform = mesh;
                 globalNodeIndexAddition = globalNodeIndexAddition * i;
-                Point3d pointToTransform = new Point3d();
-                tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
-
+                Transform tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
                 meshToTransform.Mesh.Transform(tranformation); // transform mesh, to do: check if needed
 
-                // transform global nodes
+                // Creating global nodes
                 foreach (Node nodeToTransform in meshToTransform.Nodes)
                 {
-                    nodeToTransform.GlobalId = nodeToTransform.GlobalId + globalNodeIndexAddition;
-                    pointToTransform = nodeToTransform.Coordinate;
+                    Point3d pointToTransform = nodeToTransform.Coordinate;
                     pointToTransform.Transform(tranformation);
-                }
 
-                // transform elements
+                    if (i == 0 | i == nw) { nodeToTransform.BC_W = true; } else { nodeToTransform.BC_W = false; } // assign BCW
+                    Node n = new Node(nodeToTransform.GlobalId + globalNodeIndexAddition, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
+                    nodes.Add(n);
+                }
+                
+                // Creating elements
                 for (int j = 0; j < meshToTransform.Elements.Count; j++)
                 {
                     Element elementToTransform = meshToTransform.Elements[j];
@@ -113,14 +116,101 @@ namespace MeshPoints.QuadRemesh
                     List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Nodes[0], elementToTransform.Nodes[1], elementToTransform.Nodes[2] };
                     if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Nodes[3]); }
 
+                    Element element = new Element();
+                    element.Id = j;
                     foreach (Node nodeToTransform in nodesOfElementToTransform)
                     {
-                        nodeToTransform.GlobalId = nodeToTransform.GlobalId + globalNodeIndexAddition;
-                        pointToTransform = nodeToTransform.Coordinate;
+                        //nodeToTransform.GlobalId = nodeToTransform.GlobalId + globalNodeIndexAddition;
+                        Point3d pointToTransform = nodeToTransform.Coordinate;
                         pointToTransform.Transform(tranformation);
-                    }
+                    }*/
+            #endregion
+
+            // copy mesh to planes
+            SmartMesh solidMesh = new SmartMesh();
+            
+            //List<SmartMesh> meshOnPlanes = new List<SmartMesh>();
+            //meshOnPlanes.Add(mesh);
+            List<Node> nodes = new List<Node>();
+            List<Node> nodesTest = new List<Node>();
+            Plane basePlane = planes[0];
+            DataTree<Point3d> points = new DataTree<Point3d>();
+            List<Element> elements = new List<Element>();
+            SmartMesh meshToTransform = mesh;
+            List<Node> nodetest2 = meshToTransform.Nodes;
+            for (int i = 0; i < planes.Count; i++)
+            {
+                if (i > 0) { basePlane = planes[i - 1]; }
+                Transform tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
+
+
+                // Creating global nodes
+                for (int j = 0; j < nodetest2.Count; j++) 
+                {
+                    Node nodeToTransform = nodetest2[j];//meshToTransform.Nodes[j];
+                    Point3d pointToTransform = nodeToTransform.Coordinate;
+                    pointToTransform.Transform(tranformation);
+
+                    if (i == 0 | i == nw) { nodeToTransform.BC_W = true; } else { nodeToTransform.BC_W = false; } // assign BCW
+                    Node n = new Node(nodeToTransform.GlobalId + mesh.Nodes.Count * i, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
+                    nodes.Add(n);
                 }
-                meshOnPlanes.Add(meshToTransform); // add to list of mesh
+                nodetest2 = new List<Node>(nodes);
+                nodesTest.AddRange(nodes);
+                nodes.Clear();
+                
+                // Creating elements
+                for (int j = 0; j < mesh.Elements.Count; j++)
+                {
+                    Element elementToTransform = mesh.Elements[j];
+
+                    List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Nodes[0], elementToTransform.Nodes[1], elementToTransform.Nodes[2] };
+                    if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Nodes[3]); }
+
+
+
+                    List<Node> newElementNodes = new List<Node>(nodesOfElementToTransform);
+
+                    Element element = new Element();
+                    element.Id = j;
+                    
+
+                    foreach (Node nodeToTransform in nodesOfElementToTransform)
+                    {
+                        Point3d pointToTransform = nodeToTransform.Coordinate;
+                        pointToTransform.Transform(tranformation);
+                        Node n = new Node(nodeToTransform.GlobalId + mesh.Nodes.Count * i, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
+                        newElementNodes.Add(n);
+                    }
+                    
+                    mesh.Elements[j].Nodes = new List<>newElementNodes
+                    element.Nodes
+
+                    // create local mesh
+                    Mesh localMesh = new Mesh();
+                    foreach (Node node in elementNodes)
+                    {
+                        localMesh.Vertices.Add(node.Coordinate); //0
+                    }
+                    localMesh.Faces.AddFace(0, 1, 5, 4);
+                    localMesh.Faces.AddFace(1, 2, 6, 5);
+                    localMesh.Faces.AddFace(2, 3, 7, 6);
+                    localMesh.Faces.AddFace(3, 0, 4, 7);
+                    localMesh.Faces.AddFace(0, 1, 2, 3);
+                    localMesh.Faces.AddFace(4, 5, 6, 7);
+
+                    localMesh.Normals.ComputeNormals();  //Control if needed
+                    localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                    localMesh.Compact(); //to ensure that it calculate
+                    element.Mesh = localMesh;
+                }
+                //meshOnPlanes.Add(meshToTransform); // add to list of mesh
+            
+                solidMesh.Nodes = nodes;
+                solidMesh.CreateHexElements();
+                solidMesh.CreateMesh();
+
+                
             }
             /*
             // from SurfaceMesh to SolidMesh, Old method
@@ -211,7 +301,7 @@ namespace MeshPoints.QuadRemesh
 
             #endregion
 
-            DA.SetDataList(0, meshOnPlanes);
+            DA.SetDataList(0, nodesTest);
 
         }
 
@@ -354,7 +444,102 @@ namespace MeshPoints.QuadRemesh
             }
             return planes;
         }
+        private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int w)
+        {
+            List<Node> nodes = new List<Node>();
+            int id = 0;
+            int nw = w + 1; // number nodes in w dir 
 
+            for (int i = 0; i < nw; i++)
+            {
+                int row = 0;
+                int column = 0;
+                for (int j = 0; j < meshPoints.Branch(i).Count; j++)
+                {
+                    bool BC_U = false;
+                    bool BC_V = false;
+                    bool BC_W = false;
+                    Node node = new Node(id, meshPoints.Branch(i)[j], BC_U, BC_V, BC_W);
+                    id++;
+                    nodes.Add(node);
+                }
+            }
+            return nodes;
+        }
+        private List<Element> CreateHexElements(DataTree<Point3d> meshPoints, List<Node> nodes, int nu, int nv)
+        {
+            Element e = new Element();
+            Mesh mesh = new Mesh();
+            List<Element> elements = new List<Element>();
+            List<Point3d> ptsBot = new List<Point3d>();
+            List<Point3d> ptsTop = new List<Point3d>();
+            int elemId = 0;
+
+            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
+            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
+
+            for (int i = 0; i < meshPoints.BranchCount - 1; i++)  // loop levels
+            {
+                ptsBot = meshPoints.Branch(i);
+                ptsTop = meshPoints.Branch(i + 1);
+                int count2 = 0;
+                int counter = meshPoints.Branch(0).Count * i;
+
+                for (int j = 0; j < meshPoints.Branch(0).Count - nu - 1; j++) // loop elements in a level
+                {
+                    List<Node> elementNodes = new List<Node>();
+                    List<int> connectivity = new List<int>();
+
+                    if (count2 < nu - 1)
+                    {
+                        connectivity.Add(counter);
+                        connectivity.Add(counter + 1);
+                        connectivity.Add(counter + nu + 1);
+                        connectivity.Add(counter + nu);
+                        connectivity.Add(counter + nu * nv);
+                        connectivity.Add(counter + 1 + nu * nv);
+                        connectivity.Add(counter + nu + 1 + nu * nv);
+                        connectivity.Add(counter + nu + nu * nv);
+
+                        foreach (int id in connectivity)
+                        {
+                            elementNodes.Add(nodes[id]);
+                        }
+
+                        Element element = new Element(elemId, elementNodes, connectivity);
+
+                        // create local mesh
+                        Mesh localMesh = new Mesh();
+                        foreach (Node node in elementNodes)
+                        {
+                            localMesh.Vertices.Add(node.Coordinate); //0
+                        }
+
+                        localMesh.Faces.AddFace(0, 1, 5, 4);
+                        localMesh.Faces.AddFace(1, 2, 6, 5);
+                        localMesh.Faces.AddFace(2, 3, 7, 6);
+                        localMesh.Faces.AddFace(3, 0, 4, 7);
+                        localMesh.Faces.AddFace(0, 1, 2, 3);
+                        localMesh.Faces.AddFace(4, 5, 6, 7);
+
+                        localMesh.Normals.ComputeNormals();  //Control if needed
+                        localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                        localMesh.Compact(); //to ensure that it calculate
+
+                        //add element and mesh to element list
+                        element.Mesh = localMesh;
+                        elements.Add(element);
+
+                        count2++;
+                        elemId++;
+                        counter++;
+                    }
+                    else { count2 = 0; counter++; }
+                }
+
+            }
+            return elements;
+        }// to do: slett
         #endregion
         /// <summary>
         /// Provides an Icon for the component.
