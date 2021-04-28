@@ -30,10 +30,11 @@ namespace MeshPoints.Classes
 
             if (_edgeList.Count == 4) { IsQuad = true; }
             else { IsQuad = false; }
+            //FixEdgeOrder();
         }
 
         // Methods
-        
+
         public List<double> CalculateAngles(List<qEdge> _edgeList)
         {
             Vector3d vec1 = Vector3d.Zero;
@@ -116,7 +117,7 @@ namespace MeshPoints.Classes
                     }
                 }
             }
-            else if (this.IsQuad) //todo: test function
+            else if (this.IsQuad)
             {
                 List<qEdge> quadEdges = this.EdgeList;
 
@@ -140,6 +141,16 @@ namespace MeshPoints.Classes
                     node1 = baseEdge.EndNode;
                     node2 = baseEdge.StartNode;
                 }
+                else if (baseEdge.StartNode == rightEdge.StartNode | baseEdge.StartNode == rightEdge.EndNode)
+                {
+                    node2 = baseEdge.StartNode;
+                    node1 = baseEdge.EndNode;
+                }
+                else if (baseEdge.EndNode == rightEdge.StartNode | baseEdge.EndNode == rightEdge.EndNode)
+                {
+                    node2 = baseEdge.EndNode;
+                    node1 = baseEdge.StartNode;
+                }
 
                 if (topEdge.StartNode == leftEdge.StartNode | topEdge.StartNode == leftEdge.EndNode)
                 {
@@ -151,12 +162,120 @@ namespace MeshPoints.Classes
                     node3 = topEdge.StartNode;
                     node4 = topEdge.EndNode;
                 }
+                else if (topEdge.StartNode == rightEdge.StartNode | topEdge.StartNode == rightEdge.EndNode)
+                {
+                    node4 = topEdge.EndNode;
+                    node3 = topEdge.StartNode;
+                }
+                else if (topEdge.EndNode == rightEdge.StartNode | topEdge.EndNode == rightEdge.EndNode)
+                {
+                    node4 = topEdge.StartNode;
+                    node3 = topEdge.EndNode;
+                }
 
-                nodeList = new List<qNode> { node1, node2, node3, node4 }; // n1: bottom left, n2: bottom right, n2: top right, n3: top left
+                nodeList = new List<qNode> { node1, node2, node3, node4 }; // n1: bottom left, n2: bottom right, n3: top right, n4: top left
             }
             return nodeList;
-        } 
+        }
 
+        public void FixEdgeOrderOfTriangle()
+        {
+            // summary: fix edge order of triangle elements
 
+            qEdge edge = this.EdgeList[0];
+            qEdge edgeConnectedToStartNode = new qEdge();
+            qEdge edgeConnectedToEndNode = new qEdge();
+
+            if (edge.StartNode == this.EdgeList[1].StartNode | edge.StartNode == this.EdgeList[1].EndNode)
+            {
+                edgeConnectedToStartNode = this.EdgeList[1];
+                edgeConnectedToEndNode = this.EdgeList[2];
+            }
+            else
+            {
+                edgeConnectedToStartNode = this.EdgeList[2];
+                edgeConnectedToEndNode = this.EdgeList[1];
+            }
+
+            Point3d midPointEdg = 0.5 * (edge.StartNode.Coordinate + edge.EndNode.Coordinate); // mid point of edge
+            Point3d centerPoint = this.GetElementCenter();
+            Vector3d centerToMidVector = midPointEdg - centerPoint;
+            Vector3d centerToEndNodeVector = edge.EndNode.Coordinate - centerPoint;
+            Vector3d centerToStartNodeVector = edge.StartNode.Coordinate - centerPoint;
+            double startAngle = Vector3d.VectorAngle(centerToMidVector, centerToStartNodeVector, Vector3d.ZAxis); // todo: make normal more general
+            double endAngle = Vector3d.VectorAngle(centerToMidVector, centerToEndNodeVector, Vector3d.ZAxis); // todo: make normal more general
+
+            if (endAngle < startAngle)
+            {
+                this.EdgeList = new List<qEdge>() { edge, edgeConnectedToEndNode, edgeConnectedToStartNode };
+            }
+            else
+            {
+                this.EdgeList = new List<qEdge>() { edge, edgeConnectedToStartNode, edgeConnectedToEndNode };
+            }
+        }
+
+        public void FixEdgeOrder()
+        {
+            // summary: fix edge order of triangle elements
+
+            qEdge edge = this.EdgeList[0];
+            qEdge edgeConnectedToStartNode = new qEdge();
+            qEdge edgeConnectedToEndNode = new qEdge();
+            qEdge edgeNotConnected = new qEdge();
+
+            for (int i = 1; i < this.EdgeList.Count; i ++)
+            {
+                if (edge.StartNode == this.EdgeList[i].StartNode | edge.StartNode == this.EdgeList[i].EndNode)
+                {
+                    edgeConnectedToStartNode = this.EdgeList[i];
+                }
+                else if (edge.EndNode == this.EdgeList[i].StartNode | edge.EndNode == this.EdgeList[i].EndNode)
+                {
+                    edgeConnectedToEndNode = this.EdgeList[i];
+                }
+                else 
+                {
+                    edgeNotConnected = this.EdgeList[i]; 
+                }
+            }
+
+            Point3d midPointEdg = 0.5 * (edge.StartNode.Coordinate + edge.EndNode.Coordinate); // mid point of edge
+            Point3d centerPoint = GetElementCenter();
+            Vector3d centerToMidVector = midPointEdg - centerPoint;
+            Vector3d centerToEndNodeVector = edge.EndNode.Coordinate - centerPoint;
+            Vector3d centerToStartNodeVector = edge.StartNode.Coordinate - centerPoint;
+            double startAngle = Vector3d.VectorAngle(centerToMidVector, centerToStartNodeVector, Vector3d.ZAxis); // todo: make normal more general
+            double endAngle = Vector3d.VectorAngle(centerToMidVector, centerToEndNodeVector, Vector3d.ZAxis); // todo: make normal more general
+
+            if (endAngle < startAngle)
+            {
+                if (!this.IsQuad)
+                {
+                    this.EdgeList = new List<qEdge>() { edge, edgeConnectedToEndNode, edgeConnectedToStartNode };
+                }
+                else 
+                {
+                    this.EdgeList = new List<qEdge>() { edge, edgeConnectedToEndNode, edgeConnectedToStartNode, edgeNotConnected };
+                }
+            }
+            else
+            {
+                if (!this.IsQuad)
+                {
+                    this.EdgeList = new List<qEdge>() { edge, edgeConnectedToStartNode, edgeConnectedToEndNode };
+                }
+                else
+                {
+                    this.EdgeList = new List<qEdge>() { edge, edgeConnectedToStartNode, edgeConnectedToEndNode, edgeNotConnected };
+                }
+            }
+        }
+
+        public bool IsChevron()
+        {
+            if (this.AngleList.Max() > (double)200 / (double)180 * Math.PI) { return true; }
+            else { return false; }
+        }
     }
 }

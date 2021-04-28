@@ -20,7 +20,7 @@ namespace MeshPoints.Classes
         public qEdge LeftFrontNeighbor { get; set; }
         public qEdge RightFrontNeighbor { get; set; }
         public int Level { get; set; } // level if front edge
-        public bool Unselected { get; set; } 
+        public bool Unselectable { get; set; } 
 
 
         public qEdge()

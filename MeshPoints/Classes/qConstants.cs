@@ -15,11 +15,17 @@ namespace MeshPoints.Classes
 
         public double GetThetaTolerance()
         {
-            return 0.16667 * Math.PI;
+            return Math.PI / (double)6;
         }
         public double GetThetaToleranceForClosing()
         {
-            return 1.5 * 0.16667 * Math.PI; // 1.5 * ThetaTolerance
+            return 1.5 * Math.PI / (double)6; // 1.5 * ThetaTolerance
         }
+
+        public double GetTransitionTolerance()
+        {
+            return 2.5;
+        }
+
     }
 }
