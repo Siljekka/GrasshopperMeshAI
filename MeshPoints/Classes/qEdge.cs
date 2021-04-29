@@ -182,16 +182,13 @@ namespace MeshPoints.Classes
             }
             return sharedNode;
         }
-    }
 
-        } // class: kan bli implementert i: qEdge
         public qNode GetOppositeNode(qNode node)
         {
-            qEdge edge = this;
             qNode oppositeNode = new qNode();
-            if (node == edge.StartNode) { oppositeNode = edge.EndNode; }
-            else if (node == edge.EndNode) { oppositeNode = edge.StartNode; }
+            if (node == this.StartNode) { oppositeNode = this.EndNode; }
+            else if (node == this.EndNode) { oppositeNode = this.StartNode; }
             return oppositeNode;
-        } // class: kan bli implementert i: qEdge
+        } 
     }
 }

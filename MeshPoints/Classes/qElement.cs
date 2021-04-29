@@ -23,12 +23,12 @@ namespace MeshPoints.Classes
         public qElement(List<qEdge> _edgeList)
         {
             EdgeList = _edgeList;
+            //FixEdgeOrder();
             AngleList = CalculateAngles(_edgeList);
             Contour = GetContourOfElement(_edgeList);
 
             if (_edgeList.Count == 4) { IsQuad = true; }
             else { IsQuad = false; }
-            //FixEdgeOrder();
         }
 
         // Methods
@@ -56,7 +56,6 @@ namespace MeshPoints.Classes
                 angList.Add(ang);
             }
             return angList;
-        
         }
         public List<Line> GetContourOfElement(List<qEdge> _edgeList)
         {
@@ -70,13 +69,12 @@ namespace MeshPoints.Classes
         }
         public Point3d GetElementCenter()
         {
-            qElement element = this;
             // summary: get center of an element
             double sx = 0;
             double sy = 0;
             double sz = 0;
 
-            List<qEdge> edgeList = element.EdgeList;
+            List<qEdge> edgeList = this.EdgeList;
             foreach (qEdge edge in edgeList)
             {
                 Point3d startPoint = edge.StartNode.Coordinate;
@@ -95,12 +93,11 @@ namespace MeshPoints.Classes
         } 
         public List<qNode> GetNodesOfElement()
         {
-            qElement element = this;
             // summary: get nodes of an element
             List<qNode> nodeList = new List<qNode>();
-            if (!element.IsQuad)
+            if (!this.IsQuad)
             {
-                foreach (qEdge edge in element.EdgeList)
+                foreach (qEdge edge in this.EdgeList)
                 {
                     if (!nodeList.Contains(edge.StartNode))
                     {
@@ -113,9 +110,9 @@ namespace MeshPoints.Classes
                     }
                 }
             }
-            else if (element.IsQuad)
+            else if (this.IsQuad)
             {
-                List<qEdge> quadEdges = element.EdgeList;
+                List<qEdge> quadEdges = this.EdgeList;
 
                 qEdge baseEdge = quadEdges[0];
                 qEdge rightEdge = quadEdges[1];
@@ -172,43 +169,6 @@ namespace MeshPoints.Classes
                 nodeList = new List<qNode> { node1, node2, node3, node4 }; // n1: bottom left, n2: bottom right, n3: top right, n4: top left
             }
             return nodeList;
-        }
-
-        public void FixEdgeOrderOfTriangle()
-        {
-            // summary: fix edge order of triangle elements
-
-            qEdge edge = this.EdgeList[0];
-            qEdge edgeConnectedToStartNode = new qEdge();
-            qEdge edgeConnectedToEndNode = new qEdge();
-
-            if (edge.StartNode == this.EdgeList[1].StartNode | edge.StartNode == this.EdgeList[1].EndNode)
-            {
-                edgeConnectedToStartNode = this.EdgeList[1];
-                edgeConnectedToEndNode = this.EdgeList[2];
-            }
-            else
-            {
-                edgeConnectedToStartNode = this.EdgeList[2];
-                edgeConnectedToEndNode = this.EdgeList[1];
-            }
-
-            Point3d midPointEdg = 0.5 * (edge.StartNode.Coordinate + edge.EndNode.Coordinate); // mid point of edge
-            Point3d centerPoint = this.GetElementCenter();
-            Vector3d centerToMidVector = midPointEdg - centerPoint;
-            Vector3d centerToEndNodeVector = edge.EndNode.Coordinate - centerPoint;
-            Vector3d centerToStartNodeVector = edge.StartNode.Coordinate - centerPoint;
-            double startAngle = Vector3d.VectorAngle(centerToMidVector, centerToStartNodeVector, Vector3d.ZAxis); // todo: make normal more general
-            double endAngle = Vector3d.VectorAngle(centerToMidVector, centerToEndNodeVector, Vector3d.ZAxis); // todo: make normal more general
-
-            if (endAngle < startAngle)
-            {
-                this.EdgeList = new List<qEdge>() { edge, edgeConnectedToEndNode, edgeConnectedToStartNode };
-            }
-            else
-            {
-                this.EdgeList = new List<qEdge>() { edge, edgeConnectedToStartNode, edgeConnectedToEndNode };
-            }
         }
 
         public void FixEdgeOrder()
@@ -272,6 +232,20 @@ namespace MeshPoints.Classes
         {
             if (this.AngleList.Max() > (double)200 / (double)180 * Math.PI) { return true; }
             else { return false; }
+        }
+        public bool IsTriangleInverted()
+        {
+            // summary: check if a triangle element is inverted
+            bool isInverted = false;
+
+            Point3d A = this.EdgeList[0].GetSharedNode(this.EdgeList[1]).Coordinate;
+            Point3d B = this.EdgeList[1].GetSharedNode(this.EdgeList[2]).Coordinate;
+            Point3d C = this.EdgeList[2].GetSharedNode(this.EdgeList[0]).Coordinate;
+
+            // check area
+            double area = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
+            if (area <= 0) { isInverted = true; }
+            return isInverted;
         }
     }
 }

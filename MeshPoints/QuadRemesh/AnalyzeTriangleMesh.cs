@@ -106,7 +106,7 @@ namespace MeshPoints.QuadRemesh
             for (int n = 0; n < numberElementsToRemesh; n++)
             {
                 // Temporary stop
-                if (iterationCounter == iterationsToPerformBeforeStop) { AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Iteration stop"); break; }
+                if (iterationCounter == iterationsToPerformBeforeStop) { AddRuntimeMessage(GH_RuntimeMessageLevel.Blank, "Iteration stop"); break; }
                 iterationCounter++;
                 ClearRuntimeMessages();
 
@@ -150,12 +150,6 @@ namespace MeshPoints.QuadRemesh
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
-
-                if (iterationCounter == 90)
-                {
-                    //break;
-                    //debug
-                }
 
 
                 //________________ get side edges ________________
@@ -213,6 +207,11 @@ namespace MeshPoints.QuadRemesh
                     }
                 }
 
+                if (iterationCounter == 10)
+                {
+                    //break;
+                    //debug
+                }
 
                 //________________get top edge________________
                 if (!seamAnglePerformed)
@@ -1267,20 +1266,6 @@ namespace MeshPoints.QuadRemesh
             return Tuple.Create(avgQuality, badestQuality, colorMesh);
         }
      
-        private bool IsInverted(qElement element)
-        {
-            // summary: check if a triangle element is inverted
-            bool isInverted = false;
-
-            Point3d A = element.EdgeList[0].GetSharedNode(element.EdgeList[1]).Coordinate;
-            Point3d B = element.EdgeList[1].GetSharedNode(element.EdgeList[2]).Coordinate;
-            Point3d C = element.EdgeList[2].GetSharedNode(element.EdgeList[0]).Coordinate;
-
-            // check area
-            double area = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
-            if (area <= 0) { isInverted = true; }
-            return isInverted;
-        } // class: kan bli implementert i: qElement
         private bool LoopControll(List<qEdge> frontEdges, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
             // summary: check if E_k_left and E_k_right is in same loop
@@ -1350,7 +1335,7 @@ namespace MeshPoints.QuadRemesh
             foreach (qEdge edge in connectedEdges) // loop connected edges
             {
                 // E_i
-                if (!edge.IsFrontEdge()) // to do: gjør finere...
+                if (!edge.IsFrontEdge()) 
                 {
                      E_i_candidates.Add(edge);
                 }
@@ -1567,8 +1552,8 @@ namespace MeshPoints.QuadRemesh
                 if (E_0.IsFrontEdge())
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetSideEdge: E_0 is a front edge. Closing front is performed");
-                    E_k = CloseFront(frontEdges, globalEdgeList, globalElementList, E_i_candidates_sorted[0], N_k); // to do: assumption... må sjekke ut dette
-                    performed = true;
+                    //E_k = CloseFront(frontEdges, globalEdgeList, globalElementList, E_i_candidates_sorted[0], N_k); // to do: assumption... må sjekke ut dette
+                    performed = false;
                     return Tuple.Create(E_k, performed);
                 }
                 /*
@@ -3330,7 +3315,7 @@ namespace MeshPoints.QuadRemesh
                 qElement triangle = new qElement(connectedTriangles[i].EdgeList);
 
                 int counter = 0;
-                while (IsInverted(triangle) & counter < 1000)
+                while (triangle.IsTriangleInverted() & counter < 1000)
                 {
                     newCoordinate = new Point3d(newCoordinate.X + movingVector.X * 0.25, newCoordinate.Y + movingVector.Y * 0.25, newCoordinate.Z + movingVector.Z * 0.25);
                     for (int j = 0; j < triangle.EdgeList.Count; j++)
