@@ -83,6 +83,9 @@ namespace MeshPoints.FiniteElementMethod
                 R[i, 0] = loads[i];
             }
 
+            // Fic BoundaryConditions:
+            if (boundaryConditions.Count > mesh.Nodes.Count) { boundaryConditions = FixBoundaryConditions(boundaryConditions, mesh.Nodes.Count); }
+            
             // 4. Calculate displacement 
             Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
 
@@ -126,7 +129,26 @@ namespace MeshPoints.FiniteElementMethod
         }
 
         #region Methods
+        private List<List<int>> FixBoundaryConditions(List<List<int>> boundaryConditions, int numNodes)
+        {
+            List<List<int>> totalBC = new List<List<int>>();
+            for (int i = 0; i < numNodes; i++) // loop number nodes
+            {
+                List<int> dofList = new List<int>(boundaryConditions[i]);  // get dofList of first input list of BC
 
+
+
+                for (int j = 0; j < dofList.Count; j++) // loop dofs
+                {
+                    for (int k = 1; k < boundaryConditions.Count / numNodes; k++) // loop the remaining inout list of BC 
+                    {
+                        dofList[j] = dofList[j] + boundaryConditions[i + k * numNodes][j];
+                    }
+                }
+                totalBC.Add(dofList);
+            }
+            return totalBC;
+        }
 
         private Tuple<Matrix<double>, List<Matrix<double>>> Synne(List<Node> nodeList, Material material)
         {
@@ -679,7 +701,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // get node strain and stress by interpolation
-            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(1, nodeDOFS);
+            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(1, nodeDOFS); // 1/Math.Sqrt(3) : gauss punkt.
 
             for (int n = 0; n < B_local.Count; n++)
             { 
