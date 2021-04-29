@@ -18,7 +18,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         public CreateSurfaceMesh()
           : base("CreateSurfaceMesh", "surface",
-              "Mesh list with flatten points for planar breps",
+              "Mesh a surface with a specified number of divisions in u- and v-direction.",
               "MyPlugIn", "Mesh")
         {
         }
