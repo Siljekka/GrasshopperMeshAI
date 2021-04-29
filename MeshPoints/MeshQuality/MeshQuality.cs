@@ -720,11 +720,11 @@ namespace MeshPoints.MeshQuality
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.AspectRatio > 0.7)
+                        else if (q.AspectRatio > 0.5)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.AspectRatio > 0.6)
+                        else if (q.AspectRatio > 0.1)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
@@ -739,15 +739,15 @@ namespace MeshPoints.MeshQuality
                 case 2:
                     foreach (Quality q in qualityList)
                     {
-                        if (q.Skewness > 0.9)
+                        if (q.Skewness > 0.75)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.Skewness > 0.75)
+                        else if (q.Skewness > 0.5)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.Skewness > 0.6)
+                        else if (q.Skewness > 0.1)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
