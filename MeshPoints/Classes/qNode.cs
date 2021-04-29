@@ -12,6 +12,7 @@ namespace MeshPoints.Classes
         public Point3d Coordinate { get; set; }
         public bool BoundaryNode { get; set; }
 
+        // Constructors:
         public qNode()
         {
             // empty constructor
@@ -22,6 +23,8 @@ namespace MeshPoints.Classes
             Coordinate = _coordinate;
             BoundaryNode = _boundaryNode;
         }
+
+        // Methods:
         public List<qEdge> GetConnectedEdges(List<qEdge> globalEdgeList)
         {
             // summary: get connected edges to a node

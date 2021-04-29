@@ -62,7 +62,6 @@ namespace MeshPoints.Classes
             }
             return isOnFace;
         }
-
         public bool IsOnEdge(BrepEdge edge)
         {
             Point3d point = this.Coordinate;
@@ -77,7 +76,6 @@ namespace MeshPoints.Classes
             }
             return isOnEdge;
         }
-
         public void SetType()
         {
             int counter = 0;

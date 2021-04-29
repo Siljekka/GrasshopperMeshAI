@@ -15,13 +15,11 @@ namespace MeshPoints.Classes
         public bool IsQuad { get; }
 
 
-        // Constructer
-
+        // Constructors:
         public qElement()
         {
             // empty constructor
         }
-
         public qElement(List<qEdge> _edgeList)
         {
             EdgeList = _edgeList;
@@ -34,7 +32,6 @@ namespace MeshPoints.Classes
         }
 
         // Methods
-
         public List<double> CalculateAngles(List<qEdge> _edgeList)
         {
             Vector3d vec1 = Vector3d.Zero;
@@ -61,7 +58,6 @@ namespace MeshPoints.Classes
             return angList;
         
         }
-
         public List<Line> GetContourOfElement(List<qEdge> _edgeList)
         {
             List<Line> contour = new List<Line>();
@@ -72,15 +68,15 @@ namespace MeshPoints.Classes
             }
             return contour;
         }
-
         public Point3d GetElementCenter()
         {
+            qElement element = this;
             // summary: get center of an element
             double sx = 0;
             double sy = 0;
             double sz = 0;
 
-            List<qEdge> edgeList = this.EdgeList;
+            List<qEdge> edgeList = element.EdgeList;
             foreach (qEdge edge in edgeList)
             {
                 Point3d startPoint = edge.StartNode.Coordinate;
@@ -96,15 +92,15 @@ namespace MeshPoints.Classes
             int n = edgeList.Count * 2;
             Point3d centerPt = new Point3d(sx / n, sy / n, sz / n);
             return centerPt;
-        }
-
+        } 
         public List<qNode> GetNodesOfElement()
         {
+            qElement element = this;
             // summary: get nodes of an element
             List<qNode> nodeList = new List<qNode>();
-            if (!this.IsQuad)
+            if (!element.IsQuad)
             {
-                foreach (qEdge edge in this.EdgeList)
+                foreach (qEdge edge in element.EdgeList)
                 {
                     if (!nodeList.Contains(edge.StartNode))
                     {
@@ -117,9 +113,9 @@ namespace MeshPoints.Classes
                     }
                 }
             }
-            else if (this.IsQuad)
+            else if (element.IsQuad)
             {
-                List<qEdge> quadEdges = this.EdgeList;
+                List<qEdge> quadEdges = element.EdgeList;
 
                 qEdge baseEdge = quadEdges[0];
                 qEdge rightEdge = quadEdges[1];
