@@ -79,6 +79,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Classes\qConstants.cs" />
     <Compile Include="Mesh_outdated\BrepPoints.cs" />
     <Compile Include="Classes\Geometry.cs" />
     <Compile Include="Classes\Material.cs" />
