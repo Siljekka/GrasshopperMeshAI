@@ -151,6 +151,12 @@ namespace MeshPoints.QuadRemesh
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
 
+                if (iterationCounter == 90)
+                {
+                    //break;
+                    //debug
+                }
+
 
                 //________________ get side edges ________________
                 if (isSpecialCase & !seamAnglePerformed) // if special case
@@ -205,12 +211,6 @@ namespace MeshPoints.QuadRemesh
                                 break;
                             }
                     }
-                }
-
-                if (iterationCounter == 26)
-                {
-                    break;
-                //debug
                 }
 
 
@@ -1555,7 +1555,6 @@ namespace MeshPoints.QuadRemesh
                 if ((cross1.Z * cross2.Z) > 0)
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SideEdge: Split or swap not performed because V_k does not intersect E_0.");
-                    // solution: pick another combination from E_i_candidates
                 }
             
 
@@ -1567,8 +1566,9 @@ namespace MeshPoints.QuadRemesh
                 
                 if (E_0.IsFrontEdge())
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetSideEdge: E_0 is a front edge. Side edge is aborted");
-                    performed = false;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "GetSideEdge: E_0 is a front edge. Closing front is performed");
+                    E_k = CloseFront(frontEdges, globalEdgeList, globalElementList, E_i_candidates_sorted[0], N_k); // to do: assumption... må sjekke ut dette
+                    performed = true;
                     return Tuple.Create(E_k, performed);
                 }
                 /*

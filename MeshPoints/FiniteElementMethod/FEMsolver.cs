@@ -127,7 +127,6 @@ namespace MeshPoints.FiniteElementMethod
 
         #region Methods
 
-
         private Tuple<Matrix<double>, List<Matrix<double>>> Synne(List<Node> nodeList, Material material)
         {
             Matrix<double> Ke = Matrix<double>.Build.Dense(24, 24);
