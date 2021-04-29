@@ -30,9 +30,9 @@ namespace MeshPoints
             pManager.AddIntegerParameter("Coordinate structure", "cs", "1: feautre for each x and y node coordinate. 2: one feature for all nodes. 3: Input to NN Mesh.", GH_ParamAccess.item);
             pManager.AddGenericParameter("filePath", "fp", "File path to where data are saved", GH_ParamAccess.item);
             pManager.AddBooleanParameter("WriteData", "w", "True: data is written to file, False: data is not written to file.", GH_ParamAccess.item);
-            pManager.AddNumberParameter("AvgQuality", "avgQ", "Average quality of mesh.", GH_ParamAccess.item);
-            pManager.AddNumberParameter("MinQuality", "minQ", "Minimum quality of mesh.", GH_ParamAccess.item);
-            pManager.AddNumberParameter("TargetLength", "target", "Target length of mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("AvgQuality", "avgQ", "Average quality of mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("MinQuality", "minQ", "Minimum quality of mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("TargetLength", "target", "Target length of mesh.", GH_ParamAccess.item);
             pManager[5].Optional = true;
             pManager[6].Optional = true;
 
@@ -68,11 +68,11 @@ namespace MeshPoints
             DA.GetData(6, ref target);
 
             // 0. Check input
-            if (!DA.GetData(0, ref avgQuality)) return;
-            if (!DA.GetData(1, ref mesh)) return;
-            if (!DA.GetData(2, ref structureType)) return;
-            if (!DA.GetData(3, ref filePath)) return;
-            if (structureType == 3 & !DA.GetData(5, ref minQuality) & !DA.GetData(6, ref target)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Must have input minQuality and target when structureType is 3."); return; }
+            if (!DA.GetData(0, ref mesh)) return;
+            if (!DA.GetData(1, ref structureType)) return;
+            if (!DA.GetData(2, ref filePath)) return;
+            if (!DA.GetData(4, ref avgQuality)) return;
+            if (structureType == 3 & !DA.GetData(5, ref minQuality) | !DA.GetData(6, ref target)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Must have input minQuality and target when structureType is 3."); return; }
 
             StringBuilder stringBuilder = new StringBuilder();
             List<Node> nodes = mesh.Nodes;
@@ -167,13 +167,16 @@ namespace MeshPoints
                             points.Add(node.Coordinate);
                         }
                     }
-                    stringBuilder.Append(String.Format("{0},{1},{2},{3}", points[0], points[1], points[3], points[2]));
+                    stringBuilder.Append(String.Format("{0},{1}", points[0].X, points[0].Y));
+                    stringBuilder.Append(String.Format(",{0},{1}", points[1].X, points[1].Y));
+                    stringBuilder.Append(String.Format(",{0},{1}", points[3].X, points[3].Y));
+                    stringBuilder.Append(String.Format(",{0},{1}", points[2].X, points[2].Y));
 
                     // 2. Add average quality
                     stringBuilder.Append(String.Format(",{0}", avgQuality));
 
                     // 3. Add minimum quality
-                    stringBuilder.Append(String.Format(",{0}", minQuality));
+                    stringBuilder.Append(String.Format(",{0}", Math.Round(minQuality,3)));
 
                     // 4. Add target edge length
                     stringBuilder.Append(String.Format(",{0}", target));
