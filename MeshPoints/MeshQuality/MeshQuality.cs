@@ -28,7 +28,7 @@ namespace MeshPoints.MeshQuality
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Insert a SmartMesh class", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Color mesh with quality metric", "q", "Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Quality to color", "q", "Color mesh with quality metric: Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
             pManager[1].Optional = true; // coloring the mesh is optional
         }
 
@@ -56,7 +56,7 @@ namespace MeshPoints.MeshQuality
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref qualityCheckType);
 
-            if (mesh == null) { return; }
+            if (!DA.GetData(0, ref mesh)) return;
 
             // Code
             List<Quality> qualityList = new List<Quality>(); // list of Quality for each element in the mesh
@@ -72,8 +72,11 @@ namespace MeshPoints.MeshQuality
             foreach (Element e in elements)
             {
                 elementQuality.AspectRatio = CalculateAspectRatio(e);
+                //elementQuality.AspectRatio = CalculateAspectRatioAnsys(e); // to do: slett, old
                 elementQuality.Skewness = CalculateSkewness(e);
                 elementQuality.JacobianRatio = CalculateJacobianRatio(e);                
+                //elementQuality.JacobianRatio = CalculateJacobianOf8NodeElementOLD(e); // to do: slett, old          
+                //elementQuality.JacobianRatio = CalculateJacobianOfQuadElementOLD(e);    // to do: slett, old             
 
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
@@ -82,7 +85,7 @@ namespace MeshPoints.MeshQuality
                 sumSkewness += elementQuality.Skewness;
                 sumJacobianRatio += elementQuality.JacobianRatio;
 
-                qualityList.Add(elementQuality); // todo: check if this is needed
+                qualityList.Add(elementQuality);
                 elementQuality = new Quality();
             }
 
@@ -102,12 +105,61 @@ namespace MeshPoints.MeshQuality
         }
 
         #region Component methods
+        double CalculateAspectRatio(Element element)
+        {
+            // Calculate Aspact Ratio like Abaqus
 
+            // List of nodes
+            List<Point3d> nodeCoordinates = new List<Point3d>(); ;
+            foreach (Node node in element.Nodes)
+            {
+                nodeCoordinates.Add(node.Coordinate);
+            }
+
+            // New AR:
+            // Find distances from corners to centroid (Abaqus)
+            List<double> nodeToNodeDistance = new List<double>();
+            if (element.Type != "Hex")
+            {
+                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                {
+                    if (n == nodeCoordinates.Count - 1)
+                    {
+                        nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n - 3]));
+                        continue;
+                    }
+                    nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1])); // add the distance between the points, following mesh edges CCW
+                }
+            }
+            else
+            {
+                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                {
+                    if (n < 0.5 * nodeCoordinates.Count)
+                    {
+                        nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + nodeCoordinates.Count / 2]));
+                    }
+                    if (n == (0.5 * nodeCoordinates.Count - 1) | n == (nodeCoordinates.Count - 1))
+                    {
+                        nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n - 3]));
+                        continue;
+                    }
+                    nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1]));
+                }
+            }
+            nodeToNodeDistance.Sort();
+
+            double minDistance = nodeToNodeDistance[0];
+            double maxDistance = nodeToNodeDistance[nodeToNodeDistance.Count - 1];
+            double AR = minDistance / maxDistance;
+            return AR;
+        }
         /// <summary>
         /// Calculates the Aspect Ratio of an element.
         /// </summary>
-        double CalculateAspectRatio(Element element)
+        double CalculateAspectRatioAnsys(Element element)
         {
+            // Calculate Aspect Ratio like Ansys
             double AR = 0;
             double maxDistance = 0;
             double minDistance = 0;
@@ -188,18 +240,32 @@ namespace MeshPoints.MeshQuality
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
                     Vector3d vec2 = nodesOfFace[n].Coordinate - nodesOfFace[n + neighborPoint].Coordinate;
                     Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+
+                    // Calculate angle
                     double angleRad = Vector3d.VectorAngle(vec1, vec2, normal); 
-                    // Calculate angles between vectors
                     double angleDegree = angleRad * 180 / Math.PI; //convert from rad to deg
                     elementAngles.Add(angleDegree);
                 }
 
             }
+
             elementAngles.Sort();
-            double minAngle = Math.Abs(elementAngles[0]); // todo: controll if abs ok
-            double maxAngle = Math.Abs(elementAngles[elementAngles.Count - 1]);
-            double SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle));
-            return SK;
+            double minAngle = elementAngles[0];
+            double maxAngle = elementAngles[elementAngles.Count - 1];
+            double SK;
+
+            if (minAngle < 0) 
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Skewness: one or more angles are negative");
+            }
+            if (maxAngle > 180) // if chevron element
+            { 
+                SK = -1; return SK;
+            }
+            else
+            {
+                SK = 1 - Math.Max((maxAngle - idealAngle) / (180 - idealAngle), (idealAngle - minAngle) / (idealAngle)); return SK;
+            }
         }
 
         /// <summary>
@@ -220,7 +286,7 @@ namespace MeshPoints.MeshQuality
                 // jacobian = CalculateJacobianOf8NodeElementOLD(element); magnus
             }
             return jacobian;
-        } // to do: slett
+        } 
 
 
         /// <summary>
@@ -314,7 +380,8 @@ namespace MeshPoints.MeshQuality
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
                 if (jacobianRatio < 0)
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"The Jacobian Ratio of element {element.Id} is negative.");
+                    jacobianRatio = -1;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"The Jacobian Ratio of element {element.Id} is negative.");
                 }
             }
             else
@@ -654,11 +721,11 @@ namespace MeshPoints.MeshQuality
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.AspectRatio > 0.7)
+                        else if (q.AspectRatio > 0.5)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.AspectRatio > 0.6)
+                        else if (q.AspectRatio > 0.1)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
@@ -673,21 +740,25 @@ namespace MeshPoints.MeshQuality
                 case 2:
                     foreach (Quality q in qualityList)
                     {
-                        if (q.Skewness > 0.9)
+                        if (q.Skewness > 0.75)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.Skewness > 0.75)
+                        else if (q.Skewness > 0.5)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.Skewness > 0.6)
+                        else if (q.Skewness > 0.1)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.Skewness > 0)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        else 
+                        {
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
                         }
                         colorMesh.Append(q.element.Mesh);
                     }

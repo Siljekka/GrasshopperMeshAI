@@ -19,7 +19,7 @@ namespace MeshPoints
         public GalapagosMesh()
           : base("Move surface nodes", "mmv",
               "Move nodes of a surface SmartMesh with gene pools",
-              "MyPlugIn", "Modify Mesh")
+              "MyPlugIn", "Outdated")
         {
         }
 

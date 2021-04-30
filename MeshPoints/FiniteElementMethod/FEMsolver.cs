@@ -127,7 +127,6 @@ namespace MeshPoints.FiniteElementMethod
 
         #region Methods
 
-
         private Tuple<Matrix<double>, List<Matrix<double>>> Synne(List<Node> nodeList, Material material)
         {
             Matrix<double> Ke = Matrix<double>.Build.Dense(24, 24);
@@ -797,7 +796,7 @@ namespace MeshPoints.FiniteElementMethod
 
         private void ColorMeshAfterStress(SmartMesh mesh, Vector<double> mises, Material material)
         {
-            double maxValue = material.YieldingStress / 1.05; // to do: sjekk denne
+            double maxValue = material.YieldingStress;
             double minValue = 0;
             Color color = Color.White;
 

@@ -26,7 +26,7 @@ namespace MeshPoints.MoveNodes
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Input a SmartMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list); 
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
             pManager[3].Optional = true; // if solid
@@ -83,8 +83,8 @@ namespace MeshPoints.MoveNodes
             for (int i = 0; i < oldMesh.Nodes.Count; i++)
             {
                 // a. Check if node is on face or edge.
-                Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse?
-                Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse?
+                Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
 
                 // b. Get coordinates of the moved node.
                 Point3d meshPoint = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genesU, genesV, genesW);
@@ -247,7 +247,7 @@ namespace MeshPoints.MoveNodes
                 );
                 
             if (IsOnFace) // If node is on face: ensure it stays on face
-            {// to do: Hilde
+            {
                 Brep srf = face.DuplicateFace(false);
                 movedNode = srf.ClosestPoint(movedNode); // "Project" meshPoint to surface.
             }
