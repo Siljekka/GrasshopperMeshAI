@@ -186,12 +186,12 @@ namespace MeshPoints.MoveNodes
             // 3. if: Node restrained in U direction.
             // Note: if point is on edge not restrained in U direction - meshPoint is made
 
-            if (genesU[i] >= 0 & !mesh.Nodes[i].BC_U) // 1. if
+            if (genesU[i] > 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genesU[i]; // make vector translating node in U-direction
                 if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i + 1); return movedNode; } // make meshPoint
             }
-            else if (genesU[i] <= 0 & !mesh.Nodes[i].BC_U)  // 2. if
+            else if (genesU[i] < 0 & !mesh.Nodes[i].BC_U)  // 2. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - 1].Coordinate) * genesU[i];
                 if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i - 1); return movedNode; } // make meshPoint
@@ -203,12 +203,12 @@ namespace MeshPoints.MoveNodes
             // 2. if: Node not restrained in V direction and gen negative.
             // 3. if: Node restrained in V direction.
             // Note: if point is on edge not restrained in V direction - meshPoint is made
-            if (genesV[i] >= 0 & !mesh.Nodes[i].BC_V) // 1. if
+            if (genesV[i] > 0 & !mesh.Nodes[i].BC_V) // 1. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genesV[i];
                 if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i + mesh.nu); return movedNode; } // make meshPoint
             }
-            else if (genesV[i] <= 0 & !mesh.Nodes[i].BC_V) // 2. if
+            else if (genesV[i] < 0 & !mesh.Nodes[i].BC_V) // 2. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - mesh.nu ].Coordinate) * genesV[i];
                 if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i - mesh.nu); return movedNode; } // make meshPoint
@@ -223,31 +223,18 @@ namespace MeshPoints.MoveNodes
 
             if (mesh.Type == "Solid")
             {
-                if (genesW[i] >= 0 & !mesh.Nodes[i].BC_W) // 1. if
+
+                if (genesW[i] > 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genesW[i];
                     if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
                 }
-                else if (genesW[i] <= 0 & !mesh.Nodes[i].BC_W) // 1. if
+                else if (genesW[i] < 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genesW[i];
                     if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
                 }
-
-                if (mesh.Type == "Solid")
-                {
-                    if (genesW[i] >= 0 & !mesh.Nodes[i].BC_W) // 1. if
-                    {
-                        translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genesW[i];
-                        if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
-                    }
-                    else if (genesW[i] <= 0 & !mesh.Nodes[i].BC_W) // 1. if
-                    {
-                        translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genesW[i];
-                        if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
-                    }
-                    else { translationVectorW = translationVectorW * 0; } // 3. if
-                }
+                else { translationVectorW = translationVectorW * 0; } // 3. if                            
             }
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
@@ -286,16 +273,16 @@ namespace MeshPoints.MoveNodes
             edgeCurve2.SetStartPoint(mesh.Nodes[stop].Coordinate); //forces start point of edgeCurve
             edgeCurve2.SetEndPoint(mesh.Nodes[start].Coordinate); //forces end point of edgeCurve
             
-            if (genes >= 0)
+            if (genes > 0)
             {
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength()) 
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes));
+                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes)); // to do: hilde, når gene = 0 starter den ved feil end?
                 }
                 else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve
             }
-            else if (genes <= 0)
+            else if (genes < 0)
             {
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength())
                 {

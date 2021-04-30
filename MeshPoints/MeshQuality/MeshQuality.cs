@@ -68,13 +68,12 @@ namespace MeshPoints.MeshQuality
             double sumSkewness = 0;
             double sumJacobianRatio = 0;
 
+            // to do: sjekk map til 2D er nødvendig når vi har surface... 
             foreach (Element e in elements)
             {
                 elementQuality.AspectRatio = CalculateAspectRatio(e);
                 elementQuality.Skewness = CalculateSkewness(e);
                 elementQuality.JacobianRatio = CalculateJacobianRatio(e);                
-                //elementQuality.JacobianRatio = CalculateJacobianOf8NodeElementOLD(e);      // old          
-                //elementQuality.JacobianRatio = CalculateJacobianOfQuadElementOLD(e);    // old             
 
                 elementQuality.element = e;
                 e.MeshQuality = elementQuality;
