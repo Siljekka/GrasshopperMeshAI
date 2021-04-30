@@ -9,15 +9,15 @@ using Grasshopper.Kernel.Data;
 using Rhino.Geometry.Intersect;
 using Rhino.Geometry.Collections;
 
-namespace MeshPoints.QuadRemesh
+namespace MeshPoints.CreateMesh
 {
-    public class CreateUnstructuredSolidMesh : GH_Component
+    public class SweepSmartMesh : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the CreateUnstructuredSolidMesh class.
+        /// Initializes a new instance of the SweepSmartMesh class.
         /// </summary>
-        public CreateUnstructuredSolidMesh()
-          : base("Sweep SmartMesh", "cm",
+        public SweepSmartMesh()
+          : base("Sweep SmartMesh", "ss",
               "Sweep a referance surface SmartMesh",
               "MyPlugIn", "Mesh")
         {
@@ -28,10 +28,10 @@ namespace MeshPoints.QuadRemesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "Brep to mesh with sweep", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Brep", "Brep to mesh with sweeping", "", GH_ParamAccess.item);
             pManager.AddIntegerParameter("BottomFace", "index", "Index of bottomFace", GH_ParamAccess.item);
             pManager.AddIntegerParameter("w", "w","Number element in w direction", GH_ParamAccess.item, 4);
-            pManager.AddGenericParameter("SmartMesh", "mb", "SmartMesh¨to sweep", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "mb", "Reference SmartMesh to sweep", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -54,12 +54,12 @@ namespace MeshPoints.QuadRemesh
             Brep brep = new Brep();
             int bottomFace = 0;
             int w = 0;
-            SmartMesh mesh = new SmartMesh();
+            SmartMesh refMesh = new SmartMesh();
 
             DA.GetData(0, ref brep);
             DA.GetData(1, ref bottomFace);
             DA.GetData(2, ref w);
-            DA.GetData(3, ref mesh);
+            DA.GetData(3, ref refMesh);
 
             if (!DA.GetData(0, ref brep)) return;
             if (!DA.GetData(1, ref bottomFace)) return;
@@ -77,10 +77,10 @@ namespace MeshPoints.QuadRemesh
             List<Plane> planes = GetPlanes(railPoints);
 
             // 4. Create nodes
-            List<Node> nodes = CreateNodes(mesh, planes);
+            List<Node> nodes = CreateNodes(refMesh, planes);
 
             // 5. Create elements
-            List<Element> elements = CreateElements(mesh, w, nodes);
+            List<Element> elements = CreateElements(refMesh, w, nodes);
 
             // 6. Create global mesh
             Mesh globalMesh = CreateGlobalMeshWithWeld(elements);
@@ -230,15 +230,15 @@ namespace MeshPoints.QuadRemesh
             }
             return planes;
         }
-        private List<Node> CreateNodes(SmartMesh mesh, List<Plane> planes)
+        private List<Node> CreateNodes(SmartMesh refMesh, List<Plane> planes)
         {
             List<Node> nodes = new List<Node>();
             List<Node> nodesTest = new List<Node>();
-            int numNodesInPlane = mesh.Nodes.Count;
+            int numNodesInPlane = refMesh.Nodes.Count;
             int w = planes.Count - 1;
 
             Plane basePlane = planes[0];
-            SmartMesh meshToTransform = mesh;
+            SmartMesh meshToTransform = refMesh;
             List<Node> nodetest2 = meshToTransform.Nodes;
             for (int i = 0; i < planes.Count; i++)
             {
@@ -262,11 +262,11 @@ namespace MeshPoints.QuadRemesh
             }
             return nodes;
         }
-        private List<Element> CreateElements(SmartMesh mesh, int w, List<Node> nodes)
+        private List<Element> CreateElements(SmartMesh refMesh, int w, List<Node> nodes)
         {
             List<Element> elements = new List<Element>();
-            int numElementsInPlane = mesh.Elements.Count;
-            int numNodesInPlane = mesh.Nodes.Count;
+            int numElementsInPlane = refMesh.Elements.Count;
+            int numNodesInPlane = refMesh.Nodes.Count;
 
             int elemId = 0;
             for (int i = 0; i < w; i++)  // loop levels
@@ -275,14 +275,14 @@ namespace MeshPoints.QuadRemesh
                 {
                     List<Node> elementNodes = new List<Node>();
                     List<int> connectivity = new List<int>();
-                    Element refElement = mesh.Elements[j];
+                    Element refElement = refMesh.Elements[j];
 
-                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane*i);
+                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * i);
                     connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
                     connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
                     connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane *(i+1));
-                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane *(i+1));
+                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * (i+1));
+                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * (i+1));
                     connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i+1));
                     connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * (i+1));
 
@@ -306,9 +306,9 @@ namespace MeshPoints.QuadRemesh
                     localMesh.Faces.AddFace(0, 1, 2, 3);
                     localMesh.Faces.AddFace(4, 5, 6, 7);
 
-                    localMesh.Normals.ComputeNormals();  //Control if needed
-                    localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                    localMesh.Compact(); //to ensure that it calculate
+                    localMesh.Normals.ComputeNormals();
+                    localMesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
+                    localMesh.Compact(); // to ensure that it calculate
                     element.Mesh = localMesh;
 
                     //add element and mesh to element list
@@ -326,6 +326,11 @@ namespace MeshPoints.QuadRemesh
                 globalMesh.Append(element.Mesh);
             }
             globalMesh.Weld(0.01);
+
+            globalMesh.Normals.ComputeNormals();
+            globalMesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
+            globalMesh.Compact(); // to ensure that it calculate
+
             return globalMesh;
         }
         /// <summary>
