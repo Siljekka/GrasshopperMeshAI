@@ -755,6 +755,10 @@ namespace MeshPoints.MeshQuality
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
+                        else 
+                        {
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
+                        }
                         colorMesh.Append(q.element.Mesh);
                     }
                     break;
