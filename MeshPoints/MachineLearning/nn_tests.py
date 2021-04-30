@@ -17,10 +17,10 @@ import sklearn.utils
 
 
 def nn1():
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     weight_decay = 1e-1
     batch_size = 512
-    epochs = 3000
+    epochs = 300
     polygon_size = 6
 
     with tf.device('/cpu:0'):
@@ -29,13 +29,13 @@ def nn1():
         polygons = tmp_polygons.copy()
 
         # Pre-processing of labels
-        label_scaler = skpp.MinMaxScaler()
-        polygons['internal_nodes'] = label_scaler.fit_transform(
-            np.array(tmp_polygons['internal_nodes']).reshape(-1, 1))
+        # label_scaler = skpp.MinMaxScaler()
+        # polygons['internal_nodes'] = label_scaler.fit_transform(
+        #     np.array(tmp_polygons['internal_nodes']).reshape(-1, 1))
 
         polygons = sklearn.utils.shuffle(polygons)
-        # Split dataset into 80/20 training/test
-        polygon_train = polygons.sample(frac=0.8, random_state=0)
+        # Split dataset into 70/15/15 training/test
+        polygon_train = polygons.sample(frac=0.85, random_state=0)
         polygon_test = polygons.drop(polygon_train.index)
 
         train_features = polygon_train.copy()
@@ -50,7 +50,7 @@ def nn1():
             layers.BatchNormalization(),
             layers.Dropout(0.5),
 
-            layers.Dense(24),
+            layers.Dense(36),
             layers.Activation('relu'),
             layers.BatchNormalization(),
             layers.Dropout(0.5),
@@ -89,10 +89,12 @@ def nn1():
         plt.show()
 
 
-def nn1_single_edge_length(learning_rate=1e-4,
-                           weight_decay=1e-1,
-                           batch_size=512,
-                           epochs=3000):
+def nn1_single_edge_length(
+        learning_rate=1e-4,
+        weight_decay=1e-1,
+        batch_size=512,
+        epochs=3000
+):
 
     with tf.device('/cpu:0'):
 
