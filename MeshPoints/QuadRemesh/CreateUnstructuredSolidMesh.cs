@@ -17,8 +17,8 @@ namespace MeshPoints.QuadRemesh
         /// Initializes a new instance of the CreateUnstructuredSolidMesh class.
         /// </summary>
         public CreateUnstructuredSolidMesh()
-          : base("CopyMeshToPlanes", "cm",
-              "Copy a mesh to planes",
+          : base("Sweep SmartMesh", "cm",
+              "Sweep a referance surface SmartMesh",
               "MyPlugIn", "Mesh")
         {
         }
@@ -28,10 +28,10 @@ namespace MeshPoints.QuadRemesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "", "", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("BottomFace", "", "", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("nw", "", "", GH_ParamAccess.item, 4);
-            pManager.AddGenericParameter("Mesh", "mb", "Mesh as base", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Brep", "Brep to mesh with sweep", "", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("BottomFace", "index", "Index of bottomFace", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("w", "w","Number element in w direction", GH_ParamAccess.item, 4);
+            pManager.AddGenericParameter("SmartMesh", "mb", "SmartMesh¨to sweep", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -39,7 +39,10 @@ namespace MeshPoints.QuadRemesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("output", "", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "sm", "SmartMesh from sweeping", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "m", "Mesh from sweeping", GH_ParamAccess.item);
+            pManager.AddGenericParameter("test list", "sm", "SmartMesh from sweeping", GH_ParamAccess.list);
+
         }
 
         /// <summary>
@@ -50,263 +53,46 @@ namespace MeshPoints.QuadRemesh
         {
             Brep brep = new Brep();
             int bottomFace = 0;
-            int nw = 0;
+            int w = 0;
             SmartMesh mesh = new SmartMesh();
 
             DA.GetData(0, ref brep);
             DA.GetData(1, ref bottomFace);
-            DA.GetData(2, ref nw);
+            DA.GetData(2, ref w);
             DA.GetData(3, ref mesh);
 
             if (!DA.GetData(0, ref brep)) return;
             if (!DA.GetData(1, ref bottomFace)) return;
-            if (nw == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "nw = 0"); return; }
+            if (w == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "w = 0"); return; }
 
-            #region Code
             // to do: add error if not a planar mesh
 
-            // 1. Assign properties to SolidMesh
-            //solidMesh.inp = true;
-
-            // 2. Find Rails
+            // 1. Find Rails
             List<Curve> rails = FindRails(brep, bottomFace);
 
-            // 3. Divide each brep edge in w direction (rail) into nw points.
-            DataTree<Point3d> railPoints = DivideRailIntoNwPoints(rails, brep.Faces[bottomFace], nw);
+            // 2. Divide each brep edge in w direction (rail) into w points.
+            DataTree<Point3d> railPoints = DivideRailIntoWPoints(rails, brep.Faces[bottomFace], w);
             
-            // 4. Create Planes
+            // 3. Create Planes
             List<Plane> planes = GetPlanes(railPoints);
 
+            // 4. Create nodes
+            List<Node> nodes = CreateNodes(mesh, planes);
+
             // 5. Create elements
+            List<Element> elements = CreateElements(mesh, w, nodes);
 
-            #region Old code
-            /*SmartMesh solidMesh = new SmartMesh();
-            int globalNodeIndexAddition = mesh.Nodes.Count;
-            //List<SmartMesh> meshOnPlanes = new List<SmartMesh>();
-            //meshOnPlanes.Add(mesh);
-            List<Node> nodes = new List<Node>();
-            Plane basePlane = planes[0];
-            DataTree<Point3d> points = new DataTree<Point3d>();
-            List<Element> elements = new List<Element>();
+            // 6. Create global mesh
+            Mesh globalMesh = CreateGlobalMeshWithWeld(elements);
 
-            for (int i = 0; i < planes.Count; i++)
-            {
-                SmartMesh meshToTransform = mesh;
-                globalNodeIndexAddition = globalNodeIndexAddition * i;
-                Transform tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
-                meshToTransform.Mesh.Transform(tranformation); // transform mesh, to do: check if needed
+            // 7. Create SmartMesh
+            SmartMesh solidMesh = new SmartMesh(nodes, elements, globalMesh, "Solid");
 
-                // Creating global nodes
-                foreach (Node nodeToTransform in meshToTransform.Nodes)
-                {
-                    Point3d pointToTransform = nodeToTransform.Coordinate;
-                    pointToTransform.Transform(tranformation);
-
-                    if (i == 0 | i == nw) { nodeToTransform.BC_W = true; } else { nodeToTransform.BC_W = false; } // assign BCW
-                    Node n = new Node(nodeToTransform.GlobalId + globalNodeIndexAddition, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
-                    nodes.Add(n);
-                }
-                
-                // Creating elements
-                for (int j = 0; j < meshToTransform.Elements.Count; j++)
-                {
-                    Element elementToTransform = meshToTransform.Elements[j];
-                    elementToTransform.Mesh.Transform(tranformation); // fix mesh face of element, to do: check if needed
-
-                    List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Nodes[0], elementToTransform.Nodes[1], elementToTransform.Nodes[2] };
-                    if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Nodes[3]); }
-
-                    Element element = new Element();
-                    element.Id = j;
-                    foreach (Node nodeToTransform in nodesOfElementToTransform)
-                    {
-                        //nodeToTransform.GlobalId = nodeToTransform.GlobalId + globalNodeIndexAddition;
-                        Point3d pointToTransform = nodeToTransform.Coordinate;
-                        pointToTransform.Transform(tranformation);
-                    }*/
-            #endregion
-
-            // copy mesh to planes
-            SmartMesh solidMesh = new SmartMesh();
-            
-            //List<SmartMesh> meshOnPlanes = new List<SmartMesh>();
-            //meshOnPlanes.Add(mesh);
-            List<Node> nodes = new List<Node>();
-            List<Node> nodesTest = new List<Node>();
-            Plane basePlane = planes[0];
-            DataTree<Point3d> points = new DataTree<Point3d>();
-            List<Element> elements = new List<Element>();
-            SmartMesh meshToTransform = mesh;
-            List<Node> nodetest2 = meshToTransform.Nodes;
-            for (int i = 0; i < planes.Count; i++)
-            {
-                if (i > 0) { basePlane = planes[i - 1]; }
-                Transform tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
-
-
-                // Creating global nodes
-                for (int j = 0; j < nodetest2.Count; j++) 
-                {
-                    Node nodeToTransform = nodetest2[j];//meshToTransform.Nodes[j];
-                    Point3d pointToTransform = nodeToTransform.Coordinate;
-                    pointToTransform.Transform(tranformation);
-
-                    if (i == 0 | i == nw) { nodeToTransform.BC_W = true; } else { nodeToTransform.BC_W = false; } // assign BCW
-                    Node n = new Node(nodeToTransform.GlobalId + mesh.Nodes.Count * i, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
-                    nodes.Add(n);
-                }
-                nodetest2 = new List<Node>(nodes);
-                nodesTest.AddRange(nodes);
-                nodes.Clear();
-                
-                // Creating elements
-                for (int j = 0; j < mesh.Elements.Count; j++)
-                {
-                    Element elementToTransform = mesh.Elements[j];
-
-                    List<Node> nodesOfElementToTransform = new List<Node>() { elementToTransform.Nodes[0], elementToTransform.Nodes[1], elementToTransform.Nodes[2] };
-                    if (elementToTransform.Type == "Quad") { nodesOfElementToTransform.Add(elementToTransform.Nodes[3]); }
-
-
-
-                    List<Node> newElementNodes = new List<Node>(nodesOfElementToTransform);
-
-                    Element element = new Element();
-                    element.Id = j;
-                    
-
-                    foreach (Node nodeToTransform in nodesOfElementToTransform)
-                    {
-                        Point3d pointToTransform = nodeToTransform.Coordinate;
-                        pointToTransform.Transform(tranformation);
-                        Node n = new Node(nodeToTransform.GlobalId + mesh.Nodes.Count * i, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
-                        newElementNodes.Add(n);
-                    }
-                    /*
-                    mesh.Elements[j].Nodes = new List<>newElementNodes
-                    element.Nodes
-
-                    // create local mesh
-                    Mesh localMesh = new Mesh();
-                    foreach (Node node in elementNodes)
-                    {
-                        localMesh.Vertices.Add(node.Coordinate); //0
-                    }
-                    localMesh.Faces.AddFace(0, 1, 5, 4);
-                    localMesh.Faces.AddFace(1, 2, 6, 5);
-                    localMesh.Faces.AddFace(2, 3, 7, 6);
-                    localMesh.Faces.AddFace(3, 0, 4, 7);
-                    localMesh.Faces.AddFace(0, 1, 2, 3);
-                    localMesh.Faces.AddFace(4, 5, 6, 7);
-
-                    localMesh.Normals.ComputeNormals();  //Control if needed
-                    localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                    localMesh.Compact(); //to ensure that it calculate
-                    element.Mesh = localMesh;*/
-                }
-                //meshOnPlanes.Add(meshToTransform); // add to list of mesh
-            
-                solidMesh.Nodes = nodes;
-                solidMesh.CreateHexElements();
-                solidMesh.CreateMesh();
-
-                
-            }
-            /*
-            // from SurfaceMesh to SolidMesh, Old method
-
-            int elementIndex = 0;
-            List<Element> solidElements = new List<Element>();
-            for (int i = 0; i < meshOnPlanes.Count - 1; i++)
-            {
-                Mesh2D bottomMesh = meshOnPlanes[i];
-                Mesh2D topMesh = meshOnPlanes[i+1];
-
-                for (int j = 0; j < bottomMesh.Elements.Count; j++) // to do: make general for triangle mesh as well
-                {
-                    Mesh m = new Mesh();
-                    Element e = new Element();
-                    Element bottomElement = bottomMesh.Elements[j];
-                    Element topElement = topMesh.Elements[j];
-                    e.IsCube = true;
-                    e.Id = elementIndex;
-
-                    Node n1 = new Node();
-                    n1 = bottomElement.Node1;
-                    e.Node1 = n1;
-
-                    Node n2 = new Node();
-                    n2 = bottomElement.Node2;
-                    e.Node2 = n2;
-
-                    Node n3 = new Node();
-                    n3 = bottomElement.Node3;
-                    e.Node3 = n3;
-
-                    Node n4 = new Node();
-                    n4 = bottomElement.Node1;
-                    e.Node4 = n4;
-
-                    Node n5 = new Node();
-                    n5 = topElement.Node1; n5.LocalId = 5;
-                    e.Node5 = n5;
-
-                    Node n6 = new Node();
-                    n6 = topElement.Node2; n6.LocalId = 6;
-                    e.Node6 = n6;
-
-                    Node n7 = new Node();
-                    n7 = topElement.Node3; n7.LocalId = 7;
-                    e.Node7 = n7;
-
-                    Node n8 = new Node();
-                    n8 = topElement.Node4; n8.LocalId = 8;
-                    e.Node8 = n8;
-
-                    m.Vertices.Add(e.Node1.Coordinate); //0
-                    m.Vertices.Add(e.Node2.Coordinate); //1
-                    m.Vertices.Add(e.Node3.Coordinate); //2
-                    m.Vertices.Add(e.Node4.Coordinate); //3
-                    m.Vertices.Add(e.Node5.Coordinate); //4
-                    m.Vertices.Add(e.Node6.Coordinate); //5
-                    m.Vertices.Add(e.Node7.Coordinate); //6
-                    m.Vertices.Add(e.Node8.Coordinate); //7
-
-                    m.Faces.AddFace(0, 1, 5, 4);
-                    m.Faces.AddFace(1, 2, 6, 5);
-                    m.Faces.AddFace(2, 3, 7, 6);
-                    m.Faces.AddFace(3, 0, 4, 7);
-                    m.Faces.AddFace(0, 1, 2, 3);
-                    m.Faces.AddFace(4, 5, 6, 7);
-
-                    m.Normals.ComputeNormals();  //Control if needed
-                    m.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                    m.Compact(); //to ensure that it calculate
-                    e.mesh = m;
-
-                    //add element and mesh to element list
-                    solidElements.Add(e);
-
-                    elementIndex++;
-                }
-
-                //  create global mesh
-                Mesh allMesh = new Mesh();
-                foreach (Element el in solidElements)
-                {
-                    allMesh.Append(el.mesh);
-                }
-                allMesh.Weld(0.01);
-            }*/
-
-            #endregion
-
-            DA.SetDataList(0, nodesTest);
-
+            DA.SetData(0, solidMesh);
+            DA.SetData(1, solidMesh.Mesh);
+            DA.SetDataList(2, elements); // temp
         }
 
-
-        #region Methods
         private List<Curve> FindRails(Brep brep, int bottomFaceIndex)
         {
             // Find top and bottom edge
@@ -366,13 +152,13 @@ namespace MeshPoints.QuadRemesh
             #endregion
             return rails;
         }
-        private DataTree<Point3d> DivideRailIntoNwPoints(List<Curve> rails, BrepFace brepBottomFace, int nw)
+        private DataTree<Point3d> DivideRailIntoWPoints(List<Curve> rails, BrepFace brepBottomFace, int w)
         {
             DataTree<Point3d> railPoints = new DataTree<Point3d>();
 
             for (int i = 0; i < rails.Count; i++)
             {
-                rails[i].DivideByCount(nw, true, out Point3d[] pt);
+                rails[i].DivideByCount(w, true, out Point3d[] pt);
                 List<Point3d> point = pt.ToList();
                 
                 brepBottomFace.ClosestPoint(point[0], out double PointOnCurveU, out double PointOnCurveV);
@@ -382,13 +168,13 @@ namespace MeshPoints.QuadRemesh
 
                 for (int j = 0; j < point.Count; j++)
                 {
-                    railPoints.Add(point[j], new GH_Path(j)); //tree with nw points on each rail. Branch: floor
+                    railPoints.Add(point[j], new GH_Path(j)); //tree with w points on each rail. Branch: floor
                 }
             }
 
             // Check if the rails must be re-oredered to generate elements with nodes counting ccw
             Curve testCurve = Curve.CreateControlPointCurve(railPoints.Branch(0), 1);
-            Vector3d direction = railPoints.Branch(nw)[0] - railPoints.Branch(0)[0];
+            Vector3d direction = railPoints.Branch(w)[0] - railPoints.Branch(0)[0];
             string curveOrientation = testCurve.ClosedCurveOrientation(direction).ToString();
             if (curveOrientation == "Clockwise")
             {
@@ -402,20 +188,20 @@ namespace MeshPoints.QuadRemesh
             DataTree<Point3d> railPoints = new DataTree<Point3d>();
             if (rails.Count == 0) { return null; }
 
-            //Divide each rail into nw points.
+            //Divide each rail into w points.
             for (int i = 0; i < rails.Count; i++)
             {
-                rails[i].DivideByCount(nw, true, out Point3d[] nwPt);  //divide each rail in nw number of points
-                List<Point3d> nwPoints = nwPt.ToList();
-                for (int j = 0; j < nwPoints.Count; j++)
+                rails[i].DivideByCount(w, true, out Point3d[] wPt);  //divide each rail in w number of points
+                List<Point3d> wPoints = wPt.ToList();
+                for (int j = 0; j < wPoints.Count; j++)
                 {
-                    railPoints.Add(nwPoints[j], new GH_Path(j)); //tree with nw points on each rail. Branch: floor
+                    railPoints.Add(wPoints[j], new GH_Path(j)); //tree with w points on each rail. Branch: floor
                 }
             }
 
             // Check if the rails must be re-oredered to generate elements with nodes counting ccw
             Curve testCurve = Curve.CreateControlPointCurve(railPoints.Branch(0), 1);
-            Vector3d direction = railPoints.Branch(nw)[0] - railPoints.Branch(0)[0];
+            Vector3d direction = railPoints.Branch(w)[0] - railPoints.Branch(0)[0];
             string curveOrientation = testCurve.ClosedCurveOrientation(direction).ToString();
             if (curveOrientation == "Clockwise")
             {
@@ -444,103 +230,104 @@ namespace MeshPoints.QuadRemesh
             }
             return planes;
         }
-        private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int w)
+        private List<Node> CreateNodes(SmartMesh mesh, List<Plane> planes)
         {
             List<Node> nodes = new List<Node>();
-            int id = 0;
-            int nw = w + 1; // number nodes in w dir 
+            List<Node> nodesTest = new List<Node>();
+            int numNodesInPlane = mesh.Nodes.Count;
+            int w = planes.Count - 1;
 
-            for (int i = 0; i < nw; i++)
+            Plane basePlane = planes[0];
+            SmartMesh meshToTransform = mesh;
+            List<Node> nodetest2 = meshToTransform.Nodes;
+            for (int i = 0; i < planes.Count; i++)
             {
-                int row = 0;
-                int column = 0;
-                for (int j = 0; j < meshPoints.Branch(i).Count; j++)
+                if (i > 0) { basePlane = planes[i - 1]; }
+                Transform tranformation = Transform.PlaneToPlane(basePlane, planes[i]);
+
+                // Creating global nodes
+                for (int j = 0; j < nodetest2.Count; j++)
                 {
-                    bool BC_U = false;
-                    bool BC_V = false;
-                    bool BC_W = false;
-                    Node node = new Node(id, meshPoints.Branch(i)[j], BC_U, BC_V, BC_W);
-                    id++;
-                    nodes.Add(node);
+                    Node nodeToTransform = nodetest2[j];//meshToTransform.Nodes[j];
+                    Point3d pointToTransform = nodeToTransform.Coordinate;
+                    pointToTransform.Transform(tranformation);
+
+                    if (i == 0 | i == w) { nodeToTransform.BC_W = true; } else { nodeToTransform.BC_W = false; } // assign BCW
+                    Node n = new Node(nodeToTransform.GlobalId + numNodesInPlane * i, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
+                    nodes.Add(n);
                 }
+                nodetest2 = new List<Node>(nodes);
+                nodesTest.AddRange(nodes);
+                nodes.Clear();
             }
             return nodes;
         }
-        private List<Element> CreateHexElements(DataTree<Point3d> meshPoints, List<Node> nodes, int nu, int nv)
+        private List<Element> CreateElements(SmartMesh mesh, int w, List<Node> nodes)
         {
-            Element e = new Element();
-            Mesh mesh = new Mesh();
             List<Element> elements = new List<Element>();
-            List<Point3d> ptsBot = new List<Point3d>();
-            List<Point3d> ptsTop = new List<Point3d>();
+            int numElementsInPlane = mesh.Elements.Count;
+            int numNodesInPlane = mesh.Nodes.Count;
+
             int elemId = 0;
-
-            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
-            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
-
-            for (int i = 0; i < meshPoints.BranchCount - 1; i++)  // loop levels
+            for (int i = 0; i < w; i++)  // loop levels
             {
-                ptsBot = meshPoints.Branch(i);
-                ptsTop = meshPoints.Branch(i + 1);
-                int count2 = 0;
-                int counter = meshPoints.Branch(0).Count * i;
-
-                for (int j = 0; j < meshPoints.Branch(0).Count - nu - 1; j++) // loop elements in a level
+                for (int j = 0; j < numElementsInPlane; j++) // loop elements in a level
                 {
                     List<Node> elementNodes = new List<Node>();
                     List<int> connectivity = new List<int>();
+                    Element refElement = mesh.Elements[j];
 
-                    if (count2 < nu - 1)
+                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane*i);
+                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
+                    connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
+                    connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * i);
+                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane *(i+1));
+                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane *(i+1));
+                    connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i+1));
+                    connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * (i+1));
+
+                    foreach (int id in connectivity)
                     {
-                        connectivity.Add(counter);
-                        connectivity.Add(counter + 1);
-                        connectivity.Add(counter + nu + 1);
-                        connectivity.Add(counter + nu);
-                        connectivity.Add(counter + nu * nv);
-                        connectivity.Add(counter + 1 + nu * nv);
-                        connectivity.Add(counter + nu + 1 + nu * nv);
-                        connectivity.Add(counter + nu + nu * nv);
-
-                        foreach (int id in connectivity)
-                        {
-                            elementNodes.Add(nodes[id]);
-                        }
-
-                        Element element = new Element(elemId, elementNodes, connectivity);
-
-                        // create local mesh
-                        Mesh localMesh = new Mesh();
-                        foreach (Node node in elementNodes)
-                        {
-                            localMesh.Vertices.Add(node.Coordinate); //0
-                        }
-
-                        localMesh.Faces.AddFace(0, 1, 5, 4);
-                        localMesh.Faces.AddFace(1, 2, 6, 5);
-                        localMesh.Faces.AddFace(2, 3, 7, 6);
-                        localMesh.Faces.AddFace(3, 0, 4, 7);
-                        localMesh.Faces.AddFace(0, 1, 2, 3);
-                        localMesh.Faces.AddFace(4, 5, 6, 7);
-
-                        localMesh.Normals.ComputeNormals();  //Control if needed
-                        localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                        localMesh.Compact(); //to ensure that it calculate
-
-                        //add element and mesh to element list
-                        element.Mesh = localMesh;
-                        elements.Add(element);
-
-                        count2++;
-                        elemId++;
-                        counter++;
+                        elementNodes.Add(nodes[id]);
                     }
-                    else { count2 = 0; counter++; }
-                }
 
+                    Element element = new Element(elemId, elementNodes, connectivity);
+
+                    // create local mesh
+                    Mesh localMesh = new Mesh();
+                    foreach (Node node in elementNodes)
+                    {
+                        localMesh.Vertices.Add(node.Coordinate); 
+                    }
+                    localMesh.Faces.AddFace(0, 1, 5, 4);
+                    localMesh.Faces.AddFace(1, 2, 6, 5);
+                    localMesh.Faces.AddFace(2, 3, 7, 6);
+                    localMesh.Faces.AddFace(3, 0, 4, 7);
+                    localMesh.Faces.AddFace(0, 1, 2, 3);
+                    localMesh.Faces.AddFace(4, 5, 6, 7);
+
+                    localMesh.Normals.ComputeNormals();  //Control if needed
+                    localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                    localMesh.Compact(); //to ensure that it calculate
+                    element.Mesh = localMesh;
+
+                    //add element and mesh to element list
+                    elements.Add(element);
+                    elemId++;
+                }
             }
             return elements;
-        }// to do: slett
-        #endregion
+        }
+        private Mesh CreateGlobalMeshWithWeld(List<Element> elements)
+        {
+            Mesh globalMesh = new Mesh();
+            foreach (Element element in elements)
+            {
+                globalMesh.Append(element.Mesh);
+            }
+            globalMesh.Weld(0.01);
+            return globalMesh;
+        }
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
