@@ -124,7 +124,7 @@
     <Compile Include="Classes\qEdge.cs" />
     <Compile Include="Classes\qElement.cs" />
     <Compile Include="QuadRemesh\AnalyzeTriangleMesh.cs" />
-    <Compile Include="QuadRemesh\CreateUnstructuredSolidMesh.cs" />
+    <Compile Include="CreateMesh\SweepSmartMesh.cs" />
     <Compile Include="QuadRemesh\DeconstructQEdge.cs" />
     <Compile Include="QuadRemesh\DeconstructQElement.cs" />
     <Compile Include="QuadRemesh\DeconstructQNode.cs" />
