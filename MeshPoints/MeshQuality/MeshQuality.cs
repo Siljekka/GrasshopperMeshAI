@@ -228,13 +228,9 @@ namespace MeshPoints.MeshQuality
             {
                 // Create dublicated list of node
                 List<Node> nodesOfFace = new List<Node>(faces[i]);
-                int numNodesOfFace = nodesOfFace.Count;
-                for (int n = 0; n < numNodesOfFace; n++)
-                {
-                    nodesOfFace.Add(nodesOfFace[n]);
-                }
+                nodesOfFace.AddRange(faces[i]);             
 
-                for (int n = 0; n < numNodesOfFace ; n++)
+                for (int n = 0; n < nodesOfFace.Count / 2; n++)
                 {
                     // Create a vector from a vertex to a neighbouring vertex
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;

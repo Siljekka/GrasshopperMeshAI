@@ -25,7 +25,7 @@ namespace MeshPoints.Classes
             //Empty constructor
         }
 
-        public Element(int _id, List<Node> _nodes, List<int> _connectivity) // new
+        public Element(int _id, List<Node> _nodes, List<int> _connectivity)
         {
             Id = _id;
             Nodes = _nodes;

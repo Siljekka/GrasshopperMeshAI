@@ -82,6 +82,11 @@ namespace MeshPoints.MoveNodes
             // 3. Create new nodes
             for (int i = 0; i < oldMesh.Nodes.Count; i++)
             {
+                if (i == 9) 
+                { 
+                    //
+                    //
+                }
                 // a. Check if node is on face or edge.
                 Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                 Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
@@ -272,28 +277,29 @@ namespace MeshPoints.MoveNodes
 
             edgeCurve2.SetStartPoint(mesh.Nodes[stop].Coordinate); //forces start point of edgeCurve
             edgeCurve2.SetEndPoint(mesh.Nodes[start].Coordinate); //forces end point of edgeCurve
-            
+
             if (genes > 0)
             {
-                if (edgeCurve1.GetLength() > edgeCurve2.GetLength()) 
+                if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & edgeCurve2.GetLength() > 0.001) 
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes)); // to do: hilde, når gene = 0 starter den ved feil end?
+                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes)); 
                 }
                 else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve
             }
             else if (genes < 0)
             {
-                if (edgeCurve1.GetLength() > edgeCurve2.GetLength())
+                if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & edgeCurve2.GetLength() > 0.001)
                 {
                     edgeCurve2.Reverse();
                     movedNode = edgeCurve2.PointAtNormalizedLength(-(0.49 * genes));
                 }
                 else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.49 * genes)); } // move node along edgeCurve
             }
+
             return movedNode;
         }
-
+            
         #endregion
 
         /// <summary>
