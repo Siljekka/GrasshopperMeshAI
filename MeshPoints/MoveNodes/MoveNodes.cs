@@ -82,11 +82,6 @@ namespace MeshPoints.MoveNodes
             // 3. Create new nodes
             for (int i = 0; i < oldMesh.Nodes.Count; i++)
             {
-                if (i == 9) 
-                { 
-                    //
-                    //
-                }
                 // a. Check if node is on face or edge.
                 Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                 Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
@@ -185,11 +180,11 @@ namespace MeshPoints.MoveNodes
             Vector3d translationVectorV = Vector3d.Zero;
             Vector3d translationVectorW = Vector3d.Zero;
 
-            // Translation in U direction
-            // 1. if: Node not restrained in U direction and gen positive.
-            // 2. if: Node not restrained in U direction and gen negative.
-            // 3. if: Node restrained in U direction.
-            // Note: if point is on edge not restrained in U direction - meshPoint is made
+            // Translation in x direction
+            // 1. if: Node not restrained in x direction and gen positive.
+            // 2. if: Node not restrained in x direction and gen negative.
+            // 3. if: Node restrained in x direction.
+            // Note: if point is on edge not restrained in x direction - meshPoint is made
 
             if (genesU[i] > 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
@@ -203,11 +198,7 @@ namespace MeshPoints.MoveNodes
             }
             else { translationVectorU = translationVectorU * 0; }  // 3. if
 
-            // Translation in V direction
-            // 1. if: Node not restrained in V direction and gen positive.
-            // 2. if: Node not restrained in V direction and gen negative.
-            // 3. if: Node restrained in V direction.
-            // Note: if point is on edge not restrained in V direction - meshPoint is made
+           
             if (genesV[i] > 0 & !mesh.Nodes[i].BC_V) // 1. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genesV[i];
@@ -220,11 +211,6 @@ namespace MeshPoints.MoveNodes
             }
             else { translationVectorV = translationVectorV * 0; } // 3. if
 
-            // Translation in W direction
-            // 1. if: Node not restrained in W direction and gen positive.
-            // 2. if: Node not restrained in W direction and gen negative.
-            // 3. if: Node restrained in W direction.
-            // Note: if point is on edge not restrained in W direction - meshPoint is made
 
             if (mesh.Type == "Solid")
             {
@@ -278,9 +264,11 @@ namespace MeshPoints.MoveNodes
             edgeCurve2.SetStartPoint(mesh.Nodes[stop].Coordinate); //forces start point of edgeCurve
             edgeCurve2.SetEndPoint(mesh.Nodes[start].Coordinate); //forces end point of edgeCurve
 
+            bool dummyCrit = edgeCurve2.GetLength() > 0.001; // dummy criteror for curve2 when construction failes
+
             if (genes > 0)
             {
-                if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & edgeCurve2.GetLength() > 0.001) 
+                if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit) 
                 {
                     edgeCurve2.Reverse();
                     movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes)); 
@@ -289,7 +277,7 @@ namespace MeshPoints.MoveNodes
             }
             else if (genes < 0)
             {
-                if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & edgeCurve2.GetLength() > 0.001)
+                if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit)
                 {
                     edgeCurve2.Reverse();
                     movedNode = edgeCurve2.PointAtNormalizedLength(-(0.49 * genes));
