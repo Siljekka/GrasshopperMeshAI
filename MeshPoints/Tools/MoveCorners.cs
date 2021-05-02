@@ -24,7 +24,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Corner points", "cp", "Input the corner points", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface", "srf", "Surface to modify", GH_ParamAccess.item);
             pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
         }
@@ -34,6 +34,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
+            pManager.AddGenericParameter("Surface", "srf", "¨Modified Surface ", GH_ParamAccess.item);
             pManager.AddGenericParameter("New corner points", "cp", "Modified corner points", GH_ParamAccess.list);
         }
 
@@ -44,19 +45,26 @@ namespace MeshPoints.Tools
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            List<Point3d> refPoints = new List<Point3d>();
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
-
-            DA.GetDataList(0, refPoints);
+            Brep refSrf = new Brep();
+            DA.GetData(0, ref refSrf);
             DA.GetDataList(1, genesU);
             DA.GetDataList(2, genesV);
 
             // Code
-            List<Point3d> newLocation = ModifyCornerLocation(refPoints, genesU, genesV);
+            // 1. Check input OK.
+            if (!DA.GetData(0, ref refSrf)) return;
+            if (genesU.Count < 4) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Increase genes in u-dir."); return; }
+            if (genesV.Count < 4) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Increase genes in v-dir."); return; }
+
+            List<Point3d> cornerPts = GetCornerPoints(refSrf);
+            List<Point3d> newLocation = ModifyCornerLocation(cornerPts, genesU, genesV);
+            NurbsSurface srf = NurbsSurface.CreateFromCorners(newLocation[0], newLocation[1], newLocation[2], newLocation[3]);
 
             // Output
-            DA.SetDataList(0, newLocation);
+            DA.SetData(0, srf);
+            DA.SetDataList(1, newLocation);
         }
 
         // Methods
@@ -71,27 +79,27 @@ namespace MeshPoints.Tools
             // first point
             Point3d newPoint1 = new Point3d
                (
-               refPoints[0].X + (uVector1.X * genesU[0] + vVector1.X * genesV[0]) * 0.5 * 875, // 0.5 for half the length, 0.875 for a space free of nodes
+               refPoints[0].X + (uVector1.X * genesU[0] + vVector1.X * genesV[0]) * 0.5 * 0.875, // 0.5 for half the length, 0.875 for a space free of nodes
                refPoints[0].Y + (uVector1.Y * genesU[0] + vVector1.Y * genesV[0]) * 0.5 * 0.75,
                0
                );
 
             Point3d newPoint2 = new Point3d
                 (
-                refPoints[1].X + (uVector1.X * genesU[1] + vVector2.X * genesV[1]) * 0.5 * 875, // 0.5 for half the length, 0.875 for a space free of nodes
+                refPoints[1].X + (uVector1.X * genesU[1] + vVector2.X * genesV[1]) * 0.5 * 0.875, // 0.5 for half the length, 0.875 for a space free of nodes
                 refPoints[1].Y + (uVector1.Y * genesU[1] + vVector2.Y * genesV[1]) * 0.5 * 0.75,
                 0
                 );
 
             Point3d newPoint3 = new Point3d
                 (
-                refPoints[2].X + (uVector2.X * genesU[2] + vVector2.X * genesV[2]) * 0.5 * 875, // 0.5 for half the length, 0.875 for a space free of nodes
+                refPoints[2].X + (uVector2.X * genesU[2] + vVector2.X * genesV[2]) * 0.5 * 0.875, // 0.5 for half the length, 0.875 for a space free of nodes
                 refPoints[2].Y + (uVector2.Y * genesU[2] + vVector2.Y * genesV[2]) * 0.5 * 0.75,
                 0
                 );
             Point3d newPoint4 = new Point3d
                 (
-                refPoints[3].X + (uVector2.X * genesU[3] + vVector1.X * genesV[3]) * 0.5 * 875, // 0.5 for half the length, 0.875 for a space free of nodes
+                refPoints[3].X + (uVector2.X * genesU[3] + vVector1.X * genesV[3]) * 0.5 * 0.875, // 0.5 for half the length, 0.875 for a space free of nodes
                 refPoints[3].Y + (uVector2.Y * genesU[3] + vVector1.Y * genesV[3]) * 0.5 * 0.75,
                 0
                 );
@@ -99,7 +107,22 @@ namespace MeshPoints.Tools
             return newLocation;
 
         }
+        private List<Point3d> GetCornerPoints(Brep refSrf)
+        {
+            List<Point3d> cornerPts = new List<Point3d>();
+            Brep[] planarBrep = Brep.CreatePlanarBreps(refSrf.Edges, 0.0001); // make planar brep on floor i     
+            NurbsSurface refNurbsSrf = NurbsSurface.CreateNetworkSurface(planarBrep[0].Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
 
+            var uDomain = refNurbsSrf.Domain(0);
+            var vDomain = refNurbsSrf.Domain(1);
+
+            cornerPts.Add(refNurbsSrf.PointAt(uDomain[0], vDomain[0]));  // make point on surface
+            cornerPts.Add(refNurbsSrf.PointAt(uDomain[1], vDomain[0]));  // make point on surface
+            cornerPts.Add(refNurbsSrf.PointAt(uDomain[1], vDomain[1]));  // make point on surface
+            cornerPts.Add(refNurbsSrf.PointAt(uDomain[0], vDomain[1]));  // make point on surface
+
+            return cornerPts;
+        }
 
         /// <summary>
         /// Provides an Icon for the component.
