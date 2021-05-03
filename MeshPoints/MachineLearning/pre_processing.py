@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import gmsh
 import csv
 import sys
+import string
 
 
 def procrustes(contour: np.array) -> dict:
@@ -492,7 +493,7 @@ def quad_mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
             header.append(f"y{i}")
         header.append("target_edge_length")
         header.append("internal_node_count")
-
+        [header.append(x) for x in list(string.ascii_lowercase)]
         writer.writerow(header)
 
         for i, contour in enumerate(features):
