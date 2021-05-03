@@ -1,8 +1,9 @@
+
+# %%
 import numpy as np
 
 
 class GridPoint():
-
     def __init__(self, pid: int, x: float, y: float, score: float = 0):
         self._pid = pid
         self._x = x
@@ -13,7 +14,13 @@ class GridPoint():
     def coordinates(self):
         return (self._x, self._y)
 
-    def set_neighbours(self, neighbours: list):
+    @property
+    def neighbours(self):
+        return self._neighbours
+
+    @neighbours.setter
+    def neighbours(self, neighbours: list):
+        # print(f"set grid point ({self._x}, {self._y}) neigbours to: {neighbours}")
         self._neighbours = neighbours
 
     @property
@@ -25,9 +32,9 @@ class GridPoint():
         return self._score
 
     @score.setter
-    def score(self, new_score):
-        print(f"set grid point ({self._x}, {self._y}) to score: {new_score}")
-        self._score = new_score
+    def score(self, score):
+        print(f"set grid point ({self._x}, {self._y}) to score: {score}")
+        self._score = score
 
     def __repr__(self):
         # return (f"{self._pid}")
@@ -43,7 +50,7 @@ def generate_point_grid(grid_resolution=20) -> list:
     min_val = 1.32
     val_range = 2.64
     point_id = 0
-    for i in range(padded_grid+1, -1, -1):
+    for i in range(padded_grid, -1, -1):
         point_grid_row = []
         y_coord = i/padded_grid * val_range - min_val
         for j in range(padded_grid+1):
@@ -55,22 +62,27 @@ def generate_point_grid(grid_resolution=20) -> list:
     return point_grid
 
 
-def set_neighbours_(point_grid):
+def set_neighbours(point_grid):
     for i in range(1, len(point_grid)-1):
 
         for j in range(1, len(point_grid)-1):
             neighbour_list = []
-            neighbour_list.append(point_grid[i-1, j-1].pid)  # bottom left
-            neighbour_list.append(point_grid[i, j-1].pid)   # bottom
-            neighbour_list.append(point_grid[i+1, j-1].pid)  # bottom right
-            neighbour_list.append(point_grid[i+1, j].pid)   # right
-            neighbour_list.append(point_grid[i+1, j+1].pid)  # top right
-            neighbour_list.append(point_grid[i, j+1].pid)   # top
-            neighbour_list.append(point_grid[i-1, j+1].pid)  # top left
-            neighbour_list.append(point_grid[i-1, j].pid)  # left
-            point_grid[i][j].set_neighbours(neighbour_list)
+            neighbour_list.append(point_grid[i-1][j-1].pid)     # bottom left
+            neighbour_list.append(point_grid[i][j-1].pid)       # bottom
+            neighbour_list.append(point_grid[i+1][j-1].pid)     # bottom right
+            neighbour_list.append(point_grid[i+1][j].pid)       # right
+            neighbour_list.append(point_grid[i+1][j+1].pid)     # top right
+            neighbour_list.append(point_grid[i][j+1].pid)       # top
+            neighbour_list.append(point_grid[i-1][j+1].pid)     # top left
+            neighbour_list.append(point_grid[i-1][j].pid)       # left
+            point_grid[i][j].neighbours = neighbour_list
 
 
-if __name__ == "__main__":
-    pg = generate_point_grid()
-    set_neighbours(pg)
+# %%
+# if __name__ == "__main__":
+pg = generate_point_grid()
+np.array(pg).shape
+# print(pg)
+set_neighbours(pg)
+
+# %%
