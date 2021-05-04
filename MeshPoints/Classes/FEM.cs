@@ -37,14 +37,14 @@ namespace MeshPoints.Classes
             {
                 Vector<double> N = DenseVector.OfArray(new double[]
                 {
-                    (1-r)*(s-1)*(t-1),
-                    (1+r)*(s-1)*(t-1),
-                    (1+r)*(s+1)*(t-1),
-                    (1-r)*(s+1)*(t-1),
-                    (1-r)*(s-1)*(t+1),
-                    (1+r)*(s-1)*(t+1),
-                    (1+r)*(s+1)*(t+1),
-                    (1-r)*(s+1)*(t+1)
+                    (1-r)*(1-s)*(1-t),
+                    (1+r)*(1-s)*(1-t),
+                    (1+r)*(1+s)*(1-t),
+                    (1-r)*(1+s)*(1-t),
+                    (1-r)*(1-s)*(1+t),
+                    (1+r)*(1-s)*(1+t),
+                    (1+r)*(1+s)*(1+t),
+                    (1-r)*(1+s)*(1+t)
                 });
                 N=N.Multiply(0.125);
                 return N;
