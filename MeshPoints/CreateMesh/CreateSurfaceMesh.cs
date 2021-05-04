@@ -107,9 +107,9 @@ namespace MeshPoints.CreateMesh
 
             double pointU = 0;
             double pointV = 0;
-            for (double j = 0; j <= v; j++)
+            for (double i = 0; i <= v; i++)
             {
-                for (double k = 0; k <= u; k++)
+                for (double j = 0; j <= u; j++)
                 {
                     pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
                     pointU = pointU + stepU;

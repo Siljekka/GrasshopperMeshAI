@@ -12,7 +12,7 @@ namespace MeshPoints.Classes
         public List<qEdge> EdgeList { get; set; }
         public List<double> AngleList { get; set; } // todo: when angle is larger than pi it does not work..
         public List<Line> Contour { get; set; }
-        public bool IsQuad { get; }
+        public bool IsQuad { get; } 
 
 
         // Constructors:
