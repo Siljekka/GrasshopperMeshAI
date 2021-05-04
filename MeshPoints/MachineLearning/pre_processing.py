@@ -256,11 +256,16 @@ def mesh_contour_all_lc(contour: np.array):
         # Extract features
         mesh_nodes = gmsh.model.mesh.get_nodes()
         num_nodes_total = mesh_nodes[0][-1]
-        internal_nodes = int(num_nodes_total - contour.shape[0])
+        internal_nodes_count = int(num_nodes_total - contour.shape[0])
 
         # For NN1: contour nodes, target edge length, and num of internal nodes
         tmp_features = np.append(contour.copy(), target_edge_length)
-        tmp_features = np.append(tmp_features, internal_nodes)
+        tmp_features = np.append(tmp_features, internal_nodes_count)
+        if internal_nodes_count > 0:
+            internal_nodes_with_z = mesh_nodes[1][-internal_nodes_count*3:]
+            internal_nodes = [x for i, x in enumerate(
+                internal_nodes_with_z) if i % 3 != 2]
+            tmp_features = np.append(tmp_features, internal_nodes)
 
         # GUI (buggy on macOS)
         # Display options:
@@ -392,7 +397,7 @@ def generate_dataset_all_lc(dataset_size: int, num_sides: int) -> list:
 
     # Start a gmsh API session
     gmsh.initialize()
-
+    gmsh_settings()
     dataset = []
     for i in range(dataset_size):
         print("meshing contour", i, "of", dataset_size, end="\r")
@@ -466,15 +471,15 @@ def single_edge_length_mesh_to_csv(features, dataset_size: int, number_of_sides:
 def mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
     # Columns needed:
     #  contour nodes ( xi | yi) | target_edge_length | num inner nodes
-    with open(f"data/{number_of_sides}-gon-mesh-dataset.csv", "w", newline="") as file:
+    with open(f"data/{number_of_sides}-gon-mesh-with-internal-nodes.csv", "w", newline="") as file:
         writer = csv.writer(file)
         header = []
         for i in range(1, number_of_sides + 1):
             header.append(f"x{i}")
             header.append(f"y{i}")
         header.append("target_edge_length")
-        header.append("internal_nodes")
-
+        header.append("internal_node_count")
+        [header.append(x) for x in list(string.ascii_lowercase)]
         writer.writerow(header)
 
         for i, contour in enumerate(features):
