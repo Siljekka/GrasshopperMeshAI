@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rhino.Geometry;
+using Rhino.Geometry.Intersect;
 
 namespace MeshPoints.Classes
 {
@@ -13,6 +14,7 @@ namespace MeshPoints.Classes
         public List<double> AngleList { get; set; } // todo: when angle is larger than pi it does not work..
         public List<Line> Contour { get; set; }
         public bool IsQuad { get; }
+        public double DistortionMetric { get; set; }
 
 
         // Constructors:
@@ -233,18 +235,50 @@ namespace MeshPoints.Classes
             if (this.AngleList.Max() > (double)200 / (double)180 * Math.PI) { return true; }
             else { return false; }
         }
-        public bool IsTriangleInverted()
+        public bool IsInverted()
         {
-            // summary: check if a triangle element is inverted
+            // summary: check if a triangle or quad element is inverted
             bool isInverted = false;
 
-            Point3d A = this.EdgeList[0].GetSharedNode(this.EdgeList[1]).Coordinate;
-            Point3d B = this.EdgeList[1].GetSharedNode(this.EdgeList[2]).Coordinate;
-            Point3d C = this.EdgeList[2].GetSharedNode(this.EdgeList[0]).Coordinate;
+            if (!this.IsQuad)
+            {
+                Point3d A = this.EdgeList[0].GetSharedNode(this.EdgeList[1]).Coordinate;
+                Point3d B = this.EdgeList[1].GetSharedNode(this.EdgeList[2]).Coordinate;
+                Point3d C = this.EdgeList[2].GetSharedNode(this.EdgeList[0]).Coordinate;
 
-            // check area
-            double area = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
-            if (area <= 0) { isInverted = true; }
+                // check area
+                double area = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
+                if (area <= 0) { isInverted = true; }
+            }
+            else // todo: fix inverted elements for quads.
+            {
+                List<qNode> elementNodes = this.GetNodesOfElement();
+                NurbsCurve line1 = new Line(elementNodes[0].Coordinate, elementNodes[3].Coordinate).ToNurbsCurve();
+                NurbsCurve line2 = new Line(elementNodes[1].Coordinate, elementNodes[2].Coordinate).ToNurbsCurve();
+                var placesWithIntersection = Intersection.CurveCurve(line1, line2, 0.0001, 0.0001);
+                if (placesWithIntersection.Count == 0)
+                {
+                    isInverted = false;
+                }
+                else
+                {
+                    isInverted = true;
+                }
+                /*
+                var nodes = this.GetNodesOfElement();
+                Point3d A1 = nodes[0].Coordinate;
+                Point3d B1 = nodes[1].Coordinate;
+                Point3d C1 = nodes[3].Coordinate;
+
+                Point3d A2 = nodes[1].Coordinate;
+                Point3d B2 = nodes[2].Coordinate;
+                Point3d C2 = nodes[3].Coordinate;
+
+                // check area
+                double area1 = 0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y));
+                double area2 = 0.5 * (A2.X * (B2.Y - C2.Y) + B2.X * (C2.Y - A2.Y) + C2.X * (A2.Y - B2.Y));
+                if (area1 <= 0 | area2 <= 0) { isInverted = true; }*/
+            }
             return isInverted;
         }
     }
