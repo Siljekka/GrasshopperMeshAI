@@ -4,25 +4,20 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Linq;
-using Grasshopper;
-using Grasshopper.Kernel.Data;
-using Rhino.Geometry.Intersect;
-using Rhino.Geometry.Collections;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateSurfaceMesh : GH_Component
+    public class CreateSurfaceMesh__TargetLength_ : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the CreateSurfaceMesh class.
+        /// Initializes a new instance of the CreateSurfaceMesh__TargetLength_ class.
         /// </summary>
-        public CreateSurfaceMesh()
-          : base("CreateSurfaceMesh", "surface",
-              "Mesh a surface with a specified number of divisions in u- and v-direction.",
+        public CreateSurfaceMesh__TargetLength_()
+          : base("CreateSurfaceMesh (TargetLength)", "Nickname",
+              "Mesh a surface with a target length for the elements.",
               "MyPlugIn", "Mesh")
         {
         }
-
 
         /// <summary>
         /// Registers all the input parameters for this component.
@@ -30,8 +25,7 @@ namespace MeshPoints.CreateMesh
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Surface", "srf", "Surface", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("u", "u", "division in u direction", GH_ParamAccess.item, 4);
-            pManager.AddIntegerParameter("v", "v", "division in v direction", GH_ParamAccess.item, 4);
+            pManager.AddNumberParameter("TargetLength", "target", "Target Length for the elements", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -51,16 +45,18 @@ namespace MeshPoints.CreateMesh
         {
             // Input
             Brep brep = new Brep();
-            int u = 0;
-            int v = 0;
+            double target = 0;
             DA.GetData(0, ref brep);
-            DA.GetData(1, ref u);
-            DA.GetData(2, ref v);
+            DA.GetData(1, ref target);
 
             // 1. Check input OK.
             if (!DA.GetData(0, ref brep)) return;
-            if (u == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "u cannot be zero."); return; }
-            if (v == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "v cannot be zero."); return; }
+            if (target == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Target length cannot be zero."); return; }
+
+            // 2. Set number of divisions in u- and v-direction
+            NurbsSurface surface = brep.Faces[0].ToNurbsSurface();
+            int u = (int)Math.Ceiling(surface.Domain(0).Length / target);
+            int v = (int)Math.Ceiling(surface.Domain(1).Length / target);
 
             // 2. Assign geometrical properties to mesh
             SmartMesh smartMesh = new SmartMesh();
@@ -73,8 +69,9 @@ namespace MeshPoints.CreateMesh
 
 
             // 3. Generate grid of points on surface
-            NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(brep.Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
-            List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v);
+            Brep[] planarBrep = Brep.CreatePlanarBreps(brep.Edges, 0.0001); // make planar brep on floor i     
+            NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[0].Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
+            List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v); //brep.Faces[0].ToNurbsSurface()
 
             // 4. Create nodes 
             smartMesh.Nodes = CreateNodes(meshPoints, smartMesh.nu, smartMesh.nv);
@@ -89,7 +86,6 @@ namespace MeshPoints.CreateMesh
             DA.SetData(0, smartMesh);
             DA.SetData(1, smartMesh.Mesh);
         }
-        
 
         /// <summary>
         /// Makes grid of points in U and V direction
@@ -106,9 +102,9 @@ namespace MeshPoints.CreateMesh
 
             double pointU = 0;
             double pointV = 0;
-            for (double i = 0; i <= v; i++)
+            for (double j = 0; j <= v; j++)
             {
-                for (double j = 0; j <= u; j++)
+                for (double k = 0; k <= u; k++)
                 {
                     pt.Add(surface.PointAt(pointU, pointV));  // make point on surface
                     pointU = pointU + stepU;
@@ -117,7 +113,7 @@ namespace MeshPoints.CreateMesh
                 pointU = 0;
             }
             return pt;
-        } 
+        }
 
         /// <summary>
         /// Create global nodes by assigning global id, coordinate, boundary condiditon in u and v direction
@@ -150,6 +146,7 @@ namespace MeshPoints.CreateMesh
             return nodes;
         }
 
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
@@ -159,7 +156,7 @@ namespace MeshPoints.CreateMesh
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_SurfaceMesh;
+                return null;
             }
         }
 
@@ -168,7 +165,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("77485b0a-e12c-467e-8735-381d35f0f2ff"); }
+            get { return new Guid("fb93bcbe-0eaf-456b-bbb1-83c95361ad51"); }
         }
     }
 }

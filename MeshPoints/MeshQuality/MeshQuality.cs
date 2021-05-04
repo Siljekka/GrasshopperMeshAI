@@ -28,7 +28,7 @@ namespace MeshPoints.MeshQuality
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Insert a SmartMesh class", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Color mesh", "q", "Color mesh with quality metric: Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Quality to color", "q", "Color mesh with quality metric: Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
             pManager[1].Optional = true; // coloring the mesh is optional
         }
 
@@ -67,7 +67,8 @@ namespace MeshPoints.MeshQuality
             double sumAspectRatio = 0;
             double sumSkewness = 0;
             double sumJacobianRatio = 0;
-            
+
+            // to do: sjekk map til 2D er nødvendig når vi har surface... 
             foreach (Element e in elements)
             {
                 elementQuality.AspectRatio = CalculateAspectRatio(e);
@@ -227,13 +228,9 @@ namespace MeshPoints.MeshQuality
             {
                 // Create dublicated list of node
                 List<Node> nodesOfFace = new List<Node>(faces[i]);
-                int numNodesOfFace = nodesOfFace.Count;
-                for (int n = 0; n < numNodesOfFace; n++)
-                {
-                    nodesOfFace.Add(nodesOfFace[n]);
-                }
+                nodesOfFace.AddRange(faces[i]);             
 
-                for (int n = 0; n < numNodesOfFace ; n++)
+                for (int n = 0; n < nodesOfFace.Count / 2; n++)
                 {
                     // Create a vector from a vertex to a neighbouring vertex
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
@@ -720,11 +717,11 @@ namespace MeshPoints.MeshQuality
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.AspectRatio > 0.7)
+                        else if (q.AspectRatio > 0.5)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.AspectRatio > 0.6)
+                        else if (q.AspectRatio > 0.1)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
@@ -739,21 +736,25 @@ namespace MeshPoints.MeshQuality
                 case 2:
                     foreach (Quality q in qualityList)
                     {
-                        if (q.Skewness > 0.9)
+                        if (q.Skewness > 0.75)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.Skewness > 0.75)
+                        else if (q.Skewness > 0.5)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.Skewness > 0.6)
+                        else if (q.Skewness > 0.1)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
                         else if (q.Skewness > 0)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        else 
+                        {
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
                         }
                         colorMesh.Append(q.element.Mesh);
                     }

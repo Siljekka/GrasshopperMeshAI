@@ -79,6 +79,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Classes\qConstants.cs" />
+    <Compile Include="CreateMesh\CreateSurfaceMesh %28TargetLength%29.cs" />
     <Compile Include="Mesh_outdated\BrepPoints.cs" />
     <Compile Include="Classes\Geometry.cs" />
     <Compile Include="Classes\Material.cs" />
@@ -87,7 +89,7 @@
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
     <Compile Include="Classes\FEM.cs" />
-    <Compile Include="CreateData.cs" />
+    <Compile Include="Tools\CreateData.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
@@ -102,6 +104,8 @@
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="Mesh_outdated\DeconstructMesh2D.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
+    <Compile Include="Tools\GH_DataToExcel.cs" />
+    <Compile Include="Tools\MoveCorners.cs" />
     <Compile Include="MoveNodes\MoveNodes.cs" />
     <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
@@ -122,7 +126,7 @@
     <Compile Include="Classes\qEdge.cs" />
     <Compile Include="Classes\qElement.cs" />
     <Compile Include="QuadRemesh\AnalyzeTriangleMesh.cs" />
-    <Compile Include="QuadRemesh\CreateUnstructuredSolidMesh.cs" />
+    <Compile Include="CreateMesh\SweepSmartMesh.cs" />
     <Compile Include="QuadRemesh\DeconstructQEdge.cs" />
     <Compile Include="QuadRemesh\DeconstructQElement.cs" />
     <Compile Include="QuadRemesh\DeconstructQNode.cs" />
