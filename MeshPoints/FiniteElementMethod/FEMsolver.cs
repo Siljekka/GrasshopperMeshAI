@@ -678,8 +678,8 @@ namespace MeshPoints.FiniteElementMethod
                 }
             }
 
-            // get node strain and stress by interpolation
-            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(1, nodeDOFS);
+            // get node strain and stress by extrapolation
+            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3), nodeDOFS); // natural coordinate of nodes
 
             for (int n = 0; n < B_local.Count; n++)
             { 
@@ -721,7 +721,7 @@ namespace MeshPoints.FiniteElementMethod
                     for (int j = 0; j < elementStress.ColumnCount; j++) // loop the element nodes
                     {
                         globalStress[i, connectivity[j]] = globalStress[i, connectivity[j]] + elementStress[i, j];
-                        counter[i, connectivity[j]]++; ;
+                        counter[i, connectivity[j]]++;
                     }
                 }
             }
