@@ -67,7 +67,8 @@ namespace MeshPoints.MeshQuality
             double sumAspectRatio = 0;
             double sumSkewness = 0;
             double sumJacobianRatio = 0;
-            
+
+            // to do: sjekk map til 2D er nødvendig når vi har surface... 
             foreach (Element e in elements)
             {
                 elementQuality.AspectRatio = CalculateAspectRatio(e);
@@ -227,13 +228,9 @@ namespace MeshPoints.MeshQuality
             {
                 // Create dublicated list of node
                 List<Node> nodesOfFace = new List<Node>(faces[i]);
-                int numNodesOfFace = nodesOfFace.Count;
-                for (int n = 0; n < numNodesOfFace; n++)
-                {
-                    nodesOfFace.Add(nodesOfFace[n]);
-                }
+                nodesOfFace.AddRange(faces[i]);             
 
-                for (int n = 0; n < numNodesOfFace ; n++)
+                for (int n = 0; n < nodesOfFace.Count / 2; n++)
                 {
                     // Create a vector from a vertex to a neighbouring vertex
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
@@ -754,6 +751,10 @@ namespace MeshPoints.MeshQuality
                         else if (q.Skewness > 0)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
+                        }
+                        else 
+                        {
+                            q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.HotPink); // invalid mesh
                         }
                         colorMesh.Append(q.element.Mesh);
                     }

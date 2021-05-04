@@ -10,7 +10,6 @@ namespace MeshPoints.Classes
 {
     class Node
     {
-        public int LocalId { get; set; } // delete
         public int GlobalId { get; set; }
         public Point3d Coordinate { get; set; }
         public bool BC_U { get; set; } // to do: change if time
