@@ -748,7 +748,7 @@ namespace MeshPoints.MeshQuality
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
-                        else if (q.Skewness > 0)
+                        else if (q.Skewness >= 0)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
