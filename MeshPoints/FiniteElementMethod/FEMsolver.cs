@@ -6,6 +6,7 @@ using MeshPoints.Classes;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using System.Drawing;
+//using CSparse;
 
 namespace MeshPoints.FiniteElementMethod
 {
@@ -636,9 +637,20 @@ namespace MeshPoints.FiniteElementMethod
                         }
                     }
                 }
-            }          
-            
+            }
+            /*
+            CSparse.Double.DenseMatrix csparseMartix = new CSparse.Double.DenseMatrix(K_global.RowCount, K_global.ColumnCount);
+            for (int i = 0; i < K_global.RowCount; i++)
+            {
+                for (int j = 0; j < K_global.ColumnCount; j++)
+                {
+                    csparseMartix[i, j] = K_global[i, j];
+                }
+            }*/
+
+            //CSparse.Double.Factorization.SparseCholesky.Create(csparseMartix, CSparse.ColumnOrdering.MinimumDegreeAtPlusA, 0.001 );
             Matrix<double> Kinv = K_global.Inverse();
+
             Matrix<double> u = Kinv.Multiply(R); // calculate displacement
             return u;  
         }
