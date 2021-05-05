@@ -103,6 +103,15 @@ def calculate_score(
         point.score = score
 
 
+def nn2(
+    LEARNING_RATE=0.0001,
+    EPOCHS=30,
+    BATCH_SIZE=64
+):
+
+    pass
+
+
 if __name__ == "__main__":
     # np.array(pg).shape
     # print(pg)
