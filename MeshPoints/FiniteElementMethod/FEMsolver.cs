@@ -138,18 +138,6 @@ namespace MeshPoints.FiniteElementMethod
 
 
 
-                for (int j = 0; j < dofList.Count; j++) // loop dofs
-                {
-                    for (int k = 1; k < boundaryConditions.Count / numNodes; k++) // loop the remaining inout list of BC 
-                    {
-                        dofList[j] = dofList[j] + boundaryConditions[i + k * numNodes][j];
-                    }
-                }
-                totalBC.Add(dofList);
-            }
-            return totalBC;
-        }
-
         private Tuple<Matrix<double>, List<Matrix<double>>> Synne(List<Node> nodeList, Material material)
         {
             Matrix<double> Ke = Matrix<double>.Build.Dense(24, 24);
@@ -700,18 +688,18 @@ namespace MeshPoints.FiniteElementMethod
                 }
             }
 
-            // get node strain and stress by interpolation
-            Matrix<double> interpolationNodes = _FEM.GetGaussPoints(1, nodeDOFS); // 1/Math.Sqrt(3) : gauss punkt.
+            // get node strain and stress by extrapolation
+            Matrix<double> extrapolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3), nodeDOFS);
 
             for (int n = 0; n < B_local.Count; n++)
             { 
                 // get stress and strain in nodes
-                var r = interpolationNodes.Row(n)[0];
-                var s = interpolationNodes.Row(n)[1];
+                var r = extrapolationNodes.Row(n)[0];
+                var s = extrapolationNodes.Row(n)[1];
                 double t = 0;
-                if (nodeDOFS == 3) { t = interpolationNodes.Row(n)[2]; }
+                if (nodeDOFS == 3) { t = extrapolationNodes.Row(n)[2]; }
 
-                Vector<double> shapefunctionValuesInNode = _FEM.GetShapeFunctions(r, s, t, nodeDOFS); // marcin: correct interpolation?
+                Vector<double> shapefunctionValuesInNode = _FEM.GetShapeFunctions(r, s, t, nodeDOFS);
                 Vector<double> nodeStrain = elementGaussStrain.Multiply(shapefunctionValuesInNode);
                 Vector<double> nodeStress = elementGaussStress.Multiply(shapefunctionValuesInNode);
                 for (int i = 0; i < B_local[0].RowCount; i++)
@@ -743,7 +731,7 @@ namespace MeshPoints.FiniteElementMethod
                     for (int j = 0; j < elementStress.ColumnCount; j++) // loop the element nodes
                     {
                         globalStress[i, connectivity[j]] = globalStress[i, connectivity[j]] + elementStress[i, j];
-                        counter[i, connectivity[j]]++; ;
+                        counter[i, connectivity[j]]++;
                     }
                 }
             }
@@ -819,7 +807,7 @@ namespace MeshPoints.FiniteElementMethod
 
         private void ColorMeshAfterStress(SmartMesh mesh, Vector<double> mises, Material material)
         {
-            double maxValue = material.YieldingStress / 1.05; // to do: sjekk denne
+            double maxValue = material.YieldingStress;
             double minValue = 0;
             Color color = Color.White;
 

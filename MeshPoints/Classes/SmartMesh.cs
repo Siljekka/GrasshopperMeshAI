@@ -44,12 +44,12 @@ namespace MeshPoints.Classes
             Mesh = _mesh;
             Type = "Solid";
         }
-        public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for unstructured surface mesh
+        public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh, String _type) // for unstructured surface mesh
         {
             Nodes = _nodes;
             Elements = _elements;
             Mesh = _mesh;
-            Type = "Surface";
+            Type = _type;
         }
 
         // Methods
