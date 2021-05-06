@@ -24,8 +24,8 @@ namespace MeshPoints.FiniteElementMethod
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SmartMesh", "SmartMesh", "Input a SmartMesh", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Face indices with BC", "", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Edge indices with BC", "", "", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Face indices with BC", "", "", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Edge indices with BC", "", "", GH_ParamAccess.list);
             pManager.AddGenericParameter("Tx", "", "", GH_ParamAccess.item);
             pManager.AddGenericParameter("Ty", "", "", GH_ParamAccess.item); 
             pManager.AddGenericParameter("Tz", "", "", GH_ParamAccess.item);

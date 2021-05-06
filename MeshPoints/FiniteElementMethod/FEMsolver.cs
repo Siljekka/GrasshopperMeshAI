@@ -6,7 +6,14 @@ using MeshPoints.Classes;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using System.Drawing;
-//using CSparse;
+
+// Csparse
+using LA = MathNet.Numerics.LinearAlgebra;
+using CSparse;
+using CSD = CSparse.Double;
+using CSparse.Double.Factorization;
+using CSparse.Storage;
+
 
 namespace MeshPoints.FiniteElementMethod
 {
@@ -75,21 +82,24 @@ namespace MeshPoints.FiniteElementMethod
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is surface or solid."); }
 
             // 2. Get global stiffness matrix
-            Matrix<double> K_global = CalculateGlobalStiffnessMatrix(elements, numNodes, nodeDOFS, material);
+            LA.Matrix<double> K_global = CalculateGlobalStiffnessMatrix(elements, numNodes, nodeDOFS, material);
 
             // 3. Get load vector
-            Matrix<double> R = DenseMatrix.Build.Dense(numNodes * nodeDOFS, 1);
+            LA.Matrix<double> R = LA.Double.DenseMatrix.Build.Dense(numNodes * nodeDOFS, 1);
             for (int i = 0; i < loads.Count; i++)
             {
                 R[i, 0] = loads[i];
             }
 
+            // Fic BoundaryConditions:
+            if (boundaryConditions.Count > mesh.Nodes.Count) { boundaryConditions = FixBoundaryConditions(boundaryConditions, mesh.Nodes.Count); }
+            
             // 4. Calculate displacement 
-            Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
+            LA.Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
 
             var stress = CalculateGlobalStress(elements, u, material, nodeDOFS);
-            Matrix<double> globalStress = stress.Item1;
-            Vector<double> mises = stress.Item2;
+            LA.Matrix<double> globalStress = stress.Item1;
+            LA.Vector<double> mises = stress.Item2;
 
             ColorMeshAfterStress(mesh, mises, material);
 
@@ -127,17 +137,34 @@ namespace MeshPoints.FiniteElementMethod
         }
 
         #region Methods
-
-        private Tuple<Matrix<double>, List<Matrix<double>>> Synne(List<Node> nodeList, Material material)
+        private List<List<int>> FixBoundaryConditions(List<List<int>> boundaryConditions, int numNodes)
         {
-            Matrix<double> Ke = Matrix<double>.Build.Dense(24, 24);
-            List<Matrix<double>> Be = new List<Matrix<double>>();
+            List<List<int>> totalBC = new List<List<int>>();
+            for (int i = 0; i < numNodes; i++) // loop number nodes
+            {
+                List<int> dofList = new List<int>(boundaryConditions[i]);  // get dofList of first input list of BC
+                for (int j = 0; j < dofList.Count; j++) // loop dofs
+                {
+                    for (int k = 1; k < boundaryConditions.Count / numNodes; k++) // loop the remaining inout list of BC 
+                    {
+                        dofList[j] = dofList[j] + boundaryConditions[i + k * numNodes][j];
+                    }
+                }
+                totalBC.Add(dofList);
+            }
+            return totalBC;
+        }
 
-            //3D Constitutive matrix: C
+        private Tuple<LA.Matrix<double>, List<LA.Matrix<double>>> Synne(List<Node> nodeList, Material material)
+        {
+            LA.Matrix<double> Ke = LA.Matrix<double>.Build.Dense(24, 24);
+            List<LA.Matrix<double>> Be = new List<LA.Matrix<double>>();
+
+            //3D Constitutive LA.Matrix: C
             double E = material.YoungModulus;
             double nu = material.PossionRatio;
             double value = (double)E / ((1 + nu) * (1 - 2 * nu));
-            Matrix<double> C = DenseMatrix.OfArray(new double[,]
+            LA.Matrix<double> C = LA.Double.DenseMatrix.OfArray(new double[,]
             {
                 {1-nu, nu, nu, 0, 0, 0},
                 {nu, 1-nu, nu, 0, 0, 0},
@@ -147,10 +174,10 @@ namespace MeshPoints.FiniteElementMethod
                 {0, 0, 0, 0, 0, (1-2*nu)/2},
             });
 
-            C = C.Multiply(value); //Constitutive matrix
+            C = C.Multiply(value); //Constitutive LA.Matrix
 
             //Gauss points
-            Vector<double> gaussPoints = DenseVector.OfArray(new double[] { -1 / Math.Sqrt(3), 1 / Math.Sqrt(3) }); //Gauss points
+            LA.Vector<double> gaussPoints = DenseVector.OfArray(new double[] { -1 / Math.Sqrt(3), 1 / Math.Sqrt(3) }); //Gauss points
 
             Point3d point = new Point3d(0, 0, 0);
             List<Point3d> pNatural = new List<Point3d>();
@@ -160,7 +187,7 @@ namespace MeshPoints.FiniteElementMethod
                 pNatural.Add( nodeList[i].Coordinate);
             }
 
-            Matrix<double> coordinates = DenseMatrix.OfArray(new double[,]
+            LA.Matrix<double> coordinates = LA.Double.DenseMatrix.OfArray(new double[,]
             {
                 {pNatural[0].X,pNatural[0].Y , pNatural[0].Z},
                 {pNatural[1].X,pNatural[1].Y , pNatural[1].Z},
@@ -180,7 +207,7 @@ namespace MeshPoints.FiniteElementMethod
                     foreach (double g1 in gaussPoints)
                     {
                         //Shape functions
-                        Matrix<double> shapeF = DenseMatrix.OfArray(new double[,]
+                        LA.Matrix<double> shapeF = LA.Double.DenseMatrix.OfArray(new double[,]
                        {
                             {-(1-g2)*(1-g3), (1-g2)*(1-g3), (1+g2)*(1-g3),-(1+g2)*(1-g3),-(1-g2)*(1+g3),(1-g2)*(1+g3),(1+g2)*(1+g3),-(1+g2)*(1+g3)},
                             {-(1-g1)*(1-g3), -(1+g1)*(1-g3), (1+g1)*(1-g3),(1-g1)*(1-g3),-(1-g1)*(1+g3),-(1+g1)*(1+g3),(1+g1)*(1+g3),(1-g1)*(1+g3)},
@@ -192,17 +219,17 @@ namespace MeshPoints.FiniteElementMethod
 
                         //Jacobi Matrix
 
-                        Matrix<double> JacobiMatrix = Matrix<double>.Build.Dense(3, 3);
+                        LA.Matrix<double> JacobiMatrix = LA.Matrix<double>.Build.Dense(3, 3);
 
                         JacobiMatrix = shapeF.Multiply(coordinates);
 
-                        // Auxiliar matrix for assemblinng of B-matrix 
-                        Matrix<double> auxiliar = Matrix<double>.Build.Dense(3, 8);
+                        // Auxiliar LA.Matrix for assemblinng of B-matrix 
+                        LA.Matrix<double> auxiliar = LA.Matrix<double>.Build.Dense(3, 8);
 
                         auxiliar = JacobiMatrix.Inverse().Multiply(shapeF);
 
                         // B matrix
-                        Matrix<double> B = Matrix<double>.Build.Dense(6, 24);
+                        LA.Matrix<double> B = LA.Matrix<double>.Build.Dense(6, 24);
 
                         //First three rows
                         for (int i = 0; i < 3; i++)
@@ -255,10 +282,10 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             //Changing order of Be to fit the global numbering
-            Matrix<double> B_2 = Be[2];
+            LA.Matrix<double> B_2 = Be[2];
             Be[2] = Be[3];
             Be[3] = B_2;
-            Matrix<double> B_6 = Be[6];
+            LA.Matrix<double> B_6 = Be[6];
             Be[6] = Be[7];
             Be[7] = B_6;
 
@@ -266,25 +293,25 @@ namespace MeshPoints.FiniteElementMethod
             return Tuple.Create(Ke, Be);
         } // to do: slett
 
-        private Tuple<Matrix<double>, List<Matrix<double>>> CalculateElementMatrices(Element element, Material material, int nodeDOFS)
+        private Tuple<LA.Matrix<double>, List<LA.Matrix<double>>> CalculateElementMatrices(Element element, Material material, int nodeDOFS)
         {
             // summary: calculate local K and B matrix
 
             // material
-            Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, nodeDOFS);
+            LA.Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, nodeDOFS);
 
             // shapefunction
             FEM _FEM = new FEM();
 
             // create local stiffness matrix
             int numElementNodes = element.Nodes.Count;
-            Matrix<double> K_local = Matrix<double>.Build.Dense(nodeDOFS * numElementNodes, nodeDOFS * numElementNodes);
+            LA.Matrix<double> K_local = LA.Matrix<double>.Build.Dense(nodeDOFS * numElementNodes, nodeDOFS * numElementNodes);
 
             // create local deformation matrix
-            List<Matrix<double>> B_local = new List<Matrix<double>>();
+            List<LA.Matrix<double>> B_local = new List<LA.Matrix<double>>();
 
             // Global coordinates of the corner nodes of the actual element
-            Matrix<double> globalCoordinates = Matrix<double>.Build.Dense(numElementNodes, nodeDOFS);
+            LA.Matrix<double> globalCoordinates = LA.Matrix<double>.Build.Dense(numElementNodes, nodeDOFS);
             for (int i = 0; i < numElementNodes; i++)
             {
                 globalCoordinates[i, 0] = element.Nodes[i].Coordinate.X; // column of x coordinates
@@ -296,7 +323,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             //Numerical integration
-           Matrix<double> gaussNodes = _FEM.GetGaussPoints((double)Math.Sqrt((double)1 / (double)3), nodeDOFS);
+           LA.Matrix<double> gaussNodes = _FEM.GetGaussPoints((double)Math.Sqrt((double)1 / (double)3), nodeDOFS);
 
            for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
@@ -307,16 +334,13 @@ namespace MeshPoints.FiniteElementMethod
                if (nodeDOFS == 3) { t = gaussNodes.Row(n)[2]; }
 
                // Partial derivatives of the shape functions
-               Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, nodeDOFS); 
+               LA.Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, nodeDOFS); 
 
               // Calculate Jacobian matrix
-              Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
+              LA.Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
 
-              // Structure data in the form of a Jacobian matrix
-              //Matrix<double> jacobianMatrix = calcDerivs.Transpose(); // to do: riktig ?? slik magnus hadde det
-
-               // Calculate B - matrix
-               Matrix<double> shapeFuncDerivatedCartesian = jacobianMatrix.Inverse().Multiply(shapeFunctionsDerivatedNatural);
+               // Calculate B - LA.Matrix
+               LA.Matrix<double> shapeFuncDerivatedCartesian = jacobianMatrix.Inverse().Multiply(shapeFunctionsDerivatedNatural);
 
                 double checkDet = jacobianMatrix.Determinant();
                 if (checkDet < 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Negativ jac det"); }
@@ -324,7 +348,7 @@ namespace MeshPoints.FiniteElementMethod
                if (nodeDOFS == 2) { dimRowB = 3; }
                else { dimRowB = 6; }
 
-               Matrix<double> B_i = DenseMatrix.Build.Dense( dimRowB , nodeDOFS*numElementNodes);
+               LA.Matrix<double> B_i = LA.Double.DenseMatrix.Build.Dense( dimRowB , nodeDOFS*numElementNodes);
 
                 for (int i = 0; i < numElementNodes; i++)
                 {
@@ -384,20 +408,20 @@ namespace MeshPoints.FiniteElementMethod
             return Tuple.Create(K_local, B_local);
         }
 
-        private Tuple<Matrix<double>, List<Matrix<double>>> Magnus(Element e, Material material)
+        private Tuple<LA.Matrix<double>, List<LA.Matrix<double>>> Magnus(Element e, Material material)
         {
             // material
-            Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, 3);
+            LA.Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, 3);
 
             // shapefunction
             FEM _FEM = new FEM();
             int nodeDOFS = 3;
             // create local stiffness matrix
             int numElementNodes = e.Nodes.Count;
-            Matrix<double> K_local = Matrix<double>.Build.Dense(3 * numElementNodes, 3 * numElementNodes);
+            LA.Matrix<double> K_local = LA.Matrix<double>.Build.Dense(3 * numElementNodes, 3 * numElementNodes);
 
             // create local deformation matrix
-            List<Matrix<double>> B_local = new List<Matrix<double>>();
+            List<LA.Matrix<double>> B_local = new List<LA.Matrix<double>>();
 
             // Global X, Y, and Z-coordinates of the corner nodes of the actual element
             List<double> gX = new List<double>();
@@ -500,7 +524,7 @@ namespace MeshPoints.FiniteElementMethod
                 }
 
                 // Structure data in the form of a Jacobian matrix
-                Matrix<double> jacobianMatrix = DenseMatrixModule.ofArray2(new double[,]
+                LA.Matrix<double> jacobianMatrix = LA.DenseMatrixModule.ofArray2(new double[,]
                 {
                         {calcDerivs[0], calcDerivs[3], calcDerivs[6] },
                         {calcDerivs[1], calcDerivs[4], calcDerivs[7] },
@@ -511,7 +535,7 @@ namespace MeshPoints.FiniteElementMethod
                 jacobiansOfElement.Add(Math.Abs(jacobianDeterminant));
 
                 // Partial derivatives of the shape functions
-                Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, 3);
+                LA.Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, 3);
 
                 // Calculate Jacobian matrix
                 //Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
@@ -520,13 +544,13 @@ namespace MeshPoints.FiniteElementMethod
                 //Matrix<double> jacobianMatrix = calcDerivs.Transpose(); // to do: riktig ?? slik magnus hadde det
 
                 // Calculate B - matrix
-                Matrix<double> shapeFuncDerivatedCartesian = jacobianMatrix.Inverse().Multiply(shapeFunctionsDerivatedNatural);
+                LA.Matrix<double> shapeFuncDerivatedCartesian = jacobianMatrix.Inverse().Multiply(shapeFunctionsDerivatedNatural);
 
                 int dimRowB = 0;
                 if (nodeDOFS == 2) { dimRowB = 3; }
                 else { dimRowB = 6; }
 
-                Matrix<double> B_i = DenseMatrix.Build.Dense(dimRowB, nodeDOFS * numElementNodes);
+                LA.Matrix<double> B_i = LA.Double.DenseMatrix.Build.Dense(dimRowB, nodeDOFS * numElementNodes);
 
                 for (int i = 0; i < numElementNodes; i++)
                 {
@@ -574,16 +598,16 @@ namespace MeshPoints.FiniteElementMethod
             return Tuple.Create(K_local, B_local);
         }
 
-        private Matrix<double> CalculateGlobalStiffnessMatrix(List<Element> elements, int numNode, int nodeDOFS, Material material)
+        private LA.Matrix<double> CalculateGlobalStiffnessMatrix(List<Element> elements, int numNode, int nodeDOFS, Material material)
         {
             // create stiffness matrix
-            Matrix<double> K_global = Matrix<double>.Build.Dense(numNode * nodeDOFS, numNode * nodeDOFS);
+            LA.Matrix<double> K_global = LA.Matrix<double>.Build.Dense(numNode * nodeDOFS, numNode * nodeDOFS);
             foreach (Element element in elements)
             {
                 List<int> con = element.Connectivity;
-                Matrix<double> K_local = CalculateElementMatrices(element, material, nodeDOFS).Item1;
-                //Matrix<double> K_local = Synne(element.Nodes, material).Item1;
-                //Matrix<double> K_local = Magnus(element, material).Item1;
+                LA.Matrix<double> K_local = CalculateElementMatrices(element, material, nodeDOFS).Item1;
+                //LA.Matrix<double> K_local = Synne(element.Nodes, material).Item1;
+                //LA.Matrix<double> K_local = Magnus(element, material).Item1;
 
                 // loop nodes of elements
                 for (int i = 0; i < con.Count; i++)
@@ -605,7 +629,7 @@ namespace MeshPoints.FiniteElementMethod
             return K_global;
         }
 
-        private Matrix<double> CalculateDisplacement(Matrix<double> K_global, Matrix<double> R, List<List<int>> applyBCToDOF)
+        private LA.Matrix<double> CalculateDisplacement(LA.Matrix<double> K_global, LA.Matrix<double> R, List<List<int>> applyBCToDOF)
         {
             // summary: include boundary condistions and calculate global displacement
             
@@ -638,35 +662,51 @@ namespace MeshPoints.FiniteElementMethod
                     }
                 }
             }
-            /*
-            CSparse.Double.DenseMatrix csparseMartix = new CSparse.Double.DenseMatrix(K_global.RowCount, K_global.ColumnCount);
-            for (int i = 0; i < K_global.RowCount; i++)
-            {
-                for (int j = 0; j < K_global.ColumnCount; j++)
-                {
-                    csparseMartix[i, j] = K_global[i, j];
-                }
-            }*/
 
-            //CSparse.Double.Factorization.SparseCholesky.Create(csparseMartix, CSparse.ColumnOrdering.MinimumDegreeAtPlusA, 0.001 );
-            Matrix<double> Kinv = K_global.Inverse();
+            // Time recorder
+            var sw0 = new System.Diagnostics.Stopwatch();
+            var sw1 = new System.Diagnostics.Stopwatch();
 
-            Matrix<double> u = Kinv.Multiply(R); // calculate displacement
+            // Mathnet.Numerics to CSparse
+
+            var b = R.Column(0);
+            sw0.Start();
+
+            var CMA = K_global.Storage.ToColumnMajorArray();
+            CompressedColumnStorage<double> CCS = CSD.SparseMatrix.OfColumnMajor(K_global.RowCount, K_global.ColumnCount, CMA);
+
+            SparseLU CS_K_global = SparseLU.Create(CCS, ColumnOrdering.MinimumDegreeAtPlusA, 0.0);
+            double[] CS_u = CSD.Vector.Create(K_global.RowCount * 1, 0.0);
+            double[] CS_R = R.Column(0).ToArray();
+
+
+            sw0.Stop();
+            Rhino.RhinoApp.WriteLine($"Elapsed [msec] = " + sw0.Elapsed.TotalMilliseconds);
+            sw0.Start();
+
+            sw1.Restart();
+            CS_K_global.Solve(CS_R, CS_u);
+            sw1.Stop();
+            sw0.Stop();
+            Rhino.RhinoApp.WriteLine($"### {K_global.RowCount} x {K_global.ColumnCount} Matrix. CSparse Elapsed [msec] = {sw1.Elapsed.TotalMilliseconds}");
+
+            // CSparse to Mathnet.Numerics
+            LA.Matrix<double> u = LA.Double.DenseMatrix.OfColumnArrays(CS_u); 
             return u;  
         }
 
-        private Tuple<Matrix<double>, Matrix<double>> CalculateElementStrainStress(Element element, Matrix<double> u, Material material, int nodeDOFS)
+        private Tuple<LA.Matrix<double>, LA.Matrix<double>> CalculateElementStrainStress(Element element, LA.Matrix<double> u, Material material, int nodeDOFS)
         {
             // summary: calculate a list of strain and stress vectors for each node in a element.
-            Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, nodeDOFS);
+            LA.Matrix<double> C = GetMaterialConstant(material.YoungModulus, material.PossionRatio, nodeDOFS);
 
             FEM _FEM = new FEM();
-            List<Matrix<double>> B_local = CalculateElementMatrices(element, material, nodeDOFS).Item2;
-            Matrix<double> elementGaussStrain = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
-            Matrix<double> elementGaussStress = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
-            Matrix<double> elementStrain = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
-            Matrix<double> elementStress = DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
-            Matrix<double> localDeformation = DenseMatrix.Build.Dense(nodeDOFS * B_local.Count,1);
+            List<LA.Matrix<double>> B_local = CalculateElementMatrices(element, material, nodeDOFS).Item2;
+            LA.Matrix<double> elementGaussStrain = LA.Double.DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
+            LA.Matrix<double> elementGaussStress = LA.Double.DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
+            LA.Matrix<double> elementStrain = LA.Double.DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
+            LA.Matrix<double> elementStress = LA.Double.DenseMatrix.Build.Dense(B_local[0].RowCount, element.Nodes.Count);
+            LA.Matrix<double> localDeformation = LA.Double.DenseMatrix.Build.Dense(nodeDOFS * B_local.Count,1);
             
             // get deformation of nodes connected to element
             for (int i = 0; i < element.Connectivity.Count; i++)
@@ -679,8 +719,8 @@ namespace MeshPoints.FiniteElementMethod
             for (int n = 0; n < B_local.Count; n++)
             {
                 // B-matrix is calculated from gauss points
-                Matrix<double> gaussStrain = B_local[n].Multiply(localDeformation);
-                Matrix<double> gaussStress = C.Multiply(B_local[n]).Multiply(localDeformation);
+                LA.Matrix<double> gaussStrain = B_local[n].Multiply(localDeformation);
+                LA.Matrix<double> gaussStress = C.Multiply(B_local[n]).Multiply(localDeformation);
 
                 for (int i = 0; i < B_local[0].RowCount; i++)
                 {
@@ -690,7 +730,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // get node strain and stress by extrapolation
-            Matrix<double> extrapolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3), nodeDOFS);
+            LA.Matrix<double> extrapolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3), nodeDOFS);
 
             for (int n = 0; n < B_local.Count; n++)
             { 
@@ -700,9 +740,9 @@ namespace MeshPoints.FiniteElementMethod
                 double t = 0;
                 if (nodeDOFS == 3) { t = extrapolationNodes.Row(n)[2]; }
 
-                Vector<double> shapefunctionValuesInNode = _FEM.GetShapeFunctions(r, s, t, nodeDOFS);
-                Vector<double> nodeStrain = elementGaussStrain.Multiply(shapefunctionValuesInNode);
-                Vector<double> nodeStress = elementGaussStress.Multiply(shapefunctionValuesInNode);
+                LA.Vector<double> shapefunctionValuesInNode = _FEM.GetShapeFunctions(r, s, t, nodeDOFS);
+                LA.Vector<double> nodeStrain = elementGaussStrain.Multiply(shapefunctionValuesInNode);
+                LA.Vector<double> nodeStress = elementGaussStress.Multiply(shapefunctionValuesInNode);
                 for (int i = 0; i < B_local[0].RowCount; i++)
                 {
                     elementStrain[i, n] = nodeStrain[i];
@@ -712,18 +752,18 @@ namespace MeshPoints.FiniteElementMethod
             return Tuple.Create(elementStrain, elementStress);
         }
 
-        private Tuple<Matrix<double>, Vector<double>> CalculateGlobalStress(List<Element> elements, Matrix<double> u, Material material, int nodeDOFS)
+        private Tuple<LA.Matrix<double>, LA.Vector<double>> CalculateGlobalStress(List<Element> elements, LA.Matrix<double> u, Material material, int nodeDOFS)
         {
             int numNodes =  u.RowCount / 3;
             int stressRowDim = 4;
             if (nodeDOFS == 3) { stressRowDim = 6; }
-            Matrix<double> globalStress = DenseMatrix.Build.Dense(stressRowDim, numNodes);
-            Matrix<double> counter = DenseMatrix.Build.Dense(stressRowDim, numNodes);
+            LA.Matrix<double> globalStress = LA.Double.DenseMatrix.Build.Dense(stressRowDim, numNodes);
+            LA.Matrix<double> counter = LA.Double.DenseMatrix.Build.Dense(stressRowDim, numNodes);
 
 
             foreach (Element element in elements)
             {
-                Matrix<double> elementStress = CalculateElementStrainStress(element, u, material, nodeDOFS).Item2;
+                LA.Matrix<double> elementStress = CalculateElementStrainStress(element, u, material, nodeDOFS).Item2;
 
                 List<int> connectivity = element.Connectivity;
 
@@ -751,12 +791,12 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // Mises
-            Vector<double> mises = DenseVector.Build.Dense(numNodes);
+            LA.Vector<double> mises = DenseVector.Build.Dense(numNodes);
             for (int i = 0; i < numNodes; i++)
             {
                 if (nodeDOFS == 2)
                 {
-                    Vector<double> nodeStress = globalStress.Column(i);
+                    LA.Vector<double> nodeStress = globalStress.Column(i);
                     double Sxx = nodeStress[0];
                     double Syy = nodeStress[1];
                     double Sxy = nodeStress[2];
@@ -764,7 +804,7 @@ namespace MeshPoints.FiniteElementMethod
                 }
                 else
                 {
-                    Vector<double> nodeStress = globalStress.Column(i);
+                    LA.Vector<double> nodeStress = globalStress.Column(i);
                     double Sxx = nodeStress[0];
                     double Syy = nodeStress[1];
                     double Szz = nodeStress[2];
@@ -777,11 +817,11 @@ namespace MeshPoints.FiniteElementMethod
             return Tuple.Create(globalStress, mises);
         }
 
-        private Matrix<double> GetMaterialConstant(double youngModulus, double possionRatio, int nodeDOFS )
+        private LA.Matrix<double> GetMaterialConstant(double youngModulus, double possionRatio, int nodeDOFS )
         {
             if (nodeDOFS == 2)
             {
-                Matrix<double> C = DenseMatrix.OfArray(new double[,]
+                LA.Matrix<double> C = LA.Double.DenseMatrix.OfArray(new double[,]
                 {
                     {1, possionRatio, 0},
                     {possionRatio, 1, 0},
@@ -792,7 +832,7 @@ namespace MeshPoints.FiniteElementMethod
             }
             else
             {
-                Matrix<double> C = DenseMatrix.OfArray(new double[,]
+                LA.Matrix<double> C = LA.Double.DenseMatrix.OfArray(new double[,]
                 {
                     {1-possionRatio, possionRatio, possionRatio, 0, 0, 0},
                     {possionRatio, 1-possionRatio, possionRatio, 0, 0, 0},
@@ -806,7 +846,7 @@ namespace MeshPoints.FiniteElementMethod
             }
         }
 
-        private void ColorMeshAfterStress(SmartMesh mesh, Vector<double> mises, Material material)
+        private void ColorMeshAfterStress(SmartMesh mesh, LA.Vector<double> mises, Material material)
         {
             double maxValue = material.YieldingStress;
             double minValue = 0;
@@ -833,12 +873,13 @@ namespace MeshPoints.FiniteElementMethod
                 mesh.Mesh.VertexColors.Add(color);
             }
         }
-        #endregion
 
-        /// <summary>
-        /// Provides an Icon for the component.
-        /// </summary>
-        protected override System.Drawing.Bitmap Icon
+#endregion
+
+/// <summary>
+/// Provides an Icon for the component.
+/// </summary>
+protected override System.Drawing.Bitmap Icon
         {
             get
             {

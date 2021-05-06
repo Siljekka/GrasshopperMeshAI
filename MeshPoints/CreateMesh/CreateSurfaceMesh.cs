@@ -73,9 +73,8 @@ namespace MeshPoints.CreateMesh
 
 
             // 3. Generate grid of points on surface
-            Brep[] planarBrep = Brep.CreatePlanarBreps(brep.Edges, 0.0001); // make planar brep on floor i     
-            NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(planarBrep[0].Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
-            List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v); //brep.Faces[0].ToNurbsSurface()
+            NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(brep.Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
+            List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v);
 
             // 4. Create nodes 
             smartMesh.Nodes = CreateNodes(meshPoints, smartMesh.nu, smartMesh.nv);
