@@ -135,8 +135,17 @@ namespace MeshPoints.FiniteElementMethod
             for (int i = 0; i < numNodes; i++) // loop number nodes
             {
                 List<int> dofList = new List<int>(boundaryConditions[i]);  // get dofList of first input list of BC
-
-
+                for (int j = 0; j < dofList.Count; j++) // loop dofs
+                {
+                    for (int k = 1; k < boundaryConditions.Count / numNodes; k++) // loop the remaining inout list of BC 
+                    {
+                        dofList[j] = dofList[j] + boundaryConditions[i + k * numNodes][j];
+                    }
+                }
+                totalBC.Add(dofList);
+            }
+            return totalBC;
+        }
 
         private Tuple<Matrix<double>, List<Matrix<double>>> Synne(List<Node> nodeList, Material material)
         {
