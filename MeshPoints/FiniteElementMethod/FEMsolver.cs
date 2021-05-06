@@ -60,12 +60,12 @@ namespace MeshPoints.FiniteElementMethod
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Input
-            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
+            SmartMesh smartMesh = new SmartMesh();
             List<double> loads = new List<double>();
             List<List<int>> boundaryConditions = new List<List<int>>();
             Material material = new Material();
 
-            DA.GetData(0, ref mesh);
+            DA.GetData(0, ref smartMesh);
             DA.GetDataList(1, loads);
             DA.GetDataList(2, boundaryConditions);
             DA.GetData(3, ref material);
@@ -74,14 +74,14 @@ namespace MeshPoints.FiniteElementMethod
 
             // Code
 
-            List<Node> nodes = mesh.Nodes;
-            List<Element> elements = mesh.Elements;
+            List<Node> nodes = smartMesh.Nodes;
+            List<Element> elements = smartMesh.Elements;
             int numNodes = nodes.Count;
             int nodeDOFS = 0;
 
             // 1. Check if mesh is Surface or Solid
-            if (String.Equals(mesh.Type, "Surface"))  { nodeDOFS = 2;}
-            else if (String.Equals( mesh.Type,"Solid")) { nodeDOFS = 3;}
+            if (String.Equals(smartMesh.Type, "Surface"))  { nodeDOFS = 2;}
+            else if (String.Equals( smartMesh.Type,"Solid")) { nodeDOFS = 3;}
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid mesh: Need to spesify if mesh is surface or solid."); }
 
             // 2. Get global stiffness matrix
@@ -95,7 +95,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // 5. Fix BoundaryConditions
-            boundaryConditions = FixBoundaryConditions(boundaryConditions, mesh.Nodes.Count);
+            boundaryConditions = FixBoundaryConditions(boundaryConditions, smartMesh.Nodes.Count);
             //if (boundaryConditions.Count > mesh.Nodes.Count) { boundaryConditions = FixBoundaryConditions(boundaryConditions, mesh.Nodes.Count); } Hilde?? 
             
             // 6. Calculate displacement 
@@ -106,7 +106,7 @@ namespace MeshPoints.FiniteElementMethod
             LA.Matrix<double> globalStress = stress.Item1;
             LA.Vector<double> mises = stress.Item2;
             LA.Vector<double> misesElement = stress.Item3;
-            ColorMeshAfterStress(mesh, mises, material);
+            ColorMeshAfterStress(smartMesh, mises, material);
 
             // 8. Prepare output
             List<double> u1 = new List<double>();
@@ -115,12 +115,12 @@ namespace MeshPoints.FiniteElementMethod
             List<double> nodalMises = new List<double>();
             List<double> elementMises = new List<double>();
 
-            for (int i = 0; i < mesh.Elements.Count; i++)
+            for (int i = 0; i < smartMesh.Elements.Count; i++)
             {
                 elementMises.Add(misesElement[i]);
             }
 
-            for (int i = 0; i < mesh.Nodes.Count; i++)
+            for (int i = 0; i < smartMesh.Nodes.Count; i++)
             {
                 u1.Add(u[i * nodeDOFS, 0]);
                 u2.Add(u[i * nodeDOFS + 1, 0]);
@@ -347,7 +347,9 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // Reduce K_global and R
-            ( LA.Matrix<double> K_global_red, LA.Matrix<double> R_red ) = ReduceKandR(K_global, R, BCList);
+            var reducedData = ReduceKandR(K_global, R, BCList);
+            LA.Matrix<double> K_global_red = reducedData.Item1;
+            LA.Matrix<double> R_red = reducedData.Item2;
 
             // Time recorder
             var sw0 = new System.Diagnostics.Stopwatch();
@@ -383,7 +385,7 @@ namespace MeshPoints.FiniteElementMethod
             return u;  
         }
 
-        private (LA.Matrix<double>, LA.Matrix<double>) ReduceKandR(LA.Matrix<double> K_global, LA.Matrix<double> R, List<int> BC)
+        private Tuple<LA.Matrix<double>, LA.Matrix<double>> ReduceKandR(LA.Matrix<double> K_global, LA.Matrix<double> R, List<int> BC)
         {
             int removeIndex = 0;
             for (int i = 0; i < K_global.RowCount; i++)
@@ -397,7 +399,7 @@ namespace MeshPoints.FiniteElementMethod
                 }
                 removeIndex++;
             }
-            return (K_global, R);
+            return Tuple.Create(K_global, R);
         }
 
         private Tuple<LA.Matrix<double>, LA.Matrix<double>> CalculateElementStrainStress(Element element, LA.Matrix<double> u, Material material, int nodeDOFS)
