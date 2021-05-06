@@ -6,7 +6,7 @@ using Rhino.Geometry.Collections;
 using MeshPoints.Classes;
 
 
-namespace MeshPoints.MoveNodes
+namespace MeshPoints.Tools
 {
     public class MoveNodes : GH_Component
     {

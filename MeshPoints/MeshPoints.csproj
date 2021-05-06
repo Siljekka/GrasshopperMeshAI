@@ -110,7 +110,7 @@
     <Compile Include="Tools\GH_DataToExcel.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
-    <Compile Include="MoveNodes\MoveNodes.cs" />
+    <Compile Include="Tools\MoveNodes.cs" />
     <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\SmartMesh.cs" />
@@ -129,7 +129,7 @@
     </Compile>
     <Compile Include="Classes\qEdge.cs" />
     <Compile Include="Classes\qElement.cs" />
-    <Compile Include="QuadRemesh\AnalyzeTriangleMesh.cs" />
+    <Compile Include="QuadRemesh\QuadRemesh.cs" />
     <Compile Include="CreateMesh\SweepSmartMesh.cs" />
     <Compile Include="QuadRemesh\DeconstructQEdge.cs" />
     <Compile Include="QuadRemesh\DeconstructQElement.cs" />

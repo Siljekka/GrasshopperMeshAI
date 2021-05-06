@@ -27,13 +27,13 @@ namespace MeshPoints.Classes
             Vertices = _vertices;   
         }
 
-        public Geometry(Brep _brep, int bottomFace)
+        public Geometry(Brep _brep, int bottomFace) // solid
         {
             Brep = _brep;
             Faces = SortBrepFaces(_brep, bottomFace);
             Edges = SortBrepEdges(_brep, bottomFace);
             Vertices = SortBrepVertex(_brep, bottomFace);
-        } // solid
+        } 
 
         private List<BrepFace> SortBrepFaces(Brep brep, int bottomFace)
         {
