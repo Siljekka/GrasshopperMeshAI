@@ -49,6 +49,7 @@ namespace MeshPoints.FiniteElementMethod
             pManager.AddGenericParameter("u2", "disp", "Displacement of nodes in u2 dir", GH_ParamAccess.list);
             pManager.AddGenericParameter("u3", "disp", "Displacement of node in u3 dir", GH_ParamAccess.list);
             pManager.AddGenericParameter("Nodal stress", "node stress", "Stress at nodes", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Element stress", "element stress", "Stress in elements", GH_ParamAccess.list);
             pManager.AddGenericParameter("Mises stress", "mises", "Calculate mises stress at nodes", GH_ParamAccess.list);
         }
 
@@ -58,7 +59,7 @@ namespace MeshPoints.FiniteElementMethod
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            #region Input
+            // Input
             SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
             List<double> loads = new List<double>();
             List<List<int>> boundaryConditions = new List<List<int>>();
@@ -68,9 +69,11 @@ namespace MeshPoints.FiniteElementMethod
             DA.GetDataList(1, loads);
             DA.GetDataList(2, boundaryConditions);
             DA.GetData(3, ref material);
-            #endregion
+           
 
-            #region Code
+
+            // Code
+
             List<Node> nodes = mesh.Nodes;
             List<Element> elements = mesh.Elements;
             int numNodes = nodes.Count;
@@ -91,25 +94,30 @@ namespace MeshPoints.FiniteElementMethod
                 R[i, 0] = loads[i];
             }
 
-            // Fic BoundaryConditions:
+            // 5. Fix BoundaryConditions
             if (boundaryConditions.Count > mesh.Nodes.Count) { boundaryConditions = FixBoundaryConditions(boundaryConditions, mesh.Nodes.Count); }
             
-            // 4. Calculate displacement 
+            // 6. Calculate displacement 
             LA.Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
 
+            // 7. Calculate stress
             var stress = CalculateGlobalStress(elements, u, material, nodeDOFS);
             LA.Matrix<double> globalStress = stress.Item1;
             LA.Vector<double> mises = stress.Item2;
-
+            LA.Vector<double> misesElement = stress.Item3;
             ColorMeshAfterStress(mesh, mises, material);
 
-            // prepare output
-            double[] nodalDeformation = u.Column(0).ToArray();
-
+            // 8. Prepare output
             List<double> u1 = new List<double>();
             List<double> u2 = new List<double>();
             List<double> u3 = new List<double>();
             List<double> nodalMises = new List<double>();
+            List<double> elementMises = new List<double>();
+
+            for (int i = 0; i < mesh.Elements.Count; i++)
+            {
+                elementMises.Add(misesElement[i]);
+            }
 
             for (int i = 0; i < mesh.Nodes.Count; i++)
             {
@@ -125,15 +133,17 @@ namespace MeshPoints.FiniteElementMethod
             {
                nodalStress.Add(globalStress.Column(i).ToArray());
             }
-            #endregion
 
-            #region Output
+
+
+            // Output
             DA.SetDataList(0, u1);
             DA.SetDataList(1, u2);
             DA.SetDataList(2, u3);
             DA.SetDataList(3, nodalStress);
-            DA.SetDataList(4, nodalMises);
-            #endregion 
+            DA.SetDataList(4, elementMises);
+            DA.SetDataList(5, nodalMises);
+
         }
 
         #region Methods
@@ -752,15 +762,14 @@ namespace MeshPoints.FiniteElementMethod
             return Tuple.Create(elementStrain, elementStress);
         }
 
-        private Tuple<LA.Matrix<double>, LA.Vector<double>> CalculateGlobalStress(List<Element> elements, LA.Matrix<double> u, Material material, int nodeDOFS)
+        private Tuple<LA.Matrix<double>, LA.Vector<double>, LA.Vector<double>> CalculateGlobalStress(List<Element> elements, LA.Matrix<double> u, Material material, int nodeDOFS)
         {
             int numNodes =  u.RowCount / 3;
             int stressRowDim = 4;
             if (nodeDOFS == 3) { stressRowDim = 6; }
             LA.Matrix<double> globalStress = LA.Double.DenseMatrix.Build.Dense(stressRowDim, numNodes);
             LA.Matrix<double> counter = LA.Double.DenseMatrix.Build.Dense(stressRowDim, numNodes);
-
-
+            List<LA.Matrix<double>> elementStressList = new List<LA.Matrix<double>>(); 
             foreach (Element element in elements)
             {
                 LA.Matrix<double> elementStress = CalculateElementStrainStress(element, u, material, nodeDOFS).Item2;
@@ -775,6 +784,7 @@ namespace MeshPoints.FiniteElementMethod
                         counter[i, connectivity[j]]++;
                     }
                 }
+                elementStressList.Add(elementStress);
             }
 
             // get average
@@ -790,31 +800,40 @@ namespace MeshPoints.FiniteElementMethod
                 }
             }
 
-            // Mises
+            // Nodal Mises
             LA.Vector<double> mises = DenseVector.Build.Dense(numNodes);
             for (int i = 0; i < numNodes; i++)
             {
-                if (nodeDOFS == 2)
+                LA.Vector<double> nodeStress = globalStress.Column(i);
+                double Sxx = nodeStress[0];
+                double Syy = nodeStress[1];
+                double Szz = nodeStress[2];
+                double Sxy = nodeStress[3];
+                double Sxz = nodeStress[4];
+                double Syz = nodeStress[5];
+                mises[i] = Math.Sqrt(0.5 * (Math.Pow(Sxx - Syy, 2) + Math.Pow(Syy - Szz, 2) + Math.Pow(Szz - Sxx, 2)) + 3 * (Math.Pow(Sxy, 2) + Math.Pow(Sxz, 2) + Math.Pow(Syz, 2)));
+            }
+
+            // Element mises
+            LA.Vector<double> elementMises = DenseVector.Build.Dense(numNodes);
+            for (int i = 0; i < elementStressList.Count; i++)
+            {
+                for (int j = 0; j < 8; j++)
                 {
-                    LA.Vector<double> nodeStress = globalStress.Column(i);
-                    double Sxx = nodeStress[0];
-                    double Syy = nodeStress[1];
-                    double Sxy = nodeStress[2];
-                    mises[i] = Math.Sqrt( Math.Pow(Sxx, 2) - Sxx * Syy + Math.Pow(Syy, 2) + 3 * Math.Pow(Sxy, 2));
-                }
-                else
-                {
-                    LA.Vector<double> nodeStress = globalStress.Column(i);
+                    LA.Vector<double> nodeStress = elementStressList[i].Column(j);
                     double Sxx = nodeStress[0];
                     double Syy = nodeStress[1];
                     double Szz = nodeStress[2];
                     double Sxy = nodeStress[3];
                     double Sxz = nodeStress[4];
                     double Syz = nodeStress[5];
-                    mises[i] = Math.Sqrt(0.5 * (Math.Pow(Sxx - Syy, 2) + Math.Pow(Syy - Szz, 2) + Math.Pow(Szz - Sxx, 2)) + 3 * (Math.Pow(Sxy, 2) + Math.Pow(Sxz, 2) + Math.Pow(Syz, 2)));
+                    elementMises[i] = elementMises[i] + Math.Sqrt(0.5 * (Math.Pow(Sxx - Syy, 2) + Math.Pow(Syy - Szz, 2) + Math.Pow(Szz - Sxx, 2)) + 3 * (Math.Pow(Sxy, 2) + Math.Pow(Sxz, 2) + Math.Pow(Syz, 2)));
                 }
+                elementMises[i] = elementMises[i] / (double)8; // get average of nodal mises
             }
-            return Tuple.Create(globalStress, mises);
+
+
+            return Tuple.Create(globalStress, mises, elementMises);
         }
 
         private LA.Matrix<double> GetMaterialConstant(double youngModulus, double possionRatio, int nodeDOFS )
