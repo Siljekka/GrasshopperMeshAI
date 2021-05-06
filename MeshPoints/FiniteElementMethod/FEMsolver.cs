@@ -10,15 +10,15 @@ using System.Drawing;
 
 namespace MeshPoints.FiniteElementMethod
 {
-    public class FEMsolver : GH_Component
+    public class FEMSolver : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the FEMsolver class.
         /// </summary>
-        public FEMsolver()
+        public FEMSolver()
           : base("FEM solver", "FEM",
               "Finite element method solver with quad 4 and hex 8 elements.",
-              "MyPlugIn", "FEM")
+              "SmartMesh", "FEM")
         { 
         }
 

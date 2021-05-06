@@ -15,7 +15,7 @@ namespace MeshPoints
         public GenerateINPfile()
           : base("Generate inp-file", "inp",
               "Generate inp-file for 3D analysis. Solid elements (C3D8) and shell elements (S4) are made for SmartMesh dependent on mesh type. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
-              "MyPlugIn", "inp-file")
+              "SmartMesh", "Tools")
         {
         }
 

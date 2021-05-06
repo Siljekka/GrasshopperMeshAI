@@ -19,7 +19,7 @@ namespace MeshPoints.CreateMesh
         public CreateSurfaceMesh()
           : base("CreateSurfaceMesh", "surface",
               "Mesh a surface with a specified number of divisions in u- and v-direction.",
-              "MyPlugIn", "Mesh")
+              "SmartMesh", "Mesh")
         {
         }
 

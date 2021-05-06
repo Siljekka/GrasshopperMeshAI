@@ -14,7 +14,7 @@ namespace MeshPoints.FiniteElementMethod
         public FEMBoundaryCondition()
           : base("FEM Boundary condtion", "BC",
               "Create boundary consition for FEM solver.",
-              "MyPlugIn", "FEM")
+              "SmartMesh", "FEM")
         {
         }
 
