@@ -92,7 +92,7 @@
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
     <Compile Include="Classes\FEM.cs" />
-    <Compile Include="CreateData.cs" />
+    <Compile Include="Tools\CreateData.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
     <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
@@ -167,9 +167,7 @@
     <Content Include="Properties\Resources\MeshQuality.png" />
     <Content Include="Properties\Resources\mountain.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="MeshQuality\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
