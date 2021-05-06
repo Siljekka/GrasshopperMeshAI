@@ -15,7 +15,7 @@ namespace MeshPoints.Tools
         public MoveCorners()
           : base("Move Corners", "mc",
               "Move corners of a surface with foure edges",
-              "MyPlugIn", "Tools")
+              "SmartMesh", "Tools")
         {
         }
 

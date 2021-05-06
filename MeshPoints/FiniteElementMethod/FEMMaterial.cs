@@ -12,7 +12,7 @@ namespace MeshPoints.FiniteElementMethod
         public FEMMaterial()
           : base("FEM Material", "FEM",
               "Create material to input Finite Element Solver.",
-              "MyPlugIn", "FEM")
+              "SmartMesh", "FEM")
         {
         }
 

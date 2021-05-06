@@ -16,7 +16,7 @@ namespace MeshPoints.MoveNodes
         public MoveNodes()
           : base("Move Nodes", "mn",
               "Move nodes of a SmartMesh with gene pools",
-              "MyPlugIn", "Modify Mesh")
+              "SmartMesh", "Tools")
         {
         }
 

@@ -16,7 +16,7 @@ namespace MeshPoints
         public DeconstructQuality()
           : base("Deconstruct Quality", "decQ",
               "Deconstructing quality class",
-              "MyPlugIn", "Deconstruct")
+              "SmartMesh", "Deconstruct")
         {
         }
 

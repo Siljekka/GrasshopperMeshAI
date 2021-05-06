@@ -16,7 +16,7 @@ namespace MeshPoints
         public Deconstruct_Node()
           : base("Deconstruct Node", "decN",
               "Deconstructing node class",
-              "MyPlugIn", "Deconstruct")
+              "SmartMesh", "Deconstruct")
         {
         }
 

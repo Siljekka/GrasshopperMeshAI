@@ -18,7 +18,7 @@ namespace MeshPoints.MeshQuality
         public JacobianRatio3D()
           : base("JacobianRatio3D", "jr3d",
               "Jacobian Ratio for Mesh3D element",
-              "MyPlugIn", "Outdated")
+              "SmartMesh", "Outdated")
         {
         }
 
