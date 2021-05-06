@@ -83,6 +83,9 @@ namespace MeshPoints.FiniteElementMethod
                 R[i, 0] = loads[i];
             }
 
+            // Fic BoundaryConditions:
+            if (boundaryConditions.Count > mesh.Nodes.Count) { boundaryConditions = FixBoundaryConditions(boundaryConditions, mesh.Nodes.Count); }
+            
             // 4. Calculate displacement 
             Matrix<double> u = CalculateDisplacement(K_global, R, boundaryConditions); 
 
@@ -126,6 +129,14 @@ namespace MeshPoints.FiniteElementMethod
         }
 
         #region Methods
+        private List<List<int>> FixBoundaryConditions(List<List<int>> boundaryConditions, int numNodes)
+        {
+            List<List<int>> totalBC = new List<List<int>>();
+            for (int i = 0; i < numNodes; i++) // loop number nodes
+            {
+                List<int> dofList = new List<int>(boundaryConditions[i]);  // get dofList of first input list of BC
+
+
 
         private Tuple<Matrix<double>, List<Matrix<double>>> Synne(List<Node> nodeList, Material material)
         {
