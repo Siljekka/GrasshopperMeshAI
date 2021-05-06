@@ -6,8 +6,6 @@ using MeshPoints.Classes;
 using System.Linq;
 using Grasshopper;
 using Grasshopper.Kernel.Data;
-using Rhino.Geometry.Intersect;
-using Rhino.Geometry.Collections;
 
 namespace MeshPoints.CreateMesh
 {
@@ -41,8 +39,6 @@ namespace MeshPoints.CreateMesh
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "SmartMesh from sweeping", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "Mesh from sweeping", GH_ParamAccess.item);
-            pManager.AddGenericParameter("test list", "sm", "SmartMesh from sweeping", GH_ParamAccess.list);
-
         }
 
         /// <summary>
@@ -85,12 +81,15 @@ namespace MeshPoints.CreateMesh
             // 6. Create global mesh
             Mesh globalMesh = CreateGlobalMeshWithWeld(elements);
 
-            // 7. Create SmartMesh
+            // 7. Create geometry info
+            Geometry brepGeometry = new Geometry(brep, bottomFace);
+
+            // 8. Create SmartMesh
             SmartMesh solidMesh = new SmartMesh(nodes, elements, globalMesh, "Solid");
+            solidMesh.Geometry = brepGeometry;
 
             DA.SetData(0, solidMesh);
             DA.SetData(1, solidMesh.Mesh);
-            DA.SetDataList(2, elements); // temp
         }
 
         private List<Curve> FindRails(Brep brep, int bottomFaceIndex)
@@ -117,39 +116,6 @@ namespace MeshPoints.CreateMesh
             List<BrepEdge> brepEdges = brep.Edges.ToList();
             List<Curve> rails = new List<Curve>(brepEdges);
             foreach (int index in indexAdjecentEdges) { rails.Remove(brepEdges[index]); }
-
-            #region Old Code
-            /*BrepEdgeList brepEdges = brep.Edges;
-            List<Curve> rails = new List<Curve>();
-
-            foreach (BrepEdge edge in brepEdges) // check if node is on edge
-            {
-                List<Point3d> edgePoints = new List<Point3d> { edge.StartVertex.Location, edge.EndVertex.Location };
-                bool pointOnFace4 = false;
-                bool pointOnFace5 = false;
-                foreach (Point3d point in edgePoints)
-                {
-                    brep.Faces[bottomFace].ClosestPoint(point, out double PointOnCurveUFace4, out double PointOnCurveVFace4);
-                    brep.Faces[topFace].ClosestPoint(point, out double PointOnCurveUFace5, out double PointOnCurveVFace5);
-                    Point3d testPointFace4 = brep.Faces[bottomFace].PointAt(PointOnCurveUFace4, PointOnCurveVFace4);  // make test point
-                    Point3d testPointFace5 = brep.Faces[topFace].PointAt(PointOnCurveUFace5, PointOnCurveVFace5);  // make test point
-                    double distanceToFace4 = testPointFace4.DistanceTo(point); // calculate distance between testPoint and node
-                    double distanceToFace5 = testPointFace5.DistanceTo(point); // calculate distance between testPoint and node
-                    if ((distanceToFace4 <= 0.0001 & distanceToFace4 >= -0.0001)) // if distance = 0: node is on edge
-                    {
-                        pointOnFace4 = true;
-                    }
-                    else if ((distanceToFace5 <= 0.0001 & distanceToFace5 >= -0.0001))
-                    {
-                        pointOnFace5 = true;
-                    }
-                }
-                if (pointOnFace4 & pointOnFace5)
-                {
-                    rails.Add(edge);  //get edge1 of brep = rail 1
-                }
-            }*/
-            #endregion
             return rails;
         }
         private DataTree<Point3d> DivideRailIntoWPoints(List<Curve> rails, BrepFace brepBottomFace, int w)
@@ -183,36 +149,6 @@ namespace MeshPoints.CreateMesh
                     railPoints.Branch(i).Reverse();
                 }
             }
-            #region Old Code:
-            /*
-            DataTree<Point3d> railPoints = new DataTree<Point3d>();
-            if (rails.Count == 0) { return null; }
-
-            //Divide each rail into w points.
-            for (int i = 0; i < rails.Count; i++)
-            {
-                rails[i].DivideByCount(w, true, out Point3d[] wPt);  //divide each rail in w number of points
-                List<Point3d> wPoints = wPt.ToList();
-                for (int j = 0; j < wPoints.Count; j++)
-                {
-                    railPoints.Add(wPoints[j], new GH_Path(j)); //tree with w points on each rail. Branch: floor
-                }
-            }
-
-            // Check if the rails must be re-oredered to generate elements with nodes counting ccw
-            Curve testCurve = Curve.CreateControlPointCurve(railPoints.Branch(0), 1);
-            Vector3d direction = railPoints.Branch(w)[0] - railPoints.Branch(0)[0];
-            string curveOrientation = testCurve.ClosedCurveOrientation(direction).ToString();
-            if (curveOrientation == "Clockwise")
-            {
-                rails.Reverse();
-                for (int i = 0; i < railPoints.BranchCount; i++)
-                {
-                    railPoints.Branch(i).Reverse();
-                }
-            }
-            */
-            #endregion
             return railPoints;
         }
         private List<Plane> GetPlanes(DataTree<Point3d> railPoints)
@@ -224,7 +160,7 @@ namespace MeshPoints.CreateMesh
             {
                 Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
                 Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
-                Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
+                Vector3d normal = Vector3d.CrossProduct(vec1, vec2); // to do: Hilde, slett?
                 Plane plane = new Plane(railPoints.Branch(i)[0], vec1, vec2);
                 planes.Add(plane);
             }
@@ -260,7 +196,7 @@ namespace MeshPoints.CreateMesh
                 nodesTest.AddRange(nodes);
                 nodes.Clear();
             }
-            return nodes;
+            return nodesTest;
         }
         private List<Element> CreateElements(SmartMesh refMesh, int w, List<Node> nodes)
         {
