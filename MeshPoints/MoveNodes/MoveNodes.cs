@@ -15,7 +15,7 @@ namespace MeshPoints.MoveNodes
         /// </summary>
         public MoveNodes()
           : base("Move Nodes", "mn",
-              "Move nodes of a SmartMesh with gene pools",
+              "Move nodes of a structured SmartMesh with gene pools",
               "SmartMesh", "Tools")
         {
         }
@@ -69,6 +69,7 @@ namespace MeshPoints.MoveNodes
             if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
             if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
             if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
+            if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
 
             // 2. Inherit properties from old mesh
             newMesh.nu = oldMesh.nu;
