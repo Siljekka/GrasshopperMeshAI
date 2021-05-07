@@ -15,7 +15,7 @@ namespace MeshPoints.CreateMesh
         public CreateSurfaceMesh__TargetLength_()
           : base("CreateSurfaceMesh (TargetLength)", "Nickname",
               "Mesh a surface with a target length for the elements.",
-              "MyPlugIn", "Mesh")
+              "SmartMesh", "Mesh")
         {
         }
 

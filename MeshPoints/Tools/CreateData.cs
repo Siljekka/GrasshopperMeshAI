@@ -7,7 +7,7 @@ using System.Text;
 using MathNet;
 using System.Linq;
 
-namespace MeshPoints
+namespace MeshPoints.Tools
 {
     public class CreateData : GH_Component
     {
@@ -17,7 +17,7 @@ namespace MeshPoints
         public CreateData()
           : base("CreateCSV (Quality)", "data",
               "Export data to CSV file.",
-              "MyPlugIn", "Tools")
+              "SmartMesh", "Tools")
         {
         }
 

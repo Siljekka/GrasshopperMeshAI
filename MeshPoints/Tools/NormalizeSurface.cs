@@ -12,9 +12,9 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the NormalizeSurface class.
         /// </summary>
         public NormalizeSurface()
-          : base("NormalizeSurface", "Nickname",
-              "Translates a Surface to origin and scales to [-1,1]",    
-              "MyPlugIn", "Tools")
+          : base("Normalize Surface", "Nickname",
+              "Translates a Surface to origin and scales to [-1,1]",
+              "SmartMesh", "Tools")
         {
         }
 

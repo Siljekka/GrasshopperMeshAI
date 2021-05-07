@@ -14,7 +14,7 @@ namespace MeshPoints.DeconstructClasses
         public DeconstructGeometry()
           : base("Deconstruct Geometry", "geo",
               "Deconstructing Geometry Class",
-              "MyPlugIn", "Deconstruct")
+              "SmartMesh", "Deconstruct")
         {
         }
 

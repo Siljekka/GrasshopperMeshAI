@@ -16,7 +16,7 @@ namespace MeshPoints
         public IsSweepable()
           : base("IsSweepable", "Sweepable",
               "Checks if brep is Sweepable",
-              "MyPlugIn", "Brep")
+              "SmartMesh", "Tools")
         {
         }
 

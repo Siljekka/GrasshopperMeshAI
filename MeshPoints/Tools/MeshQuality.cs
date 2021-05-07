@@ -8,7 +8,7 @@ using MeshPoints.Classes;
 using System.Drawing;
 using MathNet.Numerics.LinearAlgebra;
 
-namespace MeshPoints.MeshQuality
+namespace MeshPoints.Tools
 {
     public class MeshQuality : GH_Component
     {
@@ -18,7 +18,7 @@ namespace MeshPoints.MeshQuality
         public MeshQuality()
           : base("Mesh Quality", "mq",
               "Mesh Quality",
-              "MyPlugIn", "Quality")
+              "SmartMesh", "Tools")
         {
         }
 
@@ -748,7 +748,7 @@ namespace MeshPoints.MeshQuality
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
-                        else if (q.Skewness > 0)
+                        else if (q.Skewness >= 0)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }

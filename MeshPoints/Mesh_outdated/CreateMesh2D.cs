@@ -19,7 +19,7 @@ namespace MeshPoints.CreateMesh
         public MeshPoints2D()
           : base("Create Mesh2D", "mp2D",
               "Mesh list with flatten points in 2D",
-              "MyPlugIn", "Outdated")
+              "SmartMesh", "Outdated")
         {
         }
 

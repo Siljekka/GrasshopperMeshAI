@@ -6,15 +6,15 @@ using MeshPoints.Classes;
 
 namespace MeshPoints.Tools
 {
-    public class MapPoints : GH_Component
+    public class IdealizePoints : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MapPoints class.
         /// </summary>
-        public MapPoints()
-          : base("MapPoints", "map",
+        public IdealizePoints()
+          : base("Idealize Points", "map",
               "Map points of a surface to a perfect quad/cube.",
-              "MyPlugIn", "Tools")
+              "SmartMesh", "Tools")
         {
         }
 
