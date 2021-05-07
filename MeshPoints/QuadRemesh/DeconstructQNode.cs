@@ -14,7 +14,7 @@ namespace MeshPoints.QuadRemesh
         public DeconstructQNode()
           : base("Deconstruct qNode", "qNode",
               "Deconstruct qNode class",
-              "MyPlugIn", "QuadRemesh")
+              "SmartMesh", "QuadRemesh")
         {
         }
 

@@ -19,7 +19,7 @@ namespace MeshPoints.CreateMesh
         public SweepSmartMesh()
           : base("Sweep SmartMesh", "ss",
               "Sweep a referance surface SmartMesh",
-              "MyPlugIn", "Mesh")
+              "SmartMesh", "Mesh")
         {
         }
 

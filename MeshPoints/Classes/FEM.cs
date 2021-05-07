@@ -51,18 +51,6 @@ namespace MeshPoints.Classes
             }
 
         }
-        public Matrix<double> GetNMatrix(double r, double s, double t) // to do: feil og slett?
-        {
-            // Shapefunctions on matrix form
-            Matrix<double> N = DenseMatrix.OfArray(new double[,]
-            {
-                    {(1-r)*(s-1)*(t-1), 0, 0, (1+r)*(s-1)*(t-1), 0, 0, (1+r)*(s+1)*(t-1), 0, 0, (1-r)*(s+1)*(t-1), 0, 0, (1-r)*(s-1)*(t+1), 0, 0, (1+r)*(s-1)*(t+1), 0, 0, (1+r)*(s+1)*(t+1), 0, 0, (1-r)*(s+1)*(t+1), 0, 0},
-                    {0, (1-r)*(s-1)*(t-1), 0, 0, (1+r)*(s-1)*(t-1), 0, 0, (1+r)*(s+1)*(t-1), 0, 0, (1-r)*(s+1)*(t-1), 0, 0, (1-r)*(s-1)*(t+1), 0, 0, (1+r)*(s-1)*(t+1), 0, 0, (1+r)*(s+1)*(t+1), 0, 0, (1-r)*(s+1)*(t+1), 0},
-                    {0, 0, (1-r)*(s-1)*(t-1), 0, 0, (1+r)*(s-1)*(t-1), 0, 0, (1+r)*(s+1)*(t-1), 0, 0, (1-r)*(s+1)*(t-1), 0, 0, (1-r)*(s-1)*(t+1), 0, 0, (1+r)*(s-1)*(t+1), 0, 0, (1+r)*(s+1)*(t+1), 0, 0, (1-r)*(s+1)*(t+1)}
-            });
-            N=N.Multiply(0.125);
-            return N;
-        }
         public Matrix<double> DerivateWithNatrualCoordinates(double r, double s, double t, int nodeDOFS)
         {
             if (nodeDOFS == 2)

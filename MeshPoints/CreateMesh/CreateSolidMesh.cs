@@ -19,7 +19,7 @@ namespace MeshPoints.CreateMesh
         public CreateSolidMesh()
           : base("CreateSolidMesh", "solid",
               "Generate solid mesh. Independent on how surface composing the brep is made.",
-              "MyPlugIn", "Mesh")
+              "SmartMesh", "Mesh")
         {
         }
 

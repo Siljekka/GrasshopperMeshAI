@@ -14,7 +14,7 @@ namespace MeshPoints.FiniteElementMethod
         public FEMLoad()
           : base("FEM Load", "FEM load",
               "Create load for FEM solver.",
-              "MyPlugIn", "FEM")
+              "SmartMesh", "FEM")
         {
         }
 
