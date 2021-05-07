@@ -37,6 +37,7 @@ namespace MeshPoints
             pManager.AddGenericParameter("Element", "e", "Corresponing element", GH_ParamAccess.item); 
             pManager.AddGenericParameter("Aspect Ratio", "AR", "Ratio between shortest and longest mesh edge", GH_ParamAccess.item);
             pManager.AddGenericParameter("Skewness", "SK", "Angle ratio of mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Jacobian Ratio", "JR", "Jacobian ratio of mesh", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -53,6 +54,7 @@ namespace MeshPoints
             DA.SetData(0, q.element);
             DA.SetData(1, q.AspectRatio);
             DA.SetData(2, q.Skewness);
+            DA.SetData(2, q.JacobianRatio);
         }
 
         /// <summary>

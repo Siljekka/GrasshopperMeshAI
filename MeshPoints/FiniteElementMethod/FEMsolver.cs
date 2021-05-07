@@ -58,6 +58,10 @@ namespace MeshPoints.FiniteElementMethod
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            // Time recorder
+            var sw0 = new System.Diagnostics.Stopwatch();
+            sw0.Start();
+
             #region Input
             SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
             List<double> loads = new List<double>();
@@ -126,6 +130,8 @@ namespace MeshPoints.FiniteElementMethod
                nodalStress.Add(globalStress.Column(i).ToArray());
             }
             #endregion
+            sw0.Stop();
+            Rhino.RhinoApp.WriteLine($"Elapsed [msec] = " + sw0.Elapsed.TotalMilliseconds);
 
             #region Output
             DA.SetDataList(0, u1);
