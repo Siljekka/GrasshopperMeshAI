@@ -16,7 +16,7 @@ namespace MeshPoints.Tools
         public GH_DataToExcel()
           : base("GH_DataToExcel", "excel",
               "Create data file that can be imported to excel.", //todo: fix description
-              "MyPlugIn", "Tools")
+              "SmartMesh", "Tools")
         {
         }
         /// <summary>
