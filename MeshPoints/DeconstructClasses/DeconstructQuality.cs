@@ -54,7 +54,7 @@ namespace MeshPoints
             DA.SetData(0, q.element);
             DA.SetData(1, q.AspectRatio);
             DA.SetData(2, q.Skewness);
-            DA.SetData(2, q.JacobianRatio);
+            DA.SetData(3, q.JacobianRatio);
         }
 
         /// <summary>
