@@ -15,7 +15,7 @@ namespace MeshPoints.CreateMesh
         public CreateTriangleMesh()
           : base("Triangle Mesh", "TriMesh",
               "Creates a triangle mesh on a (2D) Brep surface using built-in Delaunay method",
-              "MyPlugin", "Mesh")
+              "SmartMesh", "Mesh")
         {
         }
 

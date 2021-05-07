@@ -16,9 +16,9 @@ namespace MeshPoints.QuadRemesh
         /// Initializes a new instance of the AnalyzeTriangleMesh class.
         /// </summary>
         public AnalyzeTriangleMesh()
-          : base("Analyze Triangle Mesh", "atm",
-              "Analyse elements and edges in a triangle mesh",
-              "MyPlugIn", "QuadRemesh")
+          : base("Quad Remesh", "atm",
+              "Remesh from triangle mesh to quadrilateral mesh.",
+              "SmartMesh", "QuadRemesh")
         {
         }
 
