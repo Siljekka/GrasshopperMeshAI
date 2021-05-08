@@ -103,10 +103,10 @@ namespace MeshPoints.CreateMesh
             List<NurbsSurface> surfaceAtW = CreateNurbSurfaceAtEachFloor(intersectionCurve);
 
             // 6. Make grid of points in u and v direction at leven nw
-            DataTree<Point3d> meshPoints = CreateGridOfPointsAtEachFloor(u, v, surfaceAtW, railPoints);
+            List<Point3d> meshPoints = CreateGridOfPointsAtEachFloor(u, v, surfaceAtW, railPoints);
             
             // 7. Create nodes 
-            smartMesh.Nodes = CreateNodes(meshPoints, u, v, w); // assign Coordiantes, GlobalId and Boundary Conditions
+            smartMesh.CreateNodes(meshPoints, u, v, w); // assign Coordiantes, GlobalId and Boundary Conditions
 
             //8. create elements
             smartMesh.CreateHexElements();
@@ -313,9 +313,10 @@ namespace MeshPoints.CreateMesh
         /// Copy a grid of points in u and v direction onto every floor.
         /// </summary>
         /// <returns> DataTree with points on Brep. Branch: floor level.</returns>
-        private DataTree<Point3d> CreateGridOfPointsAtEachFloor(int u, int v, List<NurbsSurface> surfaceAtNw, DataTree<Point3d> railPoints)
+        private List<Point3d> CreateGridOfPointsAtEachFloor(int u, int v, List<NurbsSurface> surfaceAtNw, DataTree<Point3d> railPoints)
         {
-            DataTree<Point3d> points = new DataTree<Point3d>();
+            List<Point3d> pointList = new List<Point3d>();
+            //DataTree<Point3d> points = new DataTree<Point3d>();
             Vector3d direction = Vector3d.Zero;
             for (int i = 0; i < surfaceAtNw.Count; i++) // loop floors
             {
@@ -329,10 +330,10 @@ namespace MeshPoints.CreateMesh
                     direction = (railPoints.Branch(i + 1)[0] - railPoints.Branch(i)[0]);
                 }
                 List<Point3d> pt = CreateGridOfPointsUV(u, v, surfaceAtNw[i], railPoints.Branch(i)[0], direction);
-                points.AddRange(pt, new GH_Path(i)); // add points to datatree. Branch: floor level
-                pt.Clear();
+                //points.AddRange(pt, new GH_Path(i)); // add points to datatree. Branch: floor level
+                pointList.AddRange(pt);
             }
-            return points;
+            return pointList;
         }
 
 
@@ -459,7 +460,7 @@ namespace MeshPoints.CreateMesh
         /// Create Nodes: assign Coordiantes, GlobalId and Boundary Conditions
         /// </summary>
         /// <returns> List with nodes incl properties</returns>
-        private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int u, int v, int w)
+        private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int u, int v, int w)// to do: slett
         {
             List<Node> nodes = new List<Node>();
             int id = 0;
@@ -494,189 +495,7 @@ namespace MeshPoints.CreateMesh
                 }
             }
             return nodes;
-        }
-
-        private List<Element> CreateHexElements(DataTree<Point3d> meshPoints, List<Node> nodes, int nu, int nv)
-        {
-            Element e = new Element();
-            Mesh mesh = new Mesh();
-            List<Element> elements = new List<Element>();
-            List<Point3d> ptsBot = new List<Point3d>();
-            List<Point3d> ptsTop = new List<Point3d>();
-            int elemId = 0;
-
-            nu = nu + 1; //input nu = nu - 1. Exs: nu = 3, total points in u-direction is 4;
-            nv = nv + 1; //input nv = nv - 1. Exs: nv = 3, total points in v-direction is 4;
-
-            for (int i = 0; i < meshPoints.BranchCount - 1; i++)  // loop levels
-            {
-                ptsBot = meshPoints.Branch(i);
-                ptsTop = meshPoints.Branch(i + 1);
-                int count2 = 0;
-                int counter = meshPoints.Branch(0).Count * i;
-
-                for (int j = 0; j < meshPoints.Branch(0).Count - nu - 1; j++) // loop elements in a level
-                {
-                    List<Node> elementNodes = new List<Node>();
-                    List<int> connectivity = new List<int>();
-
-                    if (count2 < nu - 1)
-                    {
-                        connectivity.Add(counter);
-                        connectivity.Add(counter + 1);
-                        connectivity.Add(counter + nu + 1);
-                        connectivity.Add(counter + nu);
-                        connectivity.Add(counter + nu * nv);
-                        connectivity.Add(counter + 1 + nu * nv);
-                        connectivity.Add(counter + nu + 1 + nu * nv);
-                        connectivity.Add(counter + nu + nu * nv);
-
-                        foreach (int id in connectivity)
-                        {
-                            elementNodes.Add(nodes[id]);
-                        }
-
-                        Element element = new Element(elemId, elementNodes, connectivity);
-
-                        // create local mesh
-                        Mesh localMesh = new Mesh();
-                        foreach (Node node in elementNodes)
-                        {
-                            localMesh.Vertices.Add(node.Coordinate); //0
-                        }
-
-                        localMesh.Faces.AddFace(0, 1, 5, 4);
-                        localMesh.Faces.AddFace(1, 2, 6, 5);
-                        localMesh.Faces.AddFace(2, 3, 7, 6);
-                        localMesh.Faces.AddFace(3, 0, 4, 7);
-                        localMesh.Faces.AddFace(0, 1, 2, 3);
-                        localMesh.Faces.AddFace(4, 5, 6, 7);
-
-                        localMesh.Normals.ComputeNormals();  //Control if needed
-                        localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                        localMesh.Compact(); //to ensure that it calculate
-
-                        //add element and mesh to element list
-                        element.Mesh = localMesh;
-                        elements.Add(element);
-
-                        count2++;
-                        elemId++;
-                        counter++;
-                    }
-                    else { count2 = 0; counter++; }
-                }
-
-            }
-            return elements;
-        }// to do: slett
-
-        /// <summary>
-        /// Create Global mesh
-        /// </summary>
-        /// <returns>Global mesh</returns>
-
-        private Mesh CreateGlobalMesh(List<Element> elements)
-        {
-            Mesh allMesh = new Mesh();
-            foreach (Element el in elements)
-            {
-                allMesh.Append(el.Mesh);
-            }
-            allMesh.Weld(0.01);
-
-            return allMesh;
-        } // to do: slett
-
-        private Mesh CreateGlobalMeshNew(List<Node> nodes, int nu, int nv, int nw)
-        {
-            // to do: fix senere. mesh w- dir er riktig
-            nu++;
-            nv++;
-            nw++; 
-
-            Mesh mesh = new Mesh(); 
-
-            foreach (Node node in nodes)
-            {
-                mesh.Vertices.Add(node.Coordinate);
-            }
-       
-            // mesh planes in w -dir
-            int counter = 0;
-            int jump = 0; // new v sequence
-            
-           for (int i = 0; i < nw; i++)
-           {
-               for (int j = 0; j < (nu - 1) * (nv - 1 ); j++)
-               {
-                   if (jump < nu - 1)
-                   {
-
-                       mesh.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
-
-                       counter++;
-                       jump++;
-                   }
-                   else { counter++; jump = 0; j--; }
-               }
-               counter = (i + 1) * nu * nv ;
-               jump = 0;
-           }
-
-           // mesh planes in u - dir
-           counter = 0;
-           jump = 0; // new w sequence
-           for (int i = 0; i < nu; i++)
-           {
-               for (int j = 0; j < (nv - 1) * (nw - 1); j++)
-               {
-                   if (jump < nv - 1)
-                   {
-
-                       mesh.Faces.AddFace(counter, counter + (nu*nv), counter + (nu * nv) + nu, counter + nu );
-
-                       counter += nu;
-                       jump++;
-                   }
-                   else { counter += nu; jump = 0; j--; }
-               }
-               counter = (i + 1);
-               jump = 0;
-           }
-       
-
-            // mesh planes in v - dir
-            counter=0;
-            int counterU = 0;
-            jump = 0; // new u sequence
-            for (int i = 0; i < nv; i++)
-            {
-                for (int j = 0; j < (nu - 1) * (nw - 1); j++)
-                {
-                    if (jump < nw - 1)
-                    {
-
-                        mesh.Faces.AddFace(counter, counter + 1, counter + (nu * nv) + 1, counter + nu*nv);
-
-                        counter += nu*nv;
-                        jump++;
-                    }
-                    else { counterU++; counter = counterU; jump = 0; j--; }
-                }
-                counter = (i + 1)*nu;
-                jump = 0;
-                counterU = counter;
-            }
-
-            
-            
-            mesh.Normals.ComputeNormals();  //Control if needed
-            mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-            mesh.Compact(); //to ensure that it calculate
-
-            return mesh;
-        }// to do: slett
+        } 
 
         #endregion
 

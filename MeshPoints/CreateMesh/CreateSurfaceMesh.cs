@@ -77,7 +77,7 @@ namespace MeshPoints.CreateMesh
             List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v);
 
             // 4. Create nodes 
-            smartMesh.Nodes = CreateNodes(meshPoints, smartMesh.nu, smartMesh.nv);
+            smartMesh.CreateNodes(meshPoints, u, v, 0);
 
             // 5. Set elements
             smartMesh.CreateQuadElements();
@@ -123,7 +123,7 @@ namespace MeshPoints.CreateMesh
         /// Create global nodes by assigning global id, coordinate, boundary condiditon in u and v direction
         /// </summary>
         /// <returns></returns>
-        List<Node> CreateNodes(List<Point3d> meshPoints, int nu, int nv)
+        List<Node> CreateNodes(List<Point3d> meshPoints, int nu, int nv)// to do: slett
         {
             List<Node> nodes = new List<Node>();
             int uSequence = 0;
