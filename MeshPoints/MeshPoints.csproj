@@ -115,6 +115,7 @@
     <Compile Include="Tools\GH_DataToExcel.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
+    <Compile Include="Tools\MoveGrids.cs" />
     <Compile Include="Tools\MoveNodes.cs" />
     <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
