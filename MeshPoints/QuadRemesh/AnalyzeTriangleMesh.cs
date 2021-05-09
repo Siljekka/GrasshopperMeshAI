@@ -76,6 +76,7 @@ namespace MeshPoints.QuadRemesh
             if (!DA.GetData(1, ref numberElementsToRemesh)) return; 
             if (!DA.GetData(2, ref performeLocalSmoothing)) return; 
             if (!DA.GetData(3, ref iterationsToPerformBeforeStop)) return;
+            if (numberElementsToRemesh == 0 | iterationsToPerformBeforeStop == 0) return;
 
 
 
@@ -273,8 +274,13 @@ namespace MeshPoints.QuadRemesh
 
             // Assign properties to surfaceMesh:
             SmartMesh surfaceMesh = new SmartMesh(nodes, elements, colorMesh, "Surface");
-            
+
             #endregion End Code
+
+
+
+            List<qNode> nodesTest = quadElement.GetNodesOfElement();
+            nodesTest[0].Coordinate = nodesTest[0].Coordinate + new Vector3d(1, 1, 0);
 
 
             DA.SetDataList(0, frontEdges);
@@ -284,9 +290,7 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-            //DA.SetData(7, avgQuality);
-            //DA.SetData(8, badestQuality);
-            //DA.SetData(9, surfaceMesh.Mesh);
+            DA.SetData(7, nodesTest);
 
 
             /*
@@ -589,7 +593,6 @@ namespace MeshPoints.QuadRemesh
 
             return edgeState;
         }
-       
         private Tuple<qEdge, int[]> SelectNextFrontEdge(List<qEdge> frontEdges)
         {
             // summary: select next front edge with the hierarchy: list -> lowest level -> shortest length and switch to neighbor if large transision
@@ -2264,7 +2267,6 @@ namespace MeshPoints.QuadRemesh
             }
             return false;
         }
-
         private void Seam(qEdge rightEdgeToSeam, qEdge leftEdgeToSeam, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
         {
             // summary: seam right edge and left edge together to a new seam edge with the adjacent quad elements
