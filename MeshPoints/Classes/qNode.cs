@@ -11,6 +11,7 @@ namespace MeshPoints.Classes
     {
         public Point3d Coordinate { get; set; }
         public bool BoundaryNode { get; set; }
+        public bool OBS { get; set; }
 
         // Constructors:
         public qNode()
@@ -109,7 +110,18 @@ namespace MeshPoints.Classes
 
             return triangleElementsNoDublicates;
         }
-
+        public List<qElement> GetConnectedElements(List<qEdge> globalEdgeList)
+        {
+            qNode node = this;
+            List<qElement> connectedElements = new List<qElement>();
+            List<qEdge> connectedEdges = node.GetConnectedEdges(globalEdgeList);
+            foreach (qEdge edge in connectedEdges)
+            {
+                if (!connectedElements.Contains(edge.Element1)) { connectedElements.Add(edge.Element1); }
+                if (!connectedElements.Contains(edge.Element2)) { connectedElements.Add(edge.Element2); }
+            }
+            return connectedElements;
+        }
 
     }
 }

@@ -25,8 +25,8 @@ namespace MeshPoints.Tools
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Surface", "srf", "Surface to modify", GH_ParamAccess.item);
-            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
-            pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction. Gene Count: 4. Range: -1 to 1.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction. Gene Count: 4. Range: -1 to 1.", GH_ParamAccess.list);
         }
 
         /// <summary>
