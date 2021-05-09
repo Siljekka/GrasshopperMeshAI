@@ -132,7 +132,7 @@ namespace MeshPoints
             get
             {
                 //You can add image files to your project resources and access them like this:
-                return Properties.Resources.mountain;
+                return null;
             }
         }
 

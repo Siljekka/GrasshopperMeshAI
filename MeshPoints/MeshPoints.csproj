@@ -92,6 +92,11 @@
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
     <Compile Include="Classes\FEM.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="Tools\CreateData.cs" />
     <Compile Include="CreateMesh\CreateSolidMesh.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
@@ -107,7 +112,7 @@
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="Mesh_outdated\DeconstructMesh2D.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
-    <Compile Include="Tools\GH_DataToExcel.cs" />
+    <Compile Include="Tools\DataToExcel.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
     <Compile Include="MoveNodes\MoveNodes.cs" />
@@ -122,11 +127,6 @@
     <Compile Include="Tools\MeshPointsInfo.cs" />
     <Compile Include="Tools\IsSweepable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
     <Compile Include="Classes\qEdge.cs" />
     <Compile Include="Classes\qElement.cs" />
     <Compile Include="QuadRemesh\AnalyzeTriangleMesh.cs" />
@@ -146,28 +146,30 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources\test.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Properties\Resources\Abaqus.png" />
-    <Content Include="Properties\Resources\Icon-CreateTriangleMesh.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructNode.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructQEdge.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructQElement.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructQNode.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructSolidElement.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructSolidMesh.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructSurfaceElement.png" />
-    <Content Include="Properties\Resources\Icon-DeconstructSurfaceMesh.png" />
-    <Content Include="Properties\Resources\Icon-MeshQualiy.png" />
-    <Content Include="Properties\Resources\Icon-MoveSolidMeshVertices.png" />
-    <Content Include="Properties\Resources\Icon-MoveSurfaceMeshVertices.png" />
     <Content Include="Properties\Resources\Icon-QuadRemesh.png" />
-    <Content Include="Properties\Resources\Icon-SolidMesh.png" />
-    <Content Include="Properties\Resources\Icon-SurfaceMesh.png" />
+    <Content Include="Properties\Resources\Icon_CreateData.png" />
+    <Content Include="Properties\Resources\Icon_DecElement.png" />
+    <Content Include="Properties\Resources\Icon_DecGeometry.png" />
+    <Content Include="Properties\Resources\Icon_DecNode.png" />
+    <Content Include="Properties\Resources\Icon_DecQEdge.png" />
+    <Content Include="Properties\Resources\Icon_DecQElement.png" />
+    <Content Include="Properties\Resources\Icon_DecQNode.png" />
+    <Content Include="Properties\Resources\Icon_DecQuality.png" />
+    <Content Include="Properties\Resources\Icon_DecSmartMesh.png" />
+    <Content Include="Properties\Resources\Icon_Excel.png" />
+    <Content Include="Properties\Resources\Icon_INP.png" />
+    <Content Include="Properties\Resources\Icon_MapPoints.png" />
+    <Content Include="Properties\Resources\Icon_MergeNodes.png" />
+    <Content Include="Properties\Resources\Icon_MoveCorners.png" />
+    <Content Include="Properties\Resources\Icon_MoveNodes.png" />
     <Content Include="Properties\Resources\Icon_NormalizeSurface.png" />
-    <Content Include="Properties\Resources\MeshQuality.png" />
-    <Content Include="Properties\Resources\mountain.png" />
+    <Content Include="Properties\Resources\Icon_Quality.png" />
+    <Content Include="Properties\Resources\Icon_Solid.png" />
+    <Content Include="Properties\Resources\Icon_Surface.png" />
+    <Content Include="Properties\Resources\Icon_SweepSolid.png" />
+    <Content Include="Properties\Resources\Icon_Triangle.png" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

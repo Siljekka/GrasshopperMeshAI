@@ -6,6 +6,7 @@ using MeshPoints.Classes;
 using System.Text;
 using MathNet;
 using System.Linq;
+using System.IO;
 
 namespace MeshPoints.Tools
 {
@@ -15,7 +16,7 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the CreateData class.
         /// </summary>
         public CreateData()
-          : base("CreateCSV (Quality)", "data",
+          : base("Create Data", "data",
               "Export data to CSV file.",
               "SmartMesh", "Tools")
         {
@@ -27,15 +28,14 @@ namespace MeshPoints.Tools
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("SmartMesh", "m", "Surface mesh.", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Coordinate structure", "cs", "1: feautre for each x and y node coordinate. 2: one feature for all nodes. 3: Input to NN Mesh.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("filePath", "fp", "File path to where data are saved", GH_ParamAccess.item);
-            pManager.AddBooleanParameter("WriteData", "w", "True: data is written to file, False: data is not written to file.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Structure", "cs", "1: feautre for each x and y node coordinate. 2: one feature for all nodes. 3: Input to NN Mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("FilePath", "fp", "File path to where data are saved", GH_ParamAccess.item);
+            pManager.AddBooleanParameter("Save", "w", "True: data is written to file, False: data is not written to file.", GH_ParamAccess.item);
             pManager.AddGenericParameter("AvgQuality", "avgQ", "Average quality of mesh.", GH_ParamAccess.item);
             pManager.AddGenericParameter("MinQuality", "minQ", "Minimum quality of mesh.", GH_ParamAccess.item);
             pManager.AddGenericParameter("TargetLength", "target", "Target length of mesh.", GH_ParamAccess.item);
             pManager[5].Optional = true;
             pManager[6].Optional = true;
-
         }
 
         /// <summary>
@@ -72,16 +72,22 @@ namespace MeshPoints.Tools
             if (!DA.GetData(1, ref structureType)) return;
             if (!DA.GetData(2, ref filePath)) return;
             if (!DA.GetData(4, ref avgQuality)) return;
-            if (structureType == 3 & !DA.GetData(5, ref minQuality) | !DA.GetData(6, ref target)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Must have input minQuality and target when structureType is 3."); return; }
+            if (structureType == 3 & (!DA.GetData(5, ref minQuality) | !DA.GetData(6, ref target))) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Must have input minQuality and target when structureType is 3."); return; }
 
             StringBuilder stringBuilder = new StringBuilder();
+            StringBuilder header = new StringBuilder();
             List<Node> nodes = mesh.Nodes;
 
             if (writeData)
             {
-
                 if (structureType == 1)
                 {
+                    // 0. Add header
+                    if (new FileInfo(@filePath).Length == 0)
+                    {
+                        header = AddHeader(mesh, filePath, 1);
+                    }
+
                     // 1. Add quality measure to string.
                     double qualityRound = Math.Round(avgQuality, 3);
                     stringBuilder.Append(String.Format("{0}", qualityRound));
@@ -153,11 +159,15 @@ namespace MeshPoints.Tools
                             AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Check scaling. Coordinate value larger than 9.9.");
                         }
                     }
-
-
                 }
                 else if (structureType == 3)
                 {
+                    // 0. Add header
+                    if (new FileInfo(@filePath).Length == 0)
+                    {
+                        header = AddHeader(mesh, filePath, 3);
+                    }
+
                     // 1. Add corner nodes of surface to string.
                     List<Point3d> points = new List<Point3d>();
                     foreach (Node node in mesh.Nodes)
@@ -176,7 +186,7 @@ namespace MeshPoints.Tools
                     stringBuilder.Append(String.Format(",{0}", avgQuality));
 
                     // 3. Add minimum quality
-                    stringBuilder.Append(String.Format(",{0}", Math.Round(minQuality,3)));
+                    stringBuilder.Append(String.Format(",{0}", Math.Round(minQuality, 3)));
 
                     // 4. Add target edge length
                     stringBuilder.Append(String.Format(",{0}", target));
@@ -187,20 +197,145 @@ namespace MeshPoints.Tools
                     // 2. Add each x- and y- coordinate of nodes
                     for (int i = 0; i < nodes.Count; i++)
                     {
-                        //if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
+                        if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
                         double x = Math.Round(nodes[i].Coordinate.X, 2);
                         double y = Math.Round(nodes[i].Coordinate.Y, 2);
                         string text = String.Format(",{0},{1}", x, y); // todo: fix Z?
                         stringBuilder.Append(text);
                     }
                 }
+                else if (structureType == 4)
+                {
+                    // 0. Add header
+                    if (new FileInfo(@filePath).Length == 0)
+                    {
+                        header = AddHeader(mesh, filePath, 4);
+                    }
+
+                    // 1. Add corner nodes of surface to string.
+                    List<Point3d> points = new List<Point3d>();
+                    foreach (Node node in mesh.Nodes)
+                    {
+                        if (node.BC_U & node.BC_V)
+                        {
+                            points.Add(node.Coordinate);
+                        }
+                    }
+                    stringBuilder.Append(String.Format("{0},{1}", points[0].X, points[0].Y));
+                    stringBuilder.Append(String.Format(",{0},{1}", points[1].X, points[1].Y));
+                    stringBuilder.Append(String.Format(",{0},{1}", points[3].X, points[3].Y));
+                    stringBuilder.Append(String.Format(",{0},{1}", points[2].X, points[2].Y));
+
+                    // 2. Add average quality
+                    stringBuilder.Append(String.Format(",{0}", avgQuality));
+
+                    // 3. Add minimum quality
+                    stringBuilder.Append(String.Format(",{0}", Math.Round(minQuality, 3)));
+
+                    // 4. Add number of nodes
+                    stringBuilder.Append(String.Format(",{0}", mesh.Nodes.Count));
+
+                    // 5. Add number of inner nodes
+                    int counter = 0;
+                    foreach (Node node in mesh.Nodes)
+                    {
+                        if (!node.BC_U | !node.BC_V)
+                        {
+                            counter++;
+                        }
+                    }
+                    stringBuilder.Append(String.Format(",{0}", counter));
+
+                    // 6. Add each x- and y- coordinate of nodes
+                    for (int i = 0; i < nodes.Count; i++)
+                    {
+                        if (nodes[i].BC_U | nodes[i].BC_V) { continue; }
+                        double x = Math.Round(nodes[i].Coordinate.X, 2);
+                        double y = Math.Round(nodes[i].Coordinate.Y, 2);
+                        string text = String.Format(",{0},{1}", x, y); // todo: fix Z?
+                        stringBuilder.Append(text);
+                    }
+                }
+
                 // 4. Make CSV-file
                 var data = Convert.ToString(stringBuilder);
-                WriteTextFile(data, filePath);
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@filePath, true))
+                {
+                    if (new FileInfo(@filePath).Length == 0) { var headerText = Convert.ToString(header); file.WriteLine(headerText); }
+                    file.WriteLine(data);
+                }
+
+                //WriteTextFile(data, filePath);
             }
             else { return; }
         }
+        private StringBuilder AddHeader(SmartMesh mesh, string filePath, int structureType)
+        {
+            StringBuilder header = new StringBuilder();
+            if (structureType == 1)
+            {
+                header.Append("avgQuality");
+                int nodes = 1;
+                for (int i = 0; i < mesh.Nodes.Count; i++)
+                {
+                    if (mesh.Nodes[i].BC_U & mesh.Nodes[i].BC_V) { continue; }
+                    header.Append(String.Format(",x{0},y{0}", nodes));
+                    nodes++;
+                }
+            }
+            else if (structureType == 3)
+            {
+                int corners = 1;
+                foreach (Node node in mesh.Nodes)
+                {
+                    if (node.BC_U & node.BC_V)
+                    {
+                        if (new FileInfo(@filePath).Length == 0) { header.Append(String.Format("x{0},y{0},", corners)); }
+                        corners++;
+                    }
+                }
 
+                header.Append("avgQuality,minQuality");
+                header.Append(",targetEdgeLength");
+                header.Append(",totalNodes");
+                int nodes = 1;
+                for (int i = 0; i < mesh.Nodes.Count; i++)
+                {
+                    if (mesh.Nodes[i].BC_U & mesh.Nodes[i].BC_V) { continue; }
+                    header.Append(String.Format(",x{0},y{0}", nodes));
+                    nodes++;
+                }
+            }
+            else if (structureType == 4)
+            {
+                // 1. For corners
+                int corners = 1;
+                foreach (Node node in mesh.Nodes)
+                {
+                    if (node.BC_U & node.BC_V)
+                    {
+                        if (new FileInfo(@filePath).Length == 0) { header.Append(String.Format("x{0},y{0},", corners)); }
+                        corners++;
+                    }
+                }
+
+                // 2. For quality and # nodes
+                header.Append("avgQuality,minQuality");
+                header.Append(",totalNodes");
+                header.Append(",innerNodes");
+
+                // 3. For inner nodes
+                int innerNodes = 1;
+                for (int i = 0; i < mesh.Nodes.Count; i++)
+                {
+                    if (mesh.Nodes[i].BC_U | mesh.Nodes[i].BC_V) { continue; }
+                    header.Append(String.Format(",x{0},y{0}", innerNodes));
+                    innerNodes++;
+                }
+            }
+            return header;
+        }
+        // Referer til Youtube-video
         private void WriteTextFile(string variable, string filepath)
         {
             try
@@ -225,7 +360,7 @@ namespace MeshPoints.Tools
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_CreateData;
             }
         }
 

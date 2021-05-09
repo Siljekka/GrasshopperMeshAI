@@ -797,7 +797,7 @@ namespace MeshPoints.Tools
         {
             get
             {
-                return Properties.Resources.MeshQuality;
+                return Properties.Resources.Icon_Quality;
             }
         }
 
