@@ -15,7 +15,7 @@ namespace MeshPoints.Tools
         public MergeSmartMesh()
           : base("Merge SmartMesh", "merge",
               "Merge multiple SmartMesh to one SmartMesh",
-              "MyPlugIn", "Tools")
+              "SmartMesh", "Tools")
         {
         }
 
