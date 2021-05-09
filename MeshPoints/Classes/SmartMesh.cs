@@ -53,6 +53,42 @@ namespace MeshPoints.Classes
         }
 
         // Methods
+        public void CreateNodes(List<Point3d> meshPoints, int u, int v, int w)
+        {
+            List<Node> nodes = new List<Node>();
+            int id = 0;
+            int nu = u + 1; // number nodes in u dir
+            int nv = v + 1; // number nodes in v dir 
+            int nw = w + 1; // number nodes in w dir 
+
+            for (int i = 0; i < nw; i++)
+            {
+                int row = 0;
+                int column = 0;
+                for (int j = 0; j < (nu * nv); j++)
+                {
+                    bool BC_U = false;
+                    bool BC_V = false;
+                    bool BC_W = false;
+
+                    if (column == 0 | column == nu - 1) { BC_U = true; } // assign BCU
+                    if (row == 0 | row == nv - 1) { BC_V = true; } // assign BCV
+                    if (i == 0 | i == nw - 1) { BC_W = true; } // assign BCW
+
+                    Node node = new Node(id, meshPoints[j + i * (nu * nv)], BC_U, BC_V, BC_W);
+                    id++;
+
+                    column++;
+                    if (column == nu)
+                    {
+                        row++;
+                        column = 0;
+                    }
+                    nodes.Add(node);
+                }
+            }
+            this.Nodes = nodes;
+        }
         public void CreateQuadElements() 
         {
             List<Node> nodes = this.Nodes;

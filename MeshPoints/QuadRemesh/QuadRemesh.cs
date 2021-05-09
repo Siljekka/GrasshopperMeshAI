@@ -10,12 +10,12 @@ using System.Drawing;
 
 namespace MeshPoints.QuadRemesh
 {
-    public class AnalyzeTriangleMesh : GH_Component
+    public class QuadRemesh : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the AnalyzeTriangleMesh class.
         /// </summary>
-        public AnalyzeTriangleMesh()
+        public QuadRemesh()
           : base("Quad Remesh", "atm",
               "Remesh from triangle mesh to quadrilateral mesh.",
               "SmartMesh", "QuadRemesh")

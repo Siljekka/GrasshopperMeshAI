@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MeshPoints</RootNamespace>
     <AssemblyName>MeshPoints</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <NuGetPackageImportStamp>
@@ -115,7 +115,8 @@
     <Compile Include="Tools\DataToExcel.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
-    <Compile Include="MoveNodes\MoveNodes.cs" />
+    <Compile Include="Tools\MoveGrids.cs" />
+    <Compile Include="Tools\MoveNodes.cs" />
     <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
     <Compile Include="Classes\Mesh2D.cs" />
     <Compile Include="Classes\SmartMesh.cs" />
@@ -129,7 +130,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Classes\qEdge.cs" />
     <Compile Include="Classes\qElement.cs" />
-    <Compile Include="QuadRemesh\AnalyzeTriangleMesh.cs" />
+    <Compile Include="QuadRemesh\QuadRemesh.cs" />
     <Compile Include="CreateMesh\SweepSmartMesh.cs" />
     <Compile Include="QuadRemesh\DeconstructQEdge.cs" />
     <Compile Include="QuadRemesh\DeconstructQElement.cs" />
