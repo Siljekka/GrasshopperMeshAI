@@ -8,13 +8,13 @@ using System.IO;
 
 namespace MeshPoints.Tools
 {
-    public class GH_DataToExcel : GH_Component
+    public class DataToExcel : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the GH_DataToExcel class.
         /// </summary>
-        public GH_DataToExcel()
-          : base("GH_DataToExcel", "excel",
+        public DataToExcel()
+          : base("DataToExcel", "excel",
               "Create data file that can be imported to excel.", //todo: fix description
               "SmartMesh", "Tools")
         {
