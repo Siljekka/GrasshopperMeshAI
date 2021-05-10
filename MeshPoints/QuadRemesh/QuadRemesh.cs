@@ -241,9 +241,6 @@ namespace MeshPoints.QuadRemesh
                 }
 
 
-
-
-
                 //________________ quadrilateral formation________________
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList, frontEdges);
@@ -258,7 +255,10 @@ namespace MeshPoints.QuadRemesh
                 // to do: apply local smoothing for seamAngle
                 // to do: temporay solution for E_frontFail
             }
+
+            DoGlobalSmoothing(globalEdgeList, globalElementList);
             
+
             // ___________Transform to main mesh classes_______________
             var meshProperties = ConvertToMainMeshClasses(globalElementList);
             List<Node> nodes = meshProperties.Item1;
@@ -279,25 +279,18 @@ namespace MeshPoints.QuadRemesh
 
 
 
-            List<qNode> nodesTest = quadElement.GetNodesOfElement();
-            nodesTest[0].Coordinate = nodesTest[0].Coordinate + new Vector3d(1, 1, 0);
-
-
+           
             DA.SetDataList(0, frontEdges);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
             DA.SetData(3, quadElement);
             DA.SetData(4, E_front);
-            DA.SetData(5, E_k_left);
-            DA.SetData(6, E_k_right);
-            DA.SetData(7, nodesTest);
+            //DA.SetData(5, vec);
+            /*DA.SetDataList(6, nodesTest);
+            DA.SetDataList(7, v);
+            DA.SetDataList(8, p);
+            DA.SetData(9, e);*/
 
-
-            /*
-
-            DA.SetData(7, vectorLeft);
-            DA.SetData(8, vectorRight);
-            */
         }
 
         #region Methods
@@ -3338,8 +3331,8 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> globalEdgeListCopy = new List<qEdge>(globalEdgeList);
             List<qEdge> connectedEdges = smoothNode.GetConnectedEdges(globalEdgeListCopy);
 
-            for (int i = 0; i < connectedEdges.Count; i++) // silje comment: fjerne denne loopen?
-            {
+            //for (int i = 0; i < connectedEdges.Count; i++) // silje comment: fjerne denne loopen?
+            //{
                 foreach (qEdge edge in connectedEdges)
                 {
                     int id = globalEdgeListCopy.IndexOf(edge);
@@ -3371,7 +3364,7 @@ namespace MeshPoints.QuadRemesh
                     oldEdges.Add(globalEdgeListCopy[id]);
                     //todo: else { add runtimemessage }
                 }
-            }
+            //}
             return Tuple.Create(oldEdges, newEdges);
         }
         private void UpdateGlobalElementList_ChangedEdges(List<qEdge> newEdges, List<qEdge> oldEdges, List<qElement> globalElementList)
@@ -3875,14 +3868,14 @@ namespace MeshPoints.QuadRemesh
             int n = 0;
 
             bool continueSmooth = true;
-            while (continueSmooth | n < 100)
+            while (continueSmooth)
             {
                 bool nodeIsMoved = false;
-
+                maxDistanceMoved = 0;
                 List<qNode> smoothableNodesCopy = new List<qNode>(smoothableNodes);
                 foreach (qNode node in smoothableNodesCopy)
                 {
-                    if (node.BoundaryNode | !smoothableNodesCopy.Contains(node)) { continue; } // todo: forlag: ta BC-edge og flytt vektor.
+                    if (node.BoundaryNode | !smoothableNodesCopy.Contains(node)) { smoothableNodes.Remove(node); continue; } // todo: forlag: ta BC-edge og flytt vektor.
                     if (iterations == 1) { node.OBS = false; }
 
                     // 4.1. Perform Constrained Laplacian Smooth
@@ -3896,7 +3889,7 @@ namespace MeshPoints.QuadRemesh
                         if (distanceMoved < moveTolerance)
                         {
                             movedNode = new qNode(node.Coordinate, node.BoundaryNode); // reset node to old node
-                            globalNodeList.Remove(node);
+                            smoothableNodes.Remove(node);
                         }
                         else
                         {
@@ -3908,7 +3901,7 @@ namespace MeshPoints.QuadRemesh
                             nodeIsMoved = true;
                         }
                     }
-
+                    
                     // 4.2 Perform Optimization-based Smoothing
                     if (iterations >= 2)
                     {
@@ -3928,6 +3921,7 @@ namespace MeshPoints.QuadRemesh
 
                             if (movedNode.OBS)
                             {
+                                node.OBS = true;
                                 var update = UpdateGlobalEdgeList_NodePosition(node, movedNode.Coordinate, globalEdgeList);
                                 UpdateGlobalElementList_ChangedEdges(update.Item1, update.Item2, globalElementList);
                                 UpdateSmoothableNodeList(node, smoothableNodes, globalEdgeList);
@@ -3935,6 +3929,7 @@ namespace MeshPoints.QuadRemesh
                                 if (distanceMoved > maxDistanceMoved) { maxDistanceMoved = distanceMoved; }
                                 nodeIsMoved = true;
                             }
+                            else { node.OBS = false; }
                         }
                     }
                 }
@@ -3943,7 +3938,7 @@ namespace MeshPoints.QuadRemesh
                 n++;
             }
         }
-        private double CalculateDistortionMetric(qElement element) // move to qElement
+        private double CalculateDistortionMetric(qElement element) //OK  move to qElement
         {
             double my = 0; // distortion metric
             if (!element.IsQuad)
@@ -3956,29 +3951,29 @@ namespace MeshPoints.QuadRemesh
                 int invertedTriangles = 0;
                 for (int i = 0; i < 4; i++)
                 {
-                    if (i == 1)
+                    if (i == 0)
                     {
                         double a = DistorionMetricTriangle(0, 1, 3, element);
                         alphas.Add(a);
-                        if (my < 0) { invertedTriangles++; }
+                        if (a < 0) { invertedTriangles++; }
                     }
-                    else if (i == 2)
+                    else if (i == 1)
                     {
                         double a = DistorionMetricTriangle(1, 2, 3, element);
                         alphas.Add(a);
-                        if (my < 0) { invertedTriangles++; }
+                        if (a < 0) { invertedTriangles++; }
                     }
-                    else if (i == 3)
+                    else if (i == 2)
                     {
                         double a = DistorionMetricTriangle(0, 1, 2, element);
                         alphas.Add(a);
-                        if (my < 0) { invertedTriangles++; }
+                        if (a < 0) { invertedTriangles++; }
                     }
                     else 
                     {
                         double a = DistorionMetricTriangle(0, 2, 3, element);
                         alphas.Add(a);
-                        if (my < 0) { invertedTriangles++; }
+                        if (a < 0) { invertedTriangles++; }
                     }
                 }
 
@@ -4039,7 +4034,7 @@ namespace MeshPoints.QuadRemesh
                 }
             }
             return alpha;
-        }
+        } // OK
         private double CoincidentNodes(qElement element)
         {
             List<qNode> elementNodes = element.GetNodesOfElement();
@@ -4050,12 +4045,11 @@ namespace MeshPoints.QuadRemesh
             nodeDistance.Add((elementNodes[2].Coordinate - elementNodes[1].Coordinate).Length);
             nodeDistance.Add((elementNodes[3].Coordinate - elementNodes[1].Coordinate).Length);
             nodeDistance.Add((elementNodes[3].Coordinate - elementNodes[2].Coordinate).Length);
-            double distance = nodeDistance.Max();
-            return distance;
-        }
+            return nodeDistance.Min();
+        } // OK
         private qNode ConstrainedLaplacianSmooth(qNode node, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
-            // 0. Defining variables used to check if move is acceptable:
+            /*// 0. Defining variables used to check if move is acceptable:
             int posN = 0;
             int negN = 0;
             int upN = 0;
@@ -4063,7 +4057,7 @@ namespace MeshPoints.QuadRemesh
             int invN = 0;
             double theta = 0;
             double thetaMax = 200 * Math.PI / 180; // constant chosen
-            double deltaDistMetric = 0;
+            double deltaDistMetric = 0;*/
 
             // 1. Move node with Laplacian smooth
             Vector3d laplacianVector = LaplacianSmooth(node, globalEdgeList);
@@ -4074,16 +4068,29 @@ namespace MeshPoints.QuadRemesh
             // 2. Loop to find final node position
             for (int i = 0; i < 20; i++) // constant proposed in paper: 20
             {
+                // 2.1 Defining variables used to check if move is acceptable:
+                int posN = 0;
+                int negN = 0;
+                int upN = 0;
+                int downN = 0;
+                int invN = 0;
+                double theta = 0;
+                double thetaMax = 200 * Math.PI / 180; // constant chosen
+                double deltaDistMetric = 0;
                 // 2.1. Update edge and element list
-                var update = UpdateGlobalEdgeList_NodePosition(oldNode, newNode.Coordinate, globalEdgeList);
-                UpdateGlobalElementList_ChangedEdges(update.Item1, update.Item2, globalElementList);
-                List<qElement> connectedElements = newNode.GetConnectedElements(globalEdgeList);
+                //var update = UpdateGlobalEdgeList_NodePosition(node, newNode.Coordinate, globalEdgeList);
+                //UpdateGlobalElementList_ChangedEdges(update.Item1, update.Item2, globalElementList);
+                List<qElement> connectedElements = node.GetConnectedElements(globalEdgeList);
                 int N = connectedElements.Count;
 
                 // 2.2. Calculate Acceptance Criteria for each element 
                 foreach (qElement element in connectedElements)
                 {
-                    double newDisMetric = CalculateDistortionMetric(element);
+                    List<qNode> elementNodes = element.GetNodesOfElement();
+                    elementNodes[elementNodes.IndexOf(node)] = newNode;
+                    qElement newElement = CreateElementFromNodes(elementNodes);
+
+                    double newDisMetric = CalculateDistortionMetric(newElement);
                     double oldDisMetric = element.DistortionMetric;
 
                     if (newDisMetric > oldDisMetric)
@@ -4103,11 +4110,11 @@ namespace MeshPoints.QuadRemesh
                     {
                         downN++;
                     }
-                    if (element.IsInverted())
+                    if (newElement.IsInverted())
                     {
                         invN++;
                     }
-                    double testAngle = element.AngleList.Max();
+                    double testAngle = newElement.AngleList.Max();
                     if (testAngle > theta) { theta = testAngle; }
 
                     deltaDistMetric = (newDisMetric - oldDisMetric) + deltaDistMetric;
@@ -4115,12 +4122,14 @@ namespace MeshPoints.QuadRemesh
                 
                 // 2.4. Check node location
                 deltaDistMetric = deltaDistMetric / N;
-                if (negN == N | invN > 0 | downN > posN | deltaDistMetric < -0.05 | theta > thetaMax) // constant as proposed in paper, 
+                if (negN == N | invN > 0 | downN > upN | deltaDistMetric < -0.05 | theta > thetaMax) // constant as proposed in paper, 
                 {
-                    newPoint = new Point3d(oldNode.Coordinate.X + laplacianVector.X * 0.5, oldNode.Coordinate.Y * laplacianVector.X * 0.5, oldNode.Coordinate.Z * laplacianVector.X * 0.5);
+                    laplacianVector = laplacianVector * 0.5;
+                    newPoint = new Point3d(node.Coordinate.X + laplacianVector.X, node.Coordinate.Y + laplacianVector.Y, node.Coordinate.Z + laplacianVector.Z);
                     newNode = new qNode(newPoint, newNode.BoundaryNode);
+                    //if (i == 19) { newNode = node; }
                 }
-                else { break; }
+                else if (posN == N | (upN > 0 & downN == 0) | (upN >= downN & deltaDistMetric > -0.05)) { break; }
             }
             return newNode;
         }
@@ -4135,14 +4144,14 @@ namespace MeshPoints.QuadRemesh
                 vectorSum = vectorSum + vector;
             }
             return vectorSum;
-        }
+        } // OK
         private qNode OptimizationBasedSmoothing(qNode node, double maxModelDimension, List<qEdge> globalEdgeList)
         {
             qNode newNode = new qNode(node.Coordinate, node.BoundaryNode);
             double myMin = 100; // dummy-value
             Vector3d g = Vector3d.Zero;
             List<Vector3d> gi = new List<Vector3d>();
-            List<qElement> connectedElements = newNode.GetConnectedElements(globalEdgeList);
+            List<qElement> connectedElements = node.GetConnectedElements(globalEdgeList);
 
             // 1. Estimate gradient vector for each element connected to node
             double delta = Math.Pow(10, -5) * maxModelDimension; // constant form paper
@@ -4239,8 +4248,8 @@ namespace MeshPoints.QuadRemesh
             {
                 qEdge edge1 = new qEdge(nodes[0], nodes[1]);
                 qEdge edge2 = new qEdge(nodes[1], nodes[2]);
-                qEdge edge3 = new qEdge(nodes[2], nodes[3]);
-                qEdge edge4 = new qEdge(nodes[3], nodes[0]);
+                qEdge edge3 = new qEdge(nodes[3], nodes[0]);
+                qEdge edge4 = new qEdge(nodes[3], nodes[2]);
                 List<qEdge> edgeList = new List<qEdge>() { edge1, edge2, edge3, edge4 };
                 qElement element = new qElement(edgeList);
                 return element;
@@ -4254,9 +4263,82 @@ namespace MeshPoints.QuadRemesh
                 qElement element = new qElement(edgeList);
                 return element;
             }
-        }
+        } // OK
         #endregion
+        /*
+         * private qNode ConstrainedLaplacianSmooth(qNode node, List<qEdge> globalEdgeList, List<qElement> globalElementList)
+        {
+            // 0. Defining variables used to check if move is acceptable:
+            int posN = 0;
+            int negN = 0;
+            int upN = 0;
+            int downN = 0;
+            int invN = 0;
+            double theta = 0;
+            double thetaMax = 200 * Math.PI / 180; // constant chosen
+            double deltaDistMetric = 0;
 
+            // 1. Move node with Laplacian smooth
+            Vector3d laplacianVector = LaplacianSmooth(node, globalEdgeList);
+            Point3d newPoint = new Point3d(node.Coordinate.X + laplacianVector.X, node.Coordinate.Y + laplacianVector.Y, node.Coordinate.Z + laplacianVector.Z);
+            qNode newNode = new qNode(newPoint, node.BoundaryNode);
+            qNode oldNode = new qNode(node.Coordinate, node.BoundaryNode);
+
+            // 2. Loop to find final node position
+            for (int i = 0; i < 20; i++) // constant proposed in paper: 20
+            {
+                // 2.1. Update edge and element list
+                var update = UpdateGlobalEdgeList_NodePosition(node, newNode.Coordinate, globalEdgeList);
+                UpdateGlobalElementList_ChangedEdges(update.Item1, update.Item2, globalElementList);
+                List<qElement> connectedElements = oldNode.GetConnectedElements(globalEdgeList);
+                int N = connectedElements.Count;
+
+                // 2.2. Calculate Acceptance Criteria for each element 
+                foreach (qElement element in connectedElements)
+                {
+                    double newDisMetric = CalculateDistortionMetric(element);
+                    double oldDisMetric = element.DistortionMetric;
+
+                    if (newDisMetric > oldDisMetric)
+                    {
+                        posN++;
+                    }
+                    else if (newDisMetric < oldDisMetric)
+                    {
+                        negN++;
+                    }
+
+                    if ((oldDisMetric < 0 & newDisMetric >= 0) | (oldDisMetric < 0 & newDisMetric > oldDisMetric) | oldDisMetric < 0.05 & newDisMetric >= 0.05) // constant of 0.05 as proposed in paper 
+                    {
+                        upN++;
+                    }
+                    else if ((oldDisMetric >= 0 & newDisMetric < 0) | (oldDisMetric < 0 & newDisMetric < oldDisMetric) | oldDisMetric >= 0.05 & newDisMetric < 0.05) // constant of 0.05 as proposed in paper 
+                    {
+                        downN++;
+                    }
+                    if (element.IsInverted())
+                    {
+                        invN++;
+                    }
+                    double testAngle = element.AngleList.Max();
+                    if (testAngle > theta) { theta = testAngle; }
+
+                    deltaDistMetric = (newDisMetric - oldDisMetric) + deltaDistMetric;
+                }
+                
+                // 2.4. Check node location
+                deltaDistMetric = deltaDistMetric / N;
+                if (negN == N | invN > 0 | downN > posN | deltaDistMetric < -0.05 | theta > thetaMax) // constant as proposed in paper, 
+                {
+                    laplacianVector = laplacianVector * 0.5;
+                    newPoint = new Point3d(oldNode.Coordinate.X + laplacianVector.X, oldNode.Coordinate.Y * laplacianVector.Y, oldNode.Coordinate.Z * laplacianVector.Z);
+                    //node = new qNode(newPoint, newNode.BoundaryNode);
+                }
+                else { break; }
+            }
+            return newNode;
+        }
+         */
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
