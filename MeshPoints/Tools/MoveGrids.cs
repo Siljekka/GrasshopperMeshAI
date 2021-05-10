@@ -46,9 +46,6 @@ namespace MeshPoints.Tools
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            // to do Silje: IKKE FERDIG. Fix is on face og bugs..
-
-
             // Input
             SmartMesh oldMesh = new SmartMesh();
             List<double> genesU = new List<double>();
@@ -62,15 +59,14 @@ namespace MeshPoints.Tools
 
             // Variables
             SmartMesh newMesh = new SmartMesh();
-            List<Node> newNodes = new List<Node>();
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) return;
 
             if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
-            if (genesU.Count < (oldMesh.nu - 2) * 2 * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
-            if (genesV.Count < (oldMesh.nv - 2) * 2 * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase v genes."); return; }
-            if (oldMesh.Type == "Solid" & (genesW.Count < (oldMesh.nw - 2) * (oldMesh.nu - 2) * (oldMesh.nv - 2) * 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase w genes."); return; }
+            if (genesU.Count < (oldMesh.nu - 2) * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
+            if (genesV.Count < (oldMesh.nv - 2) * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase v genes."); return; }
+            if (oldMesh.Type == "Solid" & (genesW.Count < (oldMesh.nw - 2) * (oldMesh.nu - 2) * (oldMesh.nv - 2) )) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase w genes."); return; }
             if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
 
             // 2. Inherit properties from old mesh
@@ -81,65 +77,39 @@ namespace MeshPoints.Tools
             newMesh.Geometry = oldMesh.Geometry;
             Brep brep = oldMesh.Geometry.Brep;
 
-            int Ucounter = 0;
-            int Vcounter = 0;
-            int Wcounter = 0;
-
-            List<Node> oldNodes = new List<Node>(oldMesh.Nodes);
             // 3. Create new nodes
-            for (int i = 0; i < oldMesh.Nodes.Count; i++)
+            List<Point3d> newPoints = new List<Point3d>();
+            double genU = 0;
+            double genV = 0;
+            double genW = 0;
+
+            for (int k = 0; k < oldMesh.nw; k++)
             {
-                Node oldNode = oldMesh.Nodes[i];
+                if (k == 0 | k == oldMesh.nu - 1){ genW = 0;} // if edge grids in w dir
+                else { genW = genesW[k-1]; }
 
-                // b. Get translation of the node.
-                double genU = 0;
-                double genW = 0;
-                double genV = 0;
-                if (oldNode.Type != "Corner")
+                for (int j = 0; j < oldMesh.nv; j++) 
                 {
-                    if (oldMesh.Type == "Surface" & oldNode.Type == "Edge" | oldMesh.Type == "Solid")
+                    if (j == 0 | j == oldMesh.nv - 1) { genV = 0; } // if edge grids in v dir
+                    else { genV = genesV[j-1]; }
+
+                    for (int i = 0; i < oldMesh.nu; i++)
                     {
-                        if (!oldNode.BC_U & Ucounter < genesU.Count) { genU = genesU[Ucounter]; Ucounter++; }
-                        if (!oldNode.BC_V & Vcounter < genesV.Count) { genV = genesV[Vcounter]; Vcounter++; }
-                        if (oldMesh.Type == "Solid" & !oldNode.BC_W & Wcounter < genesW.Count) { genW = genesW[Wcounter]; Wcounter++; }
+                        if (i == 0 | i == oldMesh.nu - 1) { genU = 0; } // if edge grids in u dir
+                        else { genU = genesU[i - 1]; }
 
-                        // b. Get location of new node
-                        Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
-                        Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
-                        Vector3d translationVector = GetNewCoordinateOfNode(i, pointEdge, oldMesh, genU, genV, genW);
+                        int nodeIndex = i + j * oldMesh.nv + k * oldMesh.nu * oldMesh.nv;
 
-                        // update nodes on grid
-                        int idJump = 0;
-                        int numNodes = 0;
-                        if (genU != 0) { numNodes = oldMesh.nu; idJump = oldMesh.nu; }
-                        else if (genV != 0) { numNodes = oldMesh.nv; idJump = 1; }
-                        else { numNodes = oldMesh.nw; idJump = oldMesh.nu* oldMesh.nv; }
-
-                        for (int j = 0; j < numNodes; j++)
-                        {
-                            Point3d pt = oldNodes[j * idJump].Coordinate;
-                            oldNodes[j*idJump].Coordinate = new Point3d(pt.X + translationVector.X, pt.Y + translationVector.Y, pt.Z + translationVector.Z);
-                        }
+                        Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                        Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                        Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW);
+                        newPoints.Add(newPoint);
                     }
                 }
             }
 
-            // from oldNodes to newPoints
-            List<Point3d> newCoordinates = new List<Point3d>();
-            foreach (Node nodeToPoint in oldNodes)
-            {
-                newCoordinates.Add(nodeToPoint.Coordinate);
-            }
-            // Sjekk is on face
-            /*
-            if (IsOnFace) // If node is on face: ensure it stays on face
-            {
-                Brep srf = face.DuplicateFace(false);
-                movedNode = srf.ClosestPoint(movedNode); // "Project" meshPoint to surface.
-            }*/
-
             // 4. Set new nodes and elements
-            newMesh.CreateNodes(newCoordinates, oldMesh.nu-1, oldMesh.nv-1, oldMesh.nw-1);
+            newMesh.CreateNodes(newPoints, oldMesh.nu-1, oldMesh.nv-1, oldMesh.nw-1);
             if (newMesh.Type == "Surface")
             {
                 newMesh.CreateQuadElements();
@@ -212,15 +182,17 @@ namespace MeshPoints.Tools
         /// Move the old node in allowable directions.
         /// </summary>
         /// <returns> Returns coordinates of moved node.</returns>
-        private Vector3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, double genU, double genV, double genW)
+        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, double genU, double genV, double genW)
         {
+            Point3d movedNode = new Point3d();
             bool IsOnEdge = pointEdge.Item1;
+            bool IsOnFace = pointFace.Item1;
             BrepEdge edge = pointEdge.Item2;
+            BrepFace face = pointFace.Item2;
 
             Vector3d translationVectorU = Vector3d.Zero;
             Vector3d translationVectorV = Vector3d.Zero;
             Vector3d translationVectorW = Vector3d.Zero;
-            Vector3d translationVector = Vector3d.Zero;
 
             // Translation in x direction
             // 1. if: Node not restrained in x direction and gen positive.
@@ -231,12 +203,12 @@ namespace MeshPoints.Tools
             if (genU > 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genU; // make vector translating node in U-direction
-                if (IsOnEdge) { translationVector = EdgeNode(edge, mesh, genU, i, i + 1); return translationVector; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i + 1); return movedNode; } // make meshPoint
             }
             else if (genU < 0 & !mesh.Nodes[i].BC_U)  // 2. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - 1].Coordinate) * genU;
-                if (IsOnEdge) { translationVector = EdgeNode(edge, mesh, genU, i, i - 1); return translationVector; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i - 1); return movedNode; } // make meshPoint
             }
             else { translationVectorU = translationVectorU * 0; }  // 3. if
 
@@ -244,12 +216,12 @@ namespace MeshPoints.Tools
             if (genV > 0 & !mesh.Nodes[i].BC_V) // 1. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genV;
-                if (IsOnEdge) { translationVector = EdgeNode(edge, mesh, genV, i, i + mesh.nu); return translationVector; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i + mesh.nu); return movedNode; } // make meshPoint
             }
             else if (genV < 0 & !mesh.Nodes[i].BC_V) // 2. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - mesh.nu].Coordinate) * genV;
-                if (IsOnEdge) { translationVector = EdgeNode(edge, mesh, genV, i, i - mesh.nu); return translationVector; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i - mesh.nu); return movedNode; } // make meshPoint
             }
             else { translationVectorV = translationVectorV * 0; } // 3. if
 
@@ -260,35 +232,40 @@ namespace MeshPoints.Tools
                 if (genW > 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genW;
-                    if (IsOnEdge) { translationVector = EdgeNode(edge, mesh, genW, i, i + (mesh.nu) * (mesh.nv)); return translationVector; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
                 }
                 else if (genW < 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genW;
-                    if (IsOnEdge) { translationVector = EdgeNode(edge, mesh, genW, i, i - (mesh.nu) * (mesh.nv)); return translationVector; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
                 }
                 else { translationVectorW = translationVectorW * 0; } // 3. if                            
             }
 
+            // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
             double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
-
-            translationVector = new Vector3d
+            movedNode = new Point3d
                 (
-                (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
-                (translationVectorU.Y + translationVectorV.Y + translationVectorW.Y) * overlapTolerance,
-                (translationVectorU.Z + translationVectorV.Z + translationVectorW.Z) * overlapTolerance
+                mesh.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
+                mesh.Nodes[i].Coordinate.Y + (translationVectorU.Y + translationVectorV.Y + translationVectorW.Y) * overlapTolerance,
+                mesh.Nodes[i].Coordinate.Z + (translationVectorU.Z + translationVectorV.Z + translationVectorW.Z) * overlapTolerance
                 );
-           
-            return translationVector;
+
+            if (IsOnFace) // If node is on face: ensure it stays on face
+            {
+                Brep srf = face.DuplicateFace(false);
+                movedNode = srf.ClosestPoint(movedNode); // "Project" meshPoint to surface.
+            }
+            return movedNode;
         }
+
 
         /// <summary>
         /// Make new node if point is on edge.
         /// </summary>
         /// <returns> Returns coordinates of moved node on edge.</returns>
-        private Vector3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop)
+        private Point3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop)
         {
-            Point3d oldNode = mesh.Nodes[start].Coordinate;
             Point3d movedNode = new Point3d();
             Curve edgeCurve1;
             Curve edgeCurve2;
@@ -322,7 +299,7 @@ namespace MeshPoints.Tools
                 else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.49 * genes)); } // move node along edgeCurve
             }
 
-            return movedNode-oldNode;
+            return movedNode;
         }
 
         #endregion
