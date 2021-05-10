@@ -59,6 +59,7 @@ namespace MeshPoints.Tools
 
             // Variables
             SmartMesh newMesh = new SmartMesh();
+            double overlapTolerance = 0.95; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) return;
@@ -102,7 +103,7 @@ namespace MeshPoints.Tools
 
                         Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                         Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
-                        Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW);
+                        Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
                         newPoints.Add(newPoint);
                     }
                 }
@@ -182,7 +183,7 @@ namespace MeshPoints.Tools
         /// Move the old node in allowable directions.
         /// </summary>
         /// <returns> Returns coordinates of moved node.</returns>
-        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, double genU, double genV, double genW)
+        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, double genU, double genV, double genW, double overlapTolerance)
         {
             Point3d movedNode = new Point3d();
             bool IsOnEdge = pointEdge.Item1;
@@ -203,12 +204,12 @@ namespace MeshPoints.Tools
             if (genU > 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genU; // make vector translating node in U-direction
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i + 1); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i + 1, overlapTolerance); return movedNode; } // make meshPoint
             }
             else if (genU < 0 & !mesh.Nodes[i].BC_U)  // 2. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - 1].Coordinate) * genU;
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i - 1); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i - 1, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorU = translationVectorU * 0; }  // 3. if
 
@@ -216,12 +217,12 @@ namespace MeshPoints.Tools
             if (genV > 0 & !mesh.Nodes[i].BC_V) // 1. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genV;
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i + mesh.nu); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i + mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
             else if (genV < 0 & !mesh.Nodes[i].BC_V) // 2. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - mesh.nu].Coordinate) * genV;
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i - mesh.nu); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i - mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorV = translationVectorV * 0; } // 3. if
 
@@ -232,18 +233,17 @@ namespace MeshPoints.Tools
                 if (genW > 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genW;
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i + (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
                 else if (genW < 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genW;
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i - (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
                 else { translationVectorW = translationVectorW * 0; } // 3. if                            
             }
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
-            double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
             movedNode = new Point3d
                 (
                 mesh.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
@@ -264,7 +264,7 @@ namespace MeshPoints.Tools
         /// Make new node if point is on edge.
         /// </summary>
         /// <returns> Returns coordinates of moved node on edge.</returns>
-        private Point3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop)
+        private Point3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop, double overlapTolerance)
         {
             Point3d movedNode = new Point3d();
             Curve edgeCurve1;
@@ -285,18 +285,18 @@ namespace MeshPoints.Tools
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit)
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes));
+                    movedNode = edgeCurve2.PointAtNormalizedLength((0.5 * overlapTolerance * genes));
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.5 * genes)); } // move node along edgeCurve
             }
             else if (genes < 0)
             {
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit)
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength(-(0.49 * genes));
+                    movedNode = edgeCurve2.PointAtNormalizedLength(-(0.5 * overlapTolerance * genes));
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.49 * genes)); } // move node along edgeCurve
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.5 * overlapTolerance * genes)); } // move node along edgeCurve
             }
 
             return movedNode;
