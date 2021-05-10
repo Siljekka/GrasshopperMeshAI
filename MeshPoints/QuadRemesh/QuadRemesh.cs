@@ -144,12 +144,6 @@ namespace MeshPoints.QuadRemesh
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
 
-                if (iterationCounter == 1)
-                {
-                    //break;
-                    //debug
-                }
-
                 //________________ get side edges ________________
                 if (isSpecialCase & !seamAnglePerformed) // if special case
                 {
@@ -205,7 +199,7 @@ namespace MeshPoints.QuadRemesh
                             }
                     }
                 }
-                if (iterationCounter == 57)
+                if (iterationCounter == 74)
                 {
                     //break;
                     //debug
