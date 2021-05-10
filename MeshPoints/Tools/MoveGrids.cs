@@ -86,7 +86,7 @@ namespace MeshPoints.Tools
 
             for (int k = 0; k < oldMesh.nw; k++)
             {
-                if (k == 0 | k == oldMesh.nu - 1){ genW = 0;} // if edge grids in w dir
+                if (k == 0 | k == oldMesh.nw - 1){ genW = 0;} // if edge grids in w dir
                 else { genW = genesW[k-1]; }
 
                 for (int j = 0; j < oldMesh.nv; j++) 
@@ -99,7 +99,7 @@ namespace MeshPoints.Tools
                         if (i == 0 | i == oldMesh.nu - 1) { genU = 0; } // if edge grids in u dir
                         else { genU = genesU[i - 1]; }
 
-                        int nodeIndex = i + j * oldMesh.nv + k * oldMesh.nu * oldMesh.nv;
+                        int nodeIndex = i + j * oldMesh.nu + k * oldMesh.nu * oldMesh.nv;
 
                         Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                         Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
