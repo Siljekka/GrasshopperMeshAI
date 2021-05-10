@@ -131,7 +131,7 @@ namespace MeshPoints.QuadRemesh
                 var edgeState = E_frontAndEdgeState.Item2;
                 unselectedEdge.Unselectable = false;
 
-                bool loopOf4Edges = LoopControll(frontEdges, globalEdgeList, globalElementList);
+                bool loopOf4Edges = LoopControll(frontEdges, globalEdgeList, globalElementList); // to do: legg inn krit når kun 8 edges igjen
                 CleanUpChevorns(globalEdgeList, globalElementList, frontEdges);
 
                 if (loopOf4Edges)
@@ -144,8 +144,13 @@ namespace MeshPoints.QuadRemesh
                 bool seamAnglePerformed = specialCaseValues.Item1;
                 bool isSpecialCase = specialCaseValues.Item2;
 
+                if (seamAnglePerformed)
+                {
+                    continue;
+                }
+
                 //________________ get side edges ________________
-                if (isSpecialCase & !seamAnglePerformed) // if special case
+                if (isSpecialCase) // if special case
                 {
                     E_front = specialCaseValues.Item3;
                     E_k_right = specialCaseValues.Item4;
@@ -176,7 +181,6 @@ namespace MeshPoints.QuadRemesh
                             }
                     }
 
- 
                     // get right edge
                     switch (edgeState[1])
                     {
@@ -199,40 +203,28 @@ namespace MeshPoints.QuadRemesh
                             }
                     }
                 }
-                if (iterationCounter == 74)
-                {
-                    //break;
-                    //debug
-                }
 
                 //________________get top edge________________
-                if (!seamAnglePerformed)
+                if (E_k_left_performed & E_k_right_performed)
                 {
-                    if (E_k_left_performed & E_k_right_performed)
-                    {
-                        var topEdgeValue = GetTopEdge(E_front, E_k_left, E_k_right, globalEdgeList, globalElementList, frontEdges);
-                        E_top = topEdgeValue.Item1;
-                        E_k_left = topEdgeValue.Item2; // in case triangle
-                        E_k_right = topEdgeValue.Item3; // in case traingle
-                        E_top_performed = topEdgeValue.Item4;
-                    }
-                    else { E_top_performed = false; }
-
-  
-                    // If not possible to perform top recovery, skip the selected E_front and select a new front edge
-                    if (!E_top_performed)
-                    {
-                        globalElementList = globalElementListBackUp; // reset changes made in the iteration
-                        globalEdgeList = globalEdgeListBackUp; // reset changes made in the iteration
-                        E_front.Unselectable = true;
-                        unselectedEdge = E_front;
-                        n--;
-                        continue;
-                    }
+                    var topEdgeValue = GetTopEdge(E_front, E_k_left, E_k_right, globalEdgeList, globalElementList, frontEdges);
+                    E_top = topEdgeValue.Item1;
+                    E_k_left = topEdgeValue.Item2; // in case triangle
+                    E_k_right = topEdgeValue.Item3; // in case traingle
+                    E_top_performed = topEdgeValue.Item4;
                 }
+                else { E_top_performed = false; }
 
-
-
+                // If not possible to perform top recovery, skip the selected E_front and select a new front edge
+                if (!E_top_performed)
+                {
+                    globalElementList = globalElementListBackUp; // reset changes made in the iteration
+                    globalEdgeList = globalEdgeListBackUp; // reset changes made in the iteration
+                    E_front.Unselectable = true;
+                    unselectedEdge = E_front;
+                    n--;
+                    continue;
+                }
 
 
                 //________________ quadrilateral formation________________
@@ -244,6 +236,16 @@ namespace MeshPoints.QuadRemesh
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
 
+                // to do: fix....
+                if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1)
+                {
+                    globalElementList = globalElementListBackUp; // reset changes made in the iteration
+                    globalEdgeList = globalEdgeListBackUp; // reset changes made in the iteration
+                    E_front.Unselectable = true;
+                    unselectedEdge = E_front;
+                    n--;
+                    continue;
+                }
 
                 // to do: what if closing front og special case?
                 // to do: apply local smoothing for seamAngle
@@ -270,8 +272,8 @@ namespace MeshPoints.QuadRemesh
 
 
 
-            List<qNode> nodesTest = quadElement.GetNodesOfElement();
-            nodesTest[0].Coordinate = nodesTest[0].Coordinate + new Vector3d(1, 1, 0);
+            //List<qNode> nodesTest = quadElement.GetNodesOfElement();
+            //nodesTest[0].Coordinate = nodesTest[0].Coordinate + new Vector3d(1, 1, 0);
 
 
             DA.SetDataList(0, frontEdges);
@@ -281,7 +283,7 @@ namespace MeshPoints.QuadRemesh
             DA.SetData(4, E_front);
             DA.SetData(5, E_k_left);
             DA.SetData(6, E_k_right);
-            DA.SetData(7, nodesTest);
+            DA.SetData(7, null);
         }
 
         #region Methods
@@ -1040,7 +1042,6 @@ namespace MeshPoints.QuadRemesh
                             {
 
                                 currentLoop.Add(startEdge);
-
                                 // Find next node
                                 nextNode = startEdge.GetOppositeNode(startNode);
 
@@ -1394,79 +1395,6 @@ namespace MeshPoints.QuadRemesh
             }
             else // swap or split
             {
-                /*
-                // Get E0 candidates
-                List<qEdge> connectedFrontEdges = GetFrontEdgesConnectedToNode(N_k, globalEdgeList);
-
-                // Get relevant edges
-                List<qEdge> relevantEdges = new List<qEdge>(connectedFrontEdges);
-                foreach (qEdge edge in E_i_candidates_sorted)
-                {
-                    if (!(edge.Element1.IsQuad & edge.Element2.IsQuad))
-                    {
-                        relevantEdges.Add(edge);
-                    }
-                }
-
-
-                List<double> angleFromV_kToRelevantEdges = new List<double>();
-                foreach (qEdge E_i in relevantEdges)
-                {
-                    Vector3d E_i_vec = GetVectorOfEdgeFromNode(E_i, N_k);
-                    double theta_i = Vector3d.VectorAngle(V_k, E_i_vec, Vector3d.ZAxis); // to do: make more general
-                    angleFromV_kToRelevantEdges.Add(theta_i);
-                }
-
-                double minAngle = 0;
-                int minAngleIndex = 0;
-                List<qEdge> relevantEdges_sorted= new List<qEdge>(); // sorted from smallest to largest angle from V_k ccw
-                numEdges = relevantEdges.Count;
-                for (int j = 0; j < numEdges; j++)
-                {
-                    minAngle = angleFromV_kToRelevantEdges[0];
-                    minAngleIndex = 0;
-                    for (int i = 1; i < angleFromV_kToRelevantEdges.Count; ++i)
-                    {
-                        if (angleFromV_kToRelevantEdges[i] < minAngle)
-                        {
-                            minAngle = angleFromV_kToRelevantEdges[i];
-                            minAngleIndex = i;
-                        }
-                    }
-                    relevantEdges_sorted.Add(relevantEdges[minAngleIndex]);
-                    relevantEdges.RemoveAt(minAngleIndex);
-                    angleFromV_kToRelevantEdges.RemoveAt(minAngleIndex);
-                }
-                relevantEdges_sorted.Add(relevantEdges_sorted[0]);
-
-                List<qEdge> E_0_list = new List<qEdge>();
-                for (int i = 0; i < relevantEdges_sorted.Count - 1; i++)
-                {
-                    qEdge E_1 = relevantEdges_sorted[i];
-                    qEdge E_2 = relevantEdges_sorted[i + 1];
-                     // get edge between the two edges closest to V_k
-                    qNode E_1_NotSharedNode = E_1.GetOppositeNode(N_k);
-                    qNode E_2_NotSharedNode = E_2.GetOppositeNode(N_k);
-                    E_0 = FindEdge(globalEdgeList, E_1_NotSharedNode, E_2_NotSharedNode);
-                    if (E_0 != null)
-                    {
-                        E_0_list.Add(E_0);
-                    }  
-                }
-
-                Vector3d vecCheck1 = GetVectorOfEdgeFromNode(relevantEdges_sorted[0], N_k);
-                Vector3d vecCheck2 = GetVectorOfEdgeFromNode(relevantEdges_sorted[relevantEdges_sorted.Count-1], N_k);
-                Vector3d cross1 = Vector3d.CrossProduct(V_k, vecCheck1);
-                Vector3d cross2 = Vector3d.CrossProduct(V_k, vecCheck2);
-                E_0 = E_0_list[E_0_list.Count - 1];
-
-                if ((cross1.Z * cross2.Z) > 0)
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SideEdge: Split or swap not performed because V_k does not intersect E_0.");
-                    // solution: pick another combination from E_i_candidates
-                }
-
-                */
 
                 // sort edges wrt angle from V_k
                 List<qEdge> connectedFrontEdges = GetFrontEdgesConnectedToNode(N_k, globalEdgeList);
@@ -1555,6 +1483,7 @@ namespace MeshPoints.QuadRemesh
                 if (swapedNodes[0] == N_k) { N_m = swapedNodes[1]; }
                 else { N_m = swapedNodes[0]; }
 
+                //heipådeg
                 // Swap or split
                 double lengthN_kN_m = N_k.Coordinate.DistanceTo(N_m.Coordinate);
                 double beta = Vector3d.VectorAngle(V_k, N_m.Coordinate - N_k.Coordinate);
@@ -1568,7 +1497,7 @@ namespace MeshPoints.QuadRemesh
                 {
                     E_k = SplitEdge(E_0, V_k, N_k, globalEdgeList, globalElementList);
                 }
-
+                //performed = !IsFrontLoopsEven(frontEdges, E_k, globalEdgeList); // to do: slett?
             }
             #endregion
 
@@ -1697,13 +1626,6 @@ namespace MeshPoints.QuadRemesh
 
                 }
             }
-            /* to do: fixslett
-            // fix edge order
-            newElement1.FixElementEdgeAndAngle();
-            newElement2.FixElementEdgeAndAngle();
-            globalElementList.Add(newElement1);
-            globalElementList.Add(newElement2);
-            */
 
             // remove old elements from list of elements
             globalElementList.Remove(oldElement1);
@@ -1966,8 +1888,6 @@ namespace MeshPoints.QuadRemesh
                     return Tuple.Create(E_top, E_k_left, E_k_right, performed);
                 }
             }
-
-            //if (LoopControll(E_k_left, E_k_right)) { } // check if edges are in same loop
 
             var E_topAndPerfomed = EdgeRecoveryProcess( N_c, N_d, globalEdgeList, globalElementList, frontEdges);
             E_top = E_topAndPerfomed.Item1;
@@ -3481,11 +3401,8 @@ namespace MeshPoints.QuadRemesh
             Point3d origo = new Point3d(0, 0, 0);
 
             // Find front edges connected to front node: todo: test if this works as I want.
-            // silje comment: GetFrontEdgesConnectedToNode(Ni, globalEdgeList);
-            List<qEdge> nodeFrontEdges = GetFrontEdgesConnectedToNode(Ni, globalEdgeList);
+            //List<qEdge> nodeFrontEdges = GetFrontEdgesConnectedToNode(Ni, globalEdgeList); // to do: hilde slett?
             List<qEdge> connectedEdges = Ni.GetConnectedEdges(globalEdgeList);
-
-            if (nodeFrontEdges.Count != 2) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, String.Format("LocalSmoothing: Node is connected to {0} front edges", nodeFrontEdges.Count)); }
 
             // Get quads that are connected to node. Todo: check if this do what I want.
             List<qElement> quadElements = Ni.GetQuadsConnectedToNode(globalEdgeList);
