@@ -25,8 +25,8 @@ namespace MeshPoints.Classes
         public qElement(List<qEdge> _edgeList)
         {
             EdgeList = _edgeList;
-            AngleList = CalculateAngles(_edgeList);
-            Contour = GetContourOfElement(_edgeList);
+            CalculateAngles();
+            GetContourOfElement();
 
             if (_edgeList.Count == 4) { IsQuad = true; }
             else { IsQuad = false; }
@@ -39,7 +39,7 @@ namespace MeshPoints.Classes
 
 
         // Methods
-        public List<double> CalculateAngles(List<qEdge> _edgeList)
+        public List<double> CalculateAnglesOld(List<qEdge> _edgeList)// to do: slett
         {
             Vector3d vec1 = Vector3d.Zero;
             Vector3d vec2 = Vector3d.Zero;
@@ -64,14 +64,8 @@ namespace MeshPoints.Classes
             }
             return angList;
         }
-        public void FixElementEdgeAndAngle()
-        {
-            FixEdgeOrder();
-            CalculateAnglesNew();
-        }
 
-
-        public void CalculateAnglesNew()
+        public void CalculateAngles()
         {
             List<qEdge> _edgeList = this.EdgeList;
             List<double> angList = new List<double>();
@@ -102,15 +96,15 @@ namespace MeshPoints.Classes
              this.AngleList = angList;
         }
 
-        public List<Line> GetContourOfElement(List<qEdge> _edgeList)
+        public void GetContourOfElement()
         {
             List<Line> contour = new List<Line>();
-            foreach (qEdge edge in _edgeList)
+            foreach (qEdge edge in this.EdgeList)
             {
                 Line contourLine = new Line(edge.StartNode.Coordinate, edge.EndNode.Coordinate);
                 contour.Add(contourLine);
             }
-            return contour;
+            this.Contour = contour;
         }
         public Point3d GetElementCenter()
         {

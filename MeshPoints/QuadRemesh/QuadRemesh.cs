@@ -438,7 +438,6 @@ namespace MeshPoints.QuadRemesh
                     edgeListElement.Add(globalEdgeList[n]);
                 }
                 element = new qElement(edgeListElement);
-                element.FixEdgeOrder();
                 elementList.Add(element);
             }
             return elementList;
@@ -1671,8 +1670,6 @@ namespace MeshPoints.QuadRemesh
             qElement newElement1 = new qElement(element1edgesNew);
             qElement newElement2 = new qElement(element2edgesNew);
 
-            newElement1.FixEdgeOrder();
-            newElement2.FixEdgeOrder();
             globalElementList.Add(newElement1);
             globalElementList.Add(newElement2);
 
@@ -1915,10 +1912,8 @@ namespace MeshPoints.QuadRemesh
             globalElementList.Remove(E_0.Element2);
             foreach (qElement newElement in newElements)
             {
-                newElement.FixEdgeOrder();
                 globalElementList.Add(newElement);
             }
-
             return E_k;
         }
         private Tuple<qEdge, qEdge, qEdge, bool> GetTopEdge(qEdge E_front, qEdge E_k_left, qEdge E_k_right, List<qEdge> globalEdgeList, List<qElement> globalElementList, List<qEdge> frontEdges)
@@ -2522,13 +2517,7 @@ namespace MeshPoints.QuadRemesh
             qElement newElementFromQuad = new qElement(newElementFromQuadEdges);
             qElement newElementFromTri_part1 = new qElement(newElementFromTriEdges_part1);
             qElement newElementFromTri_part2 = new qElement(newElementFromTriEdges_part2);
-
-            
-            newElementFromQuad.FixEdgeOrder();
-            newElementFromTri_part1.FixEdgeOrder();
-            newElementFromTri_part2.FixEdgeOrder();
-            
-
+        
             List<qEdge> modifiedEdgeListFromRemainingQuad = new List<qEdge>(quadElementOfE_long.EdgeList);
             int indexToUpdate = modifiedEdgeListFromRemainingQuad.IndexOf(E_front);
             if (indexToUpdate == -1)
@@ -2751,12 +2740,6 @@ namespace MeshPoints.QuadRemesh
             qElement newElementFromQuad_part3 = new qElement(newElementFromQuadEdges_part3);
             qElement newElementFromTri_part1 = new qElement(newElementFromTriEdges_part1);
             qElement newElementFromTri_part2 = new qElement(newElementFromTriEdges_part2);
-
-            newElementFromQuad_part1.FixEdgeOrder();
-            newElementFromQuad_part3.FixEdgeOrder();
-            newElementFromQuad_part2.FixEdgeOrder();
-            newElementFromTri_part1.FixEdgeOrder();
-            newElementFromTri_part2.FixEdgeOrder();
 
             // fix elements to new edges
             // fix newEdgeInQuad_part1
@@ -3305,9 +3288,9 @@ namespace MeshPoints.QuadRemesh
                 // to do: dummy solution
                 qElement triangle = new qElement();
                 triangle.EdgeList = connectedTriangles[i].EdgeList;
-                triangle.AngleList = triangle.CalculateAngles(triangle.EdgeList);
+                triangle.CalculateAngles();
                 triangle.IsQuad = false;
-                triangle.Contour = triangle.GetContourOfElement(triangle.EdgeList);
+                triangle.GetContourOfElement();
 
                 int counter = 0;
                 while (triangle.IsInverted() & counter < 1000)
@@ -3356,13 +3339,16 @@ namespace MeshPoints.QuadRemesh
                     int edgeId1 = globalEdgeListCopy[id].Element1.EdgeList.IndexOf(edge);
                     int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
                     globalEdgeList[id].Element1.EdgeList[edgeId1] = globalEdgeList[id];
-                    globalEdgeList[id].Element1.Contour = globalEdgeList[id].Element1.GetContourOfElement(globalEdgeList[id].Element1.EdgeList);
-                    globalEdgeList[id].Element1.AngleList = globalEdgeList[id].Element1.CalculateAngles(globalEdgeList[id].Element1.EdgeList);
+                    
+                    globalEdgeList[id].Element1.GetContourOfElement();
+                    globalEdgeList[id].Element1.CalculateAngles(); // to do:isquad?
+
 
                     globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
-                    globalEdgeList[id].Element2.Contour = globalEdgeList[id].Element2.GetContourOfElement(globalEdgeList[id].Element2.EdgeList);
-                    globalEdgeList[id].Element2.AngleList = globalEdgeList[id].Element2.CalculateAngles(globalEdgeList[id].Element2.EdgeList);
-                    
+                    globalEdgeList[id].Element2.GetContourOfElement();
+                    globalEdgeList[id].Element2.CalculateAngles(); // to do: isquad?
+
+
                     newEdges.Add(globalEdgeList[id]);
                     oldEdges.Add(globalEdgeListCopy[id]);
                     //todo: else { add runtimemessage }
@@ -3386,8 +3372,10 @@ namespace MeshPoints.QuadRemesh
                         int edgeId = oldElement.EdgeList.IndexOf(oldEdge);
 
                         globalElementList[elementId].EdgeList[edgeId] = newEdges[i];
-                        globalElementList[elementId].Contour = globalElementList[elementId].GetContourOfElement(globalElementList[elementId].EdgeList);
-                        globalElementList[elementId].AngleList = globalElementList[elementId].CalculateAngles(globalElementList[elementId].EdgeList);
+                        
+                        globalElementList[elementId].GetContourOfElement();
+                        globalElementList[elementId].CalculateAngles(); // to do: isquad?
+
                     }
                 }
             }
@@ -4239,7 +4227,6 @@ namespace MeshPoints.QuadRemesh
                 qEdge edge4 = new qEdge(nodes[3], nodes[0]);
                 List<qEdge> edgeList = new List<qEdge>() { edge1, edge2, edge3, edge4 };
                 qElement element = new qElement(edgeList);
-                //element.FixElementEdgeAndAngle(); to do: fixslett
                 return element;
             }
             else 
@@ -4249,7 +4236,6 @@ namespace MeshPoints.QuadRemesh
                 qEdge edge3 = new qEdge(nodes[2], nodes[0]);
                 List<qEdge> edgeList = new List<qEdge>() { edge1, edge2, edge3 };
                 qElement element = new qElement(edgeList);
-                //element.FixElementEdgeAndAngle(); to do: fixslett
                 return element;
             }
         }
