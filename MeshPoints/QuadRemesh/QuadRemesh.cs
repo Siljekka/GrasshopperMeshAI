@@ -517,37 +517,7 @@ namespace MeshPoints.QuadRemesh
                 var edgesToOrientate = edge.OrientateNeigborEdges(neigborEdgeToStartNode, neigborEdgeToEndNode);
                 edge.LeftFrontNeighbor = edgesToOrientate.Item1;
                 edge.RightFrontNeighbor = edgesToOrientate.Item2;
-                /* to do: fixslett - slett
-                Point3d midPointEdg = 0.5 * (edge.StartNode.Coordinate + edge.EndNode.Coordinate); // mid point of edge
-
-                Point3d centerPoint = edge.GetFrontElement().GetElementCenter();
-
-                Vector3d centerToMidVector = midPointEdg - centerPoint;
-
-                Vector3d centerToEndNodeVector = edge.EndNode.Coordinate - centerPoint;
-
-                Vector3d centerToStartNodeVector = edge.StartNode.Coordinate - centerPoint;
-
-                double startAngle = Vector3d.VectorAngle(centerToMidVector, centerToStartNodeVector, Vector3d.ZAxis); // todo: make normal more general
-
-                double endAngle = Vector3d.VectorAngle(centerToMidVector, centerToEndNodeVector, Vector3d.ZAxis); // todo: make normal more general
-
-
-                if (endAngle < startAngle)
-                {
-                    edge.LeftFrontNeighbor = neigborEdgeToStartNode;
-                    edge.RightFrontNeighbor = neigborEdgeToEndNode;
-                }
-                else
-                {
-                    edge.LeftFrontNeighbor = neigborEdgeToEndNode;
-                    edge.RightFrontNeighbor = neigborEdgeToStartNode;
-                }
-                */
             }
-
-        
-
             return;
         }
         Tuple<List<qEdge>, List<qEdge>, List<qEdge>, List<qEdge>> CreateEdgeStateList(List<qEdge> frontEdges)
@@ -1887,8 +1857,7 @@ namespace MeshPoints.QuadRemesh
             for (int i = 0; i < 4; i++)
             {
                 qElement newElement = newElements[i];
-                qEdge keptEdge = newElement.EdgeList[2]; // to do: fixslett? nødvendig
-                //qEdge keptEdge = keptEdges[i];
+                qEdge keptEdge = keptEdges[i];
                 if (i < 2) // if element 1 or 2: replace oldElement 
                 {
                     if (keptEdge.Element1 == elementWithN_k)
@@ -2554,9 +2523,11 @@ namespace MeshPoints.QuadRemesh
             qElement newElementFromTri_part1 = new qElement(newElementFromTriEdges_part1);
             qElement newElementFromTri_part2 = new qElement(newElementFromTriEdges_part2);
 
+            
             newElementFromQuad.FixEdgeOrder();
             newElementFromTri_part1.FixEdgeOrder();
             newElementFromTri_part2.FixEdgeOrder();
+            
 
             List<qEdge> modifiedEdgeListFromRemainingQuad = new List<qEdge>(quadElementOfE_long.EdgeList);
             int indexToUpdate = modifiedEdgeListFromRemainingQuad.IndexOf(E_front);
@@ -2663,38 +2634,10 @@ namespace MeshPoints.QuadRemesh
                     neigborEdgeToEndNode = sideEdgeCandidate;
                 }
             }
-
             
             var sideEdges= E_front.OrientateNeigborEdges(neigborEdgeToStartNode, neigborEdgeToEndNode);
             E_k_left = sideEdges.Item1;
             E_k_right = sideEdges.Item2;
-
-        /*
-
-        Point3d midPointEdg = 0.5 * (E_front.StartNode.Coordinate + E_front.EndNode.Coordinate); // mid point of edge
-
-        Point3d centerPoint = E_front.GetFrontElement().GetElementCenter();
-
-        Vector3d centerToMidVector = midPointEdg - centerPoint;
-
-        Vector3d centerToEndNodeVector = E_front.EndNode.Coordinate - centerPoint;
-
-        Vector3d centerToStartNodeVector = E_front.StartNode.Coordinate - centerPoint;
-
-        double startAngle = Vector3d.VectorAngle(centerToMidVector, centerToStartNodeVector, Vector3d.ZAxis); // todo: make normal more general
-
-        double endAngle = Vector3d.VectorAngle(centerToMidVector, centerToEndNodeVector, Vector3d.ZAxis); // todo: make normal more general
-
-            if (endAngle < startAngle)
-            {
-                E_k_left = neigborEdgeToStartNode;
-                E_k_right = neigborEdgeToEndNode;
-            }
-            else
-            {
-                E_k_left = neigborEdgeToEndNode;
-                E_k_right = neigborEdgeToStartNode;
-            }*/
 
             return Tuple.Create(E_front, E_k_right, E_k_left);
         }
@@ -3359,10 +3302,13 @@ namespace MeshPoints.QuadRemesh
             Point3d newCoordinate = new Point3d(smoothNode.Coordinate);
             for (int i = 0; i < connectedTriangles.Count; i++)
             {
-                qElement triangle = new qElement(connectedTriangles[i].EdgeList);
-                
-                //triangle.FixElementEdgeAndAngle(); to do: fixslett
-                
+                // to do: dummy solution
+                qElement triangle = new qElement();
+                triangle.EdgeList = connectedTriangles[i].EdgeList;
+                triangle.AngleList = triangle.CalculateAngles(triangle.EdgeList);
+                triangle.IsQuad = false;
+                triangle.Contour = triangle.GetContourOfElement(triangle.EdgeList);
+
                 int counter = 0;
                 while (triangle.IsInverted() & counter < 1000)
                 {
