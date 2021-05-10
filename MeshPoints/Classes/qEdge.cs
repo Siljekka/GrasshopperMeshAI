@@ -68,7 +68,8 @@ namespace MeshPoints.Classes
             }
 
             return check;
-        } // class: kan bli implementert i: qEdge.
+        } 
+
         public List<qElement> GetConnectedElements()
         {
             qEdge edge = this;
@@ -189,6 +190,52 @@ namespace MeshPoints.Classes
             if (node == this.StartNode) { oppositeNode = this.EndNode; }
             else if (node == this.EndNode) { oppositeNode = this.StartNode; }
             return oppositeNode;
-        } 
+        }
+
+        public qElement GetFrontElement()
+        {
+            // summary: get the connected triangle element of a front edge
+            qElement triangleElement = new qElement();
+            if (this.GetConnectedElements().Count == 1) { triangleElement = this.Element1; }
+            else if (!this.Element1.IsQuad) { triangleElement = this.Element1; }
+            else { triangleElement = this.Element2; }
+
+            return triangleElement;
+        }
+
+        public Tuple<qEdge, qEdge> OrientateNeigborEdges(qEdge neigborEdgeToStartNode, qEdge neigborEdgeToEndNode)
+        {
+            // summary: oridentate the neigbors of an edge. Return the left edge and the right edge, respectively.
+            qEdge edge = this;
+            Point3d midPointEdg = 0.5 * (edge.StartNode.Coordinate + edge.EndNode.Coordinate); // mid point of edge
+
+            Point3d centerPoint = this.GetFrontElement().GetElementCenter();
+
+            Vector3d centerToMidVector = midPointEdg - centerPoint;
+
+            Vector3d centerToEndNodeVector = edge.EndNode.Coordinate - centerPoint;
+
+            Vector3d centerToStartNodeVector = edge.StartNode.Coordinate - centerPoint;
+
+            double startAngle = Vector3d.VectorAngle(centerToMidVector, centerToStartNodeVector, Vector3d.ZAxis); // todo: make normal more general
+
+            double endAngle = Vector3d.VectorAngle(centerToMidVector, centerToEndNodeVector, Vector3d.ZAxis); // todo: make normal more general
+
+            qEdge leftEdge = new qEdge();
+            qEdge rightEdge = new qEdge();
+
+            if (endAngle < startAngle)
+            {
+                leftEdge = neigborEdgeToStartNode;
+                rightEdge = neigborEdgeToEndNode;
+            }
+            else
+            {
+                leftEdge = neigborEdgeToEndNode;
+                rightEdge = neigborEdgeToStartNode;
+            }
+            return Tuple.Create(leftEdge, rightEdge);
+        }
+
     }
 }

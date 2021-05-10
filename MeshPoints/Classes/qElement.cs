@@ -33,6 +33,8 @@ namespace MeshPoints.Classes
             else { IsQuad = false; }
         }
 
+
+
         // Methods
         public List<double> CalculateAngles(List<qEdge> _edgeList)
         {
@@ -44,7 +46,7 @@ namespace MeshPoints.Classes
             edgeListCopy.Add(edgeListCopy[0]);
 
             // todo: change calculation of angles AnalyzeTriangle (do not work for chevron)
-            for (int i = 0; i < edgeListCopy.Count-1; i++)
+            for (int i = 0; i < edgeListCopy.Count - 1; i++)
             {
                 Point3d start1 = edgeListCopy[i].StartNode.Coordinate;
                 Point3d end1 = edgeListCopy[i].EndNode.Coordinate;
@@ -53,12 +55,50 @@ namespace MeshPoints.Classes
 
                 vec1 = start1 - end1;
                 vec2 = end2 - start2;
-                
+
                 ang = Vector3d.VectorAngle(vec1, vec2); // radian
                 angList.Add(ang);
             }
             return angList;
         }
+        public void FixElementEdgeAndAngle()
+        {
+            FixEdgeOrder();
+            CalculateAnglesNew();
+        }
+
+
+        public void CalculateAnglesNew()
+        {
+            List<qEdge> _edgeList = this.EdgeList;
+            List<double> angList = new List<double>();
+
+            List<qEdge> edgeListCopy = new List<qEdge>(_edgeList);
+            edgeListCopy.Add(edgeListCopy[0]);
+
+            var vectors1 = _edgeList[0].CalculateVectorsFromSharedNode(_edgeList[1]);
+            angList.Add(Vector3d.VectorAngle(vectors1.Item1, vectors1.Item2, Vector3d.CrossProduct(vectors1.Item1, vectors1.Item2)));
+
+            var vectors2 = _edgeList[0].CalculateVectorsFromSharedNode(_edgeList[2]);
+            angList.Add( Vector3d.VectorAngle(vectors2.Item1, vectors2.Item2, Vector3d.CrossProduct(vectors2.Item1, vectors2.Item2)));
+
+            if (_edgeList.Count == 3)
+            {
+                var vectors3Tri = _edgeList[1].CalculateVectorsFromSharedNode(_edgeList[2]);
+                angList.Add(Vector3d.VectorAngle(vectors3Tri.Item1, vectors3Tri.Item2, Vector3d.CrossProduct(vectors3Tri.Item1, vectors3Tri.Item2)));
+            }
+            else 
+            {
+                var vectors3 = _edgeList[1].CalculateVectorsFromSharedNode(_edgeList[3]);
+                angList.Add(Vector3d.VectorAngle(vectors3.Item1, vectors3.Item2, Vector3d.CrossProduct(vectors3.Item1, vectors3.Item2)));
+
+                var vectors4 = _edgeList[2].CalculateVectorsFromSharedNode(_edgeList[3]);
+                angList.Add(Vector3d.VectorAngle(vectors4.Item1, vectors4.Item2, Vector3d.CrossProduct(vectors4.Item1, vectors4.Item2)));
+            }
+           
+             this.AngleList = angList;
+        }
+
         public List<Line> GetContourOfElement(List<qEdge> _edgeList)
         {
             List<Line> contour = new List<Line>();
@@ -105,7 +145,7 @@ namespace MeshPoints.Classes
                     {
                         nodeList.Add(edge.StartNode);
                     }
-
+                    
                     if (!nodeList.Contains(edge.EndNode))
                     {
                         nodeList.Add(edge.EndNode);
@@ -172,12 +212,11 @@ namespace MeshPoints.Classes
             }
             return nodeList;
         }
-
         public void FixEdgeOrder()
         {
             // summary: fix edge order of triangle elements
 
-            qEdge edge = this.EdgeList[0];
+            qEdge edge = this.EdgeList[0]; // assume this to be the E_front
             qEdge edgeConnectedToStartNode = new qEdge();
             qEdge edgeConnectedToEndNode = new qEdge();
             qEdge edgeNotConnected = new qEdge();
@@ -197,7 +236,6 @@ namespace MeshPoints.Classes
                     edgeNotConnected = this.EdgeList[i]; 
                 }
             }
-
             Point3d midPointEdg = 0.5 * (edge.StartNode.Coordinate + edge.EndNode.Coordinate); // mid point of edge
             Point3d centerPoint = GetElementCenter();
             Vector3d centerToMidVector = midPointEdg - centerPoint;
@@ -212,7 +250,7 @@ namespace MeshPoints.Classes
                 {
                     this.EdgeList = new List<qEdge>() { edge, edgeConnectedToEndNode, edgeConnectedToStartNode };
                 }
-                else 
+                else
                 {
                     this.EdgeList = new List<qEdge>() { edge, edgeConnectedToEndNode, edgeConnectedToStartNode, edgeNotConnected };
                 }
@@ -228,6 +266,23 @@ namespace MeshPoints.Classes
                     this.EdgeList = new List<qEdge>() { edge, edgeConnectedToStartNode, edgeConnectedToEndNode, edgeNotConnected };
                 }
             }
+
+
+
+            /* to do: fixslett
+            var sideEdges = edge.OrientateNeigborEdges(edgeConnectedToStartNode, edgeConnectedToEndNode);
+            qEdge leftSide = sideEdges.Item1;
+            qEdge rightSide = sideEdges.Item2;
+
+            if (!this.IsQuad)
+            {
+                this.EdgeList = new List<qEdge>() { edge, rightSide, leftSide };
+            }
+            else
+            {
+                this.EdgeList = new List<qEdge>() { edge, rightSide, leftSide, edgeNotConnected };
+            }*/
+
         }
 
         public bool IsChevron()
