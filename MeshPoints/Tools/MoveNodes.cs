@@ -29,8 +29,9 @@ namespace MeshPoints.Tools
             pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list); 
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Symmetry line", "sym", "Introduce symmetry by inserting symmetri line", GH_ParamAccess.item);
             pManager[3].Optional = true; // if solid
-
+            pManager[4].Optional = true; // if symmetry
         }
 
         /// <summary>
@@ -53,11 +54,13 @@ namespace MeshPoints.Tools
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
             List<double> genesW = new List<double>();
+            Curve symLine = null;
 
             DA.GetData(0, ref oldMesh);
             DA.GetDataList(1, genesU);
             DA.GetDataList(2, genesV);
             DA.GetDataList(3, genesW);
+            DA.GetData(4, ref symLine);
 
             // Variables
             SmartMesh newMesh = new SmartMesh();
@@ -67,11 +70,19 @@ namespace MeshPoints.Tools
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) return;
-
-            if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
-            if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
-            if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
-            if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
+            if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "For solid elements, must have input GenesW."); return; }
+            
+            if (symLine == null)
+            {
+                if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
+                if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
+                if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
+            }
+            else 
+            {
+                // to do: add warning message for sym-case 
+                // warning if elements in sym dir are not even
+            }
 
             // 2. Inherit properties from old mesh
             newMesh.nu = oldMesh.nu;
@@ -82,18 +93,163 @@ namespace MeshPoints.Tools
             Brep brep = oldMesh.Geometry.Brep;
 
 
-            // 3. Create new nodes
-            for (int i = 0; i < oldMesh.Nodes.Count; i++)
+            // 2. If sym-case, find the symmetry
+            if (symLine != null)
             {
-                // a. Check if node is on face or edge.
-                Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
-                Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                BrepEdge symEdge = (BrepEdge)symLine;
+                List<int> nodeIdOnSymEdge = new List<int>();
+                foreach (Node node in oldMesh.Nodes)
+                {
+                    if (node.IsOnEdge(symEdge))
+                    {
+                        nodeIdOnSymEdge.Add(node.GlobalId);
+                    }
+                }
+                int indexDiff = nodeIdOnSymEdge[1] - nodeIdOnSymEdge[0];
 
-                // b. Get coordinates of the moved node.
-                Point3d point = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genesU, genesV, genesW, overlapTolerance);
-                newPoints.Add(point);
+                string symDirection = "";
+                if (indexDiff == 1) { symDirection = "u"; }
+                else if (indexDiff == oldMesh.nu) { symDirection = "v"; }
+                else if (indexDiff == oldMesh.nu * oldMesh.nv) { symDirection = "w"; }
+                else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Did not find symmetry line."); }
+
+
+                // Find mirror connectivity
+                int nu = oldMesh.nu;
+                int nv = oldMesh.nv;
+                int nw = oldMesh.nw;
+
+                List<List<int>> mirrorConnectivity = new List<List<int>>();
+                mirrorConnectivity.Add(nodeIdOnSymEdge); // first list is the id of nodes on symEdge 
+                int idCounter = 0;
+                int pareCounter = 0;
+
+                if (symDirection == "u")
+                {
+                    for (int k = 0; k < nw - 1; k++)
+                    {
+                        for (int j = 0; j < nv; j++)
+                        {
+                            for (int i = 0; i < nu; i++)
+                            {
+                                mirrorConnectivity[pareCounter].Add(idCounter);
+                                mirrorConnectivity[pareCounter].Add(((nv - (j + 1)) * nu + i) + k * nu * nv);
+                                pareCounter++;
+                                idCounter++;
+                            }
+                        }
+                        idCounter = (k + 1) * nu * nv;
+                    }
+                }
+                else if (symDirection == "v")
+                {
+                    for (int k = 0; k < nw - 1; k++)
+                    {
+                        for (int j = 0; j < nv - 1; j++)
+                        {
+                            for (int i = 0; i < Math.Floor((double)nu / (double)2); i++)
+                            {
+                                mirrorConnectivity[pareCounter].Add(idCounter);
+                                mirrorConnectivity[pareCounter].Add(nu - idCounter);
+                                pareCounter++;
+                                idCounter++;
+                            }
+                            idCounter = (j + 1) * nu;
+                        }
+                        idCounter = (k + 1) * nu * nv;
+                    }
+                }
+                else if (symDirection == "w")
+                {
+                    // add
+                }
+
+                double genU = 0;
+                double genV = 0;
+                double genW = 0;
+                Point3d[] newPointsArray = new Point3d[oldMesh.Nodes.Count];
+                for (int i = 0; i < mirrorConnectivity.Count; i++)
+                {
+                    if (i == 0) // if symmetry edge
+                    {
+                        if (symDirection == "u")
+                        {
+                            genU = genesU[i];
+                            genV = 0;
+                            genW = 0;
+                        }
+                        else if (symDirection == "u")
+                        {
+                            genU = 0;
+                            genV = genesV[i];
+                            genW = 0;
+                        }
+                        else
+                        {
+                            genU = 0;
+                            genV = 0;
+                            genW = genesW[i];
+                        }
+                    }
+                    else
+                    {
+                        genU = genesU[i];
+                        genV = genesV[i];
+                        genW = genesW[i];
+                    }
+
+                    // a. Check if node is on face or edge.
+                    Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[mirrorConnectivity[i][0]], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                    Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[mirrorConnectivity[i][0]], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+
+                    // b. Get coordinates of the moved node.
+                    Point3d point = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
+                    newPointsArray[mirrorConnectivity[i][0]] = point;
+
+                    // Transform
+                    Plane symPlane = new Plane(symLine.PointAtStart, symLine.PointAtStart - symLine.PointAtEnd, Vector3d.ZAxis);
+                    Transform mirrorMatrix = Transform.Mirror(symPlane);
+                    Point3d mirrorPoint = point;
+                    mirrorPoint.Transform(mirrorMatrix);
+                    newPointsArray[mirrorConnectivity[i][1]] = point;
+                }
+
+                // From array to list of points
+                foreach (Point3d pt in newPointsArray)
+                {
+                    newPoints.Add(pt);
+                }
 
             }
+            else
+            {
+                // 3. Create new nodes
+                for (int i = 0; i < oldMesh.Nodes.Count; i++)
+                {
+                    // a. Check if node is on face or edge.
+                    Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[i], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                    Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+
+                    // b. Get coordinates of the moved node.
+                    Point3d point = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genesU[i], genesV[i], genesW[i], overlapTolerance);
+                    newPoints.Add(point);
+                }
+
+            }
+
+
+            
+
+
+
+
+
+
+        
+
+
+
+            
 
             // 4. Set new nodes and elements
             newMesh.CreateNodes(newPoints, newMesh.nu-1, newMesh.nv-1, newMesh.nw-1);
@@ -169,7 +325,7 @@ namespace MeshPoints.Tools
         /// Move the old node in allowable directions.
         /// </summary>
         /// <returns> Returns coordinates of moved node.</returns>
-        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, List<double> genesU, List<double> genesV, List<double> genesW, double overlapTolerance)
+        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, double genU, double genV, double genW, double overlapTolerance)
         {
             Point3d movedNode = new Point3d();
             bool IsOnEdge = pointEdge.Item1;
@@ -187,28 +343,28 @@ namespace MeshPoints.Tools
             // 3. if: Node restrained in x direction.
             // Note: if point is on edge not restrained in x direction - meshPoint is made
 
-            if (genesU[i] > 0 & !mesh.Nodes[i].BC_U) // 1. if
+            if (genU > 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
-                translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genesU[i]; // make vector translating node in U-direction
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i + 1, overlapTolerance); return movedNode; } // make meshPoint
+                translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genU; // make vector translating node in U-direction
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i + 1, overlapTolerance); return movedNode; } // make meshPoint
             }
-            else if (genesU[i] < 0 & !mesh.Nodes[i].BC_U)  // 2. if
+            else if (genU < 0 & !mesh.Nodes[i].BC_U)  // 2. if
             {
-                translationVectorU = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - 1].Coordinate) * genesU[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i - 1, overlapTolerance); return movedNode; } // make meshPoint
+                translationVectorU = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - 1].Coordinate) * genU;
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i - 1, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorU = translationVectorU * 0; }  // 3. if
 
            
-            if (genesV[i] > 0 & !mesh.Nodes[i].BC_V) // 1. if
+            if (genV > 0 & !mesh.Nodes[i].BC_V) // 1. if
             {
-                translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genesV[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i + mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
+                translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genV;
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i + mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
-            else if (genesV[i] < 0 & !mesh.Nodes[i].BC_V) // 2. if
+            else if (genV < 0 & !mesh.Nodes[i].BC_V) // 2. if
             {
-                translationVectorV = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - mesh.nu ].Coordinate) * genesV[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i - mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
+                translationVectorV = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - mesh.nu ].Coordinate) * genV;
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i - mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorV = translationVectorV * 0; } // 3. if
 
@@ -216,15 +372,15 @@ namespace MeshPoints.Tools
             if (mesh.Type == "Solid")
             {
 
-                if (genesW[i] > 0 & !mesh.Nodes[i].BC_W) // 1. if
+                if (genW > 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
-                    translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i + (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
+                    translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genW;
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i + (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
-                else if (genesW[i] < 0 & !mesh.Nodes[i].BC_W) // 1. if
+                else if (genW < 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
-                    translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
+                    translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genW;
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i - (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
                 else { translationVectorW = translationVectorW * 0; } // 3. if                            
             }
