@@ -138,7 +138,23 @@ namespace MeshPoints.QuadRemesh
                 {
                     continue;
                 }
-
+                /*
+                 if (loop.Count == 8)
+                {
+                    foreach (qEdge edge in loop)
+                    {
+                        qElement frontElement = edge.GetFrontElement();
+                        foreach (qEdge elementEdge in frontElement.EdgeList)
+                        {
+                            if (IsFrontLoopsEven(frontEdges, elementEdge, globalEdgeList).Item1)
+                            { 
+                                E_front = 
+                            }
+                        }
+                    }              
+                }
+                 
+                 */
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
@@ -875,107 +891,7 @@ namespace MeshPoints.QuadRemesh
             return Tuple.Create(seamAnglePerformed, specialCase, E_front, E_k_right, E_k_left);
 
         }
-        private Tuple<bool, List<List<qEdge>>> IsFrontLoopsEvenOld(List<qEdge> frontEdges, qEdge checkSideEdge, List<qEdge> globalEdgeList)
-        {
-            // summary: check if front loops are comprised of an even number of edges. If checkSideEdge != null, check if new loops to be formed are even loops.
-            bool evenEdgesInLoops = true;
-            List<int> loopCount = new List<int>();
-            List<List<qEdge>> frontLoopList = new List<List<qEdge>>();
-
-            #region Get fronLoopList
-            if (checkSideEdge == null)
-            {
-                List<qEdge> remainingFrontEdges = new List<qEdge>(frontEdges);
-                bool done = false;
-                while (!done)
-                {
-                    qEdge startEdge = remainingFrontEdges[0];
-                    remainingFrontEdges.Remove(startEdge);
-
-                    List<qEdge> edgesOfCurrentLoop = new List<qEdge>() { startEdge };
-
-                    bool currentLoopDone = false;
-                    while (!currentLoopDone)
-                    {
-                        if (!edgesOfCurrentLoop.Contains(startEdge.LeftFrontNeighbor))
-                        {
-                            edgesOfCurrentLoop.Add(startEdge.LeftFrontNeighbor);
-                            startEdge = startEdge.LeftFrontNeighbor;
-                            remainingFrontEdges.Remove(startEdge);
-                        }
-                        else { currentLoopDone = true; }
-                    }
-
-                    frontLoopList.Add(edgesOfCurrentLoop);
-                    loopCount.Add(edgesOfCurrentLoop.Count);
-                    if (remainingFrontEdges.Count == 0) { done = true; }
-                }
-            }
-            else if (checkSideEdge != null)
-            {
-                // get startNode and endNode, and connected front edges to startNode
-                qNode startNode = checkSideEdge.StartNode;
-                qNode endNode = checkSideEdge.EndNode;
-                List<qEdge> startEdges = GetFrontEdgesConnectedToNode(startNode, globalEdgeList);
-
-                // find left and right front edge connected to startNode
-                qEdge startEdgeLeft = new qEdge();
-                qEdge startEdgeRight = new qEdge();
-                if (startEdges[0] == startEdges[1].LeftFrontNeighbor)
-                {
-                    startEdgeLeft = startEdges[0];
-                    startEdgeRight = startEdges[1];
-                }
-                else if (startEdges[0] == startEdges[1].RightFrontNeighbor)
-                {
-                    startEdgeLeft = startEdges[1];
-                    startEdgeRight = startEdges[0];
-                }
-
-                // get left loop
-                List<qEdge> edgesOfLeftLoop = new List<qEdge>() { checkSideEdge, startEdgeLeft };
-                bool leftLoopDone = false;
-                int counter = 0;
-                while (!leftLoopDone)
-                {
-                    edgesOfLeftLoop.Add(startEdgeLeft.LeftFrontNeighbor);
-                    if (endNode != startEdgeLeft.LeftFrontNeighbor.StartNode & endNode != startEdgeLeft.LeftFrontNeighbor.EndNode)
-                    {
-                        startEdgeLeft = startEdgeLeft.LeftFrontNeighbor;
-                    }
-                    else { leftLoopDone = true; }
-
-                    if (counter > 1000) { leftLoopDone = true; AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "IsFrontLoopEven: failed left loop"); }
-                    counter++;
-                }
-
-                // get right loop
-                List<qEdge> edgesOfRightLoop = new List<qEdge>() { checkSideEdge, startEdgeRight };
-                bool rightLoopDone = false;
-                counter = 0;
-                while (!rightLoopDone )
-                {
-                    edgesOfRightLoop.Add(startEdgeRight.RightFrontNeighbor);
-                    if (endNode != startEdgeRight.RightFrontNeighbor.StartNode & endNode != startEdgeRight.RightFrontNeighbor.EndNode)
-                    {
-                        startEdgeRight = startEdgeRight.RightFrontNeighbor;
-                    }
-                    else { rightLoopDone = true; }
-                    if (counter > 1000) { rightLoopDone = true; AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "IsFrontLoopEven: failed right loop"); }
-                    counter++;
-                }
-                loopCount.Add(edgesOfLeftLoop.Count);
-                loopCount.Add(edgesOfRightLoop.Count);
-            }
-            #endregion Get frontLoopList
-
-            foreach (int numEdges in loopCount)
-            {
-                if (numEdges % 2 != 0) { evenEdgesInLoops = false; break; }
-            }
-
-            return Tuple.Create(evenEdgesInLoops, frontLoopList);
-        }
+        
         private Tuple<bool, List<List<qEdge>>> IsFrontLoopsEven(List<qEdge> frontEdges, qEdge checkSideEdge, List<qEdge> globalEdgeList)
         {
             // summary: check if front loops are comprised of an even number of edges. If checkSideEdge != null, check if new loops to be formed are even loops.
@@ -1056,7 +972,6 @@ namespace MeshPoints.QuadRemesh
                                     if (edge.StartNode == nextNode | edge.EndNode == nextNode)
                                     {
                                         nextEdge = edge; 
-                                        remainingFrontEdges.Remove(nextEdge);
                                         break;
                                     }
                                 }
@@ -2899,21 +2814,8 @@ namespace MeshPoints.QuadRemesh
                 else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Quadelement not assigned to edges"); }
             }
 
-            // to do: slett?
-            // update edges used
-            //int indexToUpdate = globalEdgeList.IndexOf(quadEdge[1]); // make sure not selected as new front edge, but is in frontEdges
-            //globalEdgeList[indexToUpdate].IsQuadSideEdge = true;
-            //indexToUpdate = globalEdgeList.IndexOf(quadEdge[2]); // make sure not selected as new front edge, but is in frontEdges
-            //globalEdgeList[indexToUpdate].IsQuadSideEdge = true;
-            //indexToUpdate = globalEdgeList.IndexOf(quadEdge[3]); // update level for top edge of quad
-
-            /* to do: fixslett
-            // fix edge order
-            newQuadElement.FixElementEdgeAndAngle();
-            */
-
             int newLevel = quadEdge[0].Level + 1;
-            //foreach (qEdge edge in quadEdge) { if (edge.Level > maxLevel) { maxLevel = edge.Level; } }        
+            //foreach (qEdge edge in quadEdge) { if (edge.Level > maxLevel) { maxLevel = edge.Level; } } // to do: Silje, slett?       
 
             // update frontEdges
             foreach (qEdge edge in quadEdge)
