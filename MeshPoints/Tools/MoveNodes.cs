@@ -96,11 +96,14 @@ namespace MeshPoints.Tools
             // 2. If sym-case, find the symmetry
             if (symLine != null)
             {
-                BrepEdge symEdge = (BrepEdge)symLine;
                 List<int> nodeIdOnSymEdge = new List<int>();
                 foreach (Node node in oldMesh.Nodes)
                 {
-                    if (node.IsOnEdge(symEdge))
+                    Point3d point = node.Coordinate;
+                    symLine.ClosestPoint(point, out double PointOnCurve);
+                    Point3d testPoint = symLine.PointAt(PointOnCurve);  // make test point 
+                    double distanceToEdge = (testPoint - point).Length; // calculate distance between testPoint and node
+                    if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
                     {
                         nodeIdOnSymEdge.Add(node.GlobalId);
                     }
@@ -126,15 +129,14 @@ namespace MeshPoints.Tools
 
                 if (symDirection == "u")
                 {
-                    for (int k = 0; k < nw - 1; k++)
+                    for (int k = 0; k < nw; k++)
                     {
                         for (int j = 0; j < nv; j++)
                         {
                             for (int i = 0; i < nu; i++)
                             {
-                                mirrorConnectivity[pareCounter].Add(idCounter);
-                                mirrorConnectivity[pareCounter].Add(((nv - (j + 1)) * nu + i) + k * nu * nv);
-                                pareCounter++;
+                                List<int> nodesToPare = new List<int>() { idCounter, ((nv - (j + 1)) * nu + i) + k * nu * nv };
+                                mirrorConnectivity.Add(nodesToPare);
                                 idCounter++;
                             }
                         }
@@ -143,15 +145,14 @@ namespace MeshPoints.Tools
                 }
                 else if (symDirection == "v")
                 {
-                    for (int k = 0; k < nw - 1; k++)
+                    for (int k = 0; k < nw; k++)
                     {
-                        for (int j = 0; j < nv - 1; j++)
+                        for (int j = 0; j < nv; j++)
                         {
                             for (int i = 0; i < Math.Floor((double)nu / (double)2); i++)
                             {
-                                mirrorConnectivity[pareCounter].Add(idCounter);
-                                mirrorConnectivity[pareCounter].Add(nu - idCounter);
-                                pareCounter++;
+                                List<int> nodesToPare = new List<int>() { idCounter, (nu - 1) - i + j*nv};
+                                mirrorConnectivity.Add(nodesToPare);
                                 idCounter++;
                             }
                             idCounter = (j + 1) * nu;
@@ -161,57 +162,81 @@ namespace MeshPoints.Tools
                 }
                 else if (symDirection == "w")
                 {
-                    // add
+                    // to do: add
                 }
 
                 double genU = 0;
                 double genV = 0;
                 double genW = 0;
+                int counter = 0;
+                int uCounter = 0;
+                int vCounter = 0;
+                int wCounter = 0;
                 Point3d[] newPointsArray = new Point3d[oldMesh.Nodes.Count];
-                for (int i = 0; i < mirrorConnectivity.Count; i++)
+                int indexToFix = -1;
+                for (int i = 0; i < mirrorConnectivity.Count - 1 + mirrorConnectivity[0].Count; i++)
                 {
-                    if (i == 0) // if symmetry edge
+                    if (i < mirrorConnectivity[0].Count) // if symmetry edge
                     {
                         if (symDirection == "u")
                         {
                             genU = genesU[i];
                             genV = 0;
                             genW = 0;
+                            uCounter++;
                         }
-                        else if (symDirection == "u")
+                        else if (symDirection == "v")
                         {
                             genU = 0;
                             genV = genesV[i];
                             genW = 0;
+                            vCounter++;
                         }
                         else
                         {
                             genU = 0;
                             genV = 0;
                             genW = genesW[i];
+                            wCounter++;
                         }
+                        indexToFix++;
                     }
                     else
                     {
-                        genU = genesU[i];
-                        genV = genesV[i];
-                        genW = genesW[i];
+                        genU = genesU[uCounter];
+                        genV = genesV[vCounter];
+                        genW = genesW[wCounter];
+                        indexToFix = 0;
+                        counter++;
+                        uCounter++;
+                        vCounter++;
+                        wCounter++;
                     }
 
                     // a. Check if node is on face or edge.
-                    Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[mirrorConnectivity[i][0]], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
-                    Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[mirrorConnectivity[i][0]], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                    Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[mirrorConnectivity[counter][indexToFix]], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                    Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[mirrorConnectivity[counter][indexToFix]], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
 
                     // b. Get coordinates of the moved node.
-                    Point3d point = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
-                    newPointsArray[mirrorConnectivity[i][0]] = point;
+                    Point3d point = GetNewCoordinateOfNode(mirrorConnectivity[counter][indexToFix], pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
 
-                    // Transform
-                    Plane symPlane = new Plane(symLine.PointAtStart, symLine.PointAtStart - symLine.PointAtEnd, Vector3d.ZAxis);
-                    Transform mirrorMatrix = Transform.Mirror(symPlane);
-                    Point3d mirrorPoint = point;
-                    mirrorPoint.Transform(mirrorMatrix);
-                    newPointsArray[mirrorConnectivity[i][1]] = point;
+                    if (i < mirrorConnectivity[0].Count)
+                    {
+                        newPointsArray[mirrorConnectivity[0][i]] = point;
+                    }
+                    else 
+                    {
+
+                        newPointsArray[mirrorConnectivity[counter][0]] = point;
+
+                        // Transform
+                        Plane symPlane = new Plane(symLine.PointAtStart, symLine.PointAtStart - symLine.PointAtEnd, Vector3d.ZAxis);
+                        Transform mirrorMatrix = Transform.Mirror(symPlane);
+                        Point3d mirrorPoint = point;
+                        mirrorPoint.Transform(mirrorMatrix);
+                        newPointsArray[mirrorConnectivity[counter][1]] = mirrorPoint;
+                    }
+
                 }
 
                 // From array to list of points
