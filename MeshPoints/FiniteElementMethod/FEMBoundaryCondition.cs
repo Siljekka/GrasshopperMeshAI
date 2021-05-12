@@ -23,12 +23,12 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "Input a SmartMesh", GH_ParamAccess.item); 
-            pManager.AddIntegerParameter("Face indices with BC", "", "", GH_ParamAccess.list);
-            pManager.AddIntegerParameter("Edge indices with BC", "", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Tx", "", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Ty", "", "", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Tz", "", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "Input a SmartMesh.", GH_ParamAccess.item); 
+            pManager.AddIntegerParameter("Faces", "faces", "Index of faces with boundary conditions.", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Edges", "edges","Index of edges with boundary conditions.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Tx", "Tx", "True if no translation in x-direction.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Ty", "Ty", "True if no translation in y-direction.", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Tz", "Tz", "True if no translation in z-direction.", GH_ParamAccess.item);
 
             pManager[1].Optional = true;
             pManager[2].Optional = true;
@@ -43,7 +43,7 @@ namespace MeshPoints.FiniteElementMethod
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Boundary conditions", "BC", "List of DOFS that are fixed", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Nodes", "nodes", "List of node coordinates applied boundary conditions to", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Points", "pts", "List of node coordinates applied boundary conditions to", GH_ParamAccess.list);
         }
 
         /// <summary>
