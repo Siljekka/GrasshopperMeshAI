@@ -101,7 +101,7 @@ def gmsh_settings() -> None:
 
 def mesh_contour(contour: np.array, target_edge_length: float):
     # Meshes a contour with a given edge length
-    # gmsh.initialize()
+    gmsh.initialize()
     # Create a new model
     gmsh.model.add("1")
 
@@ -138,21 +138,26 @@ def mesh_contour(contour: np.array, target_edge_length: float):
 
     mesh_nodes = gmsh.model.mesh.get_nodes()
     num_nodes_total = mesh_nodes[0][-1]
-    internal_nodes = int(num_nodes_total - contour.shape[0])
+    internal_nodes_count = int(num_nodes_total - contour.shape[0])
 
     features = np.append(contour.copy(), target_edge_length)
-    features = np.append(features, internal_nodes)
+    features = np.append(features, internal_nodes_count)
+    if internal_nodes_count > 0:
+        internal_nodes_with_z = mesh_nodes[1][-internal_nodes_count*3:]
+        internal_nodes = [x for i, x in enumerate(
+            internal_nodes_with_z) if i % 3 != 2]
+        features = np.append(features, internal_nodes)
 
     # GUI (buggy on macOS)
     # Display options:
     gmsh.option.set_number("Mesh.Nodes", 1)
     gmsh.option.set_number("Mesh.NodeSize", 10)
     gmsh.option.set_number("Mesh.NodeLabels", 1)
-    if "-nopopup" not in sys.argv:
-        gmsh.fltk.run()
+    # if "-nopopup" not in sys.argv:
+    #     gmsh.fltk.run()
 
     gmsh.clear()
-    # gmsh.finalize()
+    gmsh.finalize()
 
     return features
 
@@ -196,10 +201,15 @@ def mesh_contour_quad(contour: np.array, target_edge_length: float):
 
     mesh_nodes = gmsh.model.mesh.get_nodes()
     num_nodes_total = mesh_nodes[0][-1]
-    internal_nodes = int(num_nodes_total - contour.shape[0])
+    internal_nodes_count = int(num_nodes_total - contour.shape[0])
 
     features = np.append(contour.copy(), target_edge_length)
-    features = np.append(features, internal_nodes)
+    features = np.append(features, internal_nodes_count)
+    if internal_nodes_count > 0:
+        internal_nodes_with_z = mesh_nodes[1][-internal_nodes_count*3:]
+        internal_nodes = [x for i, x in enumerate(
+            internal_nodes_with_z) if i % 3 != 2]
+        features = np.append(features, internal_nodes)
 
     # GUI (buggy on macOS)
     # Display options:
