@@ -18,10 +18,6 @@ if __name__ == "__main__":
     #     dataset_size, num_sides, target_edge_length)
     # dg.single_edge_length_mesh_to_csv(dataset_test, dataset_size, num_sides)
 
-    # Try removing bottom and max vals of target edge length
-    # dataset_test = pp.generate_dataset_all_lc(dataset_size, num_sides)
-    # pp.mesh_to_csv(dataset_test, dataset_size, num_sides)
-
     # *** GMSH-tests ***
     # gmsh.initialize()
     # pp.gmsh_settings()
@@ -35,10 +31,13 @@ if __name__ == "__main__":
     num_sides = 6
     target_edge_length = 0.2
     # 1700 * 7 =~ 12_000 (wanted dataset size for 6-gons)
-    dataset_size = 1_0
+    dataset_size = 12_000
+    # Trimeshing
+    dataset_test = pp.generate_dataset_all_lc(dataset_size, num_sides)
+    pp.mesh_to_csv(dataset_test, dataset_size, num_sides)
     # === Quad meshing ===
-    dataset = pp.generate_dataset_quad_all_lc(dataset_size, num_sides)
-    pp.quad_mesh_to_csv(dataset, dataset_size, num_sides)
+    # dataset = pp.generate_dataset_quad_all_lc(dataset_size, num_sides)
+    # pp.quad_mesh_to_csv(dataset, dataset_size, num_sides)
 
     # === Neural networks ===
     # import nn_tests as nn

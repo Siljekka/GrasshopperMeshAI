@@ -481,7 +481,7 @@ def single_edge_length_mesh_to_csv(features, dataset_size: int, number_of_sides:
 def mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
     # Columns needed:
     #  contour nodes ( xi | yi) | target_edge_length | num inner nodes
-    with open(f"data/{number_of_sides}-gon-mesh-with-internal-nodes.csv", "w", newline="") as file:
+    with open(f"data/{number_of_sides}-gon-mesh-with-internal-nodes-big.csv", "w", newline="") as file:
         writer = csv.writer(file)
         header = []
         for i in range(1, number_of_sides + 1):
@@ -492,6 +492,7 @@ def mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
         [header.append(x) for x in list(string.ascii_lowercase)]
         writer.writerow(header)
 
+        print("\n")
         for i, contour in enumerate(features):
             print("writing", i, "of", dataset_size, end="\r")
             writer.writerow(contour)
