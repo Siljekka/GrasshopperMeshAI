@@ -49,176 +49,181 @@ namespace MeshPoints.Tools
             DA.GetDataList(0,  smartMeshList);
 
             // Code
+
             SmartMesh mergedSmartMesh = new SmartMesh();
             SmartMesh mesh1 = smartMeshList[0];
-
 
             for (int i = 1; i < smartMeshList.Count; i++) // loop the meshes to merge
             {
                 SmartMesh mesh2 = smartMeshList[i];
 
-                BrepEdge edge1 = null;
-                BrepEdge edge2 = null;
-
-                // Find edges to merge
-                for (int j = 0; j < mesh1.Geometry.Edges.Count; j++)
+                // Create new node list
+                List<Node> newNodes = new List<Node>();
+                List<Node> oldNodes = new List<Node>();
+                oldNodes.AddRange(mesh1.Nodes);
+                oldNodes.AddRange(mesh2.Nodes);
+                foreach (Node node in oldNodes)
                 {
-                    BrepEdge edgeToTest1 = mesh1.Geometry.Edges[j];
-                    for (int k = 0; k < mesh2.Geometry.Edges.Count; k++)
-                    {
-                        BrepEdge edgeToTest2 = mesh2.Geometry.Edges[k];
-                        List<Point3d> edgePoints1 = new List<Point3d>() { edgeToTest1.PointAtStart, edgeToTest1.PointAtEnd };
-                        List<Point3d> edgePoints2 = new List<Point3d>() { edgeToTest2.PointAtStart, edgeToTest2.PointAtEnd };
-
-                        if (edgePoints1.Contains(edgePoints2[0]) & edgePoints1.Contains(edgePoints2[1])) // if edges share start and end points
-                        {
-                            edge1 = edgeToTest1;
-                            edge2 = edgeToTest2;
-                            j = 4; // break
-                            k = 4; // break
-                        }
-                    }
+                    Node newNode = new Node(node.GlobalId, node.Coordinate, node.BC_U, node.BC_V);
+                    newNodes.Add(newNode);
                 }
-                if (edge1 == null | edge2 == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No edges to merge."); return; }
-                
+
+                // Create new element list
+                List<Element> newElements = new List<Element>();
+                List<Element> oldElements = new List<Element>();
+                oldElements.AddRange(mesh1.Elements);
+                oldElements.AddRange(mesh2.Elements);
+                foreach (Element element in oldElements)
+                {
+                    Element newElement = new Element(element.Id, element.Nodes, element.Connectivity);
+                    newElement.Mesh = element.Mesh;
+                    newElements.Add(newElement);
+                }
+
                 // Find nodes to merge
-                List<Node> nodesOnEdge1 = new List<Node>();
-                List<Node> nodesOnEdge2 = new List<Node>();
+                var edges = FindEdgeToMerge(mesh1, mesh2);
+                BrepEdge edge1 = edges.Item1;
+                BrepEdge edge2 = edges.Item2;
 
-                foreach (Node node1 in mesh1.Nodes)
-                {
-                    if (node1.IsOnEdge(edge1))
-                    {
-                        nodesOnEdge1.Add(node1);
-                    }
-                }
+                var nodesToMerge = FindNodesToMerge(mesh1, mesh2, edge1, edge2);
+                List<Node> nodesOnEdge1 = nodesToMerge.Item1;
+                List<Node> nodesOnEdge2 = nodesToMerge.Item2;
 
-                foreach (Node node2 in mesh2.Nodes)
-                {
-                    if (node2.IsOnEdge(edge2))
-                    {
-                        nodesOnEdge2.Add(node2);
-                    }
-                }
-
-                if (nodesOnEdge1.Count != nodesOnEdge2.Count) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Number of nodes on edges to merge do not match."); return; }
+                if (nodesOnEdge1[0] == null) { return; }
 
                 // Merge nodes
                 int numNodesToMerge = nodesOnEdge1.Count; 
-                List<Node> newNodes = new List<Node>();
-                newNodes.AddRange(mesh1.Nodes);
-                newNodes.AddRange(mesh2.Nodes);
+                int startIdNewNodes = mesh1.Nodes.Count + mesh2.Nodes.Count - numNodesToMerge * 2; 
 
-                int startIdNewNodes = mesh1.Nodes.Count + mesh2.Nodes.Count - nodesOnEdge1.Count - nodesOnEdge2.Count; 
                 for (int j = 0; j < numNodesToMerge; j++)
                 {
+                    // Find node from mesh2 that is equal to node from mesh1, and delete it. Update connected elements.
                     Node node1 = nodesOnEdge1[j];
                     Node node2 = FindClosestNode(node1, nodesOnEdge2);
 
                     Point3d newNodeCoordinate = (node1.Coordinate + node2.Coordinate) / (double)2;
-                    Node newNode = new Node(1000000 + j, newNodeCoordinate); // dummy solution for global id: 1000000 +j
+                    Node newNode = new Node(startIdNewNodes + j, newNodeCoordinate);
 
-                    if (node1.Type == "Corner")
+                    if (node1.Type == "Corner") // keep BC if corner node
                     {
                         newNode.BC_U = true;
                         newNode.BC_V = true;
                     }
 
-                    int node1Index = mesh1.Nodes.IndexOf(node1);
-                    int node2Index = mesh2.Nodes.IndexOf(node2);
-
                     // Find elements to change and update the nodes and connectivity
-                    // to do: fix bug for element in middel for multiple SmartMesh
-                    foreach (Element element in mesh1.Elements)
+                    foreach (Element element in newElements)
                     {
                         for (int k = 0; k < 4; k++)
                         {
-                            if (element.Nodes[k] == mesh1.Nodes[node1Index])
+                            if (element.Nodes[k] == node1)
                             {
                                 element.Nodes[k] = newNode;
-                                element.Connectivity[k] = startIdNewNodes + j;
-                            }
-                        }
-                        UpdateElementMesh(element);
-                    }
+                                element.Connectivity[k] = newNode.GlobalId;
+                                foreach (Node node in newNodes)
+                                {
+                                    if (node.Coordinate == node1.Coordinate)
+                                    {
+                                        newNodes.Remove(node);
+                                        break;
+                                    }
+                                }
 
-                    foreach (Element element in mesh2.Elements)
-                    {
-                        for (int k = 0; k < 4; k++)
-                        {
-                            if (element.Nodes[k] == mesh2.Nodes[node2Index])
+                            }
+                            else if (element.Nodes[k] == node2)
                             {
                                 element.Nodes[k] = newNode;
-                                element.Connectivity[k] = startIdNewNodes + j;
+                                element.Connectivity[k] = newNode.GlobalId;
+                                foreach (Node node in newNodes)
+                                {
+                                    if (node.Coordinate == node2.Coordinate)
+                                    {
+                                        newNodes.Remove(node);
+                                        break;
+                                    }
+                                }
                             }
                         }
-                        UpdateElementMesh(element);
+                        //UpdateElementMesh(element);
                     }
-
                     newNodes.Add(newNode);
-                    newNodes.Remove(node1);
-                    newNodes.Remove(node2);
                 }
- 
-                // Merge elements
-                List<Element> newElements = new List<Element>();
-                newElements.AddRange(mesh1.Elements);
-                newElements.AddRange(mesh2.Elements);
 
-                // Update global id of nodes in mesh2
-                for (int j = mesh1.Nodes.Count - numNodesToMerge; j < (mesh1.Nodes.Count + mesh2.Nodes.Count - nodesOnEdge1.Count); j++ ) // loop nodes from mesh2
+                // Update global id of nodes
+                List<List<int>> oldToNewId = new List<List<int>>();
+                for (int j = 0; j < (newNodes.Count); j++) // loop nodes from mesh2
                 {
+                    List<int> list = new List<int>() { newNodes[j].GlobalId, j }; // fix denne
+                    oldToNewId.Add(list);
                     newNodes[j].GlobalId = j;
                 }
 
-                // Update elements in mesh2
-                for (int j = mesh1.Elements.Count; j < mesh1.Elements.Count + mesh2.Elements.Count; j++) // loop elements from mesh2
+                // Update elements and global mesh
+                Mesh mergedGlobalMesh = new Mesh();
+                int counter1 = 0;
+                int counter2 = 0;
+
+                for (int j = 0; j < newElements.Count; j++) // loop elements from mesh1
                 {
                     for (int k = 0; k < 4; k++)
                     {
-                        if (newElements[j].Nodes[k].GlobalId < startIdNewNodes)
+                        // loop through - old to new id of nodes to get the updated id
+                        if (j < mesh1.Elements.Count)
                         {
-                            newElements[j].Connectivity[k] += mesh1.Nodes.Count - nodesOnEdge1.Count;
-                            newElements[j].Nodes[k] = newNodes[newElements[j].Connectivity[k]];
+                            for (int n = 0; n < mesh1.Nodes.Count - numNodesToMerge; n++)
+                            {
+                                List<int> oldToNew = oldToNewId[n];
+                                if (oldToNew[0] == mesh1.Elements[counter1].Connectivity[k])
+                                {
+                                    newElements[j].Nodes[k] = newNodes[oldToNew[1]];
+                                    newElements[j].Connectivity[k] = oldToNew[1];
+                                    break;
+                                }
+                            }
                         }
-                    }
-                }
+                        else
+                        {
+                            for (int n = mesh1.Nodes.Count - numNodesToMerge; n < mesh1.Nodes.Count + mesh2.Nodes.Count - numNodesToMerge*2; n++)
+                            {
+                                List<int> oldToNew = oldToNewId[n];
+                                if (oldToNew[0] == mesh2.Elements[counter2].Connectivity[k])
+                                {
+                                    newElements[j].Nodes[k] = newNodes[oldToNew[1]];
+                                    newElements[j].Connectivity[k] = oldToNew[1];
+                                    break;
+                                }
+                            }
 
-                // Merge mesh, with weld
-                Mesh mergedGlobalMesh = new Mesh();
-                
-                foreach (Element element in newElements)
-                {
-                    mergedGlobalMesh.Append(element.Mesh);
+                        } 
+                    }
+                    if (j < mesh1.Elements.Count) { counter1++; }
+                    else { counter2++; }
+                    mergedGlobalMesh.Append(newElements[j].Mesh); // add element mesh to global mesh
                 }
-                mergedGlobalMesh.Weld(0.001);
+                mergedGlobalMesh.Weld(0.001); // delete overlapping vertices and faces
 
                 // Create merged SmartMesh
                 mergedSmartMesh = new SmartMesh(newNodes, newElements, mergedGlobalMesh, "Surface");
 
-
-
                 //  Fix Geometry
-
-                List<BrepEdge> edges = new List<BrepEdge>();
-                edges.AddRange(mesh1.Geometry.Edges);
-                edges.AddRange(mesh2.Geometry.Edges);
-                edges.Remove(edge1);
-                edges.Remove(edge2);
+                List<BrepEdge> brepEdges = new List<BrepEdge>();
+                brepEdges.AddRange(mesh1.Geometry.Edges);
+                brepEdges.AddRange(mesh2.Geometry.Edges);
+                brepEdges.Remove(edge1);
+                brepEdges.Remove(edge2);
 
                 List<BrepFace> faces = new List<BrepFace>();
                 faces.AddRange(mesh1.Geometry.Faces);
                 faces.AddRange(mesh2.Geometry.Faces);
 
-                Brep totalBrep = mesh1.Geometry.Brep;
+                Brep totalBrep = null;
+                totalBrep =  mesh1.Geometry.Brep;
                 totalBrep.Join(mesh2.Geometry.Brep,0.001, true);
 
-                Geometry mergedGeometry = new Geometry(totalBrep, faces, edges, totalBrep.Vertices.ToList());
+                Geometry mergedGeometry = new Geometry(totalBrep, faces, brepEdges, totalBrep.Vertices.ToList());
                 mergedSmartMesh.Geometry = mergedGeometry;
 
                 mesh1 = mergedSmartMesh;
             }
-
             DA.SetData(0, mergedSmartMesh);
         }
 
@@ -238,6 +243,61 @@ namespace MeshPoints.Tools
                 }
             }
             return closestNode;
+        }
+        private Tuple<BrepEdge, BrepEdge> FindEdgeToMerge(SmartMesh mesh1, SmartMesh mesh2)
+        {
+            BrepEdge edge1 = null;
+            BrepEdge edge2 = null;
+            List<Node> nodesOnEdge1 = new List<Node>();
+            List<Node> nodesOnEdge2 = new List<Node>();
+
+            // Find edges to merge
+            for (int j = 0; j < mesh1.Geometry.Edges.Count; j++)
+            {
+                BrepEdge edgeToTest1 = mesh1.Geometry.Edges[j];
+                for (int k = 0; k < mesh2.Geometry.Edges.Count; k++)
+                {
+                    BrepEdge edgeToTest2 = mesh2.Geometry.Edges[k];
+                    List<Point3d> edgePoints1 = new List<Point3d>() { edgeToTest1.PointAtStart, edgeToTest1.PointAtEnd };
+                    List<Point3d> edgePoints2 = new List<Point3d>() { edgeToTest2.PointAtStart, edgeToTest2.PointAtEnd };
+
+                    if (edgePoints1.Contains(edgePoints2[0]) & edgePoints1.Contains(edgePoints2[1])) // if edges share start and end points
+                    {
+                        edge1 = edgeToTest1;
+                        edge2 = edgeToTest2;
+                        j = mesh1.Geometry.Edges.Count; // break
+                        k = mesh2.Geometry.Edges.Count; // break
+                    }
+                }
+            }
+            return Tuple.Create(edge1, edge2);
+        }
+        private Tuple<List<Node>, List<Node>> FindNodesToMerge(SmartMesh mesh1, SmartMesh mesh2, BrepEdge edge1, BrepEdge edge2)
+        {
+            List<Node> nodesOnEdge1 = new List<Node>();
+            List<Node> nodesOnEdge2 = new List<Node>();
+
+            // Find nodes to merge
+            foreach (Node node1 in mesh1.Nodes)
+            {
+                if (node1.IsOnEdge(edge1))
+                {
+                    nodesOnEdge1.Add(node1);
+                }
+            }
+
+            foreach (Node node2 in mesh2.Nodes)
+            {
+                if (node2.IsOnEdge(edge2))
+                {
+                    nodesOnEdge2.Add(node2);
+                }
+            }
+
+            if (nodesOnEdge1.Count != nodesOnEdge2.Count)
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Number of nodes on edges to merge do not match."); return Tuple.Create(nodesOnEdge1, nodesOnEdge2); }
+
+            return Tuple.Create(nodesOnEdge1, nodesOnEdge2);
         }
         private void UpdateElementMesh(Element element)
         {
