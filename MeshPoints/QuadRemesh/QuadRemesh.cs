@@ -130,6 +130,10 @@ namespace MeshPoints.QuadRemesh
                 E_front = E_frontAndEdgeState.Item1;
                 var edgeState = E_frontAndEdgeState.Item2;
                 unselectedEdge.Unselectable = false;
+                if (iterationCounter == 115)
+                {
+                    //break;
+                }
 
                 bool loopOf4Edges = LoopControll(frontEdges, globalEdgeList, globalElementList); // to do: legg inn krit når kun 8 edges igjen
                 CleanUpChevorns(globalEdgeList, globalElementList, frontEdges);
@@ -235,7 +239,7 @@ namespace MeshPoints.QuadRemesh
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
-
+                /*
                 // to do: fix....
                 if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1)
                 {
@@ -245,7 +249,7 @@ namespace MeshPoints.QuadRemesh
                     unselectedEdge = E_front;
                     n--;
                     continue;
-                }
+                }*/
 
                 // to do: what if closing front og special case?
                 // to do: apply local smoothing for seamAngle
@@ -1056,7 +1060,7 @@ namespace MeshPoints.QuadRemesh
                                     if (edge.StartNode == nextNode | edge.EndNode == nextNode)
                                     {
                                         nextEdge = edge; 
-                                        remainingFrontEdges.Remove(nextEdge);
+                                        //remainingFrontEdges.Remove(nextEdge);
                                         break;
                                     }
                                 }
@@ -4042,13 +4046,14 @@ namespace MeshPoints.QuadRemesh
         {
             Vector3d vectorSum = Vector3d.Zero;
             List<qEdge> connectedEdges = node.GetConnectedEdges(globalEdgeList);
-            
+
             foreach (qEdge edge in connectedEdges)
             {
                 Vector3d vector = edge.GetOppositeNode(node).Coordinate - node.Coordinate;
                 vectorSum = vectorSum + vector;
             }
-            return vectorSum;
+            Vector3d laplacian = vectorSum / (double)connectedEdges.Count;
+            return laplacian;
         } // OK
         private qNode OptimizationBasedSmoothing(qNode node, double maxModelDimension, List<qEdge> globalEdgeList)
         {
@@ -4091,13 +4096,14 @@ namespace MeshPoints.QuadRemesh
             // 3. Move node:
             for (int i = 0; i <= 4; i++) // Constant "4" as proposed in paper
             {
-                Point3d newPoint = node.Coordinate + gamma * g;
+                Point3d newPoint = new Point3d((node.Coordinate + gamma * g).X, (node.Coordinate + gamma * g).Y, (node.Coordinate + gamma * g).Z);
                 double myMinNew = 100;
 
                 foreach (qElement element in connectedElements)
                 {
+                     
                     List<qNode> elementNodes = element.GetNodesOfElement();
-                    elementNodes[elementNodes.IndexOf(node)].Coordinate = newPoint;
+                    elementNodes[elementNodes.IndexOf(node)] = new qNode(newPoint, node.BoundaryNode);
                     qElement newElement = CreateElementFromNodes(elementNodes);
                     double my = CalculateDistortionMetric(newElement);
                     if (my < myMinNew) { myMinNew = my; }
@@ -4105,11 +4111,11 @@ namespace MeshPoints.QuadRemesh
 
                 if (myMinNew >= myMin + 0.0001) // Constant as proposed in paper
                 {
-                    newNode.Coordinate = newPoint;
+                    newNode = new qNode(newPoint, node.BoundaryNode);
                     newNode.OBS = true;
                     break;
                 }
-                else { gamma = gamma / 2; newNode.OBS = false; }
+                else { gamma = gamma / 2; newNode = node; newNode.OBS = false; }
             }
             return newNode;
         }
@@ -4117,9 +4123,10 @@ namespace MeshPoints.QuadRemesh
         {
             if (direction == "x")
             {
+                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z);
                 List<qNode> elementNodes = element.GetNodesOfElement();
-                Point3d point = new Point3d(node.Coordinate.X + delta, node.Coordinate.Y, node.Coordinate.Z);
-                elementNodes[elementNodes.IndexOf(node)].Coordinate = point;
+                point = new Point3d(point.X + delta, point.Y, point.Z);
+                elementNodes[elementNodes.IndexOf(node)] = new qNode(point, node.BoundaryNode);
                 qElement newElement = CreateElementFromNodes(elementNodes);
                 double myPertubed = CalculateDistortionMetric(newElement); // pertubed distortion metric. 
                 double gi = (myPertubed - element.DistortionMetric) / delta;
@@ -4127,9 +4134,10 @@ namespace MeshPoints.QuadRemesh
             }
             else if (direction == "y")
             {
+                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z);
                 List<qNode> elementNodes = element.GetNodesOfElement();
-                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y + delta, node.Coordinate.Z);
-                elementNodes[elementNodes.IndexOf(node)].Coordinate = point;
+                point = new Point3d(point.X, point.Y + delta, point.Z);
+                elementNodes[elementNodes.IndexOf(node)] = new qNode(point, node.BoundaryNode);
                 qElement newElement = CreateElementFromNodes(elementNodes);
                 double myPertubed = CalculateDistortionMetric(newElement); // pertubed distortion metric. 
                 double gi = (myPertubed - element.DistortionMetric) / delta;
@@ -4137,9 +4145,10 @@ namespace MeshPoints.QuadRemesh
             }
             else if (direction == "z")
             {
+                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z);
                 List<qNode> elementNodes = element.GetNodesOfElement();
-                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z + delta);
-                elementNodes[elementNodes.IndexOf(node)].Coordinate = point;
+                point = new Point3d(point.X, point.Y, point.Z + delta);
+                elementNodes[elementNodes.IndexOf(node)] = new qNode(point, node.BoundaryNode);
                 qElement newElement = CreateElementFromNodes(elementNodes);
                 double myPertubed = CalculateDistortionMetric(newElement); // pertubed distortion metric. 
                 double gi = (myPertubed - element.DistortionMetric) / delta;
