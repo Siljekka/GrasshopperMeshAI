@@ -119,7 +119,7 @@ namespace MeshPoints.Classes
 
                 mesh.Faces.AddFace(0, 1, 2, 3);
                 mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-                
+                mesh.UnifyNormals();
                 element.Mesh = mesh;
 
                 elements.Add(element); // add element to list of elements
@@ -187,6 +187,7 @@ namespace MeshPoints.Classes
 
                         localMesh.Normals.ComputeNormals();  //Control if needed
                         localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                        localMesh.UnifyNormals();
                         localMesh.Compact(); //to ensure that it calculate
                         element.Mesh = localMesh;
 
@@ -285,7 +286,7 @@ namespace MeshPoints.Classes
             mesh.Normals.ComputeNormals();  //Control if needed
             mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
             mesh.Compact(); //to ensure that it calculate
-
+            mesh.UnifyNormals();
             this.Mesh = mesh; ;
         }
     }
