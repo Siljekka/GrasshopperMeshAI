@@ -136,6 +136,47 @@ namespace MeshPoints.Classes
             List<qNode> nodeList = new List<qNode>();
             if (!this.IsQuad)
             {
+                List<qEdge> triEdges = this.EdgeList;
+                qEdge baseEdge = triEdges[0];
+                qEdge rightEdge = triEdges[1];
+                qEdge leftEdge = triEdges[2];
+
+                qNode node1 = new qNode();
+                qNode node2 = new qNode();
+                qNode node3 = new qNode();
+
+                if (baseEdge.StartNode == leftEdge.StartNode | baseEdge.StartNode == leftEdge.EndNode)
+                {
+                    node1 = baseEdge.StartNode;
+                    node2 = baseEdge.EndNode;
+                    if (baseEdge.StartNode == leftEdge.StartNode) { node3 = leftEdge.EndNode; }
+                    if (baseEdge.StartNode == leftEdge.EndNode) { node3 = leftEdge.StartNode; }
+                }
+                else if (baseEdge.EndNode == leftEdge.StartNode | baseEdge.EndNode == leftEdge.EndNode)
+                {
+                    node1 = baseEdge.EndNode;
+                    node2 = baseEdge.StartNode;
+                    if (baseEdge.EndNode == leftEdge.StartNode) { node3 = leftEdge.EndNode; }
+                    if (baseEdge.EndNode == leftEdge.EndNode) { node3 = leftEdge.StartNode; }
+                }
+                else if (baseEdge.StartNode == rightEdge.StartNode | baseEdge.StartNode == rightEdge.EndNode)
+                {
+                    node2 = baseEdge.StartNode;
+                    node1 = baseEdge.EndNode;
+                    if (baseEdge.StartNode == rightEdge.StartNode) { node3 = rightEdge.EndNode; }
+                    if (baseEdge.StartNode == rightEdge.EndNode) { node3 = rightEdge.StartNode; }
+                }
+                else if (baseEdge.EndNode == rightEdge.StartNode | baseEdge.EndNode == rightEdge.EndNode)
+                {
+                    node2 = baseEdge.EndNode;
+                    node1 = baseEdge.StartNode;
+                    if (baseEdge.EndNode == rightEdge.StartNode) { node3 = rightEdge.EndNode; }
+                    if (baseEdge.EndNode == rightEdge.EndNode) { node3 = rightEdge.StartNode; }
+                }
+
+                nodeList = new List<qNode> { node1, node2, node3 }; // n1: bottom left, n2: bottom right, n3: top 
+
+                /* todo: slett
                 foreach (qEdge edge in this.EdgeList)
                 {
                     if (!nodeList.Contains(edge.StartNode))
@@ -147,7 +188,7 @@ namespace MeshPoints.Classes
                     {
                         nodeList.Add(edge.EndNode);
                     }
-                }
+                }*/
             }
             else if (this.IsQuad)
             {
