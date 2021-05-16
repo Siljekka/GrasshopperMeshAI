@@ -7,7 +7,7 @@ using Rhino.Geometry;
 
 namespace MeshPoints.Classes
 {
-    class Mesh2D
+    class Mesh2D // to do: Slett
     {
         public List<Element> Elements{ get; set; } //list of nodes
         public List<Node> Nodes { get; set; } //list of nodes

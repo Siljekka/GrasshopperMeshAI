@@ -6,7 +6,7 @@ using Rhino.Geometry.Collections;
 using MeshPoints.Classes;
 
 
-namespace MeshPoints.MoveNodes
+namespace MeshPoints.Tools
 {
     public class MoveNodes : GH_Component
     {
@@ -15,7 +15,7 @@ namespace MeshPoints.MoveNodes
         /// </summary>
         public MoveNodes()
           : base("Move Nodes", "mn",
-              "Move nodes of a SmartMesh with gene pools",
+              "Move nodes of a structured SmartMesh with gene pools",
               "SmartMesh", "Tools")
         {
         }
@@ -61,7 +61,9 @@ namespace MeshPoints.MoveNodes
 
             // Variables
             SmartMesh newMesh = new SmartMesh();
-            List<Node> newNodes = new List<Node>();
+            List<Point3d> newPoints = new List<Point3d>();
+            double overlapTolerance = 0.95; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
+
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) return;
@@ -69,6 +71,7 @@ namespace MeshPoints.MoveNodes
             if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
             if ((genesU.Count < oldMesh.Nodes.Count) | (genesV.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
             if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
+            if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
 
             // 2. Inherit properties from old mesh
             newMesh.nu = oldMesh.nu;
@@ -87,15 +90,13 @@ namespace MeshPoints.MoveNodes
                 Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[i], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
 
                 // b. Get coordinates of the moved node.
-                Point3d meshPoint = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genesU, genesV, genesW);
+                Point3d point = GetNewCoordinateOfNode(i, pointFace, pointEdge, oldMesh, genesU, genesV, genesW, overlapTolerance);
+                newPoints.Add(point);
 
-                // c. Make new node from moved node.
-                Node node = new Node(i, meshPoint, oldMesh.Nodes[i].BC_U, oldMesh.Nodes[i].BC_V, oldMesh.Nodes[i].BC_W);
-                newNodes.Add(node);
             }
 
             // 4. Set new nodes and elements
-            newMesh.Nodes = newNodes;
+            newMesh.CreateNodes(newPoints, newMesh.nu-1, newMesh.nv-1, newMesh.nw-1);
             if (newMesh.Type == "Surface")
             {
                 newMesh.CreateQuadElements();
@@ -168,7 +169,7 @@ namespace MeshPoints.MoveNodes
         /// Move the old node in allowable directions.
         /// </summary>
         /// <returns> Returns coordinates of moved node.</returns>
-        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, List<double> genesU, List<double> genesV, List<double> genesW)
+        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, List<double> genesU, List<double> genesV, List<double> genesW, double overlapTolerance)
         {
             Point3d movedNode = new Point3d();
             bool IsOnEdge = pointEdge.Item1;
@@ -189,12 +190,12 @@ namespace MeshPoints.MoveNodes
             if (genesU[i] > 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genesU[i]; // make vector translating node in U-direction
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i + 1); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i + 1, overlapTolerance); return movedNode; } // make meshPoint
             }
             else if (genesU[i] < 0 & !mesh.Nodes[i].BC_U)  // 2. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - 1].Coordinate) * genesU[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i - 1); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesU[i], i, i - 1, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorU = translationVectorU * 0; }  // 3. if
 
@@ -202,12 +203,12 @@ namespace MeshPoints.MoveNodes
             if (genesV[i] > 0 & !mesh.Nodes[i].BC_V) // 1. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genesV[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i + mesh.nu); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i + mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
             else if (genesV[i] < 0 & !mesh.Nodes[i].BC_V) // 2. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - mesh.nu ].Coordinate) * genesV[i];
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i - mesh.nu); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesV[i], i, i - mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorV = translationVectorV * 0; } // 3. if
 
@@ -218,18 +219,17 @@ namespace MeshPoints.MoveNodes
                 if (genesW[i] > 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i + (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
                 else if (genesW[i] < 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genesW[i];
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genesW[i], i, i - (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
                 else { translationVectorW = translationVectorW * 0; } // 3. if                            
             }
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
-            double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
             movedNode = new Point3d
                 (
                 mesh.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
@@ -250,7 +250,7 @@ namespace MeshPoints.MoveNodes
         /// Make new node if point is on edge.
         /// </summary>
         /// <returns> Returns coordinates of moved node on edge.</returns>
-        private Point3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop)
+        private Point3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop, double overlapTolerance)
         {
             Point3d movedNode = new Point3d();
             Curve edgeCurve1;
@@ -271,18 +271,18 @@ namespace MeshPoints.MoveNodes
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit) 
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes)); 
+                    movedNode = edgeCurve2.PointAtNormalizedLength(0.5 * overlapTolerance * genes); 
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve
+                else { movedNode = edgeCurve1.PointAtNormalizedLength(0.5 * overlapTolerance * genes); } // move node along edgeCurve
             }
             else if (genes < 0)
             {
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit)
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength(-(0.49 * genes));
+                    movedNode = edgeCurve2.PointAtNormalizedLength(-(0.5 * overlapTolerance * genes));
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.49 * genes)); } // move node along edgeCurve
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.5 * overlapTolerance * genes)); } // move node along edgeCurve
             }
 
             return movedNode;
