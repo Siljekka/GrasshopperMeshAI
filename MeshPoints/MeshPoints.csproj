@@ -137,6 +137,7 @@
     <Compile Include="QuadRemesh\DeconstructQNode.cs" />
     <Compile Include="FiniteElementMethod\FEMSolver.cs" />
     <Compile Include="Tools\NormalizeSurface.cs" />
+    <Compile Include="Tools\PreviewGridInformation.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
