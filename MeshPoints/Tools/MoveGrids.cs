@@ -49,6 +49,7 @@ namespace MeshPoints.Tools
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Updated mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Nodes", "m", "", GH_ParamAccess.list); // to do : slett
         }
 
         /// <summary>
@@ -76,6 +77,8 @@ namespace MeshPoints.Tools
             // Variables
             SmartMesh newMesh = new SmartMesh();
             double overlapTolerance = 0.95; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
+            List<Node> newNodes = new List<Node>();
+
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) return;
@@ -99,7 +102,7 @@ namespace MeshPoints.Tools
             double genV = 0;
             double genW = 0;
 
-            if (gridInformation == null) // for unmerged SmartMesh
+            if (gridInformation.Count == 0) // for unmerged SmartMesh
             {
                 for (int k = 0; k < oldMesh.nw; k++)
                 {
@@ -143,29 +146,10 @@ namespace MeshPoints.Tools
             }
             else // for merged SmartMesh
             {
-                List<Node> newNodes = new List<Node>();
                 foreach (Node oldNode in oldMesh.Nodes)
                 {
                     Node newNode = new Node(oldNode.GlobalId, oldNode.Coordinate, oldNode.BC_U, oldNode.BC_V);
                     newNodes.Add(newNode);
-                }
-
-                
-                List<List<List<Node>>> gridInfoCopy = new List<List<List<Node>>>();
-                foreach (List<List<Node>> gridGroup in gridInformation)
-                {
-                    List<List<Node>> gridGroupCopy = new List<List<Node>>();
-                    foreach (List<Node> grid in gridGroup)
-                    {
-                        List<Node> gridCopy = new List<Node>();
-                        foreach (Node node in grid)
-                        {
-                            Node newNode = new Node(node.GlobalId, node.Coordinate, node.BC_U, node.BC_V);
-                            gridCopy.Add(newNode);
-                        }
-                        gridGroupCopy.Add(gridCopy);
-                    }
-                    gridInfoCopy.Add(gridGroupCopy);
                 }
 
                 List<Element> newElements = new List<Element>();
@@ -191,27 +175,27 @@ namespace MeshPoints.Tools
                             Vector3d translation = Vector3d.Zero;
 
                             Point3d tempPoint = newNodes[gridInformation[k][j][i].GlobalId].Coordinate;
-                            Point3d tempPointFront = newNodes[gridInformation[k][j+1][i].GlobalId].Coordinate;
+                            Point3d tempPointFront = newNodes[gridInformation[k][j + 1][i].GlobalId].Coordinate;
                             Point3d tempPointBack = newNodes[gridInformation[k][j - 1][i].GlobalId].Coordinate;
-
-                            // to do: sjekk ut temp-points..
+                            
                             if (gridGroup[j][i].Type == "Merged")
                             {
                                 tempPoint = oldPoint;
                                 //tempPointFront = gridGroup[j + 1][i].Coordinate;
                                 //tempPointBack = gridGroup[j - 1][i].Coordinate;
                             }
+                            
                             if (gridGroup[j+1][i].Type == "Merged")
                             {
-                                tempPointFront = gridGroup[j + 1][i].Coordinate;
+                                //tempPointFront = gridGroup[j + 1][i].Coordinate;
                             }
                             if (gridGroup[j - 1][i].Type == "Merged")
                             {
-                                tempPointBack = gridGroup[j - 1][i].Coordinate;
+                                //tempPointBack = gridGroup[j - 1][i].Coordinate;
                             }
 
-
-                            if (gene <= 0)
+                            
+                            if (gene >= 0) 
                             {
                                 //translation = 0.5 * (gridGroup[j + 1][i].Coordinate - tempPoint) * gene * overlapTolerance;
                                 translation = 0.5 * (tempPointFront - tempPoint) * gene * overlapTolerance;
@@ -231,21 +215,18 @@ namespace MeshPoints.Tools
                                 {
                                     if (tempPoint == newElements[m].Nodes[n].Coordinate)
                                     {
-                                        int nodeIndex = newElements[m].Connectivity[n];
+                                        int id = gridInformation[k][j][i].GlobalId;
                                         newElements[m].Nodes[n].Coordinate = newPoint;
-                                        newNodes[nodeIndex].Coordinate = newPoint;
+                                        newNodes[id].Coordinate = newPoint;
                                     }
-                                    newElements[m].GetElementMesh();
                                 }
+                                newElements[m].GetElementMesh();
                             }
                         }
                     }
                 }
-
                 newMesh = new SmartMesh(newNodes, newElements, null, "Surface");
                 newMesh.CreateMesh();
-
-
             }
 
 
@@ -253,6 +234,7 @@ namespace MeshPoints.Tools
             // Output
             DA.SetData(0, newMesh);
             DA.SetData(1, newMesh.Mesh);
+            DA.SetDataList(2, newNodes);
         }
         #region Methods
 
@@ -414,7 +396,7 @@ namespace MeshPoints.Tools
                     edgeCurve2.Reverse();
                     movedNode = edgeCurve2.PointAtNormalizedLength((0.5 * overlapTolerance * genes));
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.5 * genes)); } // move node along edgeCurve
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.5 * overlapTolerance * genes)); } // move node along edgeCurve
             }
             else if (genes < 0)
             {
