@@ -177,7 +177,7 @@ namespace MeshPoints.Tools
                             Point3d tempPoint = newNodes[gridInformation[k][j][i].GlobalId].Coordinate;
                             Point3d tempPointFront = newNodes[gridInformation[k][j + 1][i].GlobalId].Coordinate;
                             Point3d tempPointBack = newNodes[gridInformation[k][j - 1][i].GlobalId].Coordinate;
-                            
+
                             if (gridGroup[j][i].Type == "Merged")
                             {
                                 tempPoint = oldPoint;
@@ -194,7 +194,7 @@ namespace MeshPoints.Tools
                                 //tempPointBack = gridGroup[j - 1][i].Coordinate;
                             }
 
-                            
+
                             if (gene >= 0) 
                             {
                                 //translation = 0.5 * (gridGroup[j + 1][i].Coordinate - tempPoint) * gene * overlapTolerance;
