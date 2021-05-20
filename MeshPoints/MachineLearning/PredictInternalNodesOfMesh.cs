@@ -2,6 +2,8 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
+using Keras.Models;
+using Numpy;
 
 namespace MeshPoints.MachineLearning
 {
@@ -40,12 +42,42 @@ namespace MeshPoints.MachineLearning
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             Surface inputSurface = null;
-            List<Point3d> predictedInternalNodes = new List<Point3d>();
-
-
             DA.GetData(0, ref inputSurface);
+
+
+            List<Point3d> predictedInternalNodes = NeuralNetworkPrediction(inputSurface);
+
             DA.SetData(0, predictedInternalNodes);
 
+        }
+
+        List<Point3d> NeuralNetworkPrediction(Surface surface)
+        {
+            // Load model
+            var model = Sequential.LoadModel("models/direct-internal-nodes");
+
+            // Turn surface data into wanted format (x1 y1 ... xn yn) in CCW order.
+            NurbsSurface nurbsSurface = surface.ToNurbsSurface();
+            List<double> surfacePointCoordinateList = new List<double>();
+            foreach ( var point in nurbsSurface.Points)
+            {
+                surfacePointCoordinateList.Add(point.X);
+                surfacePointCoordinateList.Add(point.Y);
+            }
+
+            var features = np.array(new[] { surfacePointCoordinateList });
+            var predictionData = np.expand_dims(features, axis: 0);
+
+            var predictionResult = model.Predict(predictionData);
+
+            var prediction = predictionResult.GetData<double>();
+
+            List<Point3d> predictedPoints = new List<Point3d> { 
+                new Point3d(prediction[0], prediction[1], 0),
+                new Point3d(prediction[2], prediction[3], 0)
+            };
+
+            return predictedPoints;
         }
 
         /// <summary>
