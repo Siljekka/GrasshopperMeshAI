@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,9 +10,12 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MeshPoints</RootNamespace>
     <AssemblyName>MeshPoints</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <IsWebBootstrapper>false</IsWebBootstrapper>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -32,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CSparse, Version=3.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\CSparse.3.5.0\lib\net45\CSparse.dll</HintPath>
+    </Reference>
     <Reference Include="FParsec, Version=1.0.0.0, Culture=neutral, PublicKeyToken=40ccfc0a09edbb5d, processorArchitecture=MSIL">
       <HintPath>..\packages\FParsec.1.0.3\lib\net40-client\FParsec.dll</HintPath>
     </Reference>
@@ -42,13 +48,13 @@
       <HintPath>..\packages\FSharp.Core.4.6.0\lib\net45\FSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="MathNet.Numerics, Version=4.15.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MathNet.Numerics.4.15.0\lib\net40\MathNet.Numerics.dll</HintPath>
+      <HintPath>..\packages\MathNet.Numerics.4.15.0\lib\net461\MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="MathNet.Numerics.FSharp, Version=4.15.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MathNet.Numerics.FSharp.4.15.0\lib\net45\MathNet.Numerics.FSharp.dll</HintPath>
     </Reference>
     <Reference Include="MathNet.Symbolics, Version=0.24.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MathNet.Symbolics.0.24.0\lib\net45\MathNet.Symbolics.dll</HintPath>
+      <HintPath>..\packages\MathNet.Symbolics.0.24.0\lib\net461\MathNet.Symbolics.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -76,41 +82,61 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BrepPoints.cs" />
+    <Compile Include="Classes\qConstants.cs" />
+    <Compile Include="CreateMesh\CreateSurfaceMesh %28TargetLength%29.cs" />
+    <Compile Include="Mesh_outdated\BrepPoints.cs" />
+    <Compile Include="Classes\Geometry.cs" />
+    <Compile Include="Classes\Material.cs" />
     <Compile Include="Classes\Node.cs" />
+    <Compile Include="Classes\qNode.cs" />
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
-    <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
-    <Compile Include="CreateMesh\CreateMesh3D_Box.cs" />
-    <Compile Include="CreateMesh\CreateSolidMesh_GenericSweep.cs" />
-    <Compile Include="DeconstructClasses\DeconstructElement3D.cs" />
-    <Compile Include="DeconstructClasses\DeconstructMesh3D.cs" />
-    <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
-    <Compile Include="DeconstructClasses\DeconstructElement.cs" />
-    <Compile Include="DeconstructClasses\DeconstructMesh2D.cs" />
-    <Compile Include="DeconstructClasses\DeconstructNode.cs" />
-    <Compile Include="Galapagos\MoveSolidMeshVertices.cs" />
-    <Compile Include="Galapagos\MoveMesh2DVertices.cs" />
-    <Compile Include="Classes\Mesh2D.cs" />
-    <Compile Include="Classes\Mesh3D.cs" />
-    <Compile Include="GenerateINPfile.cs" />
-    <Compile Include="MeshQuality\JacobianRatio3D.cs" />
-    <Compile Include="MeshQuality\MeshQuality.cs" />
-    <Compile Include="Mesh_outdated\MeshFlattenPoints.cs" />
-    <Compile Include="CreateMesh\CreateMesh2D.cs" />
-    <Compile Include="Mesh_outdated\MeshPoints3D_outdated.cs" />
-    <Compile Include="Classes\MeshQualityOLD.cs" />
-    <Compile Include="Mesh_outdated\DeconstructMesh.cs" />
-    <Compile Include="MeshPointsInfo.cs" />
-    <Compile Include="Mesh_outdated\MeshPointsComponentVer2.cs" />
-    <Compile Include="Mesh_outdated\MeshPointsComponentVer1.cs" />
-    <Compile Include="IsSweepable.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Classes\FEM.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Tools\CreateData.cs" />
+    <Compile Include="CreateMesh\CreateSolidMesh.cs" />
+    <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
+    <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
+    <Compile Include="DeconstructClasses\DeconstructGeometry.cs" />
+    <Compile Include="FiniteElementMethod\FEMBoundaryCondition.cs" />
+    <Compile Include="FiniteElementMethod\FEMLoad.cs" />
+    <Compile Include="FiniteElementMethod\FEMMaterial.cs" />
+    <Compile Include="Mesh_outdated\CreateMesh3D_Box.cs" />
+    <Compile Include="Mesh_outdated\CreateSolidMesh_OldSweep.cs" />
+    <Compile Include="DeconstructClasses\DeconstructElement.cs" />
+    <Compile Include="DeconstructClasses\DeconstructSmartMesh.cs" />
+    <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
+    <Compile Include="Mesh_outdated\DeconstructMesh2D.cs" />
+    <Compile Include="DeconstructClasses\DeconstructNode.cs" />
+    <Compile Include="Tools\DataToExcel.cs" />
+    <Compile Include="Tools\MergeSmartMesh.cs" />
+    <Compile Include="Tools\MoveCorners.cs" />
+    <Compile Include="Tools\MoveGrids.cs" />
+    <Compile Include="Tools\MoveNodes.cs" />
+    <Compile Include="Mesh_outdated\MoveMesh2DVertices.cs" />
+    <Compile Include="Classes\Mesh2D.cs" />
+    <Compile Include="Classes\SmartMesh.cs" />
+    <Compile Include="Tools\GenerateINPfile.cs" />
+    <Compile Include="Mesh_outdated\JacobianRatio3D.cs" />
+    <Compile Include="Tools\MeshQuality.cs" />
+    <Compile Include="Mesh_outdated\CreateMesh2D.cs" />
+    <Compile Include="Tools\IdealizePoints.cs" />
+    <Compile Include="Tools\MeshPointsInfo.cs" />
+    <Compile Include="Tools\IsSweepable.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Classes\qEdge.cs" />
+    <Compile Include="Classes\qElement.cs" />
+    <Compile Include="QuadRemesh\QuadRemesh.cs" />
+    <Compile Include="CreateMesh\SweepSmartMesh.cs" />
+    <Compile Include="QuadRemesh\DeconstructQEdge.cs" />
+    <Compile Include="QuadRemesh\DeconstructQElement.cs" />
+    <Compile Include="QuadRemesh\DeconstructQNode.cs" />
+    <Compile Include="FiniteElementMethod\FEMSolver.cs" />
+    <Compile Include="Tools\NormalizeSurface.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -121,12 +147,30 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources\test.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Properties\Resources\Abaqus.png" />
-    <Content Include="Properties\Resources\MeshQuality.png" />
-    <Content Include="Properties\Resources\mountain.png" />
+    <Content Include="Properties\Resources\Icon-QuadRemesh.png" />
+    <Content Include="Properties\Resources\Icon_CreateData.png" />
+    <Content Include="Properties\Resources\Icon_DecElement.png" />
+    <Content Include="Properties\Resources\Icon_DecGeometry.png" />
+    <Content Include="Properties\Resources\Icon_DecNode.png" />
+    <Content Include="Properties\Resources\Icon_DecQEdge.png" />
+    <Content Include="Properties\Resources\Icon_DecQElement.png" />
+    <Content Include="Properties\Resources\Icon_DecQNode.png" />
+    <Content Include="Properties\Resources\Icon_DecQuality.png" />
+    <Content Include="Properties\Resources\Icon_DecSmartMesh.png" />
+    <Content Include="Properties\Resources\Icon_Excel.png" />
+    <Content Include="Properties\Resources\Icon_INP.png" />
+    <Content Include="Properties\Resources\Icon_MapPoints.png" />
+    <Content Include="Properties\Resources\Icon_MergeNodes.png" />
+    <Content Include="Properties\Resources\Icon_MoveCorners.png" />
+    <Content Include="Properties\Resources\Icon_MoveNodes.png" />
+    <Content Include="Properties\Resources\Icon_NormalizeSurface.png" />
+    <Content Include="Properties\Resources\Icon_Quality.png" />
+    <Content Include="Properties\Resources\Icon_Solid.png" />
+    <Content Include="Properties\Resources\Icon_Surface.png" />
+    <Content Include="Properties\Resources\Icon_SweepSolid.png" />
+    <Content Include="Properties\Resources\Icon_Triangle.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MachineLearning\" />
@@ -152,4 +196,11 @@ Erase "$(TargetPath)"</PostBuildEvent>
     </StartArguments>
     <StartAction>Program</StartAction>
   </PropertyGroup>
+  <Import Project="..\packages\MathNet.Numerics.MKL.Win-x64.2.5.0\build\MathNet.Numerics.MKL.Win-x64.targets" Condition="Exists('..\packages\MathNet.Numerics.MKL.Win-x64.2.5.0\build\MathNet.Numerics.MKL.Win-x64.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\MathNet.Numerics.MKL.Win-x64.2.5.0\build\MathNet.Numerics.MKL.Win-x64.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MathNet.Numerics.MKL.Win-x64.2.5.0\build\MathNet.Numerics.MKL.Win-x64.targets'))" />
+  </Target>
 </Project>

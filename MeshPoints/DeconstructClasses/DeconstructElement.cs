@@ -4,19 +4,20 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-// Deconstruct the class Element
-
-namespace MeshPoints
+namespace MeshPoints.DeconstructClasses
 {
-    public class Deconstruct_Element : GH_Component
+    public class DeconstructElement : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the Deconstruct_Element class.
+        /// Initializes a new instance of the MyComponent1 class.
         /// </summary>
-        public Deconstruct_Element()
-          : base("Deconstruct Element", "decE",
-              "Deconstructing element class",
-              "MyPlugIn", "Deconstruct")
+        /// <summary>
+        /// Initializes a new instance of the Deconstruct_Node class.
+        /// </summary>
+        public DeconstructElement()
+        : base("Deconstruct Element", "decE",
+              "Deconstructing element class for SmartMesh Class",
+              "SmartMesh", "Deconstruct")
         {
         }
 
@@ -33,13 +34,11 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Node 1", "n", "Node 1", GH_ParamAccess.item); //0
-            pManager.AddGenericParameter("Node 2", "n", "Node 2", GH_ParamAccess.item); //1
-            pManager.AddGenericParameter("Node 3", "n", "Node 3", GH_ParamAccess.item); //2
-            pManager.AddGenericParameter("Node 4", "n", "Node 4", GH_ParamAccess.item); //3
-
-            pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //4 
-            pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //5
+            pManager.AddGenericParameter("Nodes", "nodes", "Nodes of element", GH_ParamAccess.list); //0
+            pManager.AddGenericParameter("Connectivity", "con", "Connectivity of local to global nodes", GH_ParamAccess.list); //0
+            pManager.AddGenericParameter("Type", "type", "Element type", GH_ParamAccess.item); //0
+            pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //8
+            pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //9
         }
 
         /// <summary>
@@ -48,17 +47,16 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //input
+            // Input
             Element e = new Element();
             DA.GetData(0, ref e);
 
-            //output
-            DA.SetData(0, e.Node1);
-            DA.SetData(1, e.Node2);
-            DA.SetData(2, e.Node3);
-            DA.SetData(3, e.Node4);
-            DA.SetData(4, e.Id);
-            DA.SetData(5, e.mesh);
+            // Output
+            DA.SetDataList(0, e.Nodes);
+            DA.SetDataList(1, e.Connectivity);
+            DA.SetData(2, e.Type);
+            DA.SetData(3, e.Id);
+            DA.SetData(4, e.Mesh);
         }
 
         /// <summary>
@@ -70,7 +68,7 @@ namespace MeshPoints
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_DecElement;
             }
         }
 
@@ -79,7 +77,7 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("149bdc58-2f8a-4b90-ae82-62389190e956"); }
+            get { return new Guid("df3f3c5f-c32c-44ce-83f1-831a94edd1d8"); }
         }
     }
 }

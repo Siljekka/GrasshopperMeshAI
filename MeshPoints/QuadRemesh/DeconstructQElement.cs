@@ -4,19 +4,17 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-// Deconstruct the class Quality
-
-namespace MeshPoints
+namespace MeshPoints.QuadRemesh
 {
-    public class DeconstructQuality : GH_Component
+    public class DeconstructQElement : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the DeconstructQuality class.
+        /// Initializes a new instance of the DeconstructQElement class.
         /// </summary>
-        public DeconstructQuality()
-          : base("Deconstruct Quality", "decQ",
-              "Deconstructing quality class",
-              "SmartMesh", "Deconstruct")
+        public DeconstructQElement()
+          : base("Deconstruct qElement", "dqe",
+              "Deconstruct qElement class",
+              "SmartMesh", "QuadRemesh")
         {
         }
 
@@ -25,8 +23,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Quality", "q", "Quality class", GH_ParamAccess.item);
-
+            pManager.AddGenericParameter("qElement", "qel", "Input qElement class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -34,10 +31,10 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Corresponing element", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Aspect Ratio", "AR", "Ratio between shortest and longest mesh edge", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Skewness", "SK", "Angle ratio of mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Jacobian Ratio", "JR", "Jacobian ratio of mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("qEdges", "qe", "Element edges", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Angles", "qe", "Element angles", GH_ParamAccess.list);
+            pManager.AddGenericParameter("IsQuad", "qe", "True if element is a quad", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Contour", "qe", "Contour of element", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -46,15 +43,12 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //input
-            Quality q = new Quality();
-            DA.GetData(0, ref q);
-
-            //output
-            DA.SetData(0, q.element);
-            DA.SetData(1, q.AspectRatio);
-            DA.SetData(2, q.Skewness);
-            DA.SetData(3, q.JacobianRatio);
+            qElement element = new qElement();
+            DA.GetData(0, ref element);
+            DA.SetDataList(0, element.EdgeList);
+            DA.SetDataList(1, element.AngleList);
+            DA.SetData(2, element.IsQuad);
+            DA.SetDataList(3, element.Contour);
         }
 
         /// <summary>
@@ -66,7 +60,7 @@ namespace MeshPoints
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_DecQuality;
+                return Properties.Resources.Icon_DecQElement;
             }
         }
 
@@ -75,7 +69,7 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("ef2f555e-2d22-4c47-8f10-eb6f7ce8ff52"); }
+            get { return new Guid("6c7a5125-b4e9-45f1-992b-1bcfe1a9274e"); }
         }
     }
 }

@@ -16,7 +16,7 @@ namespace MeshPoints
         public Deconstruct_Node()
           : base("Deconstruct Node", "decN",
               "Deconstructing node class",
-              "MyPlugIn", "Deconstruct")
+              "SmartMesh", "Deconstruct")
         {
         }
 
@@ -33,12 +33,11 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Local Id", "lid", "Local Id", GH_ParamAccess.item); //0
-            pManager.AddGenericParameter("Global Id", "gid", "Global Id", GH_ParamAccess.item); //1
-            pManager.AddGenericParameter("Coordinate", "xyz", "Coordinate", GH_ParamAccess.item); //2
-            pManager.AddGenericParameter("BC u-dir", "bcu", "Boundary condtion in u-direction", GH_ParamAccess.item); //3
-            pManager.AddGenericParameter("BC v-dir", "bcv", "Boundary condtion in v-direction", GH_ParamAccess.item); //4
-            pManager.AddGenericParameter("BC w-dir", "bcw", "Boundary condtion in w-direction", GH_ParamAccess.item); //5
+            pManager.AddGenericParameter("Global Id", "gid", "Global Id", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Coordinate", "xyz", "Coordinate", GH_ParamAccess.item);
+            pManager.AddGenericParameter("BC u-dir", "bcu", "Boundary condtion in u-direction", GH_ParamAccess.item);
+            pManager.AddGenericParameter("BC v-dir", "bcv", "Boundary condtion in v-direction", GH_ParamAccess.item);
+            pManager.AddGenericParameter("BC w-dir", "bcw", "Boundary condtion in w-direction", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -52,12 +51,11 @@ namespace MeshPoints
             DA.GetData(0, ref n);
 
             //output
-            DA.SetData(0, n.LocalId);
-            DA.SetData(1, n.GlobalId);
-            DA.SetData(2, n.Coordinate);
-            DA.SetData(3, n.BC_U);
-            DA.SetData(4, n.BC_V);
-            DA.SetData(5, n.BC_W);
+            DA.SetData(0, n.GlobalId);
+            DA.SetData(1, n.Coordinate);
+            DA.SetData(2, n.BC_U);
+            DA.SetData(3, n.BC_V);
+            DA.SetData(4, n.BC_W);
         }
 
         /// <summary>
@@ -69,7 +67,7 @@ namespace MeshPoints
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_DecNode;
             }
         }
 

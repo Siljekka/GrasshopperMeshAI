@@ -15,7 +15,7 @@ namespace MeshPoints.CreateMesh
         public CreateTriangleMesh()
           : base("Triangle Mesh", "TriMesh",
               "Creates a triangle mesh on a (2D) Brep surface using built-in Delaunay method",
-              "MyPlugin", "Mesh")
+              "SmartMesh", "Mesh")
         {
         }
 
@@ -52,25 +52,27 @@ namespace MeshPoints.CreateMesh
             DA.GetData(2, ref totalInnerNodeCount);
 
             #region Main
-            // 1. Create nodes along the edges of the surface.
+            // 1. Create nodes along the edges of the surface and flatten.
             List<List<Point3d>> edgeNodesSurface = CreateEdgePointsByCount(meshSurface, totalEdgeNodeCount);
-
-            // 2. Create points inside the surface by creating a bounding box, populating it with points, and culling all points not inside the surface.
-            Brep boundingBoxSurface = CreateBoundingBoxFromBrep(meshSurface);
-            List<Point3d> nodeGridBoundingBox = CreatePointGridInBoundingBox(boundingBoxSurface, meshSurface, totalInnerNodeCount);
-            List<Point3d> nodesInsideSurface = CullPointsOutsideSurface(nodeGridBoundingBox, meshSurface);
-
-            // 3. Flatten list of points to use for triangle meshing and cast to compatible data structure (Node2List) for Delaunay method.
-            List<Point3d> nodeCollection = new List<Point3d>();
+            // We flatten the list here, as the ListList-structure of CreateEdgePointsByCount is useful elsewhere.
             List<Point3d> flattenedEdgeNodes = new List<Point3d>();
             foreach(List<Point3d> edge in edgeNodesSurface)
             {
                 // Do not add endnode of edge as this is duplicate of startnode of next edge
-                for ( int i = 0; i<edge.Count() - 1; i++)
+                for ( int i = 0; i<edge.Count()-1; i++)
                 {
                     flattenedEdgeNodes.Add(edge[i]);
                 }
             }
+
+            // 2. Create points inside the surface by creating a bounding box, populating it with points, and culling all points not inside the surface.
+            Brep boundingBoxSurface = CreateBoundingBoxFromBrep(meshSurface);
+            if (boundingBoxSurface == null) { return; }
+            List<Point3d> nodeGridBoundingBox = CreatePointGridInBoundingBox(boundingBoxSurface, meshSurface, totalInnerNodeCount);
+            List<Point3d> nodesInsideSurface = CullPointsOutsideSurface(nodeGridBoundingBox, flattenedEdgeNodes, meshSurface);
+
+            // 3. Collect flat list of all points to use for triangle meshing and cast to compatible data structure (Node2List) for Delaunay method.
+            List<Point3d> nodeCollection = new List<Point3d>();
             nodeCollection.AddRange(flattenedEdgeNodes);
             nodeCollection.AddRange(nodesInsideSurface);
             var meshNodes = new Grasshopper.Kernel.Geometry.Node2List(nodeCollection);
@@ -78,11 +80,14 @@ namespace MeshPoints.CreateMesh
             // 4. Throw all our points into the Delaunay mesher. Adjust jitter_amount as needed.
             var meshFaces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
             var triangleMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(meshNodes, 0.01, ref meshFaces); // todo: what is "double jitter_amount"?
-
+            
             // 5. Sometimes the mesh acts up; in these cases it is necessary to cull mesh faces that are outside the surface.
             Mesh culledTriangleMesh = CullMeshFacesOutsideSurface(triangleMesh, meshSurface);
             #endregion
-
+            if (culledTriangleMesh.IsValid == false)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The mesh is invalid. Check for duplicate points.");
+            }
             // Outputs
             DA.SetData(0, culledTriangleMesh);
         }
@@ -127,14 +132,15 @@ namespace MeshPoints.CreateMesh
         /// Takes a list of <see cref="Point3d"/> and checks if points are inside an input <see cref="Brep"/> surface.
         /// </summary>
         /// <returns>A list of <see cref="Point3d"/> containing points inside the input <see cref="Brep"/> surface.</returns>
-        private List<Point3d> CullPointsOutsideSurface(List<Point3d> pointGrid, Brep meshSurface)
+        private List<Point3d> CullPointsOutsideSurface(List<Point3d> pointGrid, List<Point3d> edgeNodes, Brep meshSurface)
         {
             var insidePoints = new List<Point3d>();
-
+            HashSet<Point3d> edgeNodesSet = new HashSet<Point3d>(edgeNodes);
             foreach (Point3d point in pointGrid)
             {
-                if (IsPointOnBrepSurface(point, meshSurface))
+                if (IsPointOnBrepSurface(point, meshSurface) && !edgeNodesSet.Contains(point))
                 {
+
                     insidePoints.Add(point);
                 }
             }
@@ -236,7 +242,7 @@ namespace MeshPoints.CreateMesh
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_Triangle;
             }
         }
 

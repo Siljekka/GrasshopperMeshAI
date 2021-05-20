@@ -4,19 +4,17 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-// Deconstruct the class Quality
-
-namespace MeshPoints
+namespace MeshPoints.Tools
 {
-    public class DeconstructQuality : GH_Component
+    public class IdealizePoints : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the DeconstructQuality class.
+        /// Initializes a new instance of the MapPoints class.
         /// </summary>
-        public DeconstructQuality()
-          : base("Deconstruct Quality", "decQ",
-              "Deconstructing quality class",
-              "SmartMesh", "Deconstruct")
+        public IdealizePoints()
+          : base("Idealize Points", "map",
+              "Map points of a surface to a perfect quad/cube.",
+              "SmartMesh", "Tools")
         {
         }
 
@@ -25,8 +23,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Quality", "q", "Quality class", GH_ParamAccess.item);
-
+            pManager.AddGenericParameter("SmartMesh", "sm", "SmartMesh Class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -34,10 +31,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Corresponing element", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Aspect Ratio", "AR", "Ratio between shortest and longest mesh edge", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Skewness", "SK", "Angle ratio of mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Jacobian Ratio", "JR", "Jacobian ratio of mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "np", "SmartMesh Class with normalized node coordinates.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -46,15 +40,22 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //input
-            Quality q = new Quality();
-            DA.GetData(0, ref q);
+            SmartMesh mesh = new SmartMesh();
+            DA.GetData(0, ref mesh);
 
-            //output
-            DA.SetData(0, q.element);
-            DA.SetData(1, q.AspectRatio);
-            DA.SetData(2, q.Skewness);
-            DA.SetData(3, q.JacobianRatio);
+
+            NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
+            surface.SetDomain(0, new Interval(0, 1));
+            surface.SetDomain(1, new Interval(0, 1));
+            foreach (Node node in mesh.Nodes)
+            {
+                surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
+                Point3d newPoint = new Point3d(PointU, PointV, 0);
+                int id = mesh.Nodes.IndexOf(node);
+                mesh.Nodes[id].Coordinate = newPoint;
+            }
+
+            DA.SetData(0, mesh);
         }
 
         /// <summary>
@@ -66,7 +67,7 @@ namespace MeshPoints
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_DecQuality;
+                return null;
             }
         }
 
@@ -75,7 +76,7 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("ef2f555e-2d22-4c47-8f10-eb6f7ce8ff52"); }
+            get { return new Guid("14c464b4-b62c-4dec-9420-8bf9826578f0"); }
         }
     }
 }

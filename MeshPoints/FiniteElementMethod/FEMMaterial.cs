@@ -1,22 +1,18 @@
 ﻿using Grasshopper.Kernel;
-using Rhino.Geometry;
 using System;
-using System.Collections.Generic;
 using MeshPoints.Classes;
 
-// Deconstruct the class Quality
-
-namespace MeshPoints
+namespace MeshPoints.FiniteElementMethod
 {
-    public class DeconstructQuality : GH_Component
+    public class FEMMaterial : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the DeconstructQuality class.
+        /// Initializes a new instance of the FEMMaterial class.
         /// </summary>
-        public DeconstructQuality()
-          : base("Deconstruct Quality", "decQ",
-              "Deconstructing quality class",
-              "SmartMesh", "Deconstruct")
+        public FEMMaterial()
+          : base("FEM Material", "FEM",
+              "Create material to input Finite Element Solver.",
+              "SmartMesh", "FEM")
         {
         }
 
@@ -25,7 +21,9 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Quality", "q", "Quality class", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Young modulus", "E", "Input a Young modulus [MPa]", GH_ParamAccess.item, 210000);
+            pManager.AddNumberParameter("Possion Ratio", "nu", "Input a Possion Ratio", GH_ParamAccess.item, 0.3);
+            pManager.AddNumberParameter("Yielding stress", "fy", "Input a yield stress [MPa]", GH_ParamAccess.item, 355);
 
         }
 
@@ -34,10 +32,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Corresponing element", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Aspect Ratio", "AR", "Ratio between shortest and longest mesh edge", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Skewness", "SK", "Angle ratio of mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Jacobian Ratio", "JR", "Jacobian ratio of mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Material", "mat", "Material", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -46,15 +41,20 @@ namespace MeshPoints
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //input
-            Quality q = new Quality();
-            DA.GetData(0, ref q);
+            // Input
+            double Emodul = 210000;
+            double nu = 0.3;
+            double fy = 355;
+            DA.GetData(0, ref Emodul);
+            DA.GetData(1, ref nu);
+            DA.GetData(2, ref fy);
 
-            //output
-            DA.SetData(0, q.element);
-            DA.SetData(1, q.AspectRatio);
-            DA.SetData(2, q.Skewness);
-            DA.SetData(3, q.JacobianRatio);
+
+            // Code
+            Material material = new Material(Emodul, nu, fy);
+
+            // Output
+            DA.SetData(0, material);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace MeshPoints
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_DecQuality;
+                return null;
             }
         }
 
@@ -75,7 +75,7 @@ namespace MeshPoints
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("ef2f555e-2d22-4c47-8f10-eb6f7ce8ff52"); }
+            get { return new Guid("6198afae-8cd5-4b28-a841-5b1a48de93ec"); }
         }
     }
 }

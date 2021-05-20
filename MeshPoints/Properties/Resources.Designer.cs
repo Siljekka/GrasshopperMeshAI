@@ -63,9 +63,9 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap Abaqus {
+        internal static System.Drawing.Bitmap Icon_CreateData {
             get {
-                object obj = ResourceManager.GetObject("Abaqus", resourceCulture);
+                object obj = ResourceManager.GetObject("Icon_CreateData", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -73,9 +73,9 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap MeshQuality {
+        internal static System.Drawing.Bitmap Icon_DecElement {
             get {
-                object obj = ResourceManager.GetObject("MeshQuality", resourceCulture);
+                object obj = ResourceManager.GetObject("Icon_DecElement", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -83,9 +83,9 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap mountain {
+        internal static System.Drawing.Bitmap Icon_DecGeometry {
             get {
-                object obj = ResourceManager.GetObject("mountain", resourceCulture);
+                object obj = ResourceManager.GetObject("Icon_DecGeometry", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -93,9 +93,189 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap test {
+        internal static System.Drawing.Bitmap Icon_DecNode {
             get {
-                object obj = ResourceManager.GetObject("test", resourceCulture);
+                object obj = ResourceManager.GetObject("Icon_DecNode", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_DecQEdge {
+            get {
+                object obj = ResourceManager.GetObject("Icon_DecQEdge", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_DecQElement {
+            get {
+                object obj = ResourceManager.GetObject("Icon_DecQElement", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_DecQNode {
+            get {
+                object obj = ResourceManager.GetObject("Icon_DecQNode", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_DecQuality {
+            get {
+                object obj = ResourceManager.GetObject("Icon_DecQuality", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_DecSmartMesh {
+            get {
+                object obj = ResourceManager.GetObject("Icon_DecSmartMesh", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_Excel {
+            get {
+                object obj = ResourceManager.GetObject("Icon_Excel", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_INP {
+            get {
+                object obj = ResourceManager.GetObject("Icon_INP", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_MapPoints {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MapPoints", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_MergeNodes {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MergeNodes", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_MoveCorners {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MoveCorners", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_MoveNodes {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MoveNodes", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_NormalizeSurface {
+            get {
+                object obj = ResourceManager.GetObject("Icon_NormalizeSurface", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_QuadRemesh {
+            get {
+                object obj = ResourceManager.GetObject("Icon_QuadRemesh", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_Quality {
+            get {
+                object obj = ResourceManager.GetObject("Icon_Quality", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_Solid {
+            get {
+                object obj = ResourceManager.GetObject("Icon_Solid", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_Surface {
+            get {
+                object obj = ResourceManager.GetObject("Icon_Surface", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_SweepSolid {
+            get {
+                object obj = ResourceManager.GetObject("Icon_SweepSolid", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_Triangle {
+            get {
+                object obj = ResourceManager.GetObject("Icon_Triangle", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
