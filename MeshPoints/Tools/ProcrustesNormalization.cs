@@ -2,6 +2,8 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.Tools
 {
@@ -51,7 +53,27 @@ namespace MeshPoints.Tools
 
         public NurbsSurface ProcrustesSuperimposition(NurbsSurface surface)
         {
+            int edgeCount = surface.Points.Count();
+            var referenceContour = CreateRegularNgon(edgeCount);
+            
             return surface;
+        }
+
+        public List<List<Double>> CreateRegularNgon(int edgeCount)
+        {
+            List<List<Double>> nGon = new List<List<Double>>();
+
+            for (int i = 0; i<edgeCount; i++)
+            {
+                var coordinates = new List<Double>
+                {
+                    Math.Cos(2 * Math.PI * i / edgeCount),
+                    Math.Sin(2 * Math.PI * i / edgeCount)
+                };
+                nGon.Add(coordinates);
+            }
+
+            return nGon;
         }
 
         /// <summary>

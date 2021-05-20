@@ -32,6 +32,7 @@ namespace MeshPoints.Tools
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Surface", "sf", "Translated and scaled Surface", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Inverse transformation", "it", "The inverse transformation.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -57,7 +58,15 @@ namespace MeshPoints.Tools
             double maxValue = boundingBoxPoints.Max();
             surface.Scale(1 / maxValue);
 
+            // Collect transformations to be able to reverse later.
+            var translation = Transform.Translation(Point3d.Origin - surface.PointAt(0.5, 0.5));
+            var scaling = Transform.Scale(Point3d.Origin, 1 / maxValue);
+            var transformation = translation * scaling;
+            transformation.TryGetInverse(out Transform inverseTransformation);
+
+
             DA.SetData(0, surface);
+            DA.SetData(0, inverseTransformation);
         }
 
         /// <summary>
