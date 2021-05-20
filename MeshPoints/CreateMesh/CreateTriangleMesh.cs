@@ -604,7 +604,7 @@ namespace MeshPoints.CreateMesh
                             nodeIsMoved = true;
                         }
                     }
-                    
+                    /*
                     // 4.2 Perform Optimization-based Smoothing
                     if (iterations >= 2)
                     {
@@ -634,7 +634,7 @@ namespace MeshPoints.CreateMesh
                             }
                             else { node.OBS = false; }
                         }
-                    }
+                    }*/
                 }
                 iterations++;
                 if (!nodeIsMoved | maxDistanceMoved <= 1.75 * moveTolerance) { continueSmooth = false; }
@@ -846,11 +846,12 @@ namespace MeshPoints.CreateMesh
             List<Vector3d> gi = new List<Vector3d>();
             List<qElement> connectedElements = node.GetConnectedElements(globalEdgeList);
 
-           // 1. Estimate gradient vector for each element connected to node
-           double delta = Math.Pow(10, -5) * maxModelDimension; // constant form paper
-
-            foreach (qElement element in connectedElements)
+            // 1. Estimate gradient vector for each element connected to node
+            double delta = Math.Pow(10, -5) * maxModelDimension; // constant form paper
+            List<qElement> connectedElementsCopy = new List<qElement>(connectedElements);
+            foreach (qElement element in connectedElementsCopy)
             {
+                if (element.DistortionMetric < 0) {  connectedElements.Remove(element); continue; }
                 double giX = CalculateGradient(element, node, delta, "x");
                 double giY = CalculateGradient(element, node, delta, "y");
                 double giZ = CalculateGradient(element, node, delta, "z");
