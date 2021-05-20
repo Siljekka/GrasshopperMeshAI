@@ -18,9 +18,10 @@ namespace MeshPoints.Classes
         public int nw { get; set; } //number of nodes in z-dir
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
+        public List<List<List<Node>>> GridInformation {get; set;}
 
         // Constructors
-        public SmartMesh()
+        public SmartMesh() // to do: sjekk om kan endres
         {
             //Empty constructor
         }
@@ -44,7 +45,7 @@ namespace MeshPoints.Classes
             Mesh = _mesh;
             Type = "Solid";
         }
-        public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh, String _type) // for unstructured surface mesh
+        public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh, String _type) // for unstructured surface mesh, to do: endre constructer mtp mesh
         {
             Nodes = _nodes;
             Elements = _elements;
@@ -91,6 +92,7 @@ namespace MeshPoints.Classes
         }
         public void CreateQuadElements() 
         {
+            // Create quad elements of a structured SmartMesh given nodes are assigned
             List<Node> nodes = this.Nodes;
             int nu = this.nu;
             int nv = this.nv;
@@ -116,12 +118,6 @@ namespace MeshPoints.Classes
                 };
 
                 Element element = new Element(i, elementNodes, connectivity);
-
-                mesh.Faces.AddFace(0, 1, 2, 3);
-                mesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-                
-                element.Mesh = mesh;
-
                 elements.Add(element); // add element to list of elements
 
                 counter++;
@@ -136,6 +132,8 @@ namespace MeshPoints.Classes
         }
         public void CreateHexElements()
         {
+            // Create hex elements of a structured SmartMesh given nodes are assigned
+
             int nu = this.nu;
             int nv = this.nv;
             int nw = this.nw;
@@ -171,26 +169,6 @@ namespace MeshPoints.Classes
                         }
 
                         Element element = new Element(elemId, elementNodes, connectivity);
-
-                        // create local mesh
-                        Mesh localMesh = new Mesh();
-                        foreach (Node node in elementNodes)
-                        {
-                            localMesh.Vertices.Add(node.Coordinate); //0
-                        }
-                        localMesh.Faces.AddFace(0, 1, 5, 4);
-                        localMesh.Faces.AddFace(1, 2, 6, 5);
-                        localMesh.Faces.AddFace(2, 3, 7, 6);
-                        localMesh.Faces.AddFace(3, 0, 4, 7);
-                        localMesh.Faces.AddFace(0, 1, 2, 3);
-                        localMesh.Faces.AddFace(4, 5, 6, 7);
-
-                        localMesh.Normals.ComputeNormals();  //Control if needed
-                        localMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-                        localMesh.Compact(); //to ensure that it calculate
-                        element.Mesh = localMesh;
-
-                        //add element and mesh to element list
                         elements.Add(element);
 
                         sequence++;
@@ -202,7 +180,7 @@ namespace MeshPoints.Classes
             }
             this.Elements = elements;
         }
-        public void CreateMesh()
+        public void CreateMeshOld()
         {
             int nu = this.nu;
             int nv = this.nv;
@@ -287,6 +265,61 @@ namespace MeshPoints.Classes
             mesh.Compact(); //to ensure that it calculate
 
             this.Mesh = mesh; ;
+        } // to do: slett
+        public void CreateMesh()
+        {
+            Mesh mesh = new Mesh();
+
+            // Cerate mesh vertices from node coordinates        
+            foreach (Node node in this.Nodes)
+            {
+                mesh.Vertices.Add(node.Coordinate);
+            }
+
+            // Create mesh faces from element connectivity
+            if (this.Elements[0].Type == "Quad")
+            {
+                foreach (Element element in this.Elements)
+                {
+                    mesh.Faces.AddFace(element.Connectivity[0], element.Connectivity[1], element.Connectivity[2], element.Connectivity[3]);
+                }
+            }
+            else if (this.Elements[0].Type == "Hex")
+            {
+                foreach (Element element in this.Elements)
+                {
+                    int a = element.Connectivity[0];
+                    int b = element.Connectivity[1];
+                    int c = element.Connectivity[2];
+                    int d = element.Connectivity[3];
+                    int e = element.Connectivity[4];
+                    int f = element.Connectivity[5];
+                    int g = element.Connectivity[6];
+                    int h = element.Connectivity[7];
+
+
+                    mesh.Faces.AddFace(a, b, f, e);
+                    mesh.Faces.AddFace(b, c, g, f);
+                    mesh.Faces.AddFace(c, d, h, g);
+                    mesh.Faces.AddFace(d, a, e, h);
+                    mesh.Faces.AddFace(a, b, c, d);
+                    mesh.Faces.AddFace(e, f, g, h);
+                }
+            }
+            else if (this.Elements[0].Type == "Triangle")
+            {
+                foreach (Element element in this.Elements)
+                {
+                    mesh.Faces.AddFace(element.Connectivity[0], element.Connectivity[1], element.Connectivity[2]);
+                }
+            }
+
+
+            mesh.Normals.ComputeNormals();
+            mesh.Compact();
+            mesh.FaceNormals.ComputeFaceNormals();
+            mesh.UnifyNormals(); // want a consistant mesh
+            this.Mesh = mesh;
         }
     }
 }
