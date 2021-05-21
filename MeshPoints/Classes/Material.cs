@@ -4,8 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rhino.Geometry;
-using Grasshopper.Kernel;
-using MeshPoints.Classes;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.Classes
 {
@@ -26,6 +25,24 @@ namespace MeshPoints.Classes
             YoungModulus = _youngModulus;
             PossionRatio = _possionRatio;
             YieldingStress = _yieldingStress;
+        }
+
+        // method
+        public Matrix<double> GetMaterialConstant()
+        {
+            double possionRatio = this.PossionRatio;
+            double youngModulus = this.YoungModulus;
+            Matrix<double> C = CreateMatrix.DenseOfArray(new double[,]
+            {
+                {1-possionRatio, possionRatio, possionRatio, 0, 0, 0},
+                {possionRatio, 1-possionRatio, possionRatio, 0, 0, 0},
+                {possionRatio, possionRatio, 1- possionRatio, 0, 0, 0},
+                {0, 0, 0, (1-2*possionRatio)/(double)2, 0, 0},
+                {0, 0, 0, 0, (1-2*possionRatio)/(double)2, 0},
+                {0, 0, 0, 0, 0, (1-2*possionRatio)/(double)2},
+            });
+            C = C.Multiply((double)youngModulus / (double)((1 + possionRatio) * (1 - 2 * possionRatio)));
+            return C;
         }
 
     }
