@@ -49,8 +49,6 @@ namespace MeshPoints.Tools
             List<SmartMesh> smartMeshList = new List<SmartMesh>(); 
             DA.GetDataList(0,  smartMeshList);
 
-            // Code
-
             SmartMesh mergedSmartMesh = new SmartMesh();
             SmartMesh mesh1 = smartMeshList[0];
             List<List<List<Node>>> gridInformation = new List<List<List<Node>>>();
@@ -58,8 +56,10 @@ namespace MeshPoints.Tools
 
             for (int i = 1; i < smartMeshList.Count; i++) // loop the meshes to merge
             {
-                SmartMesh mesh2 = smartMeshList[i];           
+                SmartMesh mesh2 = smartMeshList[i];
+
                 // Create new node list
+                /*
                 List<Node> newNodes = new List<Node>();
                 List<Node> oldNodes = new List<Node>();
                 oldNodes.AddRange(mesh1.Nodes);
@@ -67,6 +67,7 @@ namespace MeshPoints.Tools
                 foreach (Node node in oldNodes)
                 {
                     Node newNode = new Node(node.GlobalId, node.Coordinate, node.BC_U, node.BC_V);
+                    newNode.Type = node.Type;
                     newNodes.Add(newNode);
                 }
 
@@ -77,10 +78,35 @@ namespace MeshPoints.Tools
                 oldElements.AddRange(mesh2.Elements);
                 foreach (Element element in oldElements)
                 {
-                    Element newElement = new Element(element.Id, element.Nodes, element.Connectivity);
-                    newElement.Mesh = element.Mesh;
+                    List<Node> elementNodes = new List<Node>();
+                    List<int> elementConnectivity = new List<int>();
+                    int id = element.Id;
+                    for (int j = 0; j < 4; j++)
+                    {
+                        Node node = element.Nodes[j];
+                        Node newNode = new Node(node.GlobalId, node.Coordinate, node.BC_U, node.BC_V);
+                        newNode.Type = node.Type;
+                        elementNodes.Add(newNode);
+                        elementConnectivity.Add(element.Connectivity[j]);
+                    }
+
+                    Element newElement = new Element(id, elementNodes, elementConnectivity);
+                    newElement.GetElementMesh();
                     newElements.Add(newElement);
                 }
+                */
+                // Clone nodes and elements
+                List<Node> newNodes = new List<Node>();
+                List<Element> newElements = new List<Element>();
+
+                var mesh1Prop = CloneNodesAndElements(mesh1);
+                newNodes.AddRange(mesh1Prop.Item1);
+                newElements.AddRange(mesh1Prop.Item2);
+
+                var mesh2Prop = CloneNodesAndElements(mesh2);
+                newNodes.AddRange(mesh2Prop.Item1);
+                newElements.AddRange(mesh2Prop.Item2);
+
 
                 // Find nodes to merge
                 var edges = FindEdgeToMerge(mesh1, mesh2);
@@ -124,7 +150,7 @@ namespace MeshPoints.Tools
                     {
                         for (int k = 0; k < 4; k++)
                         {
-                            if (element.Nodes[k] == node1)
+                            if (element.Nodes[k].Coordinate == node1.Coordinate)
                             {
                                 element.Nodes[k] = newNode;
                                 element.Connectivity[k] = newNode.GlobalId;
@@ -136,9 +162,8 @@ namespace MeshPoints.Tools
                                         break;
                                     }
                                 }
-
                             }
-                            else if (element.Nodes[k] == node2)
+                            else if (element.Nodes[k].Coordinate == node2.Coordinate)
                             {
                                 element.Nodes[k] = newNode;
                                 element.Connectivity[k] = newNode.GlobalId;
@@ -152,7 +177,7 @@ namespace MeshPoints.Tools
                                 }
                             }
                         }
-                        //UpdateElementMesh(element); // to do: check if needed
+                        UpdateElementMesh(element); // to do: check if needed
                     }
                     newNodes.Add(newNode);
                 }
@@ -234,13 +259,51 @@ namespace MeshPoints.Tools
 
                 mesh1 = mergedSmartMesh;
                 UpdateGridInformation(mergedSmartMesh, gridInformation);
+                mergedSmartMesh.GridInformation = gridInformation;
             }           
             DA.SetData(0, mergedSmartMesh);
-            DA.SetDataList(1, gridInformation);
+            DA.SetDataList(1, gridInformation); // to do: slett denne
         }
 
 
         // Methods
+        private Tuple<List<Node>, List<Element>> CloneNodesAndElements(SmartMesh smartMesh)
+        {
+            // Create new node list
+            List<Node> newNodes = new List<Node>();
+            List<Node> oldNodes = new List<Node>();
+            oldNodes.AddRange(smartMesh.Nodes);
+            foreach (Node node in oldNodes)
+            {
+                Node newNode = new Node(node.GlobalId, node.Coordinate, node.BC_U, node.BC_V);
+                newNode.Type = node.Type;
+                newNodes.Add(newNode);
+            }
+
+            // Create new element list
+            List<Element> newElements = new List<Element>();
+            List<Element> oldElements = new List<Element>();
+            oldElements.AddRange(smartMesh.Elements);
+            foreach (Element element in oldElements)
+            {
+                List<Node> elementNodes = new List<Node>();
+                List<int> elementConnectivity = new List<int>();
+                int id = element.Id;
+                for (int j = 0; j < 4; j++)
+                {
+                    Node node = element.Nodes[j];
+                    Node newNode = new Node(node.GlobalId, node.Coordinate, node.BC_U, node.BC_V);
+                    newNode.Type = node.Type;
+                    elementNodes.Add(newNode);
+                    elementConnectivity.Add(element.Connectivity[j]);
+                }
+
+                Element newElement = new Element(id, elementNodes, elementConnectivity);
+                newElement.GetElementMesh();
+                newElements.Add(newElement);
+            }
+            return Tuple.Create(newNodes, newElements);
+        }
         private Node FindClosestNode(Node nodeToCheck, List<Node> nodes)
         {
             double minDistance = 1000000;
@@ -329,115 +392,181 @@ namespace MeshPoints.Tools
             // Create grid grops, each node, grid[i], can move relative to neighbor grid nodes, grid[i+-1]. For nodes grid[0] and grid[endIndex] no translation.
 
             // Assmune all mesh input are structured
-
-            // Create grids
-            List<Node>[] gridU = new List<Node>[mesh.nu]; // grid groups
-            List<Node>[] gridV = new List<Node>[mesh.nv]; // grid groups
-            
-            for (int j = 0; j < mesh.nv; j++) // v grid
-            {
-                List<Node> gridTemp = new List<Node>();
-                for (int i = 0; i < mesh.nu; i++)
-                {
-                    int nodeIndex = i + j * mesh.nu;
-                    gridTemp.Add(mesh.Nodes[nodeIndex]);
-                }
-                gridV[j] = gridTemp;
-            }
-
-            for (int i = 0; i < mesh.nu; i++) // u grid
-            {
-                List<Node> gridTemp = new List<Node>();
-                for (int j = 0; j < mesh.nv; j++)
-                {
-                    int nodeIndex = i + j * mesh.nu;
-                    gridTemp.Add(mesh.Nodes[nodeIndex]);
-                }
-                gridU[i] = gridTemp;
-            }
-
-            // Create grid groups
             List<List<Node>> gridGroupU = new List<List<Node>>();
-
-            foreach (List<Node> gridTemp in gridU) // add grids in u-dir
-            {
-                gridGroupU.Add(gridTemp);
-            }
-
             List<List<Node>> gridGroupV = new List<List<Node>>();
-            foreach (List<Node> gridTemp in gridV) // add grids in v-dir
+
+            if (mesh.GridInformation == null) // create grid info for mesh
             {
-                gridGroupV.Add(gridTemp);
+                // Create grids
+                List<Node>[] gridU = new List<Node>[mesh.nu]; // grid groups
+                List<Node>[] gridV = new List<Node>[mesh.nv]; // grid groups
+
+                for (int j = 0; j < mesh.nv; j++) // v grid
+                {
+                    List<Node> gridTemp = new List<Node>();
+                    for (int i = 0; i < mesh.nu; i++)
+                    {
+                        int nodeIndex = i + j * mesh.nu;
+                        gridTemp.Add(mesh.Nodes[nodeIndex]);
+                    }
+                    gridV[j] = gridTemp;
+                }
+
+                for (int i = 0; i < mesh.nu; i++) // u grid
+                {
+                    List<Node> gridTemp = new List<Node>();
+                    for (int j = 0; j < mesh.nv; j++)
+                    {
+                        int nodeIndex = i + j * mesh.nu;
+                        gridTemp.Add(mesh.Nodes[nodeIndex]);
+                    }
+                    gridU[i] = gridTemp;
+                }
+
+                // Create grid groups
+                foreach (List<Node> gridTemp in gridU) // add grids in u-dir
+                {
+                    gridGroupU.Add(gridTemp);
+                }
+
+                foreach (List<Node> gridTemp in gridV) // add grids in v-dir
+                {
+                    gridGroupV.Add(gridTemp);
+                }
+                mesh.GridInformation = new List<List<List<Node>>>() {gridGroupU, gridGroupV};
             }
+
 
             // update gridInformation
             if (gridInformation.Count == 0)
             {
-                gridInformation.Add(gridGroupU);
-                gridInformation.Add(gridGroupV);
+                foreach (List<List<Node>> grids in mesh.GridInformation)
+                {
+                    List<List<Node>> newGroup = new List<List<Node>>();
+                    foreach (List<Node> grid in grids)
+                    {
+                        List<Node> newGrid = new List<Node>();
+                        foreach (Node node in grid)
+                        {
+                            Node newNode = new Node(node.GlobalId, node.Coordinate, node.BC_U, node.BC_V);
+                            newNode.Type = node.Type;
+                            newGrid.Add(newNode);
+                        }
+                        newGroup.Add(newGrid);
+                    }
+                    gridInformation.Add(newGroup);
+                }
             }
             else
             {
-
-                List<List<Node>> gridGroupToMerge = new List<List<Node>>();
-                if (Math.Abs(nodesOnEdge2[0].GlobalId - nodesOnEdge2[1].GlobalId) == 1)
-                {
-                    gridGroupToMerge = gridGroupU;  // merge a u-grid
-                    gridInformation.Add(gridGroupV);
-                }
-                else
-                {
-                    gridGroupToMerge = gridGroupV; // merge a v-grid
-                    gridInformation.Add(gridGroupU);
-                }
-
                 // Merge grids
-                for (int k = 0; k < gridInformation.Count; k++)
+
+                // Loop new groups
+                for (int p = 0; p < mesh.GridInformation.Count; p++)
                 {
-                    List<List<Node>> oldGridGroup = gridInformation[k];
-
-                    for (int j = 0; j < oldGridGroup.Count; j++)
+                    List<List<Node>> gridGroupToAdd = mesh.GridInformation[p];
+                    for (int n = 0; n < gridGroupToAdd.Count; n++) // loop grids of new grid group to merge
                     {
-                        List<Node> oldGrid = oldGridGroup[j];
+                        List<Node> grid = mesh.GridInformation[p][n];
 
-                        // Check if grid is edge1
-                        int edge1Check = 0;
-                        foreach (Node oldNode in oldGrid)
+                        // Check if new grid is edge to merge
+                        int edgeCheck = 0;
+                        foreach (Node mergeNode in nodesOnEdge2)
                         {
-                            foreach (Node edge1Node in nodesOnEdge1)
-                            { 
-                                if (oldNode.Coordinate == edge1Node.Coordinate)
+                            foreach (Node gridNode in grid)
+                            {
+                                if ((gridNode.Coordinate - mergeNode.Coordinate).Length < 0.001)
                                 {
-                                    edge1Check++;
+                                    edgeCheck++;
                                 }
                             }
-                        
                         }
-                        if (edge1Check == oldGrid.Count) { break; } // break if grid is edge 1
-
-                        for (int i = 0; i < oldGrid.Count; i++)
+                        if (edgeCheck != 1)
                         {
-                            // Find nodes to merge and merge grids
-                            Node oldNode = oldGrid[i];
-                            for (int n = 0; n < gridGroupToMerge.Count; n++) // loop grids of new grid group to merge
+                            gridInformation.Add(gridGroupToAdd);
+                            break;
+                        }
+
+                        // Loop existing
+                        int numGridGroups = gridInformation.Count;
+                        for (int k = 0; k < numGridGroups; k++)
+                        {
+                            List<List<Node>> oldGridGroup = gridInformation[k];
+                            for (int j = 0; j < oldGridGroup.Count; j++)
                             {
-                                List<Node> grid = gridGroupToMerge[n];
-                                for (int m = 0; m < grid.Count; m++) // loop nodes of new grid to merge
+                                List<Node> oldGrid = oldGridGroup[j];
+                                // Check if grid is edge to merge
+                                edgeCheck = 0;
+                                foreach (Node mergeNode in nodesOnEdge1)
                                 {
-                                    Node newNode = gridGroupToMerge[n][m];
-                                    if ((newNode.Coordinate - oldNode.Coordinate).Length < 0.001) // merge grids if old and new nodes
+                                    foreach (Node gridNode in oldGrid)
                                     {
-                                        oldGrid.AddRange(gridGroupToMerge[n]);
-                                        k = 1000000;
-                                        m = 1000000;
-                                        i = 1000000;
-                                        n = 100000;
+                                        if ((gridNode.Coordinate - mergeNode.Coordinate).Length < 0.001)
+                                        {
+                                            edgeCheck++;
+                                        }
                                     }
                                 }
+                                if (edgeCheck != 1)
+                                {
+                                    continue;
+                                }
+
+                                for (int m = 0; m < grid.Count; m++) // loop nodes of new grid to merge
+                                {
+                                    for (int i = 0; i < oldGrid.Count; i++)
+                                    {
+                                        Node newNode = mesh.GridInformation[p][n][m];
+                                        Node oldNode = oldGrid[i];
+                                        if ((newNode.Coordinate - oldNode.Coordinate).Length < 0.001) // merge grids if old and new nodes
+                                        {/*
+                                            List<Node> newNodes = new List<Node>();
+                                            if (m == 0)
+                                            {
+
+                                                newNodes.AddRange(mesh.GridInformation[p][n]);
+                                            }
+                                            else
+                                            {
+                                                for (int test = 0; test < mesh.GridInformation[p][n].Count; test ++)
+                                                {
+                                                    newNodes.Add(mesh.GridInformation[p][n][mesh.GridInformation[p][n].Count - 1 - test]);
+                                                }
+                                            }
+                                            oldGrid.RemoveAt(i);
+                                            oldGrid.InsertRange(i, newNodes);
+                                    */
+                                            oldGrid.RemoveAt(i);
+
+                                            oldGrid.AddRange(mesh.GridInformation[p][n]);
+
+
+                                            i = 1000000; // break
+                                            m = 1000000; // break
+                                            j = 1000000; // break
+                                            k = 1000000; // break
+                                        }
+
+                                    }
+                                }
+
                             }
-                        } // end grid loop
-                    } // end grid group loop
-                } // end grid infromation loop
+                        }
+                    }
+                    
+                    // Dummy solution: Ensure no grids are added wrongly
+                    foreach (List<List<Node>> gridGroup in gridInformation)
+                    {
+                        int numNodesInGrid = gridGroup[1].Count;
+                        for (int i = 0; i < gridGroup.Count; i++)
+                        {
+                            while (gridGroup[i].Count > numNodesInGrid)
+                            {
+                                gridGroup[i].RemoveAt(gridGroup[i].Count - 1);
+                            }
+                        }
+                    }
+                }
             } // end if
         }
         private void UpdateGridInformation(SmartMesh mergedMesh, List<List<List<Node>>> gridInformation)
@@ -462,7 +591,6 @@ namespace MeshPoints.Tools
                             {
                                 gridInformation[k][j][i] = newNode;
                             }
-
                         }
                     } // end grid loop
                 } // end grid group loop
