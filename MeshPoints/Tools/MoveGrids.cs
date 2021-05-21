@@ -84,9 +84,9 @@ namespace MeshPoints.Tools
             if (!DA.GetData(0, ref oldMesh)) return;
 
             if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
-            if (genesU.Count < (oldMesh.nu - 2) * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
-            if (genesV.Count < (oldMesh.nv - 2) * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase v genes."); return; }
-            if (oldMesh.Type == "Solid" & (genesW.Count < (oldMesh.nw - 2) * (oldMesh.nu - 2) * (oldMesh.nv - 2) )) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase w genes."); return; }
+            if (genesU.Count < (oldMesh.nu - 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
+            if (genesV.Count < (oldMesh.nv - 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase v genes."); return; }
+            if (oldMesh.Type == "Solid" & (genesW.Count < (oldMesh.nw - 2) )) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase w genes."); return; }
 
             // 2. Inherit properties from old mesh
             newMesh.nu = oldMesh.nu;

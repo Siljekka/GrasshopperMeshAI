@@ -83,8 +83,10 @@ namespace MeshPoints.Tools
             }
             else 
             {
-                // to do: add warning message for sym-case 
-                // warning if elements in sym dir are not even
+                if ((genesU.Count < oldMesh.Nodes.Count/2) | (genesV.Count < oldMesh.Nodes.Count/2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
+                if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count/2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
+                if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
+                // add warning if not even sym ..?
             }
 
             // 2. Inherit properties from old mesh
@@ -103,12 +105,12 @@ namespace MeshPoints.Tools
                 List<int> nodeIdOnSymEdge = GetNodesOnSymmetryLine(oldMesh, symLine);
 
                 // Find direction of symmetry line
+                if (nodeIdOnSymEdge.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Did not find symmetry line."); return; }
                 int indexDiff = nodeIdOnSymEdge[1] - nodeIdOnSymEdge[0];
                 string symDirection = "";
                 if (indexDiff == 1) { symDirection = "u"; }
                 else if (indexDiff == oldMesh.nu) { symDirection = "v"; }
                 else if (indexDiff == oldMesh.nu * oldMesh.nv) { symDirection = "w"; }
-                else { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Did not find symmetry line."); }
 
                 // Get mirror connectivity
                 List<List<int>> mirrorConnectivity = GetMirrorConnectivity(oldMesh, symDirection, nodeIdOnSymEdge);
@@ -401,6 +403,19 @@ namespace MeshPoints.Tools
             int nw = oldMesh.nw;
 
             List<List<int>> mirrorConnectivity = new List<List<int>>();
+            int count = nodeIdOnSymEdge.Count;
+            for (int i = 0; i < count; i++)
+            {
+                int id = nodeIdOnSymEdge[i];
+                if (symDirection == "w")
+                {
+                    for (int j = 1; j < nv; j++)
+                    {
+                        nodeIdOnSymEdge.Add(oldMesh.Nodes[id + (nu) * j].GlobalId);
+                    }
+                }
+            }
+            nodeIdOnSymEdge.Sort();
             mirrorConnectivity.Add(nodeIdOnSymEdge); // first list is the id of nodes on symEdge 
             int idCounter = 0;
 
@@ -428,18 +443,31 @@ namespace MeshPoints.Tools
                     {
                         for (int i = 0; i < Math.Floor((double)nu / (double)2); i++)
                         {
-                            List<int> nodesToPare = new List<int>() { idCounter, (nu - 1) - i + j * nv };
+                            List<int> nodesToPare = new List<int>() { idCounter, (nu - 1) - i + j * nv + k * nu * nv };
                             mirrorConnectivity.Add(nodesToPare);
                             idCounter++;
                         }
-                        idCounter = (j + 1) * nu;
+                        idCounter = (j + 1) * nu + k * nv * nu;
                     }
                     idCounter = (k + 1) * nu * nv;
                 }
             }
             else if (symDirection == "w")
             {
-                // to do: add
+                for (int k = 0; k < nw; k++)
+                {
+                    for (int j = 0; j < nv; j++)
+                    {
+                        for (int i = 0; i < Math.Floor((double)nu / (double)2); i++)
+                        {
+                            List<int> nodesToPare = new List<int>() { idCounter, (nu - 1) - i + j * nu + k * nu * nv };
+                            mirrorConnectivity.Add(nodesToPare);
+                            idCounter++;
+                        }
+                        idCounter = (j + 1) * nu + k * nu * nv;
+                    }
+                    idCounter = (k + 1) * nu * nv;
+                }
             }
 
             return mirrorConnectivity;
