@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using Keras.Models;
 using Numpy;
+using System.Linq;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.MachineLearning
 {
@@ -32,8 +34,8 @@ namespace MeshPoints.MachineLearning
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Internal Nodes", "in", "PointList containing the predicted internal nodes.", GH_ParamAccess.list);
-            pManager.AddMeshParameter("Triangle Mesh", "tm", "Triangle mesh (Delauney)", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Triangle Mesh", "tm", "Triangle mesh (Delauney)", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Internal nodes (ML)", "in", "Predicted internal nodes from NN-model.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -46,38 +48,126 @@ namespace MeshPoints.MachineLearning
             DA.GetData(0, ref inputSurface);
             if (!DA.GetData(0, ref inputSurface)) { return; }
 
-            // Turn surface data into wanted format for prediction (x1 y1 ... xn yn).
-            var surfaceVerticesForPrediction = new double[inputSurface.Vertices.Count * 2];
-            List<Point3d> surfaceVerticesForMeshing = new List<Point3d>();
-            int i = 0;
+            // Get transformation (and inverse transformation) to/from normalized surface 
+            Transform procrustesTransform = ProcrustesSuperimposition(inputSurface);
+            if (!procrustesTransform.TryGetInverse(out Transform inverseProcrustes))
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Procrustes transformation failed.");
+                return;
+            }
+
+            // Get surface vertices in List<Point3d> (and not BrepVertexList) form.
+            List<Point3d> surfaceVertices = new List<Point3d>();
             foreach (var point in inputSurface.Vertices)
             {
-                surfaceVerticesForPrediction[i * 2] = point.Location.X;
-                surfaceVerticesForPrediction[i * 2 + 1] = point.Location.Y;
+                surfaceVertices.Add(point.Location);
+            }
 
-                surfaceVerticesForMeshing.Add(new Point3d(point.Location.X, point.Location.Y, 0) );
+            // Transform surface vertices with procrustes. Cast to list as output from transformList is datatype Array.
+            List<Point3d> transformedSurfaceVertices = procrustesTransform.TransformList(surfaceVertices).ToList();
 
+            // Create array suited for prediction [x1 y1 ... xn yn]
+            var transformedSurfaceVerticesForPrediction = new double[inputSurface.Vertices.Count * 2];
+            int i = 0;
+            foreach (var point in transformedSurfaceVertices)
+            {
+                transformedSurfaceVerticesForPrediction[i * 2] = point.X;
+                transformedSurfaceVerticesForPrediction[i * 2 + 1] = point.Y;
                 i++;
             }
 
-            List<Point3d> predictedInternalNodes = NeuralNetworkPrediction(surfaceVerticesForPrediction);
+            // *** ARTIFICIAL INTELLIGENCE ***
+            List<Point3d> predictedInternalNodes = NeuralNetworkPrediction(transformedSurfaceVerticesForPrediction);
+            
+            // Inverse transform predicted nodes to fit with the input surface
+            List<Point3d> inverseTransformedPredictedInternalNodes = inverseProcrustes.TransformList(predictedInternalNodes).ToList();
+            
+            // Mesh prediction together with input surface
+            Mesh triangleMesh = DelaunayTriangulation(surfaceVertices, inverseTransformedPredictedInternalNodes);
 
+            DA.SetData(0, triangleMesh);
+            DA.SetDataList(1, inverseTransformedPredictedInternalNodes);
 
-            // Mesh edge nodes and internal nodes.
+        }
+
+        public Mesh DelaunayTriangulation(List<Point3d> edgeNodes, List<Point3d> internalNodes)
+        {
             List<Point3d> nodeCollection = new List<Point3d>();
-            nodeCollection.AddRange(surfaceVerticesForMeshing);
-            nodeCollection.AddRange(predictedInternalNodes);
+            nodeCollection.AddRange(edgeNodes);
+            nodeCollection.AddRange(internalNodes);
 
             var meshNodes = new Grasshopper.Kernel.Geometry.Node2List(nodeCollection);
 
-            // 4. Throw all our points into the Delaunay mesher. Adjust jitter_amount as needed.
             var meshFaces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
             var triangleMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(meshNodes, 0.01, ref meshFaces);
 
-            DA.SetDataList(0, predictedInternalNodes);
-            DA.SetData(1, triangleMesh);
-
+            return triangleMesh;
         }
+
+        public Transform ProcrustesSuperimposition(Brep inputSurface)
+        {
+            Brep brepSurface = (Brep)inputSurface.Duplicate();
+            var referenceContour = CreateRegularNgon(brepSurface.Vertices.Count);
+
+            // Parametrize surface
+            NurbsSurface surface = brepSurface.Faces[0].ToNurbsSurface();
+            surface.SetDomain(0, new Interval(0, 1));
+            surface.SetDomain(1, new Interval(0, 1));
+
+
+            // Translation
+            Transform translationTransformation = Transform.Translation(Point3d.Origin - surface.PointAt(0.5, 0.5));
+
+            surface.Translate(Point3d.Origin - surface.PointAt(0.5, 0.5));
+
+            // Scaling; create bounding box around surface and scale it to x, y := [-1, 1]
+            BoundingBox boundingBox = surface.GetBoundingBox(false);
+            double[] boundingBoxPoints = { boundingBox.Max.MaximumCoordinate, boundingBox.Min.MaximumCoordinate };
+            double maxValue = boundingBoxPoints.Max();
+            Transform scalingTransformation = Transform.Scale(Point3d.Origin, 1 / maxValue);
+
+            surface.Scale(1 / maxValue);
+            
+            // Rotation; rotate input to best match reference n-gon (Kabsch algorithm (constrained orthogonal Procrustes))
+            var surfacePoints = new List<List<double>>();
+            foreach (var point in brepSurface.Vertices)
+            {
+                surfacePoints.Add(new List<double> { point.Location.X, point.Location.Y });
+            }
+
+            Matrix<double> referenceMatrix = Matrix<double>.Build.DenseOfRows(referenceContour);
+            Matrix<double> surfaceMatrix = Matrix<double>.Build.DenseOfRows(surfacePoints);
+
+            Matrix<double> H = surfaceMatrix.Transpose() * referenceMatrix;
+            var svd = H.Svd();
+
+            // 2x2 rotation matrix: [[cosø, -sinø], [sinø, cosø]].
+            var rotationMatrix = svd.U * svd.VT;
+            var rotationInRadians = Math.Acos(rotationMatrix[0, 0]);
+            Transform rotationTransformation = Transform.Rotation(rotationInRadians, Point3d.Origin);
+
+            Transform procrustesSuperimposition = rotationTransformation * scalingTransformation * translationTransformation;
+
+            return procrustesSuperimposition;
+        }
+
+        public List<List<Double>> CreateRegularNgon(int edgeCount)
+        {
+            List<List<Double>> nGon = new List<List<Double>>();
+
+            for (int i = 0; i < edgeCount; i++)
+            {
+                var coordinates = new List<Double>
+                {
+                    Math.Cos(2 * Math.PI * i / edgeCount),
+                    Math.Sin(2 * Math.PI * i / edgeCount)
+                };
+                nGon.Add(coordinates);
+            }
+
+            return nGon;
+        }
+
 
         List<Point3d> NeuralNetworkPrediction(double[] brepCoordinates)
         {
