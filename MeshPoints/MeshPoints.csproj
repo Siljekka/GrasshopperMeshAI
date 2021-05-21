@@ -158,7 +158,7 @@
   <ItemGroup>
     <Compile Include="Classes\qConstants.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh %28TargetLength%29.cs" />
-    <Compile Include="MachineLearning\PredictInternalNodesOfMesh.cs" />
+    <Compile Include="MachineLearning\CreateTriangleMeshML.cs" />
     <Compile Include="Mesh_outdated\BrepPoints.cs" />
     <Compile Include="Classes\Geometry.cs" />
     <Compile Include="Classes\Material.cs" />
