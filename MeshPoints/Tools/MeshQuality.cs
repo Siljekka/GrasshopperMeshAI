@@ -267,27 +267,6 @@ namespace MeshPoints.Tools
         }
 
         /// <summary>
-        /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="SmartMesh"/>.
-        /// </summary>
-        /// <param name="element">A single <see cref="Element"/> object from a mesh.</param>
-        /// <returns>A <see cref="double"/> between 0.0 and 1.0 describing the ratio between the min and max values of the determinants of the Jacobian matrix of the element, evaluated in the corner nodes.</returns>
-        private double CalculateJacobianRatioOLD(Element element) // to do: slett
-        {
-            // to do: slett
-            double jacobian = 0;
-            if (element.Type == "Quad") // surface
-            {
-                // jacobian = CalculateJacobianOfQuadElementOLD(element); magnus
-            }
-            else // solid
-            {
-                // jacobian = CalculateJacobianOf8NodeElementOLD(element); magnus
-            }
-            return jacobian;
-        } 
-
-
-        /// <summary>
         /// Returns a list of the face centroid to an element
         /// </summary>
         private List<Point3d> GetFaceCenter(Element element)
@@ -351,7 +330,7 @@ namespace MeshPoints.Tools
 
             // Calculate the Jacobian determinant of each node
             List<double> jacobiansOfElement = new List<double>();
-            Matrix<double> gaussNodes = _FEM.GetGaussPoints(1);
+            Matrix<double> gaussNodes = _FEM.GetGaussPoints(1, nodeDOFS);
 
             for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
@@ -361,7 +340,7 @@ namespace MeshPoints.Tools
                 var t = gaussNodes.Row(n)[2];
 
                 // Partial derivatives of the shape functions
-                Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t);
+                Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, nodeDOFS);
 
                 // Calculate Jacobian determinant
                 Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
