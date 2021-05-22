@@ -263,18 +263,16 @@ namespace MeshPoints.QuadRemesh
             var meshProperties = ConvertToMainMeshClasses(globalElementList);
             List<Node> nodes = meshProperties.Item1;
             List<Element> elements = meshProperties.Item2;
-
+            SmartMesh surfaceMesh = new SmartMesh(nodes, elements, "Surface");
 
 
             List<qEdge> test = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
             var meshValues = CalculateQuality(globalElementList);
             double avgQuality = meshValues.Item1;
             double badestQuality = meshValues.Item2;
-            Mesh colorMesh = meshValues.Item3;
+            surfaceMesh.Mesh = meshValues.Item3;
 
-            // Assign properties to surfaceMesh:
-            SmartMesh surfaceMesh = new SmartMesh(nodes, elements, colorMesh, "Surface");
-
+            
             #endregion End Code
 
 

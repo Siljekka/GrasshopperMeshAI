@@ -121,7 +121,7 @@ namespace MeshPoints.Tools
             List<double> nodeToNodeDistance = new List<double>();
             if (element.Type != "Hex")
             {
-                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                for (int n = 0; n < nodeCoordinates.Count; n++)
                 {
                     if (n == nodeCoordinates.Count - 1)
                     {
@@ -133,7 +133,7 @@ namespace MeshPoints.Tools
             }
             else
             {
-                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                for (int n = 0; n < nodeCoordinates.Count; n++)
                 {
                     if (n < 0.5 * nodeCoordinates.Count)
                     {
@@ -349,18 +349,17 @@ namespace MeshPoints.Tools
 
             // Calculate the Jacobian determinant of each node
             List<double> jacobiansOfElement = new List<double>();
-            Matrix<double> gaussNodes = _FEM.GetGaussPoints(1, nodeDOFS);
+            Matrix<double> gaussNodes = _FEM.GetGaussPoints(1);
 
             for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
                 // Substitute the natural coordinates into the symbolic expression
                 var r = gaussNodes.Row(n)[0];
                 var s = gaussNodes.Row(n)[1];
-                double t = 0;
-                if (nodeDOFS == 3) { t = gaussNodes.Row(n)[2]; }
+                var t = gaussNodes.Row(n)[2];
 
                 // Partial derivatives of the shape functions
-                Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, nodeDOFS);
+                Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t);
 
                 // Calculate Jacobian determinant
                 Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
