@@ -13,54 +13,95 @@ namespace MeshPoints.Classes
 {
     class FEM
     {
-        public FEM()
-        {
-            //Empty constructor
-        }
-
-        public Vector<double> GetShapeFunctions(double r, double s, double t)
+        public Vector<double> GetShapeFunctions(double r, double s, double t, int nodeDOFS)
         {
             // Shapefunctions on matrix form
-            Vector<double> N = DenseVector.OfArray(new double[]
+            if (nodeDOFS == 2)
             {
-                (1-r)*(1-s)*(1-t),
-                (1+r)*(1-s)*(1-t),
-                (1+r)*(1+s)*(1-t),
-                (1-r)*(1+s)*(1-t),
-                (1-r)*(1-s)*(1+t),
-                (1+r)*(1-s)*(1+t),
-                (1+r)*(1+s)*(1+t),
-                (1-r)*(1+s)*(1+t)
-            });
-            N=N.Multiply(0.125);
-            return N;
+                Vector<double> N = DenseVector.OfArray(new double[]
+                {
+                    (1-r)*(1-s),
+                    (1+r)*(1-s),
+                    (1+r)*(1+s),
+                    (1-r)*(1+s),
+                });
+                N = N.Multiply(0.25);
+                return N;
+            }
+            else
+            {
+                Vector<double> N = DenseVector.OfArray(new double[]
+                {
+                    (1-r)*(1-s)*(1-t),
+                    (1+r)*(1-s)*(1-t),
+                    (1+r)*(1+s)*(1-t),
+                    (1-r)*(1+s)*(1-t),
+                    (1-r)*(1-s)*(1+t),
+                    (1+r)*(1-s)*(1+t),
+                    (1+r)*(1+s)*(1+t),
+                    (1-r)*(1+s)*(1+t)
+                });
+                N = N.Multiply(0.125);
+                return N;
+            }
+
         }
-        public Matrix<double> DerivateWithNatrualCoordinates(double r, double s, double t)
+        public Matrix<double> DerivateWithNatrualCoordinates(double r, double s, double t, int nodeDOFS)
         {
-            Matrix<double> shapeFunctionsDerivatedNatural = DenseMatrix.OfArray(new double[,]
+            if (nodeDOFS == 2)
             {
-                    {-(1-s)*(1-t), (1-s)*(1-t), (1+s)*(1-t),-(1+s)*(1-t),-(1-s)*(1+t),(1-s)*(1+t),(1+s)*(1+t),-(1+s)*(1+t)},
-                    {-(1-r)*(1-t), -(1+r)*(1-t), (1+r)*(1-t),(1-r)*(1-t),-(1-r)*(1+t),-(1+r)*(1+t),(1+r)*(1+t),(1-r)*(1+t)},
-                    {-(1-r)*(1-s), -(1+r)*(1-s), -(1+r)*(1+s),-(1-r)*(1+s),(1-r)*(1-s),(1+r)*(1-s),(1+r)*(1+s),(1-r)*(1+s)},
-            });
-            shapeFunctionsDerivatedNatural=shapeFunctionsDerivatedNatural.Multiply(0.125);
-            return shapeFunctionsDerivatedNatural;
+                Matrix<double> shapeFunctionsDerivatedNatural = DenseMatrix.OfArray(new double[,]
+                {
+                    {-(1-s), (1-s), (1+s), -(1+s)},
+                    {-(1-r), -(1+r), (1+r), (1-r)}
+                });
+                shapeFunctionsDerivatedNatural = shapeFunctionsDerivatedNatural.Multiply(0.25);
+                return shapeFunctionsDerivatedNatural;
+
+            }
+            else
+            {
+                Matrix<double> shapeFunctionsDerivatedNatural = DenseMatrix.OfArray(new double[,]
+                {
+                        {-(1-s)*(1-t), (1-s)*(1-t), (1+s)*(1-t),-(1+s)*(1-t),-(1-s)*(1+t),(1-s)*(1+t),(1+s)*(1+t),-(1+s)*(1+t)},
+                        {-(1-r)*(1-t), -(1+r)*(1-t), (1+r)*(1-t),(1-r)*(1-t),-(1-r)*(1+t),-(1+r)*(1+t),(1+r)*(1+t),(1-r)*(1+t)},
+                        {-(1-r)*(1-s), -(1+r)*(1-s), -(1+r)*(1+s),-(1-r)*(1+s),(1-r)*(1-s),(1+r)*(1-s),(1+r)*(1+s),(1-r)*(1+s)},
+                });
+                shapeFunctionsDerivatedNatural = shapeFunctionsDerivatedNatural.Multiply(0.125);
+                return shapeFunctionsDerivatedNatural;
+            }
+
         }
-        public Matrix<double> GetGaussPoints(double scaleFactor)
+        public Matrix<double> GetGaussPoints(double scaleFactor, int nodeDOFS)
         {
             double gp = scaleFactor;
-            Matrix<double> gaussNodes = DenseMatrix.OfArray(new double[,]
+
+            if (nodeDOFS == 2)
             {
-                {-gp,-gp,-gp},
-                {gp,-gp,-gp},
-                {gp, gp,-gp},
-                {-gp, gp,-gp},
-                {-gp,-gp, gp},
-                {gp,-gp, gp},
-                {gp, gp, gp},
-                {-gp, gp,gp},
-            });
-            return gaussNodes;
+                Matrix<double> gaussNodes = DenseMatrix.OfArray(new double[,]
+                {
+                    {-gp,-gp},
+                    {gp,-gp},
+                    {gp, gp},
+                    {-gp, gp},
+                });
+                return gaussNodes;
+            }
+            else
+            {
+                Matrix<double> gaussNodes = DenseMatrix.OfArray(new double[,]
+                {
+                    {-gp,-gp,-gp},
+                    {gp,-gp,-gp},
+                    {gp, gp,-gp},
+                    {-gp, gp,-gp},
+                    {-gp,-gp, gp},
+                    {gp,-gp, gp},
+                    {gp, gp, gp},
+                    {-gp, gp,gp},
+                });
+                return gaussNodes;
+            }
         }
     }
 }
