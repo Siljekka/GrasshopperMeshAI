@@ -109,26 +109,16 @@ namespace MeshPoints.MachineLearning
             Brep brepSurface = (Brep)inputSurface.Duplicate();
             var referenceContour = CreateRegularNgon(brepSurface.Vertices.Count);
 
-            // Parametrize surface
-            NurbsSurface surface = brepSurface.Faces[0].ToNurbsSurface();
-            surface.SetDomain(0, new Interval(0, 1));
-            surface.SetDomain(1, new Interval(0, 1));
+            // Parametrize surface for translation
+            NurbsSurface parametrizedSurface = brepSurface.Faces[0].ToNurbsSurface();
+            parametrizedSurface.SetDomain(0, new Interval(0, 1));
+            parametrizedSurface.SetDomain(1, new Interval(0, 1));
 
-
-            // Translation
-            Transform translationTransformation = Transform.Translation(Point3d.Origin - surface.PointAt(0.5, 0.5));
-
-            surface.Translate(Point3d.Origin - surface.PointAt(0.5, 0.5));
-
-            // Scaling; create bounding box around surface and scale it to x, y := [-1, 1]
-            BoundingBox boundingBox = surface.GetBoundingBox(false);
-            double[] boundingBoxPoints = { boundingBox.Max.MaximumCoordinate, boundingBox.Min.MaximumCoordinate };
-            double maxValue = boundingBoxPoints.Max();
-            Transform scalingTransformation = Transform.Scale(Point3d.Origin, 1 / maxValue);
-
-            surface.Scale(1 / maxValue);
+            // Translation. Also perform the translation on brepSurface for Svd-stuff later
+            Transform translationTransformation = Transform.Translation(Point3d.Origin - parametrizedSurface.PointAt(0.5, 0.5));
+            brepSurface.Translate(Point3d.Origin - parametrizedSurface.PointAt(0.5, 0.5));
             
-            // Rotation; rotate input to best match reference n-gon (Kabsch algorithm (constrained orthogonal Procrustes))
+            // Create list of translated surfacePoints and build matrices for Svd-operations
             var surfacePoints = new List<List<double>>();
             foreach (var point in brepSurface.Vertices)
             {
@@ -140,12 +130,18 @@ namespace MeshPoints.MachineLearning
 
             Matrix<double> H = surfaceMatrix.Transpose() * referenceMatrix;
             var svd = H.Svd();
+            var svdSurfaceMatrix = surfaceMatrix.Svd();
 
-            // 2x2 rotation matrix: [[cosø, -sinø], [sinø, cosø]].
+            // Rotation; 2x2 rotation matrix: [[cosø, -sinø], [sinø, cosø]].
             var rotationMatrix = svd.U * svd.VT;
             var rotationInRadians = Math.Acos(rotationMatrix[0, 0]);
             Transform rotationTransformation = Transform.Rotation(rotationInRadians, Point3d.Origin);
 
+            // Scaling
+            var scalingFactor = svd.S.Sum() / svdSurfaceMatrix.L2Norm;
+            Transform scalingTransformation = Transform.Scale(Point3d.Origin, 1 / scalingFactor);
+
+            // Order is important
             Transform procrustesSuperimposition = rotationTransformation * scalingTransformation * translationTransformation;
 
             return procrustesSuperimposition;
