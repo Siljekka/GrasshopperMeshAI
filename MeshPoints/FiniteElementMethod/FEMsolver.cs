@@ -68,17 +68,20 @@ namespace MeshPoints.FiniteElementMethod
             DA.GetDataList(1, loads);
             DA.GetDataList(2, boundaryConditions);
             DA.GetData(3, ref material);
-           
+
 
             // Code
 
+            // 0. Initial step
+            if (!DA.GetData(0, ref smartMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid SmartMesh input."); return; }
             List<Node> nodes = smartMesh.Nodes;
             List<Element> elements = smartMesh.Elements;
             int numNodes = nodes.Count;
 
+
             // 1. Check if mesh is Surface or Solid
-            if (smartMesh == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid SmartMesh."); }
-            if (smartMesh.Type != "Solid") { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh must be a solid SmartMesh. "); }
+            if (smartMesh.Type != "Solid") { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "SmartMesh must be a solid SmartMesh. "); return; }
+
 
             // 2. Get global stiffness matrix
             LA.Matrix<double> K_global = CalculateGlobalStiffnessMatrix(elements, numNodes, material);

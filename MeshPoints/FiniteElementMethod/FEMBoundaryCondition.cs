@@ -70,6 +70,7 @@ namespace MeshPoints.FiniteElementMethod
 
             // Code
 
+            if (!DA.GetData(0, ref smartMesh)) { return; }
             List<bool> applyBC = new List<bool>() { Tx, Ty, Tz };
             List<List<int>> applyBCToDOF = new List<List<int>>();
             bool nodeIsOnGeometry = false;
