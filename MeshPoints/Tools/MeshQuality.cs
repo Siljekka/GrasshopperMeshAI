@@ -115,7 +115,9 @@ namespace MeshPoints.Tools
             {
                 nodeCoordinates.Add(node.Coordinate);
             }
-
+            if (element.Id == 236)
+            { 
+            }
             // New AR:
             // Find distances from corners to centroid (Abaqus)
             List<double> nodeToNodeDistance = new List<double>();
