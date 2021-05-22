@@ -83,7 +83,7 @@ namespace MeshPoints.Tools
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) return;
 
-            if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
+            if (oldMesh.Type == "Solid" & genesW.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
             if (genesU.Count < (oldMesh.nu - 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
             if (genesV.Count < (oldMesh.nv - 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase v genes."); return; }
             if (oldMesh.Type == "Solid" & (genesW.Count < (oldMesh.nw - 2) )) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase w genes."); return; }
@@ -120,7 +120,10 @@ namespace MeshPoints.Tools
                             else { genU = genesU[i - 1]; }
 
                             int nodeIndex = i + j * oldMesh.nu + k * oldMesh.nu * oldMesh.nv;
-
+                            if (nodeIndex == 84)
+                            { 
+                            
+                            }
                             Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                             Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                             Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
@@ -225,8 +228,7 @@ namespace MeshPoints.Tools
                         }
                     }
                 }
-                newMesh = new SmartMesh(newNodes, newElements, null, "Surface");
-                newMesh.CreateMesh();
+                newMesh = new SmartMesh(newNodes, newElements, "Surface");
             }
 
 
