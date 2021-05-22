@@ -271,10 +271,6 @@ namespace MeshPoints.QuadRemesh
             double avgQuality = meshValues.Item1;
             double badestQuality = meshValues.Item2;
             surfaceMesh.Mesh = meshValues.Item3;
-
-            // Assign properties to surfaceMesh:
-            //SmartMesh surfaceMesh = new SmartMesh(nodes, elements, colorMesh, "Surface");
-            //surfaceMesh.Mesh = colorMesh;
             
             #endregion End Code
 

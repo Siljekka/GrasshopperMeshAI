@@ -197,7 +197,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             //Numerical integration
-           LA.Matrix<double> gaussNodes = _FEM.GetGaussPoints((double)Math.Sqrt((double)1 / (double)3));
+           LA.Matrix<double> gaussNodes = _FEM.GetGaussPoints((double)Math.Sqrt((double)1 / (double)3), 3);
 
            for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
@@ -207,7 +207,7 @@ namespace MeshPoints.FiniteElementMethod
                var t = gaussNodes.Row(n)[2];
 
                // Partial derivatives of the shape functions
-               LA.Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t); 
+               LA.Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, 3); 
 
               // Calculate Jacobian matrix
               LA.Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
@@ -423,7 +423,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // get node strain and stress by extrapolation
-            LA.Matrix<double> extrapolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3));
+            LA.Matrix<double> extrapolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3),3);
 
             for (int n = 0; n < B_local.Count; n++)
             { 
@@ -432,7 +432,7 @@ namespace MeshPoints.FiniteElementMethod
                 var s = extrapolationNodes.Row(n)[1];
                 double t = extrapolationNodes.Row(n)[2];
 
-                LA.Vector<double> shapefunctionValuesInNode = _FEM.GetShapeFunctions(r, s, t);
+                LA.Vector<double> shapefunctionValuesInNode = _FEM.GetShapeFunctions(r, s, t, 3);
                 LA.Vector<double> nodeStrain = elementGaussStrain.Multiply(shapefunctionValuesInNode);
                 LA.Vector<double> nodeStress = elementGaussStress.Multiply(shapefunctionValuesInNode);
                 for (int i = 0; i < B_local[0].RowCount; i++)
