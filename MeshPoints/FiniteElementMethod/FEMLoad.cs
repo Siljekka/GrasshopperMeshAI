@@ -101,49 +101,94 @@ namespace MeshPoints.FiniteElementMethod
                 List<int> nodeIndexOnSurface = GetNodeIndexOnSurface(smartMesh.Nodes, surface);
 
                 // Prepare load lumping
-                Brep surfaceAsBerep = surface.ToBrep();
+                //Brep surfaceAsBerep = surface.ToBrep();
                 //double area = Rhino.Geometry.AreaMassProperties.Compute(surfaceAsBerep).Area; // to do: slett?
                 //int loadCounter = 0; // to do: slett?
 
                 foreach (Element element in smartMesh.Elements)
                 {
-                    List<List<Node>> faceList = element.GetFaces();
-                    for (int i = 0; i < faceList.Count; i++)
+                    foreach (int connectivity in element.Connectivity)
                     {
-                        List<Node> face = faceList[i];
-                        for(int j = 0; j < face.Count; j++)
+                        foreach (int id in nodeIndexOnSurface)
                         {
-                            Node node = face[j];
-                            foreach (int id in nodeIndexOnSurface)
+                            if (connectivity == id)
                             {
-                                if (node.GlobalId == id)
+                                List<List<Node>> faceList = element.GetFaces();
+                                for (int i = 0; i < faceList.Count; i++)
                                 {
-                                    Point3d A1 = face[0].Coordinate;
-                                    Point3d B1 = face[1].Coordinate;
-                                    Point3d C1 = face[3].Coordinate;
+                                    List<Node> face = faceList[i];
+                                    for (int j = 0; j < face.Count; j++)
+                                    {
+                                        Node node = face[j];
+                                        if (node.GlobalId == id)
+                                        {
+                                            Point3d A1 = face[0].Coordinate;
+                                            Point3d B1 = face[1].Coordinate;
+                                            Point3d C1 = face[3].Coordinate;
 
-                                    Point3d A2 = face[1].Coordinate;
-                                    Point3d B2 = face[2].Coordinate;
-                                    Point3d C2 = face[3].Coordinate;
+                                            Point3d A2 = face[1].Coordinate;
+                                            Point3d B2 = face[2].Coordinate;
+                                            Point3d C2 = face[3].Coordinate;
 
-                                    // check area
-                                    double area1 = Math.Abs(0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y)));
-                                    double area2 = Math.Abs(0.5 * (A2.X * (B2.Y - C2.Y) + B2.X * (C2.Y - A2.Y) + C2.X * (A2.Y - B2.Y)));
-                                    double faceArea = area1 + area2;
+                                            // check area
+                                            double area1 = Math.Abs(0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y)));
+                                            double area2 = Math.Abs(0.5 * (A2.X * (B2.Y - C2.Y) + B2.X * (C2.Y - A2.Y) + C2.X * (A2.Y - B2.Y)));
+                                            double faceArea = area1 + area2;
 
-                                    residualForces[3 * id + 0] = residualForces[id * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
-                                    residualForces[3 * id + 1] = residualForces[id * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
-                                    residualForces[3 * id + 2] = residualForces[id * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
-                                    pointsWithLoad.Add(smartMesh.Nodes[id].Coordinate);
+                                            residualForces[3 * id + 0] = residualForces[id * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
+                                            residualForces[3 * id + 1] = residualForces[id * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
+                                            residualForces[3 * id + 2] = residualForces[id * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
 
-                                    break;
-                                    i = 1000000;
-                                    j = 1000000;
+                                            if (!pointsWithLoad.Contains(smartMesh.Nodes[id].Coordinate))
+                                            {
+                                                pointsWithLoad.Add(smartMesh.Nodes[id].Coordinate);
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                /*
+            List<List<Node>> faceList = element.GetFaces();
+            for (int i = 0; i < faceList.Count; i++)
+            {
+                List<Node> face = faceList[i];
+                for(int j = 0; j < face.Count; j++)
+                {
+                    Node node = face[j];
+                    foreach (int id in nodeIndexOnSurface)
+                    {
+                        if (node.GlobalId == id)
+                        {
+                                Point3d A1 = face[0].Coordinate;
+                                Point3d B1 = face[1].Coordinate;
+                                Point3d C1 = face[3].Coordinate;
+
+                                Point3d A2 = face[1].Coordinate;
+                                Point3d B2 = face[2].Coordinate;
+                                Point3d C2 = face[3].Coordinate;
+
+                                // check area
+                                double area1 = Math.Abs(0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y)));
+                                double area2 = Math.Abs(0.5 * (A2.X * (B2.Y - C2.Y) + B2.X * (C2.Y - A2.Y) + C2.X * (A2.Y - B2.Y)));
+                                double faceArea = area1 + area2;
+
+                                residualForces[3 * id + 0] = residualForces[id * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
+                                residualForces[3 * id + 1] = residualForces[id * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
+                                residualForces[3 * id + 2] = residualForces[id * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
+
+                                if (!pointsWithLoad.Contains(smartMesh.Nodes[id].Coordinate))
+                                {
+                                    pointsWithLoad.Add(smartMesh.Nodes[id].Coordinate);
+                                }
+
+                            }
+                    }
+                }
+            }
+        }*/
 
                 // to do: slett?
                 /*
