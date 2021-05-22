@@ -102,7 +102,7 @@ namespace MeshPoints.CreateMesh
             }
             Mesh globalMesh = new Mesh();
 
-            DoGlobalSmoothing(globalEdgeList, globalElementList);
+            DoGlobalSmoothing(meshSurface, globalEdgeList, globalElementList);
             var meshProperties = ConvertToMainMeshClasses(globalElementList);
             
             foreach (Element e in meshProperties.Item2)
@@ -436,6 +436,7 @@ namespace MeshPoints.CreateMesh
             }
             return;
         }
+
         // __________________________________________ Global smoothing ______________________________________________________
         private Tuple<List<qEdge>, List<qEdge>> UpdateGlobalEdgeList_NodePosition(qNode smoothNode, Point3d newCoordinate, List<qEdge> globalEdgeList)
         {
@@ -465,17 +466,17 @@ namespace MeshPoints.CreateMesh
                 globalEdgeList[id].EdgeLine = globalEdgeList[id].VisualizeLine(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
 
                 int edgeId1 = globalEdgeListCopy[id].Element1.EdgeList.IndexOf(edge);
-                int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
                 globalEdgeList[id].Element1.EdgeList[edgeId1] = globalEdgeList[id];
-
                 globalEdgeList[id].Element1.GetContourOfElement();
                 globalEdgeList[id].Element1.CalculateAngles(); // to do:isquad?
 
-
-                globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
-                globalEdgeList[id].Element2.GetContourOfElement();
-                globalEdgeList[id].Element2.CalculateAngles(); // to do: isquad?
-
+                if (!smoothNode.BoundaryNode)
+                {
+                    int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
+                    globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
+                    globalEdgeList[id].Element2.GetContourOfElement();
+                    globalEdgeList[id].Element2.CalculateAngles(); // to do: isquad?
+                }
 
                 newEdges.Add(globalEdgeList[id]);
                 oldEdges.Add(globalEdgeListCopy[id]);
@@ -540,13 +541,19 @@ namespace MeshPoints.CreateMesh
         }
 
         // After paper by Cannan, with modifications by Qmorp-fyren for the quads.
-        private void DoGlobalSmoothing(List<qEdge> globalEdgeList, List<qElement> globalElementList)
+        private void DoGlobalSmoothing(Brep brep, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
             List<qNode> globalNodeList = GetGlobalNodeList(globalEdgeList);
             List<qNode> smoothableNodes = new List<qNode>(globalNodeList);
             double moveTolerance = 0.01; // constant: fix: todo.
-            double maxDistanceMoved = 0; // todo: fix this so that it is bigger than 1.75*moveTol
             double maxModelDimension = 0;
+
+            // 0. Make list with brep vertex coordinates
+            List<Point3d> vertexPoints = new List<Point3d>();
+            foreach (BrepVertex vertex in brep.Vertices)
+            {
+                vertexPoints.Add(vertex.Location);
+            }
             
             // 1. Calculate initial distortion metrics for all elements
             foreach (qElement element in globalElementList)
@@ -574,21 +581,36 @@ namespace MeshPoints.CreateMesh
             while (continueSmooth & n <100)
             {
                 bool nodeIsMoved = false;
-                maxDistanceMoved = 0;
+                double maxDistanceMoved = 0;
                 List<qNode> smoothableNodesCopy = new List<qNode>(smoothableNodes);
                 foreach (qNode node in smoothableNodesCopy)
                 {
-                    if (node.BoundaryNode | !smoothableNodesCopy.Contains(node)) { smoothableNodes.Remove(node); continue; } // todo: forlag: ta BC-edge og flytt vektor.
+                    if (!smoothableNodesCopy.Contains(node) | vertexPoints.Contains(node.Coordinate)) { smoothableNodes.Remove(node); continue; } // todo: forlag: ta BC-edge og flytt vektor.
                     if (iterations == 1) { node.OBS = false; }
+
 
                     // 4.1. Perform Constrained Laplacian Smooth
                     if (!node.OBS)
                     {
-                        // 4.1.1. Move node
-                        qNode movedNode = ConstrainedLaplacianSmooth(node, globalEdgeList, globalElementList);
-                        double distanceMoved = (movedNode.Coordinate - node.Coordinate).Length;
+                        qNode movedNode = new qNode();
+                        // 4.1.0. Perform Laplacian Smooth on Boundary Nodes or perform Constrained Laplacian Smooth
+                        if (node.BoundaryNode)
+                        {
+                            Vector3d laplacianVector = LaplacianSmooth(node, globalEdgeList);
+                            Point3d newPoint = new Point3d(node.Coordinate.X + laplacianVector.X, node.Coordinate.Y + laplacianVector.Y, node.Coordinate.Z + laplacianVector.Z);
+                            BrepEdge edge = PointOnEdge(node, brep);
+                            edge.ClosestPoint(newPoint, out double parameter);
+                            movedNode = new qNode(edge.PointAt(parameter), node.BoundaryNode);
+                            movedNode = new qNode(newPoint, node.BoundaryNode);
+                        }
+                        else
+                        {
+                            // 4.1.1. Move node
+                            movedNode = ConstrainedLaplacianSmooth(node, globalEdgeList, globalElementList); 
+                        }
 
                         // 4.1.2. Check if move shall be allowed;
+                        double distanceMoved = (movedNode.Coordinate - node.Coordinate).Length;
                         if (distanceMoved < moveTolerance)
                         {
                             movedNode = new qNode(node.Coordinate, node.BoundaryNode); // reset node to old node
@@ -756,7 +778,6 @@ namespace MeshPoints.CreateMesh
             Vector3d laplacianVector = LaplacianSmooth(node, globalEdgeList);
             Point3d newPoint = new Point3d(node.Coordinate.X + laplacianVector.X, node.Coordinate.Y + laplacianVector.Y, node.Coordinate.Z + laplacianVector.Z);
             qNode newNode = new qNode(newPoint, node.BoundaryNode);
-            qNode oldNode = new qNode(node.Coordinate, node.BoundaryNode);
 
             // 2. Loop to find final node position
             for (int i = 0; i < 20; i++) // constant proposed in paper: 20
@@ -819,7 +840,7 @@ namespace MeshPoints.CreateMesh
                     laplacianVector = laplacianVector * 0.5;
                     newPoint = new Point3d(node.Coordinate.X + laplacianVector.X, node.Coordinate.Y + laplacianVector.Y, node.Coordinate.Z + laplacianVector.Z);
                     newNode = new qNode(newPoint, newNode.BoundaryNode);
-                    //if (i == 19) { newNode = node; }
+                    if (i == 19) { newNode = node; }
                 }
                 else if (posN == N | (upN > 0 & downN == 0) | (upN >= downN & deltaDistMetric > -0.05)) { break; }
             }
@@ -854,7 +875,7 @@ namespace MeshPoints.CreateMesh
                 if (element.DistortionMetric < 0) {  connectedElements.Remove(element); continue; }
                 double giX = CalculateGradient(element, node, delta, "x");
                 double giY = CalculateGradient(element, node, delta, "y");
-                double giZ = CalculateGradient(element, node, delta, "z");
+                double giZ = 0;// CalculateGradient(element, node, delta, "z");
                 if ((new Vector3d(giX, giY, giZ)).Length > 0.00001 & element.DistortionMetric < myMin)
                 {
                     myMin = element.DistortionMetric;
@@ -961,7 +982,22 @@ namespace MeshPoints.CreateMesh
                 return element;
             }
         } // OK
+        private BrepEdge PointOnEdge(qNode node, Brep brep)
+        {
+            BrepEdge edge = null;
+            BrepEdgeList brepEdge = brep.Edges;
 
+            foreach (BrepEdge bEdge in brepEdge) // check if node is on edge
+            {
+                bool IsOnEdge = node.IsOnEdge(bEdge);
+                if (IsOnEdge)
+                {
+                    edge = bEdge;
+                    return edge;
+                }
+            }
+            return edge;
+        }
 
 
         #endregion

@@ -3200,7 +3200,6 @@ namespace MeshPoints.QuadRemesh
                 }
             }
         } 
-
         private Point3d InvertedElementsCleanUp(qNode smoothNode, List<qElement> connectedTriangles, Vector3d movingVector)
         {
             Point3d newCoordinate = new Point3d(smoothNode.Coordinate);
@@ -3258,18 +3257,17 @@ namespace MeshPoints.QuadRemesh
                     globalEdgeList[id].EdgeLine = globalEdgeList[id].VisualizeLine(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
 
                     int edgeId1 = globalEdgeListCopy[id].Element1.EdgeList.IndexOf(edge);
-                    int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
                     globalEdgeList[id].Element1.EdgeList[edgeId1] = globalEdgeList[id];
-                    
                     globalEdgeList[id].Element1.GetContourOfElement();
                     globalEdgeList[id].Element1.CalculateAngles(); // to do:isquad?
 
-
-                    globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
-                    globalEdgeList[id].Element2.GetContourOfElement();
-                    globalEdgeList[id].Element2.CalculateAngles(); // to do: isquad?
-
-
+                    if (!smoothNode.BoundaryNode)
+                    {
+                        int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
+                        globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
+                        globalEdgeList[id].Element2.GetContourOfElement();
+                        globalEdgeList[id].Element2.CalculateAngles(); // to do: isquad?
+                    }
                     newEdges.Add(globalEdgeList[id]);
                     oldEdges.Add(globalEdgeListCopy[id]);
                     //todo: else { add runtimemessage }
@@ -4171,8 +4169,8 @@ namespace MeshPoints.QuadRemesh
             else 
             {
                 qEdge edge1 = new qEdge(nodes[0], nodes[1]);
-                qEdge edge2 = new qEdge(nodes[1], nodes[2]);
-                qEdge edge3 = new qEdge(nodes[2], nodes[0]);
+                qEdge edge2 = new qEdge(nodes[2], nodes[0]); 
+                qEdge edge3 = new qEdge(nodes[1], nodes[2]);
                 List<qEdge> edgeList = new List<qEdge>() { edge1, edge2, edge3 };
                 qElement element = new qElement(edgeList);
                 return element;
