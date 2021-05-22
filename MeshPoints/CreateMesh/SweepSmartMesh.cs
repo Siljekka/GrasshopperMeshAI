@@ -78,15 +78,13 @@ namespace MeshPoints.CreateMesh
             // 5. Create elements
             List<Element> elements = CreateElements(refMesh, w, nodes);
 
-            // 6. Create global mesh
-            Mesh globalMesh = CreateGlobalMeshWithWeld(elements);
-
-            // 7. Create geometry info
+            // 6. Create geometry info
             Geometry brepGeometry = new Geometry(brep, bottomFace);
 
-            // 8. Create SmartMesh
-            SmartMesh solidMesh = new SmartMesh(nodes, elements, globalMesh, "Solid");
+            // 7. Create SmartMesh
+            SmartMesh solidMesh = new SmartMesh(nodes, elements, "Solid");
             solidMesh.Geometry = brepGeometry;
+            solidMesh.CreateMesh();
 
             DA.SetData(0, solidMesh);
             DA.SetData(1, solidMesh.Mesh);
@@ -187,9 +185,10 @@ namespace MeshPoints.CreateMesh
                     Node nodeToTransform = nodetest2[j];//meshToTransform.Nodes[j];
                     Point3d pointToTransform = nodeToTransform.Coordinate;
                     pointToTransform.Transform(tranformation);
-
+                    int idJump = numNodesInPlane;
                     if (i == 0 | i == w) { nodeToTransform.BC_W = true; } else { nodeToTransform.BC_W = false; } // assign BCW
-                    Node n = new Node(nodeToTransform.GlobalId + numNodesInPlane * i, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
+                    if (i == 0) { idJump = 0; }
+                    Node n = new Node(nodeToTransform.GlobalId + idJump, pointToTransform, nodeToTransform.BC_U, nodeToTransform.BC_V, nodeToTransform.BC_W);
                     nodes.Add(n);
                 }
                 nodetest2 = new List<Node>(nodes);
@@ -254,21 +253,7 @@ namespace MeshPoints.CreateMesh
             }
             return elements;
         }
-        private Mesh CreateGlobalMeshWithWeld(List<Element> elements)
-        {
-            Mesh globalMesh = new Mesh();
-            foreach (Element element in elements)
-            {
-                globalMesh.Append(element.Mesh);
-            }
-            globalMesh.Weld(0.01);
-
-            globalMesh.Normals.ComputeNormals();
-            globalMesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-            globalMesh.Compact(); // to ensure that it calculate
-
-            return globalMesh;
-        }
+   
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
