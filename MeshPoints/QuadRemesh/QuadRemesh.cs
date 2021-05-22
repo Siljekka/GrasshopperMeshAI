@@ -273,8 +273,9 @@ namespace MeshPoints.QuadRemesh
             Mesh colorMesh = meshValues.Item3;
 
             // Assign properties to surfaceMesh:
-            SmartMesh surfaceMesh = new SmartMesh(nodes, elements, colorMesh, "Surface");
-
+            SmartMesh surfaceMesh = new SmartMesh(nodes, elements, "Surface");
+            surfaceMesh.Mesh = colorMesh;
+            
             #endregion End Code
 
 
