@@ -338,7 +338,7 @@ namespace MeshPoints.Tools
                 var r = gaussNodes.Row(n)[0];
                 var s = gaussNodes.Row(n)[1];
                 double t = 0;
-                if (nodeDOFS == 3) { t = gaussNodes.Row(n)[2]};
+                if (nodeDOFS == 3) { t = gaussNodes.Row(n)[2];  }
 
                 // Partial derivatives of the shape functions
                 Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, nodeDOFS);
