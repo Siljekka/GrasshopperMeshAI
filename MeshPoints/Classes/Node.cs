@@ -36,6 +36,7 @@ namespace MeshPoints.Classes
             BC_W = true;
             this.SetType();
         }
+
         public Node(int _globalId, Point3d _coord, bool _BC_U, bool _BC_V, bool  _BC_W)
         {
             GlobalId = _globalId;

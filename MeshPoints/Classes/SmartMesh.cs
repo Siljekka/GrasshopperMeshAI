@@ -18,13 +18,14 @@ namespace MeshPoints.Classes
         public int nw { get; set; } //number of nodes in z-dir
         public string Type { get; set; } // to do: inplementer
         public Geometry Geometry { get; set; } // to do: temporary
-        public List<List<List<Node>>> GridInformation {get; set;}
+        public List<List<List<Point3d>>> GridInformation {get; set;}
 
         // Constructors
         public SmartMesh() // to do: sjekk om kan endres
         {
             //Empty constructor
         }
+
         public SmartMesh(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for shell mesh
         {
             nu = _nu;
@@ -45,12 +46,12 @@ namespace MeshPoints.Classes
             Mesh = _mesh;
             Type = "Solid";
         }
-        public SmartMesh(List<Node> _nodes, List<Element> _elements, Mesh _mesh, String _type) // for unstructured surface mesh, to do: endre constructer mtp mesh
+        public SmartMesh(List<Node> _nodes, List<Element> _elements, String _type) // for unstructured surface mesh
         {
             Nodes = _nodes;
             Elements = _elements;
-            Mesh = _mesh;
             Type = _type;
+            CreateMesh();
         }
 
         // Methods
@@ -180,92 +181,6 @@ namespace MeshPoints.Classes
             }
             this.Elements = elements;
         }
-        public void CreateMeshOld()
-        {
-            int nu = this.nu;
-            int nv = this.nv;
-            int nw = this.nw;
-            List<Node> nodes = this.Nodes;
-            
-            Mesh mesh = new Mesh();
-            int counter;
-            int jump;
-
-            // Assign mesh vertices from node coordinates
-            foreach (Node node in nodes)
-            {
-                mesh.Vertices.Add(node.Coordinate);
-            }
-
-            // Mesh planes in u - dir
-            counter = 0;
-            jump = 0; // new w sequence
-            for (int i = 0; i < nu; i++)
-            {
-                for (int j = 0; j < (nv - 1) * (nw - 1); j++)
-                {
-                    if (jump < nv - 1)
-                    {
-
-                        mesh.Faces.AddFace(counter, counter + (nu * nv), counter + (nu * nv) + nu, counter + nu);
-
-                        counter += nu;
-                        jump++;
-                    }
-                    else { counter += nu; jump = 0; j--; }
-                }
-                counter = (i + 1);
-                jump = 0;
-            }
-
-
-            // Mesh planes in v - dir
-            counter = 0;
-            int counterU = 0;
-            jump = 0; // new u sequence
-            for (int i = 0; i < nv; i++)
-            {
-                for (int j = 0; j < (nu - 1) * (nw - 1); j++)
-                {
-                    if (jump < nw - 1)
-                    {
-                        mesh.Faces.AddFace(counter, counter + 1, counter + (nu * nv) + 1, counter + nu * nv);
-
-                        counter += nu * nv;
-                        jump++;
-                    }
-                    else { counterU++; counter = counterU; jump = 0; j--; }
-                }
-                counter = (i + 1) * nu;
-                jump = 0;
-                counterU = counter;
-            }
-
-            // Mesh planes in w - dir
-            counter = 0;
-            jump = 0; // new v sequence
-            for (int i = 0; i < nw; i++)
-            {
-                for (int j = 0; j < (nu - 1) * (nv - 1); j++)
-                {
-                    if (jump < nu - 1)
-                    {
-                        mesh.Faces.AddFace(counter, counter + 1, counter + nu + 1, counter + nu);
-
-                        counter++;
-                        jump++;
-                    }
-                    else { counter++; jump = 0; j--; }
-                }
-                counter = (i + 1) * nu * nv;
-                jump = 0;
-            }
-            mesh.Normals.ComputeNormals();  //Control if needed
-            mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
-            mesh.Compact(); //to ensure that it calculate
-
-            this.Mesh = mesh; ;
-        } // to do: slett
         public void CreateMesh()
         {
             Mesh mesh = new Mesh();
