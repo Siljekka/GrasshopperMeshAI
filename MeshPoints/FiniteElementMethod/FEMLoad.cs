@@ -91,7 +91,6 @@ namespace MeshPoints.FiniteElementMethod
                     residualForces[nodeIndex * 3 + 2] = residualForces[nodeIndex * 3 + 2] + zLoad;
                     pointsWithLoad.Add(smartMesh.Nodes[nodeIndex].Coordinate);
                 }
-
             }
             else if (loadType == 2) // surface load
             {   
@@ -132,14 +131,16 @@ namespace MeshPoints.FiniteElementMethod
                                         Point3d C2 = face[3].Coordinate;
 
                                         // check area
-                                        double area1 = Math.Abs(0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y)));
-                                        double area2 = Math.Abs(0.5 * (A2.X * (B2.Y - C2.Y) + B2.X * (C2.Y - A2.Y) + C2.X * (A2.Y - B2.Y)));
+                                        double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(B1 - A1, C1 - A1).Length);  //Math.Abs(0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y)));
+                                        double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(B2 - A2, C2 - A2).Length);
                                         double faceArea = area1 + area2;
 
-                                        residualForces[3 * id + 0] = residualForces[id * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
-                                        residualForces[3 * id + 1] = residualForces[id * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
-                                        residualForces[3 * id + 2] = residualForces[id * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
-
+                                        foreach (Node node in face)
+                                        {
+                                            residualForces[3 * node.GlobalId + 0] = residualForces[node.GlobalId * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
+                                            residualForces[3 * node.GlobalId + 1] = residualForces[node.GlobalId * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
+                                            residualForces[3 * node.GlobalId + 2] = residualForces[node.GlobalId * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
+                                        }
                                         if (!pointsWithLoad.Contains(smartMesh.Nodes[id].Coordinate))
                                         {
                                             pointsWithLoad.Add(smartMesh.Nodes[id].Coordinate);
