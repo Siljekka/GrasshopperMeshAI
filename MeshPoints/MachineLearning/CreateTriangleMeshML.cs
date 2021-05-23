@@ -36,6 +36,7 @@ namespace MeshPoints.MachineLearning
         {
             pManager.AddGenericParameter("Triangle Mesh", "tm", "Triangle mesh (Delauney)", GH_ParamAccess.item);
             pManager.AddGenericParameter("Internal nodes (ML)", "in", "Predicted internal nodes from NN-model.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Transformed contour", "tc", "debugging", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -47,6 +48,7 @@ namespace MeshPoints.MachineLearning
             Brep inputSurface = null;
             DA.GetData(0, ref inputSurface);
             if (!DA.GetData(0, ref inputSurface)) { return; }
+            if (inputSurface.Vertices.Count != 6) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input contour must be hexagon."); return; }
 
             // Get transformation (and inverse transformation) to/from normalized surface 
             Transform procrustesTransform = ProcrustesSuperimposition(inputSurface);
@@ -87,6 +89,7 @@ namespace MeshPoints.MachineLearning
 
             DA.SetData(0, triangleMesh);
             DA.SetDataList(1, inverseTransformedPredictedInternalNodes);
+            DA.SetDataList(2, transformedSurfaceVertices);
 
         }
 
@@ -107,7 +110,8 @@ namespace MeshPoints.MachineLearning
         public Transform ProcrustesSuperimposition(Brep inputSurface)
         {
             Brep brepSurface = (Brep)inputSurface.Duplicate();
-            var referenceContour = CreateRegularNgon(brepSurface.Vertices.Count);
+            int edgeCount = brepSurface.Vertices.Count;
+            var referenceContour = CreateRegularNgon(edgeCount);
 
             // Parametrize surface for translation
             NurbsSurface parametrizedSurface = brepSurface.Faces[0].ToNurbsSurface();
@@ -130,18 +134,17 @@ namespace MeshPoints.MachineLearning
 
             Matrix<double> H = surfaceMatrix.Transpose() * referenceMatrix;
             var svd = H.Svd();
-            var svdSurfaceMatrix = surfaceMatrix.Svd();
 
             // Rotation; 2x2 rotation matrix: [[cosø, -sinø], [sinø, cosø]].
             var rotationMatrix = svd.U * svd.VT;
             var rotationInRadians = Math.Acos(rotationMatrix[0, 0]);
-            Transform rotationTransformation = Transform.Rotation(rotationInRadians, Point3d.Origin);
+            Transform rotationTransformation = Transform.Rotation(-rotationInRadians, Point3d.Origin);
 
-            // Scaling
-            var scalingFactor = svd.S.Sum() / svdSurfaceMatrix.L2Norm;
+            // Scaling (based on Kabsch algorithm).
+            var scalingFactor = surfaceMatrix.FrobeniusNorm() / Math.Sqrt(edgeCount);
             Transform scalingTransformation = Transform.Scale(Point3d.Origin, 1 / scalingFactor);
 
-            // Order is important
+            // Order is important.
             Transform procrustesSuperimposition = rotationTransformation * scalingTransformation * translationTransformation;
 
             return procrustesSuperimposition;
@@ -169,7 +172,7 @@ namespace MeshPoints.MachineLearning
         {
             Keras.Keras.DisablePySysConsoleLog = true;
             // Load model
-            var model = Sequential.LoadModel("C:\\Users\\mkunn\\skole\\master\\Mesh\\MeshPoints\\MachineLearning\\models\\direct-internal-nodes\\");
+            var model = Sequential.LoadModel("C:\\Users\\magnus\\master\\GrasshopperMeshAI\\MeshPoints\\MachineLearning\\models\\direct-internal-nodes\\");
 
             var features = np.array(brepCoordinates);
             var predictionData = np.expand_dims(features, axis: 0);
