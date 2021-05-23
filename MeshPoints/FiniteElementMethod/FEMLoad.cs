@@ -127,10 +127,6 @@ namespace MeshPoints.FiniteElementMethod
                                     }
                                     if (counter == 4)
                                     {
-                                        if (element.Id == 40)
-                                        { 
-                                        }
-
                                         Point3d n0 = face[0].Coordinate;
                                         Point3d n1 = face[1].Coordinate;
                                         Point3d n2 = face[2].Coordinate;
