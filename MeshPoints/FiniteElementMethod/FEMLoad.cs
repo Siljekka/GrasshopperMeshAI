@@ -102,20 +102,20 @@ namespace MeshPoints.FiniteElementMethod
                 // Prepare load lumping
                 foreach (Element element in smartMesh.Elements)
                 {
-                    foreach (int connectivity in element.Connectivity)
+                    for (int i = 0; i < element.Connectivity.Count; i++)
                     {
-                        foreach (int id in nodeIndexOnSurface)
+                        for (int j = 0; j < nodeIndexOnSurface.Count; j++)
                         {
-                            if (connectivity == id)
+                            if (element.Connectivity[i] == nodeIndexOnSurface[j])
                             {
                                 List<List<Node>> faceList = element.GetFaces();
-                                for (int i = 0; i < faceList.Count; i++)
+                                for (int k = 0; k < faceList.Count; k++)
                                 {
-                                    List<Node> face = faceList[i];
+                                    List<Node> face = faceList[k];
                                     int counter = 0;
-                                    for (int j = 0; j < face.Count; j++)
+                                    for (int n = 0; n < face.Count; n++)
                                     {
-                                        if (nodeIndexOnSurface.Contains(face[j].GlobalId))
+                                        if (nodeIndexOnSurface.Contains(face[n].GlobalId))
                                         {
                                             counter++;
                                         }
@@ -131,8 +131,8 @@ namespace MeshPoints.FiniteElementMethod
                                         Point3d C2 = face[3].Coordinate;
 
                                         // check area
-                                        double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(B1 - A1, C1 - A1).Length);  //Math.Abs(0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y)));
-                                        double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(B2 - A2, C2 - A2).Length);
+                                        double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(A1 - C1, B1 - C1).Length);
+                                        double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(A2 - C2, B2 - C2).Length);
                                         double faceArea = area1 + area2;
 
                                         foreach (Node node in face)
@@ -140,18 +140,23 @@ namespace MeshPoints.FiniteElementMethod
                                             residualForces[3 * node.GlobalId + 0] = residualForces[node.GlobalId * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
                                             residualForces[3 * node.GlobalId + 1] = residualForces[node.GlobalId * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
                                             residualForces[3 * node.GlobalId + 2] = residualForces[node.GlobalId * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
+
+                                            if (!pointsWithLoad.Contains(node.Coordinate))
+                                            {
+                                                pointsWithLoad.Add(node.Coordinate);
+                                            }
                                         }
-                                        if (!pointsWithLoad.Contains(smartMesh.Nodes[id].Coordinate))
-                                        {
-                                            pointsWithLoad.Add(smartMesh.Nodes[id].Coordinate);
-                                        }
-                                        break;
+
+                                        i = element.Connectivity.Count; // break
+                                        j = nodeIndexOnSurface.Count; // break
+                                        k = faceList.Count; // break
                                     }
                                 }
                             }
                         }
                     }
-                }
+                    
+                }                
                 /*
             List<List<Node>> faceList = element.GetFaces();
             for (int i = 0; i < faceList.Count; i++)
