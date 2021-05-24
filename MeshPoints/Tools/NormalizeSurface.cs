@@ -91,11 +91,10 @@ namespace MeshPoints.Tools
             Transform scalingTransformation = Transform.Scale(Point3d.Origin, 1 / scalingFactor);
 
             return scalingTransformation * translationTransformation;
-
         }
 
         /// <summary>
-        /// Creates a rotation and scale invariant transformation for an input <see cref="Brep"/> surface that best fits it 
+        /// Creates a rotation and scale invariant transformation for an input <see cref="Brep"/> surface that best fits it
         /// to a regular polygon (with the same number of sides) inscribed in a unit circle. Simplified procrustes superimposition.
         /// </summary>
         /// <param name="inputSurface"></param>
