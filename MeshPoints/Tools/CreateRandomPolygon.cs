@@ -1,4 +1,5 @@
 ﻿using Grasshopper.Kernel;
+using Rhino;
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddIntegerParameter("Edge Count", "ed", "The number of edges (integer) of the N-gon.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Edge Count", "ed", "The number of edges (integer) of the N-gon. Non-integer parameters are rounded down.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -39,26 +40,48 @@ namespace MeshPoints.Tools
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            double edgeCountInput = 0;
+            DA.GetData(0, ref edgeCountInput);
+
+            if (edgeCountInput < 3) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Edge count must be atleast 3."); return; }
+            int edgeCount = (int)Math.Floor(edgeCountInput);
+
+            Brep polygon = CreateRandomNgon(edgeCount);
+
+            DA.SetData(0, polygon);
         }
 
-        public Surface CreateRandomNgon(int edgeCount)
+        /// <summary>
+        /// Creates a random, simple n-gon with x and y between -1 and 1, where n is the given number of sides.
+        /// The polygon is created using a "circle method" where the points of the polygon are placed randomly inside
+        /// one of n quantiles.
+        /// </summary>
+        /// <param name="edgeCount"> An <see cref="int"/> denoting the number of sides of the polygon.</param>
+        /// <returns>A randomly generated <see cref="Brep"/> polygon with the given number of sides.</returns>
+        public Brep CreateRandomNgon(int edgeCount)
         {
             List<Point3d> contourPoints = new List<Point3d>();
             var random = new Random();
-            
+
             double exclusion = 0.2;
             double quantile = 1 / edgeCount;
 
-            for (int i = 0; i<edgeCount; i++)
+            for (int i = 0; i < edgeCount; i++)
             {
                 double r = random.NextDouble() * (1 - exclusion) + exclusion;
                 double theta = 2 * Math.PI * i / edgeCount + random.NextDouble() * quantile;
                 contourPoints.Add(new Point3d(r * Math.Cos(theta), r * Math.Sin(theta), 0));
             }
-            
+            contourPoints.Add(contourPoints[0]);
+
+            Curve curveLoop = Curve.CreateControlPointCurve(contourPoints, 1);
+
+            Brep[] surfaces = Brep.CreatePlanarBreps(curveLoop, RhinoMath.ZeroTolerance);
+            Brep surface = surfaces[0];
 
             return surface;
         }
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
