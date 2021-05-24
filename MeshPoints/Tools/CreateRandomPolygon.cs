@@ -61,15 +61,17 @@ namespace MeshPoints.Tools
         public Brep CreateRandomNgon(int edgeCount)
         {
             List<Point3d> contourPoints = new List<Point3d>();
-            var random = new Random();
+            Random random = new Random();
 
-            double exclusion = 0.2;
-            double quantile = 1 / edgeCount;
+
+            double exclusion = 0.3;
+            double quantile = 1 / (double)edgeCount * 2 * Math.PI;
+
 
             for (int i = 0; i < edgeCount; i++)
             {
                 double r = random.NextDouble() * (1 - exclusion) + exclusion;
-                double theta = 2 * Math.PI * i / edgeCount + random.NextDouble() * quantile;
+                double theta = ( 2 * Math.PI * i / (double)edgeCount) + random.NextDouble() * quantile;
                 contourPoints.Add(new Point3d(r * Math.Cos(theta), r * Math.Sin(theta), 0));
             }
             contourPoints.Add(contourPoints[0]);
