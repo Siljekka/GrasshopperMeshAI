@@ -132,8 +132,8 @@ namespace MeshPoints.FiniteElementMethod
                                         Point3d C2 = face[3].Coordinate;
 
                                         // check area
-                                        double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(A1 - C1, B1 - C1).Length);
-                                        double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(A2 - C2, B2 - C2).Length);
+                                        double area1 = (0.5 * Vector3d.CrossProduct(A1 - C1, B1 - C1).Length);
+                                        double area2 = (0.5 * Vector3d.CrossProduct(A2 - C2, B2 - C2).Length);
                                         double faceArea = area1 + area2;
 
                                         foreach (Node node in face)
