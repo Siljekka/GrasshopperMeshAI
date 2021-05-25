@@ -400,10 +400,22 @@ namespace MeshPoints.QuadRemesh
                 nodeList.Add(node);
             }
 
-            bool[] meshVertexBool = mesh.GetNakedEdgePointStatus();
+            List<Polyline> nakedEdges = mesh.GetNakedEdges().ToList();
             for (int i = 0; i < nodeList.Count; i++)
             {
-                if (meshVertexBool[i] == true) { nodeList[i].BoundaryNode = true; }
+                Point3d point = nodeList[i].Coordinate;
+                bool isBoundaryNode = false;
+                foreach (Polyline line in nakedEdges)
+                {
+                    NurbsCurve edge = line.ToNurbsCurve();
+                    edge.ClosestPoint(nodeList[i].Coordinate, out double parameter);
+                    if (point.DistanceTo(edge.PointAt(parameter)) <= 0.001)
+                    {
+                        isBoundaryNode = true;
+                    }
+                    else { nodeList[i].BoundaryNode = false; }
+                }
+                if (isBoundaryNode) { nodeList[i].BoundaryNode = true; }
                 else { nodeList[i].BoundaryNode = false; }
             }
             return nodeList;
