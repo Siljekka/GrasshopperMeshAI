@@ -226,38 +226,6 @@ namespace MeshPoints.CreateMesh
                     railPoints.Branch(i).Reverse();
                 }
             }
-            // to do: Hilde, slett
-            #region Old code
-            /*
-                Point3d[] nwPt;
-                List<Point3d> nwPoints = new List<Point3d>();
-                //DataTree<Point3d> railPoints = new DataTree<Point3d>();
-
-                // Check if the rails must be re-oredered to generate elements with nodes counting ccw
-                NurbsSurface endSurface = brep.Surfaces[5].ToNurbsSurface();
-                var u = endSurface.Domain(0);
-                var v = endSurface.Domain(1);
-
-                Vector3d vector1 = (rails[0].PointAtEnd - rails[0].PointAtStart);
-                Vector3d vector2 = endSurface.NormalAt(u.T1 * 0.5, v.T1 * 0.5); //(0, 0);
-                Vector3d normal = Vector3d.CrossProduct(vector1, vector2);
-                double angle = Vector3d.VectorAngle(vector1, vector2, normal);
-                if (angle > Math.PI / 2)
-                {
-                    rails.Reverse();
-                }
-
-                //Divide each rail into nw points.
-                for (int i = 0; i < rails.Count; i++)
-                {
-                    rails[i].DivideByCount(nw, true, out nwPt);  //divide each rail in nw number of points
-                    nwPoints = nwPt.ToList();
-                    for (int j = 0; j < nwPoints.Count; j++)
-                    {
-                        railPoints.Add(nwPoints[j], new GH_Path(j)); //tree with nw points on each rail. Branch: floor
-                    }
-                }*/
-            #endregion
             return railPoints;
         }
 
@@ -330,12 +298,10 @@ namespace MeshPoints.CreateMesh
                     direction = (railPoints.Branch(i + 1)[0] - railPoints.Branch(i)[0]);
                 }
                 List<Point3d> pt = CreateGridOfPointsUV(u, v, surfaceAtNw[i], railPoints.Branch(i)[0], direction);
-                //points.AddRange(pt, new GH_Path(i)); // add points to datatree. Branch: floor level
                 pointList.AddRange(pt);
             }
             return pointList;
         }
-
 
         /// <summary>
         /// Makes grid of points in U and V direction
@@ -348,9 +314,6 @@ namespace MeshPoints.CreateMesh
             surface.UVNDirectionsAt(0, 0, out Vector3d uDir, out Vector3d vDir, out Vector3d nDir);
             if (Point3d.Subtract(surface.PointAt(domU.T1, domV.T0), railPoint).Length < 0.1)
             {
-             /*   Vector3d vec1 = surface.PointAt(u.T1, v.T0) - surface.PointAt(u.T0, v.T0);
-                Vector3d vec2 = surface.PointAt(u.T0, v.T1) - surface.PointAt(u.T0, v.T0);*/
-
                 if (Vector3d.VectorAngle(Vector3d.CrossProduct(uDir, vDir), direction) > Math.PI / 2)
                 {
                     domU = new Interval(domU.T1, domU.T0);
@@ -456,46 +419,6 @@ namespace MeshPoints.CreateMesh
             return pt;
         }
 
-        /// <summary>
-        /// Create Nodes: assign Coordiantes, GlobalId and Boundary Conditions
-        /// </summary>
-        /// <returns> List with nodes incl properties</returns>
-        private List<Node> CreateNodes(DataTree<Point3d> meshPoints, int u, int v, int w)// to do: slett
-        {
-            List<Node> nodes = new List<Node>();
-            int id = 0;
-            int nu = u + 1; // number nodes in u dir
-            int nv = v + 1; // number nodes in v dir 
-            int nw = w + 1; // number nodes in w dir 
-
-            for (int i = 0; i < nw; i++)
-            {
-                int row = 0;
-                int column = 0;
-                for (int j = 0; j < meshPoints.Branch(i).Count; j++)
-                {
-                    bool BC_U = false;
-                    bool BC_V = false;
-                    bool BC_W = false;
-
-                    if (column == 0 | column == nu - 1) { BC_U = true; } // assign BCU
-                    if (row == 0 | row == nv - 1) { BC_V = true; } // assign BCV
-                    if (i == 0 | i == nw - 1) { BC_W = true; } // assign BCW
-
-                    Node node = new Node(id, meshPoints.Branch(i)[j], BC_U, BC_V, BC_W);
-                    id++;
-
-                    column++;
-                    if (column == nu)
-                    {
-                        row++;
-                        column = 0;
-                    }
-                    nodes.Add(node);
-                }
-            }
-            return nodes;
-        } 
 
         #endregion
 
