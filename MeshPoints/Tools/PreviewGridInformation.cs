@@ -24,9 +24,9 @@ namespace MeshPoints.Tools
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Grid Information", "grid info", "Input grid information.", GH_ParamAccess.list);
-            pManager.AddIntegerParameter("Grid group", "grid group", "Input grid group index.", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Grid", "grid", "Input grid index in grid group.", GH_ParamAccess.item);
-
+            pManager.AddGenericParameter("Grid groups", "group", "Index of grid group to return.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Grid in groups", "grid in group", "Index of grid in grid group to return.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Grid", "grid", "Index of grid to view, independent of grid groups.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -34,8 +34,8 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Grid groups", "smartMesh", "Merged SmartMesh", GH_ParamAccess.list);
-            //pManager.AddGenericParameter("Grids", "smartMesh", "Merged SmartMesh", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Grid in groups", "grid in group", "Grid in grid group.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Grid", "grid", "Grid independent of grid groups.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -48,18 +48,27 @@ namespace MeshPoints.Tools
             List<List<List<Node>>> gridInfo = new List<List<List<Node>>>();
             int gridGroupNum = 0;
             int gridNum = 0;
+            int gridNumWOgroup = 0;
 
             DA.GetDataList(0, gridInfo);
             DA.GetData(1, ref gridGroupNum);
             DA.GetData(2, ref gridNum);
 
             // Code
+            List<Node> gridGroupsCount = new List<int>();
             List<Node> gridGroups = new List<Node>();
+            int counter = 0;
             foreach (List<List<Node>> gridGroup in gridInfo)
             {
+                if (gridNumWOgroup == counter)
+                { 
+                
+                }
+                gridGroupsCount.Add(gridGroup.Count);
                 foreach (List<Node> grid in gridGroup)
                 {
                     gridGroups.AddRange(grid);
+                    counter++;
                 }
             }
 
@@ -67,7 +76,9 @@ namespace MeshPoints.Tools
             if (gridGroupNum >= gridInfo.Count) { return; }
             if (gridNum >= gridInfo[gridGroupNum].Count) { return; }
 
-            DA.SetDataList(0, gridInfo[gridGroupNum][gridNum]);
+            DA.SetDataList(0, gridInfo[gridGroupNum][gridNum]); 
+            DA.SetData(1, grid);
+
         }
 
         /// <summary>

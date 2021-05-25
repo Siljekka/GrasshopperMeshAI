@@ -81,7 +81,8 @@ namespace MeshPoints.Tools
 
 
             // 1. Write error if wrong input
-            if (!DA.GetData(0, ref oldMesh)) return;
+            if (!DA.GetData(0, ref oldMesh)) { return; }
+            if (gridInformation.Count != 0 & genesGrids.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No grid genes detected."); return; }
 
             if (oldMesh.Type == "Solid" & genesW.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
             if (genesU.Count < (oldMesh.nu - 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
