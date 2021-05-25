@@ -30,7 +30,7 @@ namespace MeshPoints.FiniteElementMethod
             pManager.AddGenericParameter("SmartMesh", "SM", "Input a SmartMesh.", GH_ParamAccess.item); 
             pManager.AddIntegerParameter("Type", "type", "Load type: Point load = 1, Surface load = 2", GH_ParamAccess.item);
             pManager.AddGenericParameter("Position", "pos", "List of coordinates for point loads.", GH_ParamAccess.list); 
-            pManager.AddIntegerParameter("Surface", "srf", "Input surface index of geometry to apply load to.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Surface", "srf", "Input surface index of geometry to apply load to.", GH_ParamAccess.list);
             pManager.AddGenericParameter("Vector", "vec", "List of vectors for the loads. If surface load, only one vector.", GH_ParamAccess.list);
 
             pManager[0].Optional = true;
@@ -62,12 +62,12 @@ namespace MeshPoints.FiniteElementMethod
             int loadType = 0;
             List<Vector3d> loadVectors = new List<Vector3d>();
             List<Point3d> loadPosition = new List<Point3d>();
-            int surfaceIndex = 0;
+            List<int> surfaceIndex = new List<int>();
 
             DA.GetData(0, ref smartMesh);
             DA.GetData(1, ref loadType);
             DA.GetDataList(2, loadPosition);
-            DA.GetData(3, ref surfaceIndex);
+            DA.GetDataList(3, surfaceIndex);
             DA.GetDataList(4, loadVectors);
 
             // Code
@@ -97,162 +97,94 @@ namespace MeshPoints.FiniteElementMethod
                 }
             }
             else if (loadType == 2) // surface load
-            {   
-                // Assumption: only one load vector for surface load
-
-                BrepFace surface = smartMesh.Geometry.Faces[surfaceIndex];
-                List<int> nodeIndexOnSurface = GetNodeIndexOnSurface(smartMesh.Nodes, surface);
-
-                // Prepare load lumping
-                foreach (Element element in smartMesh.Elements)
+            {
+                for (int p = 0; p < loadVectors.Count; p++)
                 {
-                    for (int i = 0; i < element.Connectivity.Count; i++)
+                    BrepFace surface = smartMesh.Geometry.Faces[surfaceIndex[p]];
+                    List<int> nodeIndexOnSurface = GetNodeIndexOnSurface(smartMesh.Nodes, surface);
+
+                    // Prepare load lumping
+                    foreach (Element element in smartMesh.Elements)
                     {
-                        for (int j = 0; j < nodeIndexOnSurface.Count; j++)
+                        for (int i = 0; i < element.Connectivity.Count; i++)
                         {
-                            if (element.Connectivity[i] == nodeIndexOnSurface[j])
+                            for (int j = 0; j < nodeIndexOnSurface.Count; j++)
                             {
-                                List<List<Node>> faceList = element.GetFaces();
-                                
-                                for (int k = 0; k < faceList.Count; k++)
+                                if (element.Connectivity[i] == nodeIndexOnSurface[j])
                                 {
-                                    List<Node> face = faceList[k];
-                                    int counter = 0;
-                                    for (int n = 0; n < face.Count; n++)
+                                    List<List<Node>> faceList = element.GetFaces();
+
+                                    for (int k = 0; k < faceList.Count; k++)
                                     {
-                                        if (nodeIndexOnSurface.Contains(face[n].GlobalId))
+                                        List<Node> face = faceList[k];
+                                        int counter = 0;
+                                        for (int n = 0; n < face.Count; n++)
                                         {
-                                            counter++;
-                                        }
-                                    }
-                                    if (counter == 4)
-                                    {
-                                        Point3d n0 = face[0].Coordinate;
-                                        Point3d n1 = face[1].Coordinate;
-                                        Point3d n2 = face[2].Coordinate;
-                                        Point3d n3 = face[3].Coordinate;
-
-                                        double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
-                                        double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n3, n2 - n3).Length);
-
-                                        // check area
-                                        Vector3d normal = element.Mesh.FaceNormals[k];
-                                        if (Vector3d.VectorAngle(n1 - n0, n3 - n0, normal) >= Math.PI)
-                                        {
-                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n0, n2 - n0).Length);
-                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n0, n2 - n0).Length);
-                                        }
-                                        if (Vector3d.VectorAngle(n2 - n1, n3 - n1, normal) >= Math.PI)
-                                        {
-                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n1, n3 - n1).Length);
-                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n1, n3 - n1).Length);
-                                        }
-
-                                        if (Vector3d.VectorAngle(n3 - n2, n1 - n2, normal) >= Math.PI)
-                                        {
-                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n2, n0 - n2).Length);
-                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n2, n0 - n2).Length);
-                                        }
-
-                                        if (Vector3d.VectorAngle(n0 - n3, n2 - n3, normal) >= Math.PI)
-                                        {
-                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
-                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n3, n1 - n3).Length);
-                                        }
-                                        
-                                         double faceArea = area1 + area2;
-
-                                        foreach (Node node in face)
-                                        {
-                                            residualForces[3 * node.GlobalId + 0] = residualForces[node.GlobalId * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
-                                            residualForces[3 * node.GlobalId + 1] = residualForces[node.GlobalId * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
-                                            residualForces[3 * node.GlobalId + 2] = residualForces[node.GlobalId * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
-
-                                            if (!pointsWithLoad.Contains(node.Coordinate))
+                                            if (nodeIndexOnSurface.Contains(face[n].GlobalId))
                                             {
-                                                pointsWithLoad.Add(node.Coordinate);
+                                                counter++;
                                             }
                                         }
+                                        if (counter == 4)
+                                        {
+                                            Point3d n0 = face[0].Coordinate;
+                                            Point3d n1 = face[1].Coordinate;
+                                            Point3d n2 = face[2].Coordinate;
+                                            Point3d n3 = face[3].Coordinate;
 
-                                        i = element.Connectivity.Count; // break
-                                        j = nodeIndexOnSurface.Count; // break
-                                        k = faceList.Count; // break
+                                            double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
+                                            double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n3, n2 - n3).Length);
+
+                                            // check area
+                                            Vector3d normal = element.Mesh.FaceNormals[k];
+                                            if (Vector3d.VectorAngle(n1 - n0, n3 - n0, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n0, n2 - n0).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n0, n2 - n0).Length);
+                                            }
+                                            if (Vector3d.VectorAngle(n2 - n1, n3 - n1, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n1, n3 - n1).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n1, n3 - n1).Length);
+                                            }
+
+                                            if (Vector3d.VectorAngle(n3 - n2, n1 - n2, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n2, n0 - n2).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n2, n0 - n2).Length);
+                                            }
+
+                                            if (Vector3d.VectorAngle(n0 - n3, n2 - n3, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n3, n1 - n3).Length);
+                                            }
+
+                                            double faceArea = area1 + area2;
+
+                                            foreach (Node node in face)
+                                            {
+                                                residualForces[3 * node.GlobalId + 0] = residualForces[node.GlobalId * 3 + 0] + loadVectors[p].X * faceArea / (double)4;
+                                                residualForces[3 * node.GlobalId + 1] = residualForces[node.GlobalId * 3 + 1] + loadVectors[p].Y * faceArea / (double)4;
+                                                residualForces[3 * node.GlobalId + 2] = residualForces[node.GlobalId * 3 + 2] + loadVectors[p].Z * faceArea / (double)4;
+
+                                                if (!pointsWithLoad.Contains(node.Coordinate))
+                                                {
+                                                    pointsWithLoad.Add(node.Coordinate);
+                                                }
+                                            }
+
+                                            i = element.Connectivity.Count; // break
+                                            j = nodeIndexOnSurface.Count; // break
+                                            k = faceList.Count; // break
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    
-                }                
-                /*
-            List<List<Node>> faceList = element.GetFaces();
-            for (int i = 0; i < faceList.Count; i++)
-            {
-                List<Node> face = faceList[i];
-                for(int j = 0; j < face.Count; j++)
-                {
-                    Node node = face[j];
-                    foreach (int id in nodeIndexOnSurface)
-                    {
-                        if (node.GlobalId == id)
-                        {
-                                Point3d A1 = face[0].Coordinate;
-                                Point3d B1 = face[1].Coordinate;
-                                Point3d C1 = face[3].Coordinate;
 
-                                Point3d A2 = face[1].Coordinate;
-                                Point3d B2 = face[2].Coordinate;
-                                Point3d C2 = face[3].Coordinate;
-
-                                // check area
-                                double area1 = Math.Abs(0.5 * (A1.X * (B1.Y - C1.Y) + B1.X * (C1.Y - A1.Y) + C1.X * (A1.Y - B1.Y)));
-                                double area2 = Math.Abs(0.5 * (A2.X * (B2.Y - C2.Y) + B2.X * (C2.Y - A2.Y) + C2.X * (A2.Y - B2.Y)));
-                                double faceArea = area1 + area2;
-
-                                residualForces[3 * id + 0] = residualForces[id * 3 + 0] + loadVectors[0].X * faceArea / (double)4;
-                                residualForces[3 * id + 1] = residualForces[id * 3 + 1] + loadVectors[0].Y * faceArea / (double)4;
-                                residualForces[3 * id + 2] = residualForces[id * 3 + 2] + loadVectors[0].Z * faceArea / (double)4;
-
-                                if (!pointsWithLoad.Contains(smartMesh.Nodes[id].Coordinate))
-                                {
-                                    pointsWithLoad.Add(smartMesh.Nodes[id].Coordinate);
-                                }
-
-                            }
                     }
                 }
-            }
-        }*/
-
-                // to do: slett?
-                /*
-                foreach (int nodeIndex in nodeIndexOnSurface)
-                {
-                    if (smartMesh.Nodes[nodeIndex].Type == "Corner") { loadCounter++; } // corner node
-                    else if (smartMesh.Nodes[nodeIndex].Type == "Edge") { loadCounter += 2; } // edge node
-                    else { loadCounter += 4; } // face node
-                }
-
-                List<double> nodalLoad = new List<double>();
-                nodalLoad.Add(loadVectors[0].X * area / (double) loadCounter);
-                nodalLoad.Add(loadVectors[0].Y * area / (double) loadCounter); 
-                nodalLoad.Add(loadVectors[0].Z * area / (double) loadCounter); 
-
-                // Load lumping
-                double addLoad = 0;
-                foreach (int nodeIndex in nodeIndexOnSurface)
-                {
-                    for (int loadDir = 0; loadDir < 3; loadDir++)
-                    {
-                        if (smartMesh.Nodes[nodeIndex].Type == "Corner") { addLoad = nodalLoad[loadDir]; } // corner node
-                        else if (smartMesh.Nodes[nodeIndex].Type == "Edge") { addLoad = nodalLoad[loadDir] * 2; } // edge node
-                        else { addLoad = nodalLoad[loadDir] * 4; } // face node
-
-                        residualForces[ 3 * nodeIndex + loadDir] = residualForces[nodeIndex * 3 + loadDir] + addLoad;
-                    }
-                    pointsWithLoad.Add(smartMesh.Nodes[nodeIndex].Coordinate);
-                }
-                */
             }
 
             // Output

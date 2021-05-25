@@ -84,7 +84,6 @@ namespace MeshPoints.CreateMesh
             // 7. Create SmartMesh
             SmartMesh solidMesh = new SmartMesh(nodes, elements, "Solid");
             solidMesh.Geometry = brepGeometry;
-            solidMesh.CreateMesh();
 
             DA.SetData(0, solidMesh);
             DA.SetData(1, solidMesh.Mesh);
