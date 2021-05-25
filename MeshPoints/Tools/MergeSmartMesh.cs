@@ -410,13 +410,16 @@ namespace MeshPoints.Tools
             {
                 // Merge grids
 
-                // Loop new groups
-                for (int p = 0; p < mesh.GridInformation.Count; p++)
+                List<List<Point3d>> newGridGroup = new List<List<Point3d>>();
+                List<List<Point3d>> oldGridGroup = new List<List<Point3d>>();
+
+                // Get new grid group to merge
+                for (int p = 0; p < mesh.GridInformation.Count; p++) // loop new gridinformation
                 {
-                    List<List<Point3d>> gridGroupToAdd = mesh.GridInformation[p];
-                    for (int n = 0; n < gridGroupToAdd.Count; n++) // loop grids of new grid group to merge
+                    for (int n = 0; n < mesh.GridInformation[p].Count; n++) // loop grids 
                     {
                         List<Point3d> grid = mesh.GridInformation[p][n];
+
                         // Check if new grid is edge to merge
                         int edgeCheck = 0;
                         foreach (Node mergeNode in nodesOnEdge2)
@@ -429,78 +432,80 @@ namespace MeshPoints.Tools
                                 }
                             }
                         }
+
                         if (edgeCheck != 1)
                         {
-                            gridInformation.Add(gridGroupToAdd);
+                            gridInformation.Add(mesh.GridInformation[p]);
                             break;
                         }
-
-                        // Loop existing
-                        int numGridGroups = gridInformation.Count;
-                        for (int k = 0; k < numGridGroups; k++)
+                        else
                         {
-                            List<List<Point3d>> oldGridGroup = gridInformation[k];
-                            for (int j = 0; j < oldGridGroup.Count; j++)
-                            {
-                                List<Point3d> oldGrid = oldGridGroup[j];
-                                // Check if grid is edge to merge
-                                edgeCheck = 0;
-                                foreach (Node mergeNode in nodesOnEdge1)
-                                {
-                                    foreach (Point3d gridNode in oldGrid)
-                                    {
-                                        if ((gridNode - mergeNode.Coordinate).Length < 0.001)
-                                        {
-                                            edgeCheck++;
-                                        }
-                                    }
-                                }
-                                if (edgeCheck != 1)
-                                {
-                                    continue;
-                                }
-
-                                for (int m = 0; m < grid.Count; m++) // loop nodes of new grid to merge
-                                {
-                                    for (int i = 0; i < oldGrid.Count; i++)
-                                    {
-                                        Point3d newNode = mesh.GridInformation[p][n][m];
-                                        Point3d oldNode = oldGrid[i];
-                                        if ((newNode - oldNode).Length < 0.001) // merge grids if old and new nodes
-                                        {
-                                            foreach (Point3d pointToAdd in mesh.GridInformation[p][n])
-                                            {
-                                                if ((pointToAdd - oldNode).Length < 0.001) { continue; }
-                                                oldGrid.Add(pointToAdd);
-                                            }
-                                            i = 1000000; // break
-                                            m = 1000000; // break
-                                            j = 1000000; // break
-                                            k = 1000000; // break
-                                        }
-
-                                    }
-                                }
-
-                            }
+                            newGridGroup = mesh.GridInformation[p];
+                            break;
                         }
                     }
-                    
-                    // Dummy solution: Ensure no grids are added wrongly
-                    foreach (List<List<Point3d>> gridGroup in gridInformation)
+                }
+
+
+                // Get existing grid group to merge
+                int numGridGroups = gridInformation.Count;
+                for (int k = 0; k < numGridGroups; k++)
+                {
+                    int gridCheck = 0;
+                    oldGridGroup = gridInformation[k];
+                    for (int j = 0; j < oldGridGroup.Count; j++)
                     {
-                        int numNodesInGrid = gridGroup[1].Count;  // to do: find a better..
-                        for (int i = 0; i < gridGroup.Count; i++)
+                        List<Point3d> oldGrid = oldGridGroup[j];
+
+                        // Check if grid is edge to merge
+                        int edgeCheck = 0;
+                        foreach (Node mergeNode in nodesOnEdge1)
                         {
-                            while (gridGroup[i].Count > numNodesInGrid)
+                            foreach (Point3d gridNode in oldGrid)
                             {
-                                gridGroup[i].RemoveAt(numNodesInGrid);
+                                if ((gridNode - mergeNode.Coordinate).Length < 0.001)
+                                {
+                                    edgeCheck++;
+                                }
                             }
-                        }                       
+                        }
+
+                        if (edgeCheck != 1)
+                        {
+                            continue;
+                        }
+                        gridCheck++;
                     }
 
+                    if (gridCheck == newGridGroup.Count)
+                    {
+                        break;
+                    }
                 }
-            } // end if
+
+                foreach (List<Point3d> newGrid in newGridGroup)
+                {
+                    for (int counterOldGrids = 0; counterOldGrids < oldGridGroup.Count; counterOldGrids++)
+                    {
+                        int oldGridCount = oldGridGroup[counterOldGrids].Count;
+                        for (int counterOldNodes = 0; counterOldNodes < oldGridCount; counterOldNodes++)
+                        {
+                            Point3d oldPoint = oldGridGroup[counterOldGrids][counterOldNodes];
+                            if ((oldPoint - newGrid[0]).Length < 0.001 | (oldPoint - newGrid.Last()).Length < 0.001)
+                            {
+                                foreach (Point3d pointToAdd in newGrid)
+                                {
+                                    if ((pointToAdd - oldPoint).Length < 0.001) { continue; }
+                                    oldGridGroup[counterOldGrids].Add(pointToAdd);
+                                }
+                                oldGridCount = oldGridGroup.Count;
+                                counterOldNodes = oldGridCount;
+                            }
+                        }
+
+                    }
+                }
+            }
         }
         private void UpdateGeometry(SmartMesh mesh1, SmartMesh mesh2, SmartMesh mergedSmartMesh)
         {
