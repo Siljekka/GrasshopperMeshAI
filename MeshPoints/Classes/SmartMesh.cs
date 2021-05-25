@@ -229,11 +229,10 @@ namespace MeshPoints.Classes
                 }
             }
 
-
             mesh.Normals.ComputeNormals();
             mesh.Compact();
             mesh.FaceNormals.ComputeFaceNormals();
-            mesh.UnifyNormals(); // want a consistant mesh
+            //mesh.UnifyNormals(); // want a consistant mesh
             this.Mesh = mesh;
         }
     }
