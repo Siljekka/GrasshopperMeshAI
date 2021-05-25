@@ -2,7 +2,11 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
+using MathNet.Numerics.LinearAlgebra;
 using MeshPoints.Classes;
+using Rhino;
+using System.Linq;
+
 
 namespace MeshPoints.FiniteElementMethod
 {
@@ -91,7 +95,6 @@ namespace MeshPoints.FiniteElementMethod
                     residualForces[nodeIndex * 3 + 2] = residualForces[nodeIndex * 3 + 2] + zLoad;
                     pointsWithLoad.Add(smartMesh.Nodes[nodeIndex].Coordinate);
                 }
-
             }
             else if (loadType == 2) // surface load
             {   
@@ -110,6 +113,7 @@ namespace MeshPoints.FiniteElementMethod
                             if (element.Connectivity[i] == nodeIndexOnSurface[j])
                             {
                                 List<List<Node>> faceList = element.GetFaces();
+                                
                                 for (int k = 0; k < faceList.Count; k++)
                                 {
                                     List<Node> face = faceList[k];
@@ -123,18 +127,40 @@ namespace MeshPoints.FiniteElementMethod
                                     }
                                     if (counter == 4)
                                     {
-                                        Point3d A1 = face[0].Coordinate;
-                                        Point3d B1 = face[1].Coordinate;
-                                        Point3d C1 = face[3].Coordinate;
+                                        Point3d n0 = face[0].Coordinate;
+                                        Point3d n1 = face[1].Coordinate;
+                                        Point3d n2 = face[2].Coordinate;
+                                        Point3d n3 = face[3].Coordinate;
 
-                                        Point3d A2 = face[1].Coordinate;
-                                        Point3d B2 = face[2].Coordinate;
-                                        Point3d C2 = face[3].Coordinate;
+                                        double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
+                                        double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n3, n2 - n3).Length);
 
                                         // check area
-                                        double area1 = (0.5 * Vector3d.CrossProduct(A1 - C1, B1 - C1).Length);
-                                        double area2 = (0.5 * Vector3d.CrossProduct(A2 - C2, B2 - C2).Length);
-                                        double faceArea = area1 + area2;
+                                        Vector3d normal = element.Mesh.FaceNormals[k];
+                                        if (Vector3d.VectorAngle(n1 - n0, n3 - n0, normal) >= Math.PI)
+                                        {
+                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n0, n2 - n0).Length);
+                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n0, n2 - n0).Length);
+                                        }
+                                        if (Vector3d.VectorAngle(n2 - n1, n3 - n1, normal) >= Math.PI)
+                                        {
+                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n1, n3 - n1).Length);
+                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n1, n3 - n1).Length);
+                                        }
+
+                                        if (Vector3d.VectorAngle(n3 - n2, n1 - n2, normal) >= Math.PI)
+                                        {
+                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n2, n0 - n2).Length);
+                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n2, n0 - n2).Length);
+                                        }
+
+                                        if (Vector3d.VectorAngle(n0 - n3, n2 - n3, normal) >= Math.PI)
+                                        {
+                                            area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
+                                            area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n3, n1 - n3).Length);
+                                        }
+                                        
+                                         double faceArea = area1 + area2;
 
                                         foreach (Node node in face)
                                         {
@@ -276,11 +302,13 @@ namespace MeshPoints.FiniteElementMethod
             }
             return nodeIndexOnSurface;
         }
+
+
         #endregion
 
-        /// <summary>
-        /// Provides an Icon for the component.
-        /// </summary>
+            /// <summary>
+            /// Provides an Icon for the component.
+            /// </summary>
         protected override System.Drawing.Bitmap Icon
         {
             get

@@ -26,7 +26,7 @@ namespace MeshPoints.Classes
             //Empty constructor
         }
 
-        public SmartMesh(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for shell mesh
+        public SmartMesh(int _nu, int _nv, List<Node> _nodes, List<Element> _elements, Mesh _mesh) // for surface mesh
         {
             nu = _nu;
             nv = _nv;
