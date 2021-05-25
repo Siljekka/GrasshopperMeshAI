@@ -315,16 +315,27 @@ namespace MeshPoints.Tools
             int nodeDOFS = 2;
             if (element.Type == "Hex") { nodeDOFS = 3; }
 
-            //List<Point3d> localPoints = TransformQuadSurfaceTo2DPoints(cornerPoints); to do: implement non-planar elements
+            // Get node coordinates
+            List<Point3d> nodeCoordinates = new List<Point3d>();
+            foreach (Node node in element.Nodes)
+            {
+                nodeCoordinates.Add(node.Coordinate);
+            }
+
+            // Project nodes to planar surface 
+            if (element.Type == "Quad")
+            {
+                nodeCoordinates = TransformQuadSurfaceTo2DPoints(nodeCoordinates);
+            }
 
             Matrix<double> globalCoordinates = Matrix<double>.Build.Dense(element.Nodes.Count, nodeDOFS);
-            for (int i = 0; i < element.Nodes.Count; i++)
+            for (int i = 0; i < nodeCoordinates.Count; i++)
             {
-                globalCoordinates[i, 0] = element.Nodes[i].Coordinate.X; // column of x coordinates
-                globalCoordinates[i, 1] = element.Nodes[i].Coordinate.Y; // column of y coordinates
+                globalCoordinates[i, 0] = nodeCoordinates[i].X; // column of x coordinates
+                globalCoordinates[i, 1] = nodeCoordinates[i].Y; // column of y coordinates
                 if (nodeDOFS == 3)
                 {
-                    globalCoordinates[i, 2] = element.Nodes[i].Coordinate.Z; // colum of z coordinates
+                    globalCoordinates[i, 2] = nodeCoordinates[i].Z; // colum of z coordinates
                 }
             }
 
