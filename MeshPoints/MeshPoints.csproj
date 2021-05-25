@@ -116,6 +116,7 @@
     <Compile Include="Mesh_outdated\DeconstructMesh2D.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
     <Compile Include="Tools\DataToExcel.cs" />
+    <Compile Include="Tools\GlobalSmoothing.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
     <Compile Include="Tools\MoveGrids.cs" />

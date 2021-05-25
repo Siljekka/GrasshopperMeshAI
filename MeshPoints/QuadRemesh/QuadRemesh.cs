@@ -130,6 +130,10 @@ namespace MeshPoints.QuadRemesh
                 E_front = E_frontAndEdgeState.Item1;
                 var edgeState = E_frontAndEdgeState.Item2;
                 unselectedEdge.Unselectable = false;
+                if (iterationCounter == 115)
+                {
+                    //break;
+                }
 
                 bool loopOf4Edges = LoopControll(frontEdges, globalEdgeList, globalElementList); // to do: legg inn krit når kun 8 edges igjen
                 CleanUpChevorns(globalEdgeList, globalElementList, frontEdges);
@@ -251,7 +255,7 @@ namespace MeshPoints.QuadRemesh
                 // ________________Local smoothing________________
                 if (performeLocalSmoothing)
                 { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
-
+                /*
                 // to do: fix....
                 if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1)
                 {
@@ -261,7 +265,7 @@ namespace MeshPoints.QuadRemesh
                     unselectedEdge = E_front;
                     n--;
                     continue;
-                }
+                }*/
 
                 // to do: what if closing front og special case?
                 // to do: apply local smoothing for seamAngle
@@ -412,10 +416,22 @@ namespace MeshPoints.QuadRemesh
                 nodeList.Add(node);
             }
 
-            bool[] meshVertexBool = mesh.GetNakedEdgePointStatus();
+            List<Polyline> nakedEdges = mesh.GetNakedEdges().ToList();
             for (int i = 0; i < nodeList.Count; i++)
             {
-                if (meshVertexBool[i] == true) { nodeList[i].BoundaryNode = true; }
+                Point3d point = nodeList[i].Coordinate;
+                bool isBoundaryNode = false;
+                foreach (Polyline line in nakedEdges)
+                {
+                    NurbsCurve edge = line.ToNurbsCurve();
+                    edge.ClosestPoint(nodeList[i].Coordinate, out double parameter);
+                    if (point.DistanceTo(edge.PointAt(parameter)) <= 0.001)
+                    {
+                        isBoundaryNode = true;
+                    }
+                    else { nodeList[i].BoundaryNode = false; }
+                }
+                if (isBoundaryNode) { nodeList[i].BoundaryNode = true; }
                 else { nodeList[i].BoundaryNode = false; }
             }
             return nodeList;
@@ -3098,7 +3114,6 @@ namespace MeshPoints.QuadRemesh
                 }
             }
         } 
-
         private Point3d InvertedElementsCleanUp(qNode smoothNode, List<qElement> connectedTriangles, Vector3d movingVector)
         {
             Point3d newCoordinate = new Point3d(smoothNode.Coordinate);
@@ -3156,18 +3171,17 @@ namespace MeshPoints.QuadRemesh
                     globalEdgeList[id].EdgeLine = globalEdgeList[id].VisualizeLine(globalEdgeList[id].StartNode, globalEdgeList[id].EndNode);
 
                     int edgeId1 = globalEdgeListCopy[id].Element1.EdgeList.IndexOf(edge);
-                    int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
                     globalEdgeList[id].Element1.EdgeList[edgeId1] = globalEdgeList[id];
-                    
                     globalEdgeList[id].Element1.GetContourOfElement();
                     globalEdgeList[id].Element1.CalculateAngles(); // to do:isquad?
 
-
-                    globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
-                    globalEdgeList[id].Element2.GetContourOfElement();
-                    globalEdgeList[id].Element2.CalculateAngles(); // to do: isquad?
-
-
+                    if (!smoothNode.BoundaryNode)
+                    {
+                        int edgeId2 = globalEdgeListCopy[id].Element2.EdgeList.IndexOf(edge);
+                        globalEdgeList[id].Element2.EdgeList[edgeId2] = globalEdgeList[id];
+                        globalEdgeList[id].Element2.GetContourOfElement();
+                        globalEdgeList[id].Element2.CalculateAngles(); // to do: isquad?
+                    }
                     newEdges.Add(globalEdgeList[id]);
                     oldEdges.Add(globalEdgeListCopy[id]);
                     //todo: else { add runtimemessage }
@@ -3944,13 +3958,14 @@ namespace MeshPoints.QuadRemesh
         {
             Vector3d vectorSum = Vector3d.Zero;
             List<qEdge> connectedEdges = node.GetConnectedEdges(globalEdgeList);
-            
+
             foreach (qEdge edge in connectedEdges)
             {
                 Vector3d vector = edge.GetOppositeNode(node).Coordinate - node.Coordinate;
                 vectorSum = vectorSum + vector;
             }
-            return vectorSum;
+            Vector3d laplacian = vectorSum / (double)connectedEdges.Count;
+            return laplacian;
         } // OK
         private qNode OptimizationBasedSmoothing(qNode node, double maxModelDimension, List<qEdge> globalEdgeList)
         {
@@ -3993,13 +4008,14 @@ namespace MeshPoints.QuadRemesh
             // 3. Move node:
             for (int i = 0; i <= 4; i++) // Constant "4" as proposed in paper
             {
-                Point3d newPoint = node.Coordinate + gamma * g;
+                Point3d newPoint = new Point3d((node.Coordinate + gamma * g).X, (node.Coordinate + gamma * g).Y, (node.Coordinate + gamma * g).Z);
                 double myMinNew = 100;
 
                 foreach (qElement element in connectedElements)
                 {
+                     
                     List<qNode> elementNodes = element.GetNodesOfElement();
-                    elementNodes[elementNodes.IndexOf(node)].Coordinate = newPoint;
+                    elementNodes[elementNodes.IndexOf(node)] = new qNode(newPoint, node.BoundaryNode);
                     qElement newElement = CreateElementFromNodes(elementNodes);
                     double my = CalculateDistortionMetric(newElement);
                     if (my < myMinNew) { myMinNew = my; }
@@ -4007,11 +4023,11 @@ namespace MeshPoints.QuadRemesh
 
                 if (myMinNew >= myMin + 0.0001) // Constant as proposed in paper
                 {
-                    newNode.Coordinate = newPoint;
+                    newNode = new qNode(newPoint, node.BoundaryNode);
                     newNode.OBS = true;
                     break;
                 }
-                else { gamma = gamma / 2; newNode.OBS = false; }
+                else { gamma = gamma / 2; newNode = node; newNode.OBS = false; }
             }
             return newNode;
         }
@@ -4019,9 +4035,10 @@ namespace MeshPoints.QuadRemesh
         {
             if (direction == "x")
             {
+                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z);
                 List<qNode> elementNodes = element.GetNodesOfElement();
-                Point3d point = new Point3d(node.Coordinate.X + delta, node.Coordinate.Y, node.Coordinate.Z);
-                elementNodes[elementNodes.IndexOf(node)].Coordinate = point;
+                point = new Point3d(point.X + delta, point.Y, point.Z);
+                elementNodes[elementNodes.IndexOf(node)] = new qNode(point, node.BoundaryNode);
                 qElement newElement = CreateElementFromNodes(elementNodes);
                 double myPertubed = CalculateDistortionMetric(newElement); // pertubed distortion metric. 
                 double gi = (myPertubed - element.DistortionMetric) / delta;
@@ -4029,9 +4046,10 @@ namespace MeshPoints.QuadRemesh
             }
             else if (direction == "y")
             {
+                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z);
                 List<qNode> elementNodes = element.GetNodesOfElement();
-                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y + delta, node.Coordinate.Z);
-                elementNodes[elementNodes.IndexOf(node)].Coordinate = point;
+                point = new Point3d(point.X, point.Y + delta, point.Z);
+                elementNodes[elementNodes.IndexOf(node)] = new qNode(point, node.BoundaryNode);
                 qElement newElement = CreateElementFromNodes(elementNodes);
                 double myPertubed = CalculateDistortionMetric(newElement); // pertubed distortion metric. 
                 double gi = (myPertubed - element.DistortionMetric) / delta;
@@ -4039,9 +4057,10 @@ namespace MeshPoints.QuadRemesh
             }
             else if (direction == "z")
             {
+                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z);
                 List<qNode> elementNodes = element.GetNodesOfElement();
-                Point3d point = new Point3d(node.Coordinate.X, node.Coordinate.Y, node.Coordinate.Z + delta);
-                elementNodes[elementNodes.IndexOf(node)].Coordinate = point;
+                point = new Point3d(point.X, point.Y, point.Z + delta);
+                elementNodes[elementNodes.IndexOf(node)] = new qNode(point, node.BoundaryNode);
                 qElement newElement = CreateElementFromNodes(elementNodes);
                 double myPertubed = CalculateDistortionMetric(newElement); // pertubed distortion metric. 
                 double gi = (myPertubed - element.DistortionMetric) / delta;
@@ -4064,8 +4083,8 @@ namespace MeshPoints.QuadRemesh
             else 
             {
                 qEdge edge1 = new qEdge(nodes[0], nodes[1]);
-                qEdge edge2 = new qEdge(nodes[1], nodes[2]);
-                qEdge edge3 = new qEdge(nodes[2], nodes[0]);
+                qEdge edge2 = new qEdge(nodes[2], nodes[0]); 
+                qEdge edge3 = new qEdge(nodes[1], nodes[2]);
                 List<qEdge> edgeList = new List<qEdge>() { edge1, edge2, edge3 };
                 qElement element = new qElement(edgeList);
                 return element;
