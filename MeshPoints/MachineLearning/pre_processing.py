@@ -83,7 +83,7 @@ def create_random_ngon(number_of_sides: int) -> np.array:
     exclude = 0.2
     for n in range(number_of_sides):
         r = random() * (1 - exclude) + exclude  # mapping random from 0->1 to ex->1
-        theta = 2 * pi * n / number_of_sides + random() * quantile
+        theta = 2 * pi * (n / number_of_sides + random() * quantile)
         polygon.append([r * cos(theta), r * sin(theta)])
 
     return np.array(polygon)
@@ -379,7 +379,7 @@ def plot_polygon(np_coords: np.array, style="") -> None:
     coords[0].append(coords[0][0])
     coords[1].append(coords[1][0])
 
-    plt.plot(coords[0], coords[1], style, label="Input contour")
+    plt.plot(coords[0], coords[1], style)
 
 
 def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: float) -> list:
