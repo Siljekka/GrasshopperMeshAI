@@ -34,6 +34,7 @@ namespace MeshPoints.QuadRemesh
             pManager.AddGenericParameter("qEdges", "qe", "Element edges", GH_ParamAccess.list);
             pManager.AddGenericParameter("Angles", "qe", "Element angles", GH_ParamAccess.list);
             pManager.AddGenericParameter("IsQuad", "qe", "True if element is a quad", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Distortion Metric", "dm", "Distortion metric of element", GH_ParamAccess.list);
             pManager.AddGenericParameter("Contour", "qe", "Contour of element", GH_ParamAccess.list);
         }
 
@@ -45,10 +46,12 @@ namespace MeshPoints.QuadRemesh
         {
             qElement element = new qElement();
             DA.GetData(0, ref element);
+
             DA.SetDataList(0, element.EdgeList);
             DA.SetDataList(1, element.AngleList);
             DA.SetData(2, element.IsQuad);
-            DA.SetDataList(3, element.Contour);
+            DA.SetData(3, element.DistortionMetric);
+            DA.SetDataList(4, element.Contour);
         }
 
         /// <summary>

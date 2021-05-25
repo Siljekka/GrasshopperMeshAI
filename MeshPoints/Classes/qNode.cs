@@ -39,7 +39,6 @@ namespace MeshPoints.Classes
             }
             return connectedEdges;
         }
-
         public List<qElement> GetQuadsConnectedToNode(List<qEdge> globalEdgeList)
         {
             // summary: get all quad elements connected to a node
@@ -67,7 +66,6 @@ namespace MeshPoints.Classes
 
             return quadElementsNoDublicates;
         }
-
         public bool IsFrontNode(List<qEdge> frontEdges)
         {
             // summary: check if node is a front node
@@ -82,7 +80,6 @@ namespace MeshPoints.Classes
             }
             return isFrontNode;
         }
-
         public List<qElement> GetTrianglesConnectedToNode(List<qEdge> globalEdgeList)
         {
             // summary: get all quad elements connected to a node
@@ -118,10 +115,23 @@ namespace MeshPoints.Classes
             foreach (qEdge edge in connectedEdges)
             {
                 if (!connectedElements.Contains(edge.Element1)) { connectedElements.Add(edge.Element1); }
-                if (!connectedElements.Contains(edge.Element2)) { connectedElements.Add(edge.Element2); }
+                if (!connectedElements.Contains(edge.Element2) & edge.Element2 != null) { connectedElements.Add(edge.Element2); }
             }
             return connectedElements;
         }
+        public bool IsOnEdge(BrepEdge edge)
+        {
+            Point3d point = this.Coordinate;
+            bool isOnEdge = false;
 
+            edge.ClosestPoint(point, out double PointOnCurve);
+            Point3d testPoint = edge.PointAt(PointOnCurve);  // make test point 
+            double distanceToEdge = (testPoint - point).Length; // calculate distance between testPoint and node
+            if (distanceToEdge <= 0.0001 & distanceToEdge >= -0.0001) // if distance = 0: node is on edge
+            {
+                isOnEdge = true;
+            }
+            return isOnEdge;
+        }
     }
 }
