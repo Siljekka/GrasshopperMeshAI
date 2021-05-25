@@ -101,7 +101,6 @@ def gmsh_settings() -> None:
 
 def mesh_contour(contour: np.array, target_edge_length: float):
     # Meshes a contour with a given edge length
-    gmsh.initialize()
     # Create a new model
     gmsh.model.add("1")
 
@@ -131,7 +130,7 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     gmsh.option.set_number(
         "Mesh.CharacteristicLengthFactor", target_edge_length)
     # gmsh.model.geo.mesh.setSize()
-    gmsh.option.set_number("Mesh.Algorithm", 5)
+    gmsh.option.set_number("Mesh.Algorithm", 2)
 
     # Generate 2D mesh
     mesh = gmsh.model.mesh.generate(2)
@@ -157,7 +156,6 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     #     gmsh.fltk.run()
 
     gmsh.clear()
-    gmsh.finalize()
 
     return features
 
@@ -388,9 +386,10 @@ def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: floa
     gmsh.initialize()
 
     # suppress console output during generation
-    gmsh.option.set_number("General.Verbosity", 0)
+    gmsh_settings()
     dataset = []
-    for _ in range(dataset_size):
+    for i in range(dataset_size):
+        print("meshing contour", i, "of", dataset_size, end="\r")
         test_polygon = create_random_ngon(num_sides)
         transformed_polygon = procrustes(test_polygon)
 
@@ -399,7 +398,7 @@ def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: floa
 
     # Close API call
     gmsh.finalize()
-
+    print("\n")
     return dataset
 
 
@@ -462,7 +461,7 @@ def contour_to_csv(triangles: np.array, number_of_sides: int) -> None:
 def single_edge_length_mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
     # Columns needed:
     #  contour nodes ( xi | yi) | target_edge_length | num inner nodes
-    with open(f"data/{number_of_sides}-gon-lc-04-mesh-dataset.csv", "w", newline="") as file:
+    with open(f"data/{number_of_sides}-gon-lc-04-mesh-dataset-new.csv", "w", newline="") as file:
         writer = csv.writer(file)
         header = []
         for i in range(1, number_of_sides + 1):
@@ -470,7 +469,7 @@ def single_edge_length_mesh_to_csv(features, dataset_size: int, number_of_sides:
             header.append(f"y{i}")
         header.append("target_edge_length")
         header.append("internal_nodes")
-
+        [header.append(x) for x in list(string.ascii_lowercase)]
         writer.writerow(header)
 
         for i, contour in enumerate(features):
