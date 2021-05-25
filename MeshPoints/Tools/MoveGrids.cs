@@ -28,7 +28,18 @@ namespace MeshPoints.Tools
             pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
             pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
-            pManager[3].Optional = true; // if solid
+            pManager.AddGenericParameter("Grid information", "grid", "Input gridinformation for merged SmartMesh.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("grid genes", "grid", "Gene pool for translation of grids from gridinformation. Number needs to match the number of grid groups.", GH_ParamAccess.list);
+
+            // if unmerged SmartMesh
+            pManager[1].Optional = true; 
+            pManager[2].Optional = true;
+            pManager[3].Optional = true;
+
+            // if merged SmartMesh
+            pManager[4].Optional = true; 
+            pManager[5].Optional = true;
+
         }
 
         /// <summary>
@@ -38,6 +49,7 @@ namespace MeshPoints.Tools
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Updated mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Nodes", "m", "", GH_ParamAccess.list); // to do : slett
         }
 
         /// <summary>
@@ -51,23 +63,31 @@ namespace MeshPoints.Tools
             List<double> genesU = new List<double>();
             List<double> genesV = new List<double>();
             List<double> genesW = new List<double>();
+            List<List<List<Node>>> gridInformation = new List<List<List<Node>>>();
+            List<double> genesGrids = new List<double>();
 
             DA.GetData(0, ref oldMesh);
             DA.GetDataList(1, genesU);
             DA.GetDataList(2, genesV);
             DA.GetDataList(3, genesW);
+            DA.GetDataList(4, gridInformation);
+            DA.GetDataList(5, genesGrids);
+
 
             // Variables
             SmartMesh newMesh = new SmartMesh();
+            double overlapTolerance = 0.95; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
+            List<Node> newNodes = new List<Node>();
+
 
             // 1. Write error if wrong input
-            if (!DA.GetData(0, ref oldMesh)) return;
+            if (!DA.GetData(0, ref oldMesh)) { return; }
+            if (gridInformation.Count != 0 & genesGrids.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No grid genes detected."); return; }
 
-            if (oldMesh.Type == "Solid" & !DA.GetDataList(3, genesW)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
-            if (genesU.Count < (oldMesh.nu - 2) * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
-            if (genesV.Count < (oldMesh.nv - 2) * oldMesh.nw) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase v genes."); return; }
-            if (oldMesh.Type == "Solid" & (genesW.Count < (oldMesh.nw - 2) * (oldMesh.nu - 2) * (oldMesh.nv - 2) )) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase w genes."); return; }
-            if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
+            if (oldMesh.Type == "Solid" & genesW.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "For solid elements, must have input GenesW."); return; }
+            if (genesU.Count < (oldMesh.nu - 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase u genes."); return; }
+            if (genesV.Count < (oldMesh.nv - 2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase v genes."); return; }
+            if (oldMesh.Type == "Solid" & (genesW.Count < (oldMesh.nw - 2) )) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase w genes."); return; }
 
             // 2. Inherit properties from old mesh
             newMesh.nu = oldMesh.nu;
@@ -83,48 +103,141 @@ namespace MeshPoints.Tools
             double genV = 0;
             double genW = 0;
 
-            for (int k = 0; k < oldMesh.nw; k++)
+            if (gridInformation.Count == 0) // for unmerged SmartMesh
             {
-                if (k == 0 | k == oldMesh.nu - 1){ genW = 0;} // if edge grids in w dir
-                else { genW = genesW[k-1]; }
-
-                for (int j = 0; j < oldMesh.nv; j++) 
+                for (int k = 0; k < oldMesh.nw; k++)
                 {
-                    if (j == 0 | j == oldMesh.nv - 1) { genV = 0; } // if edge grids in v dir
-                    else { genV = genesV[j-1]; }
+                    if (k == 0 | k == oldMesh.nw - 1) { genW = 0; } // if edge grids in w dir
+                    else { genW = genesW[k - 1]; }
 
-                    for (int i = 0; i < oldMesh.nu; i++)
+                    for (int j = 0; j < oldMesh.nv; j++)
                     {
-                        if (i == 0 | i == oldMesh.nu - 1) { genU = 0; } // if edge grids in u dir
-                        else { genU = genesU[i - 1]; }
+                        if (j == 0 | j == oldMesh.nv - 1) { genV = 0; } // if edge grids in v dir
+                        else { genV = genesV[j - 1]; }
 
-                        int nodeIndex = i + j * oldMesh.nv + k * oldMesh.nu * oldMesh.nv;
+                        for (int i = 0; i < oldMesh.nu; i++)
+                        {
+                            if (i == 0 | i == oldMesh.nu - 1) { genU = 0; } // if edge grids in u dir
+                            else { genU = genesU[i - 1]; }
 
-                        Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
-                        Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
-                        Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW);
-                        newPoints.Add(newPoint);
+                            int nodeIndex = i + j * oldMesh.nu + k * oldMesh.nu * oldMesh.nv;
+                            if (nodeIndex == 84)
+                            { 
+                            
+                            }
+                            Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                            Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
+                            Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
+                            newPoints.Add(newPoint);
+                        }
                     }
                 }
+
+                // 4. Set new nodes and elements
+                newMesh.CreateNodes(newPoints, oldMesh.nu - 1, oldMesh.nv - 1, oldMesh.nw - 1);
+                if (newMesh.Type == "Surface")
+                {
+                    newMesh.CreateQuadElements();
+                }
+                else
+                {
+                    newMesh.CreateHexElements();
+                }
+
+                //4. Set new mesh 
+                newMesh.CreateMesh();
+
+            }
+            else // for merged SmartMesh
+            {
+                foreach (Node oldNode in oldMesh.Nodes)
+                {
+                    Node newNode = new Node(oldNode.GlobalId, oldNode.Coordinate, oldNode.BC_U, oldNode.BC_V);
+                    newNodes.Add(newNode);
+                }
+
+                List<Element> newElements = new List<Element>();
+                foreach (Element oldElement in oldMesh.Elements)
+                {
+                    List<Node> elementNodes = new List<Node>() { newNodes[oldElement.Connectivity[0]], newNodes[oldElement.Connectivity[1]], newNodes[oldElement.Connectivity[2]], newNodes[oldElement.Connectivity[3]]};
+                    Element newElement = new Element(oldElement.Id, elementNodes, oldElement.Connectivity);
+                    newElements.Add(newElement);
+                }
+
+                int geneCounter = 0;
+                for (int k = 0; k < gridInformation.Count; k++)
+                {
+                    List<List<Node>> gridGroup = gridInformation[k];
+                    for (int j = 1; j < gridGroup.Count - 1; j++) // first and last grid in a grid group is fixed for translation.
+                    {
+                        double gene = genesGrids[geneCounter];
+                        geneCounter++;
+                        if (gene == 0) { continue; }
+                        for (int i = 0; i < gridGroup[j].Count; i++)
+                        {
+                            Point3d oldPoint = gridGroup[j][i].Coordinate;
+                            Vector3d translation = Vector3d.Zero;
+
+                            Point3d tempPoint = newNodes[gridInformation[k][j][i].GlobalId].Coordinate;
+                            Point3d tempPointFront = newNodes[gridInformation[k][j + 1][i].GlobalId].Coordinate;
+                            Point3d tempPointBack = newNodes[gridInformation[k][j - 1][i].GlobalId].Coordinate;
+
+                            if (gridGroup[j][i].Type == "Merged")
+                            {
+                                tempPoint = oldPoint;
+                                //tempPointFront = gridGroup[j + 1][i].Coordinate;
+                                //tempPointBack = gridGroup[j - 1][i].Coordinate;
+                            }
+                            
+                            if (gridGroup[j+1][i].Type == "Merged")
+                            {
+                                //tempPointFront = gridGroup[j + 1][i].Coordinate;
+                            }
+                            if (gridGroup[j - 1][i].Type == "Merged")
+                            {
+                                //tempPointBack = gridGroup[j - 1][i].Coordinate;
+                            }
+
+
+                            if (gene >= 0) 
+                            {
+                                //translation = 0.5 * (gridGroup[j + 1][i].Coordinate - tempPoint) * gene * overlapTolerance;
+                                translation = 0.5 * (tempPointFront - tempPoint) * gene * overlapTolerance;
+
+                            }
+                            else
+                            {
+                                //translation = 0.5 * (tempPoint - gridGroup[j - 1][i].Coordinate) * gene * overlapTolerance;
+                                translation = 0.5 * (tempPoint - tempPointBack) * gene * overlapTolerance;
+                            }
+
+                            Point3d newPoint = new Point3d(tempPoint.X + translation.X, tempPoint.Y + translation.Y, tempPoint.Z + translation.Z);
+
+                            for (int m = 0; m < newElements.Count; m++)
+                            {
+                                for (int n = 0; n < newElements[m].Connectivity.Count; n++)
+                                {
+                                    if (tempPoint == newElements[m].Nodes[n].Coordinate)
+                                    {
+                                        int id = gridInformation[k][j][i].GlobalId;
+                                        newElements[m].Nodes[n].Coordinate = newPoint;
+                                        newNodes[id].Coordinate = newPoint;
+                                    }
+                                }
+                                newElements[m].GetElementMesh();
+                            }
+                        }
+                    }
+                }
+                newMesh = new SmartMesh(newNodes, newElements, "Surface");
             }
 
-            // 4. Set new nodes and elements
-            newMesh.CreateNodes(newPoints, oldMesh.nu-1, oldMesh.nv-1, oldMesh.nw-1);
-            if (newMesh.Type == "Surface")
-            {
-                newMesh.CreateQuadElements();
-            }
-            else
-            {
-                newMesh.CreateHexElements();
-            }
 
-            //4. Set new mesh 
-            newMesh.CreateMesh();
 
             // Output
             DA.SetData(0, newMesh);
             DA.SetData(1, newMesh.Mesh);
+            DA.SetDataList(2, newNodes);
         }
         #region Methods
 
@@ -182,7 +295,7 @@ namespace MeshPoints.Tools
         /// Move the old node in allowable directions.
         /// </summary>
         /// <returns> Returns coordinates of moved node.</returns>
-        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, double genU, double genV, double genW)
+        private Point3d GetNewCoordinateOfNode(int i, Tuple<bool, BrepFace> pointFace, Tuple<bool, BrepEdge> pointEdge, SmartMesh mesh, double genU, double genV, double genW, double overlapTolerance)
         {
             Point3d movedNode = new Point3d();
             bool IsOnEdge = pointEdge.Item1;
@@ -203,12 +316,12 @@ namespace MeshPoints.Tools
             if (genU > 0 & !mesh.Nodes[i].BC_U) // 1. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i + 1].Coordinate - mesh.Nodes[i].Coordinate) * genU; // make vector translating node in U-direction
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i + 1); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i + 1, overlapTolerance); return movedNode; } // make meshPoint
             }
             else if (genU < 0 & !mesh.Nodes[i].BC_U)  // 2. if
             {
                 translationVectorU = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - 1].Coordinate) * genU;
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i - 1); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genU, i, i - 1, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorU = translationVectorU * 0; }  // 3. if
 
@@ -216,12 +329,12 @@ namespace MeshPoints.Tools
             if (genV > 0 & !mesh.Nodes[i].BC_V) // 1. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i + mesh.nu].Coordinate - mesh.Nodes[i].Coordinate) * genV;
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i + mesh.nu); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i + mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
             else if (genV < 0 & !mesh.Nodes[i].BC_V) // 2. if
             {
                 translationVectorV = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - mesh.nu].Coordinate) * genV;
-                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i - mesh.nu); return movedNode; } // make meshPoint
+                if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genV, i, i - mesh.nu, overlapTolerance); return movedNode; } // make meshPoint
             }
             else { translationVectorV = translationVectorV * 0; } // 3. if
 
@@ -232,18 +345,17 @@ namespace MeshPoints.Tools
                 if (genW > 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i + (mesh.nu) * (mesh.nv)].Coordinate - mesh.Nodes[i].Coordinate) * genW;
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i + (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i + (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
                 else if (genW < 0 & !mesh.Nodes[i].BC_W) // 1. if
                 {
                     translationVectorW = 0.5 * (mesh.Nodes[i].Coordinate - mesh.Nodes[i - (mesh.nu) * (mesh.nv)].Coordinate) * genW;
-                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i - (mesh.nu) * (mesh.nv)); return movedNode; } // make meshPoint
+                    if (IsOnEdge) { movedNode = EdgeNode(edge, mesh, genW, i, i - (mesh.nu) * (mesh.nv), overlapTolerance); return movedNode; } // make meshPoint
                 }
                 else { translationVectorW = translationVectorW * 0; } // 3. if                            
             }
 
             // 4. if: Make movedNode if node is on face or inside brep (if on edge, movedNode already made).
-            double overlapTolerance = 0.99; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
             movedNode = new Point3d
                 (
                 mesh.Nodes[i].Coordinate.X + (translationVectorU.X + translationVectorV.X + translationVectorW.X) * overlapTolerance,
@@ -264,7 +376,7 @@ namespace MeshPoints.Tools
         /// Make new node if point is on edge.
         /// </summary>
         /// <returns> Returns coordinates of moved node on edge.</returns>
-        private Point3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop)
+        private Point3d EdgeNode(BrepEdge edge, SmartMesh mesh, double genes, int start, int stop, double overlapTolerance)
         {
             Point3d movedNode = new Point3d();
             Curve edgeCurve1;
@@ -285,18 +397,18 @@ namespace MeshPoints.Tools
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit)
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength((0.49 * genes));
+                    movedNode = edgeCurve2.PointAtNormalizedLength((0.5 * overlapTolerance * genes));
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.49 * genes)); } // move node along edgeCurve
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((0.5 * overlapTolerance * genes)); } // move node along edgeCurve
             }
             else if (genes < 0)
             {
                 if (edgeCurve1.GetLength() > edgeCurve2.GetLength() & dummyCrit)
                 {
                     edgeCurve2.Reverse();
-                    movedNode = edgeCurve2.PointAtNormalizedLength(-(0.49 * genes));
+                    movedNode = edgeCurve2.PointAtNormalizedLength(-(0.5 * overlapTolerance * genes));
                 }
-                else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.49 * genes)); } // move node along edgeCurve
+                else { movedNode = edgeCurve1.PointAtNormalizedLength((-0.5 * overlapTolerance * genes)); } // move node along edgeCurve
             }
 
             return movedNode;

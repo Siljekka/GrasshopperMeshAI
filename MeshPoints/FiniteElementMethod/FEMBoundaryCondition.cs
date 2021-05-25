@@ -23,25 +23,18 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "Input a SmartMesh", GH_ParamAccess.item); 
-            pManager.AddIntegerParameter("Face indices with BC", "", "", GH_ParamAccess.list);
-            pManager.AddIntegerParameter("Edge indices with BC", "", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Tx", "", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Ty", "", "", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Tz", "", "", GH_ParamAccess.item);
-            // pManager.AddGenericParameter("Rx", "", "", GH_ParamAccess.item); 
-            //pManager.AddGenericParameter("Rv", "", "", GH_ParamAccess.item); 
-            //pManager.AddGenericParameter("Rz", "", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "Input a SmartMesh.", GH_ParamAccess.item); 
+            pManager.AddIntegerParameter("Faces", "faces", "Index of faces with boundary conditions.", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Edges", "edges","Index of edges with boundary conditions.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Tx", "Tx", "True if no translation in x-direction.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Ty", "Ty", "True if no translation in y-direction.", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Tz", "Tz", "True if no translation in z-direction.", GH_ParamAccess.item);
 
             pManager[1].Optional = true;
             pManager[2].Optional = true;
             pManager[3].Optional = true;
             pManager[4].Optional = true;
             pManager[5].Optional = true;
-            //pManager[6].Optional = true;
-            //pManager[7].Optional = true;
-            // pManager[8].Optional = true;
-
         }
 
         /// <summary>
@@ -50,7 +43,7 @@ namespace MeshPoints.FiniteElementMethod
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Boundary conditions", "BC", "List of DOFS that are fixed", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Nodes", "nodes", "List of node coordinates applied boundary conditions to", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Points", "pts", "List of node coordinates applied boundary conditions to", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -59,49 +52,40 @@ namespace MeshPoints.FiniteElementMethod
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            #region Input
-            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
+            // Input
+
+            SmartMesh smartMesh = new SmartMesh(); 
             List<int> indicesOfFaceWithBC = new List<int>();
             List<int> indicesOfEdgeWithBC = new List<int>();
             bool Tx = false;
             bool Ty = false;
             bool Tz = false;
-            //bool Rx = false;
-            //bool Ry = false;
-            //bool Rz = false;
 
-            DA.GetData(0, ref mesh);
+            DA.GetData(0, ref smartMesh);
             DA.GetDataList(1, indicesOfFaceWithBC);
             DA.GetDataList(2, indicesOfEdgeWithBC);
-
             DA.GetData(3, ref Tx);
             DA.GetData(4, ref Ty);
             DA.GetData(5, ref Tz);
-            //DA.GetData(5, ref Rx);
-            //DA.GetData(6, ref Ry);
-            //DA.GetData(7, ref Rz);
-            #endregion
 
-            #region Code
-            List<bool> applyBC = new List<bool>() { Tx, Ty, Tz }; // alternatively add rotation
+            // Code
 
-            // Settings
+            if (!DA.GetData(0, ref smartMesh)) { return; }
+            List<bool> applyBC = new List<bool>() { Tx, Ty, Tz };
             List<List<int>> applyBCToDOF = new List<List<int>>();
             bool nodeIsOnGeometry = false;
-            int nodeDOFS = 3;
             List<Point3d> pointsWithBC = new List<Point3d>();
 
             // Loop each dof for each node
-            for (int i = 0; i < mesh.Nodes.Count; i++)
+            for (int i = 0; i < smartMesh.Nodes.Count; i++)
             {
-                Node node = mesh.Nodes[i];
+                Node node = smartMesh.Nodes[i];
 
-                // Check if node is on geometry to apply BC to
-                if (indicesOfEdgeWithBC.Count > 0)
+                if (indicesOfEdgeWithBC.Count > 0) // get nodes on relevant edges
                 {
                     for (int n = 0; n < indicesOfEdgeWithBC.Count; n++)
                     {
-                        BrepEdge edge = mesh.Geometry.Edges[indicesOfEdgeWithBC[n]];
+                        BrepEdge edge = smartMesh.Geometry.Edges[indicesOfEdgeWithBC[n]];
                         if (IsPointOnEdge(node.Coordinate, edge)) 
                         {
                             nodeIsOnGeometry = true;
@@ -110,12 +94,12 @@ namespace MeshPoints.FiniteElementMethod
                         }
                     }
                 }
-                else
+                else // get nodes on relevant faces
                 {
                     for (int n = 0; n < indicesOfFaceWithBC.Count; n++)
                     {
-                        BrepFace face = mesh.Geometry.Faces[indicesOfFaceWithBC[n]];
-                        if (IsPointOnSurface(node.Coordinate, face))
+                        BrepFace face = smartMesh.Geometry.Faces[indicesOfFaceWithBC[n]];
+                        if (IsPointOnFace(node.Coordinate, face))
                         {
                             nodeIsOnGeometry = true;
                             pointsWithBC.Add(node.Coordinate);
@@ -124,32 +108,33 @@ namespace MeshPoints.FiniteElementMethod
                     }
                 }
 
-                // Loop each DOF of node. Add 0 is no BC and 1 if BC.
+                // Loop each DOF of node. Add 1 if BC and on geometry, else 0
                 List<int> BCNode = new List<int>();
-                for (int j = 0; j < nodeDOFS; j++)
+                for (int j = 0; j < 3; j++)
                 {
                     if (nodeIsOnGeometry & applyBC[j] == true)
                     {
                         BCNode.Add(1);
                         continue;
                     }
-                    BCNode.Add(0); // add information of a dof of the node
+                    BCNode.Add(0); // add information of a single dof of the node
                 }
                 applyBCToDOF.Add(BCNode); // add information of the node
                 nodeIsOnGeometry = false; // reset
             }
 
-            #endregion
+            // Output
 
-
-            #region Output
             DA.SetDataList(0, applyBCToDOF);
             DA.SetDataList(1, pointsWithBC);
-            #endregion
         }
 
-
-        private bool IsPointOnSurface(Point3d point, BrepFace face)
+        #region Methods
+        /// <summary>
+        /// Check if point is on a BrepFace.
+        /// </summary>
+        /// <returns> Boolean value.</returns>
+        private bool IsPointOnFace(Point3d point, BrepFace face)
         {
             bool nodeIsOnGeometry = false;
             face.ClosestPoint(point, out double PointOnCurveU, out double PointOnCurveV);
@@ -162,6 +147,10 @@ namespace MeshPoints.FiniteElementMethod
             return nodeIsOnGeometry;
         }
 
+        /// <summary>
+        /// Check if point is on a BrepEdge.
+        /// </summary>
+        /// <returns> Boolean value.</returns>
         private bool IsPointOnEdge(Point3d point, BrepEdge edge)
         {
             bool nodeIsOnGeometry = false;
@@ -174,6 +163,8 @@ namespace MeshPoints.FiniteElementMethod
             }
             return nodeIsOnGeometry;
         }
+        #endregion
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>

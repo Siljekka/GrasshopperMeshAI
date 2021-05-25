@@ -2,7 +2,11 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
+using MathNet.Numerics.LinearAlgebra;
 using MeshPoints.Classes;
+using Rhino;
+using System.Linq;
+
 
 namespace MeshPoints.FiniteElementMethod
 {
@@ -23,11 +27,11 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {        
-            pManager.AddGenericParameter("SmartMesh", "SmartMesh", "Input a SmartMesh", GH_ParamAccess.item); 
-            pManager.AddIntegerParameter("Load type", "load type", "Point load = 1, Surface load = 2", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Position", "pos", "Coordinate for point load", GH_ParamAccess.list); 
-            pManager.AddIntegerParameter("Surface index", "Input surface index of geometry to apply load to", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Load vectors", "vec", "List of vectors for the loads. If surface load, only one vector", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SmartMesh", "SM", "Input a SmartMesh.", GH_ParamAccess.item); 
+            pManager.AddIntegerParameter("Type", "type", "Load type: Point load = 1, Surface load = 2", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Position", "pos", "List of coordinates for point loads.", GH_ParamAccess.list); 
+            pManager.AddIntegerParameter("Surface", "srf", "Input surface index of geometry to apply load to.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Vector", "vec", "List of vectors for the loads. If surface load, only one vector.", GH_ParamAccess.list);
 
             pManager[0].Optional = true;
             pManager[1].Optional = true;
@@ -41,8 +45,8 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-             pManager.AddGenericParameter("Load", "load", "List of residual (R)", GH_ParamAccess.list);
-             pManager.AddGenericParameter("Nodes", "nodes", "List of node coordinates applied load to", GH_ParamAccess.list);
+             pManager.AddGenericParameter("Load", "load", "List of residual forces(R).", GH_ParamAccess.list);
+             pManager.AddGenericParameter("Points", "pts", "List of node coordinates applied load to", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -51,163 +55,150 @@ namespace MeshPoints.FiniteElementMethod
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            // assume only perpendicular negativ load
 
-            #region Input
-            SmartMesh mesh = new SmartMesh(); // to do: change to MeshGeometry elns
+            // Input
+
+            SmartMesh smartMesh = new SmartMesh(); 
             int loadType = 0;
             List<Vector3d> loadVectors = new List<Vector3d>();
             List<Point3d> loadPosition = new List<Point3d>();
-            int surfaceIndex = 0;
+            List<int> surfaceIndex = new List<int>();
 
-            DA.GetData(0, ref mesh);
+            DA.GetData(0, ref smartMesh);
             DA.GetData(1, ref loadType);
             DA.GetDataList(2, loadPosition);
-            DA.GetData(3, ref surfaceIndex);
+            DA.GetDataList(3, surfaceIndex);
             DA.GetDataList(4, loadVectors);
-            #endregion
 
-            #region Code
-            List<Node> nodes = mesh.Nodes;
-            List<Element> element = mesh.Elements;
-            int nodeDOFS = 3;
+            // Code
+
+            if (!DA.GetData(0, ref smartMesh)) return;
             List<Point3d> pointsWithLoad = new List<Point3d>();
 
-            List<double> globalCoordinateLoadList = new List<double>();
-            for (int i = 0; i < mesh.Nodes.Count * nodeDOFS; i++)
-            {
-                globalCoordinateLoadList.Add(0);
-            }
+            double[] residualForces = new double[smartMesh.Nodes.Count * 3];
 
             // Assign external load
-            if (loadType == 1)
-            {
-                // Point load
+            if (loadType == 1) // point load
+            {           
                 for (int i = 0; i < loadVectors.Count; i++)
                 {
-                    int nodeIndex = GetClosestNodeIndex(mesh.Nodes, loadPosition[i]);
+                    int nodeIndex = GetClosestNodeIndex(smartMesh.Nodes, loadPosition[i]);
 
-                    // Deconstruct load to x,y,z
+                    // Deconstruct load vector
                     double xLoad = loadVectors[i].X;
                     double yLoad = loadVectors[i].Y;
                     double zLoad = loadVectors[i].Z;
 
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS] = globalCoordinateLoadList[nodeIndex * nodeDOFS] + xLoad; 
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 1] + yLoad; 
-                    globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] = globalCoordinateLoadList[nodeIndex * nodeDOFS + 2] + zLoad;
-                    pointsWithLoad.Add(nodes[nodeIndex].Coordinate);
+                    // Construct residual force list
+                    residualForces[nodeIndex * 3] = residualForces[nodeIndex * 3] + xLoad; 
+                    residualForces[nodeIndex * 3 + 1] = residualForces[nodeIndex * 3 + 1] + yLoad; 
+                    residualForces[nodeIndex * 3 + 2] = residualForces[nodeIndex * 3 + 2] + zLoad;
+                    pointsWithLoad.Add(smartMesh.Nodes[nodeIndex].Coordinate);
                 }
-
             }
-            else if (loadType == 2)
+            else if (loadType == 2) // surface load
             {
-                // Surface load
-                
-                BrepFace surface = mesh.Geometry.Faces[surfaceIndex];
-                List<int> nodeIndexOnSurface = GetNodeIndexOnSurface(mesh.Nodes, surface);
-
-                Brep surfaceAsBerep = surface.ToBrep();
-                double area = Rhino.Geometry.AreaMassProperties.Compute(surfaceAsBerep).Area;
-                int loadCounter = 0;
-                foreach (int nodeIndex in nodeIndexOnSurface)
+                for (int p = 0; p < loadVectors.Count; p++)
                 {
-                    int numBC = 0; // to do: gjør om til methode i klasse
-                    if (nodes[nodeIndex].BC_U){ numBC++; }
-                    if (nodes[nodeIndex].BC_V) { numBC++; }
-                    if (nodes[nodeIndex].BC_W) { numBC++; }
-                    switch (numBC)
-                    {
-                        case 3: // corner node
-                            loadCounter++; break;
-                        case 2: // edge node
-                            loadCounter += 2; break;
-                        case 1: // midle node
-                            loadCounter += 4; break;
-                    }
-                }
+                    BrepFace surface = smartMesh.Geometry.Faces[surfaceIndex[p]];
+                    List<int> nodeIndexOnSurface = GetNodeIndexOnSurface(smartMesh.Nodes, surface);
 
-                List<double> nodalLoad = new List<double>();
-                nodalLoad.Add(loadVectors[0].X * area / (double) loadCounter); // assume one load vector
-                nodalLoad.Add(loadVectors[0].Y * area / (double) loadCounter); // assume one load vector
-                nodalLoad.Add(loadVectors[0].Z * area / (double) loadCounter); // assume one load vector
-
-                double addLoad = 0;
-                foreach (int nodeIndex in nodeIndexOnSurface)
-                {
-                    for (int loadDir = 0; loadDir < 3; loadDir++)
+                    // Prepare load lumping
+                    foreach (Element element in smartMesh.Elements)
                     {
-                        int numBC = 0;
-                        if (nodes[nodeIndex].BC_U) { numBC++; }
-                        if (nodes[nodeIndex].BC_V) { numBC++; }
-                        if (nodes[nodeIndex].BC_W) { numBC++; }
-                        switch (numBC)
+                        for (int i = 0; i < element.Connectivity.Count; i++)
                         {
-                            case 3: // corner node
-                                addLoad = nodalLoad[loadDir]; break;
-                            case 2: // edge node
-                                addLoad = nodalLoad[loadDir] * 2; break;
-                            case 1: // midle node
-                                addLoad = nodalLoad[loadDir] * 4; ; break;
-                        }
-                        globalCoordinateLoadList[ nodeDOFS * nodeIndex + loadDir] = globalCoordinateLoadList[nodeIndex * nodeDOFS + loadDir] + addLoad;
-                    }
-                    pointsWithLoad.Add(nodes[nodeIndex].Coordinate);
+                            for (int j = 0; j < nodeIndexOnSurface.Count; j++)
+                            {
+                                if (element.Connectivity[i] == nodeIndexOnSurface[j])
+                                {
+                                    List<List<Node>> faceList = element.GetFaces();
 
-                }
+                                    for (int k = 0; k < faceList.Count; k++)
+                                    {
+                                        List<Node> face = faceList[k];
+                                        int counter = 0;
+                                        for (int n = 0; n < face.Count; n++)
+                                        {
+                                            if (nodeIndexOnSurface.Contains(face[n].GlobalId))
+                                            {
+                                                counter++;
+                                            }
+                                        }
+                                        if (counter == 4)
+                                        {
+                                            Point3d n0 = face[0].Coordinate;
+                                            Point3d n1 = face[1].Coordinate;
+                                            Point3d n2 = face[2].Coordinate;
+                                            Point3d n3 = face[3].Coordinate;
 
-                /*
-                List<int> elementIndexOnSurface = GetElementIndexConnectedToNodes(mesh.Elements, nodeIndexOnSurface);
+                                            double area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
+                                            double area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n3, n2 - n3).Length);
 
-                List<Node> elementNodesToLump = new List<Node>();
+                                            // check area
+                                            Vector3d normal = element.Mesh.FaceNormals[k];
+                                            if (Vector3d.VectorAngle(n1 - n0, n3 - n0, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n0, n2 - n0).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n0, n2 - n0).Length);
+                                            }
+                                            if (Vector3d.VectorAngle(n2 - n1, n3 - n1, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n1, n3 - n1).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n1, n3 - n1).Length);
+                                            }
 
-                foreach (int i in elementIndexOnSurface)
-                {
-                    List<Node> elementNodes = mesh.Elements[i].Nodes;
-                    if (mesh.Type == "shell")
-                    {
-                        elementNodesToLump = elementNodes;
-                    }
-                    else
-                    { 
-                        // get nodes on side of element
-                        switch(surfaceIndex)
-                        {
-                            case 0:
-                                elementNodesToLump = new List<Node>() { elementNodes[0], elementNodes[1], elementNodes[2], elementNodes[3] };
-                                break;
-                            case 1:
-                                elementNodesToLump = new List<Node>() { elementNodes[4], elementNodes[5], elementNodes[6], elementNodes[7] };
-                                break;
-                            case 2: 
-                                elementNodesToLump = new List<Node>() { elementNodes[0], elementNodes[1], elementNodes[5], elementNodes[4] };
-                                break;
-                            case 3:
-                                elementNodesToLump = new List<Node>() { elementNodes[1], elementNodes[2], elementNodes[6], elementNodes[5] };
-                                break;
-                            case 4:
-                                elementNodesToLump = new List<Node>() { elementNodes[2], elementNodes[3], elementNodes[7], elementNodes[6] };
-                                break;
-                            case 5:
-                                elementNodesToLump = new List<Node>() { elementNodes[3], elementNodes[0], elementNodes[4], elementNodes[7] };
-                                break;
+                                            if (Vector3d.VectorAngle(n3 - n2, n1 - n2, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n3 - n2, n0 - n2).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n1 - n2, n0 - n2).Length);
+                                            }
+
+                                            if (Vector3d.VectorAngle(n0 - n3, n2 - n3, normal) >= Math.PI)
+                                            {
+                                                area1 = Math.Abs(0.5 * Vector3d.CrossProduct(n0 - n3, n1 - n3).Length);
+                                                area2 = Math.Abs(0.5 * Vector3d.CrossProduct(n2 - n3, n1 - n3).Length);
+                                            }
+
+                                            double faceArea = area1 + area2;
+
+                                            foreach (Node node in face)
+                                            {
+                                                residualForces[3 * node.GlobalId + 0] = residualForces[node.GlobalId * 3 + 0] + loadVectors[p].X * faceArea / (double)4;
+                                                residualForces[3 * node.GlobalId + 1] = residualForces[node.GlobalId * 3 + 1] + loadVectors[p].Y * faceArea / (double)4;
+                                                residualForces[3 * node.GlobalId + 2] = residualForces[node.GlobalId * 3 + 2] + loadVectors[p].Z * faceArea / (double)4;
+
+                                                if (!pointsWithLoad.Contains(node.Coordinate))
+                                                {
+                                                    pointsWithLoad.Add(node.Coordinate);
+                                                }
+                                            }
+
+                                            i = element.Connectivity.Count; // break
+                                            j = nodeIndexOnSurface.Count; // break
+                                            k = faceList.Count; // break
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                     }
-                    LoadLumping(elementNodesToLump, loadSize, R);
-                }*/
-
-
-
+                }
             }
-            #endregion
 
-            DA.SetDataList(0, globalCoordinateLoadList) ;
+            // Output
+
+            DA.SetDataList(0, residualForces);
             DA.SetDataList(1, pointsWithLoad);
-
         }
 
         #region Methods
 
+        /// <summary>
+        /// Get the index of the node closest to the load position.
+        /// </summary>
+        /// <returns> Index of node closest to load position.</returns>
         private int GetClosestNodeIndex(List<Node> nodes, Point3d loadPosition)
         {
             double minDistance = 10000000;
@@ -227,21 +218,10 @@ namespace MeshPoints.FiniteElementMethod
             return nodeIndex;
         }
 
-        private double CalculateArea(List<Node> nodes)
-        {
-            Point3d A = nodes[0].Coordinate;
-            Point3d B = nodes[1].Coordinate;
-            Point3d C = nodes[2].Coordinate;
-            Point3d D = nodes[3].Coordinate;
-            double areaABC = 0.5 * (A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y));
-            double areaCDA = 0.5 * (C.X * (D.Y - A.Y) + D.X * (A.Y - C.Y) + A.X * (C.Y - D.Y));
-            return (areaABC + areaCDA);
-        }
-        private void LoadLumping(List<Node> elementNodes, double loadSize, List<double> R)
-        {
-           //double area = CalculateArea()
-        }
-
+        /// <summary>
+        /// Get the index of the nodes on the surface.
+        /// </summary>
+        /// <returns> List of index of nodes on the surface.</returns>
         private List<int> GetNodeIndexOnSurface(List<Node> nodes, BrepFace surface)
         {
             List<int> nodeIndexOnSurface = new List<int>();
@@ -255,29 +235,12 @@ namespace MeshPoints.FiniteElementMethod
             return nodeIndexOnSurface;
         }
 
-        private List<int> GetElementIndexConnectedToNodes(List<Element> elements, List<int> nodeIndexToCheck)
-        {
-            List<int> elementIndexOnSurface = new List<int>();
-
-            for (int i = 0; i < elements.Count; i++)
-            {
-                for (int j = 0; j < elements[0].Connectivity.Count; j++)
-                {
-                    if (nodeIndexToCheck.Contains(elements[i].Connectivity[j]))
-                    {
-                        elementIndexOnSurface.Add(i);
-                        break;
-                    }
-                }
-            }
-            return elementIndexOnSurface;
-        }
 
         #endregion
 
-        /// <summary>
-        /// Provides an Icon for the component.
-        /// </summary>
+            /// <summary>
+            /// Provides an Icon for the component.
+            /// </summary>
         protected override System.Drawing.Bitmap Icon
         {
             get

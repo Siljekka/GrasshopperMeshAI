@@ -115,13 +115,15 @@ namespace MeshPoints.Tools
             {
                 nodeCoordinates.Add(node.Coordinate);
             }
-
+            if (element.Id == 236)
+            { 
+            }
             // New AR:
             // Find distances from corners to centroid (Abaqus)
             List<double> nodeToNodeDistance = new List<double>();
             if (element.Type != "Hex")
             {
-                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                for (int n = 0; n < nodeCoordinates.Count; n++)
                 {
                     if (n == nodeCoordinates.Count - 1)
                     {
@@ -133,7 +135,7 @@ namespace MeshPoints.Tools
             }
             else
             {
-                for (int n = 0; n < nodeCoordinates.Count - 1; n++)
+                for (int n = 0; n < nodeCoordinates.Count; n++)
                 {
                     if (n < 0.5 * nodeCoordinates.Count)
                     {
@@ -265,27 +267,6 @@ namespace MeshPoints.Tools
         }
 
         /// <summary>
-        /// Determines the Jacobian ratio based on if the element is from a <see cref="Mesh2D"/> or a <see cref="SmartMesh"/>.
-        /// </summary>
-        /// <param name="element">A single <see cref="Element"/> object from a mesh.</param>
-        /// <returns>A <see cref="double"/> between 0.0 and 1.0 describing the ratio between the min and max values of the determinants of the Jacobian matrix of the element, evaluated in the corner nodes.</returns>
-        private double CalculateJacobianRatioOLD(Element element) // to do: slett
-        {
-            // to do: slett
-            double jacobian = 0;
-            if (element.Type == "Quad") // surface
-            {
-                // jacobian = CalculateJacobianOfQuadElementOLD(element); magnus
-            }
-            else // solid
-            {
-                // jacobian = CalculateJacobianOf8NodeElementOLD(element); magnus
-            }
-            return jacobian;
-        } 
-
-
-        /// <summary>
         /// Returns a list of the face centroid to an element
         /// </summary>
         private List<Point3d> GetFaceCenter(Element element)
@@ -357,7 +338,7 @@ namespace MeshPoints.Tools
                 var r = gaussNodes.Row(n)[0];
                 var s = gaussNodes.Row(n)[1];
                 double t = 0;
-                if (nodeDOFS == 3) { t = gaussNodes.Row(n)[2]; }
+                if (nodeDOFS == 3) { t = gaussNodes.Row(n)[2];  }
 
                 // Partial derivatives of the shape functions
                 Matrix<double> shapeFunctionsDerivatedNatural = _FEM.DerivateWithNatrualCoordinates(r, s, t, nodeDOFS);
