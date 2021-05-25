@@ -26,7 +26,7 @@ namespace MeshPoints.Tools
             pManager.AddGenericParameter("Grid Information", "grid info", "Input grid information.", GH_ParamAccess.list);
             pManager.AddGenericParameter("Grid groups", "group", "Index of grid group to return.", GH_ParamAccess.item);
             pManager.AddGenericParameter("Grid in groups", "grid in group", "Index of grid in grid group to return.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Grid", "grid", "Index of grid to view, independent of grid groups.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Grid", "grid", "Index of grid to return, independent of grid groups.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -55,8 +55,9 @@ namespace MeshPoints.Tools
             DA.GetData(2, ref gridNum);
 
             // Code
-            List<Node> gridGroupsCount = new List<int>();
+            List<int> gridGroupsCount = new List<int>();
             List<Node> gridGroups = new List<Node>();
+            List<Node> grid = new List<Node>();
             int counter = 0;
             foreach (List<List<Node>> gridGroup in gridInfo)
             {
@@ -65,9 +66,9 @@ namespace MeshPoints.Tools
                 
                 }
                 gridGroupsCount.Add(gridGroup.Count);
-                foreach (List<Node> grid in gridGroup)
+                foreach (List<Node> gridInGroup in gridGroup)
                 {
-                    gridGroups.AddRange(grid);
+                    gridGroups.AddRange(gridInGroup);
                     counter++;
                 }
             }
