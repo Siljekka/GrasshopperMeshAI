@@ -379,7 +379,7 @@ def plot_polygon(np_coords: np.array, style="") -> None:
     coords[0].append(coords[0][0])
     coords[1].append(coords[1][0])
 
-    plt.plot(coords[0], coords[1], style)
+    plt.plot(coords[0], coords[1], style, label="Input contour")
 
 
 def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: float) -> list:
