@@ -94,18 +94,16 @@ namespace MeshPoints.CreateMesh
             // Find top and bottom edge
             List<BrepFace> brepFace = brep.Faces.ToList();
 
-            List<int> indexAdjecentFaces = (brepFace[bottomFaceIndex].AdjacentFaces()).ToList();
-            List<int> indexAdjecentEdges = (brepFace[bottomFaceIndex].AdjacentEdges()).ToList();
-            indexAdjecentFaces.Add(bottomFaceIndex);
+            List<int> indexAdjecentFaces = (brepFace[bottomFaceIndex].AdjacentFaces()).ToList(); // get faces adjacent to bottom face
+            List<int> indexAdjecentEdges = (brepFace[bottomFaceIndex].AdjacentEdges()).ToList(); // get edges adjacent to bottom face
+            indexAdjecentFaces.Add(bottomFaceIndex); // add bottom face to list
             for (int i = 0; i < brepFace.Count; i++)
             {
                 if (!indexAdjecentFaces.Contains(brepFace.IndexOf(brepFace[i])))
                 {
-                    BrepFace brepBottomFace = brepFace[bottomFaceIndex];
-                    BrepFace brepTopFace = brepFace[i]; // top face
-                    indexAdjecentEdges.AddRange(brepBottomFace.AdjacentEdges());
-                    indexAdjecentEdges.AddRange(brepTopFace.AdjacentEdges());
-                    continue;
+                    //indexAdjecentEdges.AddRange(brepFace[bottomFaceIndex].AdjacentEdges()); // bottom face edges, to do: slett
+                    indexAdjecentEdges.AddRange(brepFace[i].AdjacentEdges()); //top face edges
+                    break;
                 }
             }
 
@@ -136,22 +134,47 @@ namespace MeshPoints.CreateMesh
             }
 
             // Check if the rails must be re-oredered to generate elements with nodes counting ccw
-            Curve testCurve = Curve.CreateControlPointCurve(railPoints.Branch(0), 1);
-            Vector3d direction = railPoints.Branch(w)[0] - railPoints.Branch(0)[0];
-            string curveOrientation = testCurve.ClosedCurveOrientation(direction).ToString();
-            if (curveOrientation == "Clockwise")
+            if (railPoints.Branch(0).Count > 1)
             {
-                for (int i = 0; i < railPoints.BranchCount; i++)
+                Curve testCurve = Curve.CreateControlPointCurve(railPoints.Branch(0));
+                Vector3d direction = railPoints.Branch(w)[0] - railPoints.Branch(0)[0];
+                string curveOrientation = testCurve.ClosedCurveOrientation(direction).ToString();
+                if (curveOrientation == "Clockwise")
                 {
-                    railPoints.Branch(i).Reverse();
+                    for (int i = 0; i < railPoints.BranchCount; i++)
+                    {
+                        railPoints.Branch(i).Reverse();
+                    }
                 }
+            }
+            else if (railPoints.Branch(0).Count == 1)
+            {
+                // Create rails
+                DataTree<Point3d> railPointsTemp = new DataTree<Point3d>();
+
+                Point3d pt1 = brepBottomFace.PointAt(0,0);
+                Point3d pt4 = brepBottomFace.PointAt(1, 0);
+                Point3d pt3 = brepBottomFace.PointAt(1, 1);
+                Point3d pt2 = brepBottomFace.PointAt(0, 1);
+                List<Point3d> newBasePt = new List<Point3d>() { pt1, pt2, pt3, pt4 };
+                for (int i = 0; i < railPoints.BranchCount; i++)// lopp
+                {
+                    Point3d pt = railPoints.Branch(i)[0];
+                    foreach (Point3d basePt in newBasePt)
+                    {
+                        Vector3d move = basePt - pt;
+                        Point3d newPt = new Point3d(pt.X + move.X, pt.Y + move.Y, pt.Z);
+                        railPointsTemp.Add(newPt, new GH_Path(i));
+                    }
+                }
+                railPoints = railPointsTemp;
             }
             return railPoints;
         }
         private List<Plane> GetPlanes(DataTree<Point3d> railPoints)
         {
-            if (railPoints == null) { return null; }
             List<Plane> planes = new List<Plane>();
+            if (railPoints == null) { return null; }
 
             for (int i = 0; i < railPoints.BranchCount; i++)
             {
