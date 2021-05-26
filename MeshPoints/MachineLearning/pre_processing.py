@@ -48,7 +48,7 @@ def procrustes(contour: np.array) -> dict:
     rotation_matrix = u @ vt
 
     # The coordinates of the transformed contour are given by P_trans = scaling_factor * p_scaled * rotation
-    transformed_contour = sigma * p_scaled @ rotation_matrix
+    transformed_contour = sigma * p_scaled @ rotation_matrix.T
 
     # The scale difference between the transformed and the original contour is s / p_norm;
     assert np.allclose(contour, p_norm * p_scaled + np.mean(contour, 0))
@@ -79,11 +79,11 @@ def create_random_ngon(number_of_sides: int) -> np.array:
     """
 
     polygon = []
-    quantile = 1 / number_of_sides
+    quantile = 2 * pi / number_of_sides
     exclude = 0.2
     for n in range(number_of_sides):
         r = random() * (1 - exclude) + exclude  # mapping random from 0->1 to ex->1
-        theta = 2 * pi * (n / number_of_sides + random() * quantile)
+        theta = 2 * pi * n / number_of_sides + random() * quantile
         polygon.append([r * cos(theta), r * sin(theta)])
 
     return np.array(polygon)
@@ -102,6 +102,7 @@ def gmsh_settings() -> None:
 def mesh_contour(contour: np.array, target_edge_length: float):
     # Meshes a contour with a given edge length
     # Create a new model
+    gmsh.initialize()
     gmsh.model.add("1")
 
     for i, p in enumerate(contour):
@@ -156,6 +157,7 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     #     gmsh.fltk.run()
 
     gmsh.clear()
+    gmsh.finalize()
 
     return features
 
