@@ -368,18 +368,6 @@ namespace MeshPoints.QuadRemesh
                 }
                 Element element = new Element(i, elementNodes, connectivity);
 
-                // Assign mesh
-                if (element.Type == "Triangle")
-                {
-                    elementMesh.Faces.AddFace(0, 1, 2);
-                }
-                else
-                {
-                    elementMesh.Faces.AddFace(0, 1, 2, 3);
-                }
-                elementMesh.Faces.AddFace(0, 1, 2);
-                element.Mesh = elementMesh;
-
                 // Add element to element list
                 elements.Add(element);
             }
