@@ -89,7 +89,8 @@ namespace MeshPoints.QuadRemesh
             List<qEdge> frontEdges = GetFrontEdges(globalEdgeList);
 
             // check if even number of boundary nodes
-            if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Need the initial mesh to have an even number of boundary nodes to make it an all quad mesh"); return; }
+            //if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Need the initial mesh to have an even number of boundary nodes to make it an all quad mesh"); return; }
+            if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Need the initial mesh to have an even number of boundary nodes to make it an all quad mesh"); }
             if (numberElementsToRemesh == 0 | iterationsToPerformBeforeStop == 0) return;
 
             // temporary variables
@@ -298,7 +299,7 @@ namespace MeshPoints.QuadRemesh
             DA.SetDataList(2, globalElementList);
             DA.SetData(3, quadElement);
             DA.SetData(4, E_front);
-            //DA.SetData(5, vec);
+            DA.SetData(5, surfaceMesh);
             /*DA.SetDataList(6, nodesTest);
             DA.SetDataList(7, v);
             DA.SetDataList(8, p);
@@ -3719,7 +3720,7 @@ namespace MeshPoints.QuadRemesh
                             nodeIsMoved = true;
                         }
                     }
-                    
+                    /*
                     // 4.2 Perform Optimization-based Smoothing
                     if (iterations >= 2)
                     {
@@ -3749,7 +3750,7 @@ namespace MeshPoints.QuadRemesh
                             }
                             else { node.OBS = false; }
                         }
-                    }
+                    }*/
                 }
                 iterations++;
                 if (!nodeIsMoved | maxDistanceMoved <= 1.75 * moveTolerance) { continueSmooth = false; }
@@ -4080,8 +4081,8 @@ namespace MeshPoints.QuadRemesh
             else 
             {
                 qEdge edge1 = new qEdge(nodes[0], nodes[1]);
-                qEdge edge2 = new qEdge(nodes[2], nodes[0]); 
-                qEdge edge3 = new qEdge(nodes[1], nodes[2]);
+                qEdge edge2 = new qEdge(nodes[2], nodes[1]); 
+                qEdge edge3 = new qEdge(nodes[2], nodes[0]);
                 List<qEdge> edgeList = new List<qEdge>() { edge1, edge2, edge3 };
                 qElement element = new qElement(edgeList);
                 return element;

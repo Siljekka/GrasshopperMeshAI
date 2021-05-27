@@ -49,7 +49,6 @@ namespace MeshPoints.Tools
             DA.GetData(0, ref inputMesh);
             DA.GetData(1, ref brep);
 
-
             // 1. Get initial edges and elements of mesh using mesh topology properties
             var initialEdgeAndElementList = GetInitialEdgesAndElements(inputMesh);
             List<qEdge> globalEdgeList = initialEdgeAndElementList.Item1;
