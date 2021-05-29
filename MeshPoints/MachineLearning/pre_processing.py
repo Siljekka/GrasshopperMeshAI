@@ -89,6 +89,23 @@ def create_random_ngon(number_of_sides: int) -> np.array:
     return np.array(polygon)
 
 
+def create_random_displaced_ngon(number_of_sides: int) -> np.array:
+    polygon = []
+    quantile = 2 * pi / number_of_sides
+    exclude = 0.2
+    for n in range(number_of_sides):
+        r = random() * (1 - exclude) + exclude  # mapping random from 0->1 to ex->1
+        theta = 2 * pi * n / number_of_sides + random() * quantile
+        polygon.append([r * cos(theta), r * sin(theta)])
+
+    x_disp = random()*1000 - 500
+    y_disp = random()*1000 - 500
+
+    polygon = polygon + np.array([x_disp, y_disp])
+
+    return np.array(polygon)
+
+
 def gmsh_settings() -> None:
     # Display settings
     gmsh.option.set_number("Mesh.Nodes", 1)
@@ -102,7 +119,7 @@ def gmsh_settings() -> None:
 def mesh_contour(contour: np.array, target_edge_length: float):
     # Meshes a contour with a given edge length
     # Create a new model
-    gmsh.initialize()
+    # gmsh.initialize()
     gmsh.model.add("1")
 
     for i, p in enumerate(contour):
@@ -157,7 +174,7 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     #     gmsh.fltk.run()
 
     gmsh.clear()
-    gmsh.finalize()
+    # gmsh.finalize()
 
     return features
 
@@ -380,6 +397,8 @@ def plot_polygon(np_coords: np.array, style="") -> None:
     coords[1].append(coords[1][0])
 
     plt.plot(coords[0], coords[1], style)
+    # Draw the first point as a red x
+    plt.plot(coords[0][0], coords[1][0], 'rx')
 
 
 def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: float) -> list:
@@ -463,7 +482,7 @@ def contour_to_csv(triangles: np.array, number_of_sides: int) -> None:
 def single_edge_length_mesh_to_csv(features, dataset_size: int, number_of_sides: int) -> None:
     # Columns needed:
     #  contour nodes ( xi | yi) | target_edge_length | num inner nodes
-    with open(f"data/{number_of_sides}-gon-lc-04-mesh-dataset-new.csv", "w", newline="") as file:
+    with open(f"data/{number_of_sides}-gon-correct-procrustes.csv", "w", newline="") as file:
         writer = csv.writer(file)
         header = []
         for i in range(1, number_of_sides + 1):
