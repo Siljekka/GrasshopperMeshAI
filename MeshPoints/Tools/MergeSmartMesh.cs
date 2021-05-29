@@ -536,7 +536,7 @@ namespace MeshPoints.Tools
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return Properties.Resources.Icon_MergeNodes;
+                return Properties.Resources.Icon_MergeMesh;
             }
         }
 
