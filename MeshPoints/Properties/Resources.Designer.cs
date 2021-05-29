@@ -63,9 +63,29 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Icon_BC {
+            get {
+                object obj = ResourceManager.GetObject("Icon_BC", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Icon_CreateData {
             get {
                 object obj = ResourceManager.GetObject("Icon_CreateData", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_CreatePolygon {
+            get {
+                object obj = ResourceManager.GetObject("Icon_CreatePolygon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -163,6 +183,16 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Icon_FEM {
+            get {
+                object obj = ResourceManager.GetObject("Icon_FEM", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Icon_INP {
             get {
                 object obj = ResourceManager.GetObject("Icon_INP", resourceCulture);
@@ -173,9 +203,39 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Icon_Load {
+            get {
+                object obj = ResourceManager.GetObject("Icon_Load", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Icon_MapPoints {
             get {
                 object obj = ResourceManager.GetObject("Icon_MapPoints", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_Material {
+            get {
+                object obj = ResourceManager.GetObject("Icon_Material", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_MergeMesh {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MergeMesh", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -216,6 +276,16 @@ namespace MeshPoints.Properties {
         internal static System.Drawing.Bitmap Icon_NormalizeSurface {
             get {
                 object obj = ResourceManager.GetObject("Icon_NormalizeSurface", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_PreviewGrid {
+            get {
+                object obj = ResourceManager.GetObject("Icon_PreviewGrid", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -266,6 +336,16 @@ namespace MeshPoints.Properties {
         internal static System.Drawing.Bitmap Icon_SweepSolid {
             get {
                 object obj = ResourceManager.GetObject("Icon_SweepSolid", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_TargetLength {
+            get {
+                object obj = ResourceManager.GetObject("Icon_TargetLength", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
