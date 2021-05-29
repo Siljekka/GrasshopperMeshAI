@@ -1,5 +1,4 @@
 import pre_processing as pp
-import dataset_generation as dg
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -7,17 +6,48 @@ import gmsh
 
 if __name__ == "__main__":
     # # ======== For plotting purposes ========
-    sample_polygon = pp.create_random_ngon(6)
-    p = pp.procrustes(sample_polygon)
-    pp.plot_polygon(p['transformed_contour'])
-    pp.plot_polygon(pp.create_regular_ngon(6))
-    plt.gca().set_aspect("equal", adjustable="box")
-    plt.grid(True)
-    plt.show()
+    # while True:
+    #     sample_polygon = pp.create_random_ngon(6)
+    #     p = pp.procrustes(sample_polygon)
+    #     pp.plot_polygon(p['transformed_contour'])
+    #     pp.plot_polygon(pp.create_regular_ngon(6))
+    #     plt.gca().set_aspect("equal", adjustable="box")
+    #     plt.grid(True)
+    #     plt.show()
 
-    # dataset_test = dg.generate_dataset(
-    #     dataset_size, num_sides, target_edge_length)
-    # dg.single_edge_length_mesh_to_csv(dataset_test, dataset_size, num_sides)
+    # p = pp.create_random_displaced_ngon(6)
+    # pp.plot_polygon(p)
+    # plt.show()
+
+    y1, y2, y3, y4, y5, y6 = [], [], [], [], [], []
+    x1, x2, x3, x4, x5, x6 = [], [], [], [], [], []
+    for _ in range(1000):
+        polygon = pp.create_random_displaced_ngon(6)
+        pro = pp.procrustes(polygon)['transformed_contour']
+        x1.append(pro[0][0])
+        y1.append(pro[0][1])
+        x2.append(pro[1][0])
+        y2.append(pro[1][1])
+        x3.append(pro[2][0])
+        y3.append(pro[2][1])
+        x4.append(pro[3][0])
+        y4.append(pro[3][1])
+        x5.append(pro[4][0])
+        y5.append(pro[4][1])
+        x6.append(pro[5][0])
+        y6.append(pro[5][1])
+
+    plt.scatter(x1, y1, c='r', marker='D', alpha=0.5)
+    plt.scatter(x2, y2, c='b', marker='D', alpha=0.5)
+    plt.scatter(x3, y3, c='g', marker='D', alpha=0.5)
+    plt.scatter(x4, y4, c='r', marker='D', alpha=0.5)
+    plt.scatter(x5, y5, c='b', marker='D', alpha=0.5)
+    plt.scatter(x6, y6, c='g', marker='D', alpha=0.5)
+
+    plt.grid(True)
+    plt.gca().set_aspect("equal", adjustable="box")
+    plt.rcParams['axes.axisbelow'] = True
+    plt.show()
 
     # *** GMSH-tests ***
     # gmsh.initialize()
@@ -30,9 +60,12 @@ if __name__ == "__main__":
 
     # === Pre-processing ===
     # num_sides = 6
-    # target_edge_length = 0.2
+    # target_edge_length = 0.4
     # # 1700 * 7 =~ 12_000 (wanted dataset size for 6-gons)
-    # dataset_size = 12_000
+    # dataset_size = 10_000
+    # dataset_test = pp.generate_dataset(
+    #     dataset_size, num_sides, target_edge_length)
+    # pp.single_edge_length_mesh_to_csv(dataset_test, dataset_size, num_sides)
     # # Trimeshing
     # dataset_test = pp.generate_dataset_all_lc(dataset_size, num_sides)
     # pp.mesh_to_csv(dataset_test, dataset_size, num_sides)
