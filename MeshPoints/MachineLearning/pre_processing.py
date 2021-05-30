@@ -1,3 +1,4 @@
+import math
 from math import cos, sin, pi
 from random import random
 import numpy as np
@@ -55,6 +56,33 @@ def procrustes(contour: np.array) -> dict:
     scale = sigma / p_norm
 
     return {"transformed_contour": transformed_contour, "scale": scale}
+
+
+def simple_procrustes(contour: np.array) -> dict:
+    n = contour.shape[0]  # number of nodes in input
+    reference = create_regular_ngon(n)
+
+    # Translate input surface, P*, to the origin.
+    p_centered = contour - np.mean(contour, 0)
+
+    # Calculate the "centered Euclidean norm" of P*
+    p_norm = np.linalg.norm(p_centered)
+
+    # Scale centered_ P* by n/norm (Kabsch algorithm)
+    scale_factor = (math.sqrt(n) / p_norm)
+    p_scaled = p_centered * scale_factor
+
+    # Apply "Singular Value Decomposition (SVD)" to A = P_centered.T . reference => UCV^T
+    a = p_centered.T @ reference
+    u, c, vt = np.linalg.svd(a)
+
+    # Get optimal rotation matrix, R = U*V^T
+    rotation_matrix = u @ vt
+
+    # Transformed contour given by P = p_scaled * rotation_matrix
+    transformed_contour = p_scaled @ rotation_matrix
+
+    return {"transformed_contour": transformed_contour, "scale": scale_factor}
 
 
 def create_regular_ngon(number_of_sides: int) -> np.array:
@@ -398,7 +426,7 @@ def plot_polygon(np_coords: np.array, style="") -> None:
 
     plt.plot(coords[0], coords[1], style)
     # Draw the first point as a red x
-    # plt.plot(coords[0][0], coords[1][0], 'rx')
+    plt.plot(coords[0][0], coords[1][0], 'rx')
 
 
 def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: float) -> list:
