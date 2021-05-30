@@ -63,7 +63,8 @@ def simple_procrustes(contour: np.array) -> dict:
     reference = create_regular_ngon(n)
 
     # Translate input surface, P*, to the origin.
-    p_centered = contour - np.mean(contour, 0)
+    translation = np.mean(contour, 0)
+    p_centered = contour - translation
 
     # Calculate the "centered Euclidean norm" of P*
     p_norm = np.linalg.norm(p_centered)
@@ -82,7 +83,16 @@ def simple_procrustes(contour: np.array) -> dict:
     # Transformed contour given by P = p_scaled * rotation_matrix
     transformed_contour = p_scaled @ rotation_matrix
 
-    return {"transformed_contour": transformed_contour, "scale": scale_factor}
+    assert(np.allclose(contour,
+                       transformed_contour @ rotation_matrix.T
+                       * (1/scale_factor) + translation))
+
+    return {
+        "contour": transformed_contour,
+        "scale": (1/scale_factor),
+        "rotation": rotation_matrix.T,
+        "translation": translation
+    }
 
 
 def create_regular_ngon(number_of_sides: int) -> np.array:
