@@ -222,7 +222,7 @@ def generate_patch_training_dataset_from_contour(contour, point_grid):
     return dataset
 
 
-def generate_patch_collection(dataset):
+def generate_patch_collection(dataset, edge_count=6, internal_count=2):
     """
     !!! only functional for 6gons with 2 internal nodes !!!
     |   Input:
@@ -243,8 +243,8 @@ def generate_patch_collection(dataset):
         # contour_coordinates [x1 -> y6] (12 values)
         # internal_node_count = 2 (1 value)
         # internal_node_coordinates [x1 -> y2] (4 values)
-        contour_coordinates_flat_list = row[:12]
-        internal_nodes_list = row[-4:]
+        contour_coordinates_flat_list = row[:edge_count*2]
+        internal_nodes_list = row[-internal_count*2:]
 
         # Turn flat list into list of tuples (used in calculate_score)
         contour = list(
@@ -262,28 +262,37 @@ def generate_patch_collection(dataset):
 
     return patch_collection
 
+
 # Method for writing a patch collection to csv
-
-
-def write_patch_collection_to_csv(patch_collection, filename) -> None:
+def write_patch_collection_to_csv(patch_collection, filename, edge_count=6) -> None:
     with open(filename, "w", newline="") as file:
         writer = csv.writer(file)
-        header = ['x1', 'y1',
-                  'x2', 'y2',
-                  'x3', 'y3',
-                  'x4', 'y4',
-                  'x5', 'y5',
-                  'x6', 'y6',
-                  'gx1', 'gy1',
-                  'gx2', 'gy2',
-                  'gx3', 'gy3',
-                  'gx4', 'gy4',
-                  'sg1', 'sg2',
-                  'sg3', 'sg4'
-                  ]
+        header = []
+        for i in range(1, edge_count + 1):
+            header.append(f"x{i}")
+            header.append(f"y{i}")
+        header.extend([
+            'gx1', 'gy1',
+            'gx2', 'gy2',
+            'gx3', 'gy3',
+            'gx4', 'gy4',
+            'sg1', 'sg2',
+            'sg3', 'sg4'
+        ])
         writer.writerow(header)
         for row in patch_collection:
             writer.writerow(row)
+
+
+def generate_patch_collection_and_write_to_csv(
+        dataset,
+        filename,
+        edge_count=6,
+        internal_count=2) -> None:
+
+    patch_collection = generate_patch_collection(
+        dataset, edge_count, internal_count)
+    write_patch_collection_to_csv(patch_collection, filename, edge_count)
 
 
 def generate_internal_nodes_from_grid_score(point_grid, target_internal_node_count: int) -> list:
