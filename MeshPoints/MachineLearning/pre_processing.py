@@ -398,7 +398,7 @@ def plot_polygon(np_coords: np.array, style="") -> None:
 
     plt.plot(coords[0], coords[1], style)
     # Draw the first point as a red x
-    plt.plot(coords[0][0], coords[1][0], 'rx')
+    # plt.plot(coords[0][0], coords[1][0], 'rx')
 
 
 def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: float) -> list:
