@@ -115,13 +115,23 @@ namespace MeshPoints.Tools
             {
                 nodeCoordinates.Add(node.Coordinate);
             }
-            if (element.Id == 236)
-            { 
-            }
+
             // New AR:
             // Find distances from corners to centroid (Abaqus)
             List<double> nodeToNodeDistance = new List<double>();
-            if (element.Type != "Hex")
+            if (element.Nodes.Count == 3)
+            {
+                for (int n = 0; n < nodeCoordinates.Count; n++)
+                {
+                    if (n == nodeCoordinates.Count - 1)
+                    {
+                        nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n - 2]));
+                        continue;
+                    }
+                    nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1])); // add the distance between the points, following mesh edges CCW
+                }
+            }
+            else if (element.Type != "Hex")
             {
                 for (int n = 0; n < nodeCoordinates.Count; n++)
                 {
@@ -133,7 +143,7 @@ namespace MeshPoints.Tools
                     nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1])); // add the distance between the points, following mesh edges CCW
                 }
             }
-            else
+            else if (element.Type == "Hex")
             {
                 for (int n = 0; n < nodeCoordinates.Count; n++)
                 {
@@ -149,6 +159,7 @@ namespace MeshPoints.Tools
                     nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1]));
                 }
             }
+            else { nodeToNodeDistance = null; }
             nodeToNodeDistance.Sort();
 
             double minDistance = nodeToNodeDistance[0];
@@ -221,8 +232,15 @@ namespace MeshPoints.Tools
         /// </summary>
         double CalculateSkewness(Element element)
         {
-            double idealAngle = 90; // ideal angle in degrees
+            double idealAngle = 90; // ideal angle for quad and hex in degrees
             int neighborPoint = 3; // variable used in skewness calculation, assume quad
+            if (element.Nodes.Count == 3)
+            {
+                idealAngle = 60; // ideal angle for triangles in degrees
+                neighborPoint = 2;
+            }
+            
+            
             List<double> elementAngles = new List<double>();
             List<List<Node>> faces = element.GetFaces();
 
@@ -311,20 +329,36 @@ namespace MeshPoints.Tools
         /// </summary>
         private double CalculateJacobianRatio(Element element) 
         {
+            if (element.Nodes.Count == 3 | element.Nodes.Count == 6)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Component are not able to calculate Jacobian Ratio for tri and teth elements.");
+                return 0;
+            }
             FEM _FEM = new FEM();
             int nodeDOFS = 2;
             if (element.Type == "Hex") { nodeDOFS = 3; }
 
-            //List<Point3d> localPoints = TransformQuadSurfaceTo2DPoints(cornerPoints); to do: implement non-planar elements
+            // Get node coordinates
+            List<Point3d> nodeCoordinates = new List<Point3d>();
+            foreach (Node node in element.Nodes)
+            {
+                nodeCoordinates.Add(node.Coordinate);
+            }
+
+            // Project nodes to planar surface 
+            if (element.Type == "Quad")
+            {
+                nodeCoordinates = TransformQuadSurfaceTo2DPoints(nodeCoordinates);
+            }
 
             Matrix<double> globalCoordinates = Matrix<double>.Build.Dense(element.Nodes.Count, nodeDOFS);
-            for (int i = 0; i < element.Nodes.Count; i++)
+            for (int i = 0; i < nodeCoordinates.Count; i++)
             {
-                globalCoordinates[i, 0] = element.Nodes[i].Coordinate.X; // column of x coordinates
-                globalCoordinates[i, 1] = element.Nodes[i].Coordinate.Y; // column of y coordinates
+                globalCoordinates[i, 0] = nodeCoordinates[i].X; // column of x coordinates
+                globalCoordinates[i, 1] = nodeCoordinates[i].Y; // column of y coordinates
                 if (nodeDOFS == 3)
                 {
-                    globalCoordinates[i, 2] = element.Nodes[i].Coordinate.Z; // colum of z coordinates
+                    globalCoordinates[i, 2] = nodeCoordinates[i].Z; // colum of z coordinates
                 }
             }
 
@@ -347,7 +381,10 @@ namespace MeshPoints.Tools
                 Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
                 double jacobianDeterminant = jacobianMatrix.Determinant();
                 jacobiansOfElement.Add(jacobianDeterminant);
+                
             }
+            List<double> a = new List<double>(jacobiansOfElement);
+            element.JacDet = new List<double>(a);
 
             double jacobianRatio = 0;
             // If any of the determinants are negative, we have to divide the maximum with the minimum
@@ -573,7 +610,8 @@ namespace MeshPoints.Tools
 
                 jacobiansOfElement.Add(jacobianDeterminantOfPoint);
             };
-
+            List<double> a = new List<double>(jacobiansOfElement);
+            e.JacDet = new List<double>(a);
             // Minimum element divided by maximum element. A value of 1 denotes a rectangular element.
             double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
 

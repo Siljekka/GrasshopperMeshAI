@@ -39,6 +39,7 @@ namespace MeshPoints.DeconstructClasses
             pManager.AddGenericParameter("Type", "type", "Element type", GH_ParamAccess.item); //0
             pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //8
             pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //9
+            pManager.AddGenericParameter("Determinant", "det", "Jacobian ratio of mesh", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -57,6 +58,7 @@ namespace MeshPoints.DeconstructClasses
             DA.SetData(2, e.Type);
             DA.SetData(3, e.Id);
             DA.SetData(4, e.Mesh);
+            DA.SetDataList(5, e.JacDet);
         }
 
         /// <summary>

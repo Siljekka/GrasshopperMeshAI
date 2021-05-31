@@ -10,6 +10,15 @@ namespace MeshPoints.Tools
 {
     public class GlobalSmoothing : GH_Component
     {
+        //
+        // The implementation of Global Smoothing are based on the paper:
+        // "An approach to Combined Laplacian and Optimization-Based Smoothing for Triangular, Quadrilateral and
+        // Quad-Dominant Meshes" (1998) by Cannan, Tristano, and Staten
+        // 
+        // In addition, modification and assumtions by the paper by Karl Erik Levik are implementet:
+        // "Q-Morph - Implementing a Quadrilateral Meshing Algorithm" (2002) by Levik, Karl Erik
+        // 
+
         /// <summary>
         /// Initializes a new instance of the GlobalSmoothing class.
         /// </summary>
@@ -48,7 +57,6 @@ namespace MeshPoints.Tools
             Brep brep = new Brep();
             DA.GetData(0, ref inputMesh);
             DA.GetData(1, ref brep);
-
 
             // 1. Get initial edges and elements of mesh using mesh topology properties
             var initialEdgeAndElementList = GetInitialEdgesAndElements(inputMesh);

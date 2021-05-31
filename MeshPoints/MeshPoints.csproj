@@ -11,7 +11,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MeshPoints</RootNamespace>
     <AssemblyName>MeshPoints</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <NuGetPackageImportStamp>
@@ -195,6 +195,7 @@
     <Compile Include="Tools\GlobalSmoothing.cs" />
     <Compile Include="Tools\KillSwitch.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
+    <Compile Include="Tools\MeshToSmarMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
     <Compile Include="Tools\MoveGrids.cs" />
     <Compile Include="Tools\MoveNodes.cs" />
