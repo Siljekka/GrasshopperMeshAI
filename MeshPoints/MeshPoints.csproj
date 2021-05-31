@@ -193,6 +193,7 @@
     <Compile Include="Tools\CreateRandomPolygon.cs" />
     <Compile Include="Tools\DataToExcel.cs" />
     <Compile Include="Tools\GlobalSmoothing.cs" />
+    <Compile Include="Tools\KillSwitch.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
     <Compile Include="Tools\MoveGrids.cs" />
