@@ -157,7 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Properties\Resources\Icon-QuadRemesh.png" />
+    <None Include="Properties\Resources\Icon_BC.png" />
     <Content Include="Properties\Resources\Icon_CreateData.png" />
+    <None Include="Properties\Resources\Icon_CreatePolygon.png" />
     <Content Include="Properties\Resources\Icon_DecElement.png" />
     <Content Include="Properties\Resources\Icon_DecGeometry.png" />
     <Content Include="Properties\Resources\Icon_DecNode.png" />
@@ -167,16 +169,22 @@
     <Content Include="Properties\Resources\Icon_DecQuality.png" />
     <Content Include="Properties\Resources\Icon_DecSmartMesh.png" />
     <Content Include="Properties\Resources\Icon_Excel.png" />
+    <None Include="Properties\Resources\Icon_FEM.png" />
     <Content Include="Properties\Resources\Icon_INP.png" />
+    <None Include="Properties\Resources\Icon_Load.png" />
     <Content Include="Properties\Resources\Icon_MapPoints.png" />
+    <None Include="Properties\Resources\Icon_Material.png" />
+    <None Include="Properties\Resources\Icon_MergeMesh.png" />
     <Content Include="Properties\Resources\Icon_MergeNodes.png" />
     <Content Include="Properties\Resources\Icon_MoveCorners.png" />
     <Content Include="Properties\Resources\Icon_MoveNodes.png" />
     <Content Include="Properties\Resources\Icon_NormalizeSurface.png" />
+    <None Include="Properties\Resources\Icon_PreviewGrid.png" />
     <Content Include="Properties\Resources\Icon_Quality.png" />
     <Content Include="Properties\Resources\Icon_Solid.png" />
     <Content Include="Properties\Resources\Icon_Surface.png" />
     <Content Include="Properties\Resources\Icon_SweepSolid.png" />
+    <None Include="Properties\Resources\Icon_TargetLength.png" />
     <Content Include="Properties\Resources\Icon_Triangle.png" />
   </ItemGroup>
   <ItemGroup />
