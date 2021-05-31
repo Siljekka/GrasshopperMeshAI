@@ -3005,8 +3005,15 @@ namespace MeshPoints.QuadRemesh
             }
             return E_k;
         }
-        
+
         // __________________________________________ Local smoothing ______________________________________________________
+        //
+        // The implementation of Global Smoothing are based on the paper:
+        // "Advancing Front Quadrilateral Meshing Using Triangle Transformations" by Owen et al., 1998
+        // 
+        // In addition, modification and assumtions by the paper by Karl Erik Levik are implementet:
+        // "Q-Morph - Implementing a Quadrilateral Meshing Algorithm" (2002) by Levik, Karl Erik
+        // 
         private void DoLocalSmoothing(qElement quadElement, List<qEdge> globalEdgeList, List<qEdge> frontEdges, List<qElement> globalElementList)
         {
             
@@ -3611,39 +3618,15 @@ namespace MeshPoints.QuadRemesh
         } //todo: test if this is OK
 
         // __________________________________________ Global smoothing ______________________________________________________
-        
-        private void UpdateSmoothableNodeList(qNode node, List<qNode> smoothableNodes, List<qEdge> globalEdgeList)
-        {
-            List<qEdge> connectedEdges = node.GetConnectedEdges(globalEdgeList);
-            foreach (qEdge edge in connectedEdges)
-            {
-                if (!smoothableNodes.Contains(edge.GetOppositeNode(node)))
-                {
-                    smoothableNodes.Add(edge.GetOppositeNode(node));
-                    edge.GetOppositeNode(node).OBS = false; //todo: er dette rett??
-                }
-            }
-        }
-        private void UpdateDistortionMetric(qNode node, List<qEdge> globalEdgeList)
-        {
-            List<qElement> connectedElements = node.GetConnectedElements(globalEdgeList);
-            foreach (qElement element in connectedElements)
-            {
-                element.DistortionMetric = CalculateDistortionMetric(element);
-            }
-        }
-        private List<qNode> GetGlobalNodeList(List<qEdge> globalEdgeList)
-        {
-            List<qNode> globalNodeList = new List<qNode>();
-            foreach (qEdge edge in globalEdgeList)
-            {
-                if (!globalNodeList.Contains(edge.StartNode)) { globalNodeList.Add(edge.StartNode); }
-                if (!globalNodeList.Contains(edge.EndNode)) { globalNodeList.Add(edge.EndNode); }
-            }
-            return globalNodeList;
-        }
+        //
+        // The implementation of Global Smoothing are based on the paper:
+        // "An approach to Combined Laplacian and Optimization-Based Smoothing for Triangular, Quadrilateral and
+        // Quad-Dominant Meshes" (1998) by Cannan, Tristano, and Staten
+        // 
+        // In addition, modification and assumtions by the paper by Karl Erik Levik are implementet:
+        // "Q-Morph - Implementing a Quadrilateral Meshing Algorithm" (2002) by Levik, Karl Erik
+        // 
 
-        // After paper by Cannan, with modifications by Qmorp-fyren for the quads.
         private void DoGlobalSmoothing(List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
             List<qNode> globalNodeList = GetGlobalNodeList(globalEdgeList);
@@ -3658,7 +3641,7 @@ namespace MeshPoints.QuadRemesh
                 element.DistortionMetric = CalculateDistortionMetric(element);
             }
 
-            // 2. Calculate maximum model dimension (assume qmorph <- todo: skriv bedre)
+            // 2. Calculate maximum model dimension according to the  (assume qmorph <- todo: skriv bedre)
             foreach (qElement element in globalElementList)
             {
                 foreach (qEdge edge in element.EdgeList)
@@ -3853,7 +3836,7 @@ namespace MeshPoints.QuadRemesh
             nodeDistance.Add((elementNodes[3].Coordinate - elementNodes[1].Coordinate).Length);
             nodeDistance.Add((elementNodes[3].Coordinate - elementNodes[2].Coordinate).Length);
             return nodeDistance.Min();
-        } // OK
+        } 
         private qNode ConstrainedLaplacianSmooth(qNode node, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
             /*// 0. Defining variables used to check if move is acceptable:
@@ -3952,7 +3935,7 @@ namespace MeshPoints.QuadRemesh
             }
             Vector3d laplacian = vectorSum / (double)connectedEdges.Count;
             return laplacian;
-        } // OK
+        } 
         private qNode OptimizationBasedSmoothing(qNode node, double maxModelDimension, List<qEdge> globalEdgeList)
         {
             qNode newNode = new qNode(node.Coordinate, node.BoundaryNode);
@@ -4075,82 +4058,39 @@ namespace MeshPoints.QuadRemesh
                 qElement element = new qElement(edgeList);
                 return element;
             }
-        } // OK
-        #endregion
-        /*
-         * private qNode ConstrainedLaplacianSmooth(qNode node, List<qEdge> globalEdgeList, List<qElement> globalElementList)
+        } 
+        private void UpdateSmoothableNodeList(qNode node, List<qNode> smoothableNodes, List<qEdge> globalEdgeList)
         {
-            // 0. Defining variables used to check if move is acceptable:
-            int posN = 0;
-            int negN = 0;
-            int upN = 0;
-            int downN = 0;
-            int invN = 0;
-            double theta = 0;
-            double thetaMax = 200 * Math.PI / 180; // constant chosen
-            double deltaDistMetric = 0;
-
-            // 1. Move node with Laplacian smooth
-            Vector3d laplacianVector = LaplacianSmooth(node, globalEdgeList);
-            Point3d newPoint = new Point3d(node.Coordinate.X + laplacianVector.X, node.Coordinate.Y + laplacianVector.Y, node.Coordinate.Z + laplacianVector.Z);
-            qNode newNode = new qNode(newPoint, node.BoundaryNode);
-            qNode oldNode = new qNode(node.Coordinate, node.BoundaryNode);
-
-            // 2. Loop to find final node position
-            for (int i = 0; i < 20; i++) // constant proposed in paper: 20
+            List<qEdge> connectedEdges = node.GetConnectedEdges(globalEdgeList);
+            foreach (qEdge edge in connectedEdges)
             {
-                // 2.1. Update edge and element list
-                var update = UpdateGlobalEdgeList_NodePosition(node, newNode.Coordinate, globalEdgeList);
-                UpdateGlobalElementList_ChangedEdges(update.Item1, update.Item2, globalElementList);
-                List<qElement> connectedElements = oldNode.GetConnectedElements(globalEdgeList);
-                int N = connectedElements.Count;
-
-                // 2.2. Calculate Acceptance Criteria for each element 
-                foreach (qElement element in connectedElements)
+                if (!smoothableNodes.Contains(edge.GetOppositeNode(node)))
                 {
-                    double newDisMetric = CalculateDistortionMetric(element);
-                    double oldDisMetric = element.DistortionMetric;
-
-                    if (newDisMetric > oldDisMetric)
-                    {
-                        posN++;
-                    }
-                    else if (newDisMetric < oldDisMetric)
-                    {
-                        negN++;
-                    }
-
-                    if ((oldDisMetric < 0 & newDisMetric >= 0) | (oldDisMetric < 0 & newDisMetric > oldDisMetric) | oldDisMetric < 0.05 & newDisMetric >= 0.05) // constant of 0.05 as proposed in paper 
-                    {
-                        upN++;
-                    }
-                    else if ((oldDisMetric >= 0 & newDisMetric < 0) | (oldDisMetric < 0 & newDisMetric < oldDisMetric) | oldDisMetric >= 0.05 & newDisMetric < 0.05) // constant of 0.05 as proposed in paper 
-                    {
-                        downN++;
-                    }
-                    if (element.IsInverted())
-                    {
-                        invN++;
-                    }
-                    double testAngle = element.AngleList.Max();
-                    if (testAngle > theta) { theta = testAngle; }
-
-                    deltaDistMetric = (newDisMetric - oldDisMetric) + deltaDistMetric;
+                    smoothableNodes.Add(edge.GetOppositeNode(node));
+                    edge.GetOppositeNode(node).OBS = false; //todo: er dette rett??
                 }
-                
-                // 2.4. Check node location
-                deltaDistMetric = deltaDistMetric / N;
-                if (negN == N | invN > 0 | downN > posN | deltaDistMetric < -0.05 | theta > thetaMax) // constant as proposed in paper, 
-                {
-                    laplacianVector = laplacianVector * 0.5;
-                    newPoint = new Point3d(oldNode.Coordinate.X + laplacianVector.X, oldNode.Coordinate.Y * laplacianVector.Y, oldNode.Coordinate.Z * laplacianVector.Z);
-                    //node = new qNode(newPoint, newNode.BoundaryNode);
-                }
-                else { break; }
             }
-            return newNode;
         }
-         */
+        private void UpdateDistortionMetric(qNode node, List<qEdge> globalEdgeList)
+        {
+            List<qElement> connectedElements = node.GetConnectedElements(globalEdgeList);
+            foreach (qElement element in connectedElements)
+            {
+                element.DistortionMetric = CalculateDistortionMetric(element);
+            }
+        }
+        private List<qNode> GetGlobalNodeList(List<qEdge> globalEdgeList)
+        {
+            List<qNode> globalNodeList = new List<qNode>();
+            foreach (qEdge edge in globalEdgeList)
+            {
+                if (!globalNodeList.Contains(edge.StartNode)) { globalNodeList.Add(edge.StartNode); }
+                if (!globalNodeList.Contains(edge.EndNode)) { globalNodeList.Add(edge.EndNode); }
+            }
+            return globalNodeList;
+        }
+        #endregion
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
