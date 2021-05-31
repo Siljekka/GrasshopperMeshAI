@@ -24,9 +24,13 @@ namespace MeshPoints.Tools
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Grid Information", "grid info", "Input grid information.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Grid groups", "group", "Index of grid group to return.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Grid in groups", "grid in group", "Index of grid in grid group to return.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Grid", "grid", "Index of grid to return, independent of grid groups.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Grid groups", "group", "Index of grid group to return.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Grid in groups", "grid in group", "Index of grid in grid group to return.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Grid", "grid", "Index of grid to return, independent of grid groups.", GH_ParamAccess.item);
+
+            pManager[1].Optional = true;
+            pManager[2].Optional = true;
+            pManager[3].Optional = true;
         }
 
         /// <summary>
@@ -53,6 +57,8 @@ namespace MeshPoints.Tools
             DA.GetDataList(0, gridInfo);
             DA.GetData(1, ref gridGroupNum);
             DA.GetData(2, ref gridNum);
+            DA.GetData(3, ref gridNumWOgroup);
+
 
             // Code
             List<int> gridGroupsCount = new List<int>();
@@ -61,14 +67,14 @@ namespace MeshPoints.Tools
             int counter = 0;
             foreach (List<List<Node>> gridGroup in gridInfo)
             {
-                if (gridNumWOgroup == counter)
-                { 
-                
-                }
                 gridGroupsCount.Add(gridGroup.Count);
                 foreach (List<Node> gridInGroup in gridGroup)
                 {
                     gridGroups.AddRange(gridInGroup);
+                    if (gridNumWOgroup == counter)
+                    {
+                        grid = gridInGroup;
+                    }
                     counter++;
                 }
             }
@@ -78,7 +84,7 @@ namespace MeshPoints.Tools
             if (gridNum >= gridInfo[gridGroupNum].Count) { return; }
 
             DA.SetDataList(0, gridInfo[gridGroupNum][gridNum]); 
-            DA.SetData(1, grid);
+            DA.SetDataList(1, grid);
 
         }
 
