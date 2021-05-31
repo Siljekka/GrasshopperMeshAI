@@ -13,11 +13,6 @@ namespace MeshPoints.Classes
 {
     class FEM
     {
-        public FEM()
-        {
-            //Empty constructor
-        }
-
         public Vector<double> GetShapeFunctions(double r, double s, double t, int nodeDOFS)
         {
             // Shapefunctions on matrix form
@@ -30,10 +25,10 @@ namespace MeshPoints.Classes
                     (1+r)*(1+s),
                     (1-r)*(1+s),
                 });
-                N=N.Multiply(0.25);
+                N = N.Multiply(0.25);
                 return N;
             }
-            else 
+            else
             {
                 Vector<double> N = DenseVector.OfArray(new double[]
                 {
@@ -46,7 +41,7 @@ namespace MeshPoints.Classes
                     (1+r)*(1+s)*(1+t),
                     (1-r)*(1+s)*(1+t)
                 });
-                N=N.Multiply(0.125);
+                N = N.Multiply(0.125);
                 return N;
             }
 
@@ -72,7 +67,7 @@ namespace MeshPoints.Classes
                         {-(1-r)*(1-t), -(1+r)*(1-t), (1+r)*(1-t),(1-r)*(1-t),-(1-r)*(1+t),-(1+r)*(1+t),(1+r)*(1+t),(1-r)*(1+t)},
                         {-(1-r)*(1-s), -(1+r)*(1-s), -(1+r)*(1+s),-(1-r)*(1+s),(1-r)*(1-s),(1+r)*(1-s),(1+r)*(1+s),(1-r)*(1+s)},
                 });
-                shapeFunctionsDerivatedNatural=shapeFunctionsDerivatedNatural.Multiply(0.125);
+                shapeFunctionsDerivatedNatural = shapeFunctionsDerivatedNatural.Multiply(0.125);
                 return shapeFunctionsDerivatedNatural;
             }
 

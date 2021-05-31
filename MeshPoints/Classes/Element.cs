@@ -30,14 +30,15 @@ namespace MeshPoints.Classes
             Id = _id;
             Nodes = _nodes;
             Connectivity = _connectivity;
-            GetType(Nodes);
+            GetElementType();
+            GetElementMesh();
         }
 
         // Methods
-        private void GetType(List<Node> Nodes)
+        public void GetElementType()
         {
             string type = "null";
-            switch (Nodes.Count)
+            switch (this.Nodes.Count)
             {
                 case 3:
                     type = "Triangle";
@@ -85,5 +86,35 @@ namespace MeshPoints.Classes
             return Faces;
         }
 
+        public void GetElementMesh()
+        {
+            Mesh mesh = new Mesh();
+            foreach (Node node in this.Nodes)
+            {
+                mesh.Vertices.Add(node.Coordinate);
+            }
+            if (this.Type == "Quad")
+            {
+                mesh.Faces.AddFace(0, 1, 2, 3);
+            }
+            else if (this.Type == "Hex")
+            {
+                mesh.Faces.AddFace(0, 1, 5, 4);
+                mesh.Faces.AddFace(1, 2, 6, 5);
+                mesh.Faces.AddFace(2, 3, 7, 6);
+                mesh.Faces.AddFace(3, 0, 4, 7);
+                mesh.Faces.AddFace(0, 1, 2, 3);
+                mesh.Faces.AddFace(4, 5, 6, 7);
+            }
+            else if (this.Type == "Triangle")
+            {
+                mesh.Faces.AddFace(0, 1, 2);
+            }
+
+            mesh.Compact(); //to ensure that it calculate
+            mesh.FaceNormals.ComputeFaceNormals();
+            mesh.UnifyNormals();
+            this.Mesh = mesh;
+        }
     }
 }

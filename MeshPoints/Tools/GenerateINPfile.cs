@@ -293,7 +293,7 @@ namespace MeshPoints
                 double nodeX = node.Coordinate.X;
                 double nodeY = node.Coordinate.Y;
                 double nodeZ = node.Coordinate.Z;
-                inpText.Add(String.Format("{0}, {1}, {2}, {3}", globalId, nodeX, nodeY, nodeZ)); //GlobalId, x-coord, y-coord, z-coord
+                inpText.Add(String.Format("{0}, {1}, {2}, {3}", globalId, nodeX, nodeZ, nodeY)); //GlobalId, x-coord, y-coord, z-coord
             }
 
             // Elements
