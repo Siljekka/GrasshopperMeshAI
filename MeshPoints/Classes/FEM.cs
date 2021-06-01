@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Rhino.Geometry;
-using MathNet.Numerics.LinearAlgebra;
+﻿using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics;
-
 
 namespace MeshPoints.Classes
 {
@@ -72,24 +64,24 @@ namespace MeshPoints.Classes
             }
 
         }
-        public Matrix<double> GetGaussPoints(double scaleFactor, int nodeDOFS)
+        public Matrix<double> GetNaturalCoordinate(double scaleFactor, int nodeDOFS)
         {
             double gp = scaleFactor;
 
             if (nodeDOFS == 2)
             {
-                Matrix<double> gaussNodes = DenseMatrix.OfArray(new double[,]
+                Matrix<double> natNodes = DenseMatrix.OfArray(new double[,]
                 {
                     {-gp,-gp},
                     {gp,-gp},
                     {gp, gp},
                     {-gp, gp},
                 });
-                return gaussNodes;
+                return natNodes;
             }
             else
             {
-                Matrix<double> gaussNodes = DenseMatrix.OfArray(new double[,]
+                Matrix<double> natNodes = DenseMatrix.OfArray(new double[,]
                 {
                     {-gp,-gp,-gp},
                     {gp,-gp,-gp},
@@ -100,7 +92,7 @@ namespace MeshPoints.Classes
                     {gp, gp, gp},
                     {-gp, gp,gp},
                 });
-                return gaussNodes;
+                return natNodes;
             }
         }
     }
