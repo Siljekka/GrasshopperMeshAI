@@ -74,7 +74,7 @@ def simple_procrustes(contour: np.array) -> dict:
     p_scaled = p_centered * scale_factor
 
     # Apply "Singular Value Decomposition (SVD)" to A = P_centered.T . reference => UCV^T
-    a = p_centered.T @ reference
+    a = p_scaled.T @ reference
     u, c, vt = np.linalg.svd(a)
 
     # Get optimal rotation matrix, R = U*V^T
@@ -139,9 +139,9 @@ def create_random_displaced_ngon(number_of_sides: int) -> np.array:
     x_disp = random()*1000 - 500
     y_disp = random()*1000 - 500
 
-    polygon = polygon + np.array([x_disp, y_disp])
+    polygon = np.array(polygon)*random()*5 + np.array([x_disp, y_disp])
 
-    return np.array(polygon)
+    return polygon
 
 
 def gmsh_settings() -> None:
