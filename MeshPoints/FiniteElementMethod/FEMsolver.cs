@@ -46,9 +46,8 @@ namespace MeshPoints.FiniteElementMethod
             pManager.AddGenericParameter("u1", "u1", "Displacement of nodes in u1 dir", GH_ParamAccess.list);
             pManager.AddGenericParameter("u2", "u2", "Displacement of nodes in u2 dir", GH_ParamAccess.list);
             pManager.AddGenericParameter("u3", "u3", "Displacement of node in u3 dir", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Nodal stress", "node stress", "List of stress components for each node.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Element mises stress", "element mises", "List of element mises stress.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Node mises stress", "node mises", "List of node mises stress.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Element stress", "element mises", "List of element von Mises stress.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Node stress", "node mises", "List of node von Mises stress.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -138,9 +137,9 @@ namespace MeshPoints.FiniteElementMethod
             DA.SetDataList(0, u1);
             DA.SetDataList(1, u2);
             DA.SetDataList(2, u3);
-            DA.SetDataList(3, nodalStress);
-            DA.SetDataList(4, elementMises);
-            DA.SetDataList(5, nodalMises);
+            //DA.SetDataList(3, nodalStress);
+            DA.SetDataList(3, elementMises);
+            DA.SetDataList(4, nodalMises);
         }
 
         #region Methods
@@ -197,7 +196,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             //Numerical integration
-           LA.Matrix<double> gaussNodes = _FEM.GetGaussPoints((double)Math.Sqrt((double)1 / (double)3), 3);
+           LA.Matrix<double> gaussNodes = _FEM.GetNaturalCoordinate((double)Math.Sqrt((double)1 / (double)3), 3);
 
            for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
@@ -423,7 +422,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // get node strain and stress by extrapolation
-            LA.Matrix<double> extrapolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3),3);
+            LA.Matrix<double> extrapolationNodes = _FEM.GetNaturalCoordinate(Math.Sqrt(3),3);
 
             for (int n = 0; n < B_local.Count; n++)
             { 
@@ -533,7 +532,7 @@ namespace MeshPoints.FiniteElementMethod
             double range = (maxValue - minValue) / (double) 13;
             for (int i = 0; i < mesh.Nodes.Count; i++)
             {
-                // to do: change, for likt synne
+                // to do: Reference Synne, same color mapping
                 if (mises[i] < minValue + range) color = Color.Blue;
                 else if (mises[i] < minValue + 2 * range) color = Color.RoyalBlue;
                 else if (mises[i] < minValue + 3 * range) color = Color.DeepSkyBlue;

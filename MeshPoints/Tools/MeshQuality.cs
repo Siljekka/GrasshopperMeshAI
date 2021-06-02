@@ -74,7 +74,7 @@ namespace MeshPoints.Tools
                 elementQuality.AspectRatio = CalculateAspectRatio(e);
                 //elementQuality.AspectRatio = CalculateAspectRatioAnsys(e); // to do: slett, old
                 elementQuality.Skewness = CalculateSkewness(e);
-                elementQuality.JacobianRatio = CalculateJacobianRatio(e);                
+                elementQuality.JacobianRatio = CalculateJacobianRatio(e);
                 //elementQuality.JacobianRatio = CalculateJacobianOf8NodeElementOLD(e); // to do: slett, old          
                 //elementQuality.JacobianRatio = CalculateJacobianOfQuadElementOLD(e);    // to do: slett, old             
 
@@ -322,7 +322,7 @@ namespace MeshPoints.Tools
                 nodeCoordinates.Add(node.Coordinate);
             }
 
-            // Project nodes to planar surface 
+            // Project nodes to planar surface if quads
             if (element.Type == "Quad")
             {
                 nodeCoordinates = TransformQuadSurfaceTo2DPoints(nodeCoordinates);
@@ -341,7 +341,7 @@ namespace MeshPoints.Tools
 
             // Calculate the Jacobian determinant of each node
             List<double> jacobiansOfElement = new List<double>();
-            Matrix<double> gaussNodes = _FEM.GetGaussPoints(1, nodeDOFS);
+            Matrix<double> gaussNodes = _FEM.GetNaturalCoordinate(1, nodeDOFS);
 
             for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
