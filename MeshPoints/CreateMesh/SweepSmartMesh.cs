@@ -234,14 +234,27 @@ namespace MeshPoints.CreateMesh
                     List<int> connectivity = new List<int>();
                     Element refElement = refMesh.Elements[j];
 
-                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * (i+1));
-                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * (i+1));
-                    connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i+1));
-                    connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * (i+1));
+                    if (refMesh.Elements[0].Type == "Triangle")
+                    {
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i + 1));
+                    }
+                    else 
+                    {
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * (i + 1));
+
+                    }
 
                     foreach (int id in connectivity)
                     {

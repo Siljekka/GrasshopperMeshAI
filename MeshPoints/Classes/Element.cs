@@ -111,6 +111,14 @@ namespace MeshPoints.Classes
             {
                 mesh.Faces.AddFace(0, 1, 2);
             }
+            else if (this.Type == "Tet")
+            {
+                mesh.Faces.AddFace(0, 1, 2);
+                mesh.Faces.AddFace(3, 4, 5);
+                mesh.Faces.AddFace(0, 1, 4, 3);
+                mesh.Faces.AddFace(1, 2, 5, 4);
+                mesh.Faces.AddFace(2, 0, 3, 5);
+            }
 
             mesh.Compact(); //to ensure that it calculate
             mesh.FaceNormals.ComputeFaceNormals();

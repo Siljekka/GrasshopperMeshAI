@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Rhino.Geometry;
 using MathNet.Numerics.LinearAlgebra;
+using Rhino.Geometry.Collections;
 
 namespace MeshPoints.Classes
 {
@@ -212,7 +213,6 @@ namespace MeshPoints.Classes
                     int g = element.Connectivity[6];
                     int h = element.Connectivity[7];
 
-
                     mesh.Faces.AddFace(a, b, f, e);
                     mesh.Faces.AddFace(b, c, g, f);
                     mesh.Faces.AddFace(c, d, h, g);
@@ -226,6 +226,17 @@ namespace MeshPoints.Classes
                 foreach (Element element in this.Elements)
                 {
                     mesh.Faces.AddFace(element.Connectivity[0], element.Connectivity[1], element.Connectivity[2]);
+                }
+            }
+            else if (this.Elements[0].Type == "Tet")
+            {
+                foreach (Element element in this.Elements)
+                {
+                    MeshFaceList facelist = element.Mesh.Faces;
+                    foreach (MeshFace face in facelist)
+                    {
+                        mesh.Faces.AddFace(face);
+                    }
                 }
             }
 
