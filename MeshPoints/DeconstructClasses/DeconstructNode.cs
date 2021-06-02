@@ -6,7 +6,7 @@ using MeshPoints.Classes;
 
 // Deconstruct the class Node
 
-namespace MeshPoints
+namespace MeshPoints.DeconstructClasses
 {
     public class Deconstruct_Node : GH_Component
     {

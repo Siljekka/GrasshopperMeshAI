@@ -137,7 +137,6 @@ namespace MeshPoints.FiniteElementMethod
             DA.SetDataList(0, u1);
             DA.SetDataList(1, u2);
             DA.SetDataList(2, u3);
-            //DA.SetDataList(3, nodalStress);
             DA.SetDataList(3, elementMises);
             DA.SetDataList(4, nodalMises);
         }
