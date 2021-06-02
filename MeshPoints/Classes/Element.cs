@@ -16,6 +16,7 @@ namespace MeshPoints.Classes
         public Quality MeshQuality { get; set; }
         public int Id { get; set; }
         public Mesh Mesh { get; set; }
+        public List<double> JacDet { get; set; }
 
         //Constructer
 
@@ -61,7 +62,7 @@ namespace MeshPoints.Classes
             List<List<Node>> Faces = new List<List<Node>>();
             List<Node> nodes = this.Nodes;
 
-            if (this.Type == "Quad") // surface
+            if (this.Type == "Quad" | this.Nodes.Count == 3) // surface
             {
                 Faces.Add(nodes);
             }
