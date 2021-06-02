@@ -49,7 +49,6 @@ namespace MeshPoints.Tools
         {
             pManager.AddGenericParameter("SmartMesh", "sm", "Updated mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Nodes", "m", "", GH_ParamAccess.list); // to do : slett
         }
 
         /// <summary>
@@ -79,6 +78,7 @@ namespace MeshPoints.Tools
             double overlapTolerance = 0.95; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
             List<Node> newNodes = new List<Node>();
 
+            // to do: fix return criterias...
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) { return; }
@@ -121,10 +121,7 @@ namespace MeshPoints.Tools
                             else { genU = genesU[i - 1]; }
 
                             int nodeIndex = i + j * oldMesh.nu + k * oldMesh.nu * oldMesh.nv;
-                            if (nodeIndex == 84)
-                            { 
-                            
-                            }
+
                             Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                             Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                             Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
@@ -185,29 +182,16 @@ namespace MeshPoints.Tools
                             if (gridGroup[j][i].Type == "Merged")
                             {
                                 tempPoint = oldPoint;
-                                //tempPointFront = gridGroup[j + 1][i].Coordinate;
-                                //tempPointBack = gridGroup[j - 1][i].Coordinate;
                             }
                             
-                            if (gridGroup[j+1][i].Type == "Merged")
-                            {
-                                //tempPointFront = gridGroup[j + 1][i].Coordinate;
-                            }
-                            if (gridGroup[j - 1][i].Type == "Merged")
-                            {
-                                //tempPointBack = gridGroup[j - 1][i].Coordinate;
-                            }
-
 
                             if (gene >= 0) 
                             {
-                                //translation = 0.5 * (gridGroup[j + 1][i].Coordinate - tempPoint) * gene * overlapTolerance;
                                 translation = 0.5 * (tempPointFront - tempPoint) * gene * overlapTolerance;
 
                             }
                             else
                             {
-                                //translation = 0.5 * (tempPoint - gridGroup[j - 1][i].Coordinate) * gene * overlapTolerance;
                                 translation = 0.5 * (tempPoint - tempPointBack) * gene * overlapTolerance;
                             }
 
@@ -232,12 +216,9 @@ namespace MeshPoints.Tools
                 newMesh = new SmartMesh(newNodes, newElements, "Surface");
             }
 
-
-
             // Output
             DA.SetData(0, newMesh);
             DA.SetData(1, newMesh.Mesh);
-            DA.SetDataList(2, newNodes);
         }
         #region Methods
 

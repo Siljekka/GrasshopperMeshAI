@@ -90,7 +90,7 @@ namespace MeshPoints.CreateMesh
             // 5. Sometimes the mesh acts up; in these cases it is necessary to cull mesh faces that are outside the surface.
             Mesh culledTriangleMesh = CullMeshFacesOutsideSurface(triangleMesh, meshSurface);
             
-            if (culledTriangleMesh.IsValid == false)
+            if (!culledTriangleMesh.IsValid)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The mesh is invalid. Check for duplicate points.");
             }
