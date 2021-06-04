@@ -83,9 +83,9 @@ def simple_procrustes(contour: np.array) -> dict:
     # Transformed contour given by P = p_scaled * rotation_matrix
     transformed_contour = p_scaled @ rotation_matrix
 
-    assert(np.allclose(contour,
+    assert np.allclose(contour,
                        transformed_contour @ rotation_matrix.T
-                       * (1/scale_factor) + translation))
+                       * (1/scale_factor) + translation), "Input contour does not match inverse transformed, transformed contour."
 
     return {
         "contour": transformed_contour,
@@ -117,11 +117,11 @@ def create_random_ngon(number_of_sides: int) -> np.array:
     """
 
     polygon = []
-    quantile = 2 * pi / number_of_sides
+    quantile = 1 / number_of_sides
     exclude = 0.2
     for n in range(number_of_sides):
         r = random() * (1 - exclude) + exclude  # mapping random from 0->1 to ex->1
-        theta = 2 * pi * n / number_of_sides + random() * quantile
+        theta = 2 * pi * (n / number_of_sides + random() * quantile)
         polygon.append([r * cos(theta), r * sin(theta)])
 
     return np.array(polygon)
