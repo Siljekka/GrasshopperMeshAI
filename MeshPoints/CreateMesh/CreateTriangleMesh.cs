@@ -28,7 +28,7 @@ namespace MeshPoints.CreateMesh
         {
             pManager.AddBrepParameter("Brep surface", "b", "Insert brep of surface.", GH_ParamAccess.item);
             pManager.AddGenericParameter("Edge Node Count", "c", "Insert wanted amount of edge nodes. Note that this is only a target value.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Inner Nodes", "n", "Insert a list with inner nodes.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Inner Nodes", "n", "Insert a list with inner points.", GH_ParamAccess.list);
         }
 
         /// <summary>
