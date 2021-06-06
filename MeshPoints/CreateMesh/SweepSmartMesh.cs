@@ -263,24 +263,6 @@ namespace MeshPoints.CreateMesh
 
                     Element element = new Element(elemId, elementNodes, connectivity);
 
-                    // create local mesh
-                    Mesh localMesh = new Mesh();
-                    foreach (Node node in elementNodes)
-                    {
-                        localMesh.Vertices.Add(node.Coordinate); 
-                    }
-                    localMesh.Faces.AddFace(0, 1, 5, 4);
-                    localMesh.Faces.AddFace(1, 2, 6, 5);
-                    localMesh.Faces.AddFace(2, 3, 7, 6);
-                    localMesh.Faces.AddFace(3, 0, 4, 7);
-                    localMesh.Faces.AddFace(0, 1, 2, 3);
-                    localMesh.Faces.AddFace(4, 5, 6, 7);
-
-                    localMesh.Normals.ComputeNormals();
-                    localMesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-                    localMesh.Compact(); // to ensure that it calculate
-                    element.Mesh = localMesh;
-
                     //add element and mesh to element list
                     elements.Add(element);
                     elemId++;

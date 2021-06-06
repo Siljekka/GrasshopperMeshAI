@@ -232,12 +232,19 @@ namespace MeshPoints.Classes
             {
                 foreach (Element element in this.Elements)
                 {
-                    MeshFaceList facelist = element.Mesh.Faces;
-                    foreach (MeshFace face in facelist)
-                    {
-                        mesh.Faces.AddFace(face);
-                    }
-                }
+                    int a = element.Connectivity[0];
+                    int b = element.Connectivity[1];
+                    int c = element.Connectivity[2];
+                    int d = element.Connectivity[3];
+                    int e = element.Connectivity[4];
+                    int f = element.Connectivity[5];
+
+                    mesh.Faces.AddFace(a, b, c);
+                    mesh.Faces.AddFace(d, e, f);
+                    mesh.Faces.AddFace(a, b, e, d);
+                    mesh.Faces.AddFace(b, c, f, e);
+                    mesh.Faces.AddFace(c, a, d, f);
+                }               
             }
 
             mesh.Normals.ComputeNormals();
