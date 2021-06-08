@@ -4,6 +4,7 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshQualityMoveInternal;
+using MeshPoints.Tools;
 
 namespace MeshPoints.MachineLearning
 {
@@ -41,52 +42,52 @@ namespace MeshPoints.MachineLearning
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            Mesh2D mesh = new Mesh2D();
+            SmartMesh mesh = new SmartMesh();
 
             DA.GetData(0, ref mesh);
 
-            // 0. input: 16 node, 4 internal nodes, square [0,1]
+            // 0. input: 16 node, 4 internal nodes, square [-1,1]
             // 1. Extract nodes in a consistent way.
             List<Node> nodeList = mesh.Nodes;
             // 2. Transform nodes (procrustes) to get normalized input (can skip this for now).
             // 3. Predict using model from ML.NET.
             ModelInput nodeData = new ModelInput()
             {
-                X1 = Convert.ToSingle(nodeList[0].Coordinate.X),
-                Y1 = Convert.ToSingle(nodeList[0].Coordinate.Y),
-                X2 = Convert.ToSingle(nodeList[1].Coordinate.X),
-                Y2 = Convert.ToSingle(nodeList[1].Coordinate.Y),
-                X3 = Convert.ToSingle(nodeList[2].Coordinate.X),
-                Y3 = Convert.ToSingle(nodeList[2].Coordinate.Y),
-                X4 = Convert.ToSingle(nodeList[3].Coordinate.X),
-                Y4 = Convert.ToSingle(nodeList[3].Coordinate.Y),
-                X5 = Convert.ToSingle(nodeList[4].Coordinate.X),
-                Y5 = Convert.ToSingle(nodeList[4].Coordinate.Y),
-                X6 = Convert.ToSingle(nodeList[5].Coordinate.X),
-                Y6 = Convert.ToSingle(nodeList[5].Coordinate.Y),
-                X7 = Convert.ToSingle(nodeList[6].Coordinate.X),
-                Y7 = Convert.ToSingle(nodeList[6].Coordinate.Y),
-                X8 = Convert.ToSingle(nodeList[7].Coordinate.X),
-                Y8 = Convert.ToSingle(nodeList[7].Coordinate.Y),
-                X9 = Convert.ToSingle(nodeList[8].Coordinate.X),
-                Y9 = Convert.ToSingle(nodeList[8].Coordinate.Y),
-                X10 = Convert.ToSingle(nodeList[9].Coordinate.X),
-                Y10 = Convert.ToSingle(nodeList[9].Coordinate.Y),
-                X11 = Convert.ToSingle(nodeList[10].Coordinate.X),
-                Y11 = Convert.ToSingle(nodeList[10].Coordinate.Y),
-                X12 = Convert.ToSingle(nodeList[11].Coordinate.X),
-                Y12 = Convert.ToSingle(nodeList[11].Coordinate.Y),
-                X13 = Convert.ToSingle(nodeList[12].Coordinate.X),
-                Y13 = Convert.ToSingle(nodeList[12].Coordinate.Y),
-                X14 = Convert.ToSingle(nodeList[13].Coordinate.X),
-                Y14 = Convert.ToSingle(nodeList[13].Coordinate.Y),
-                X15 = Convert.ToSingle(nodeList[14].Coordinate.X),
-                Y15 = Convert.ToSingle(nodeList[14].Coordinate.Y),
-                X16 = Convert.ToSingle(nodeList[15].Coordinate.X),
-                Y16 = Convert.ToSingle(nodeList[15].Coordinate.Y)
+                //X1 = Convert.ToSingle(nodeList[0].Coordinate.X),
+                //Y1 = Convert.ToSingle(nodeList[0].Coordinate.Y),
+                //X2 = Convert.ToSingle(nodeList[1].Coordinate.X),
+                //Y2 = Convert.ToSingle(nodeList[1].Coordinate.Y),
+                //X3 = Convert.ToSingle(nodeList[2].Coordinate.X),
+                //Y3 = Convert.ToSingle(nodeList[2].Coordinate.Y),
+                //X4 = Convert.ToSingle(nodeList[3].Coordinate.X),
+                //Y4 = Convert.ToSingle(nodeList[3].Coordinate.Y),
+                X5 = Convert.ToSingle(nodeList[5].Coordinate.X),
+                Y5 = Convert.ToSingle(nodeList[5].Coordinate.Y),
+                X6 = Convert.ToSingle(nodeList[9].Coordinate.X),
+                Y6 = Convert.ToSingle(nodeList[9].Coordinate.Y),
+                //X7 = Convert.ToSingle(nodeList[6].Coordinate.X),
+                //Y7 = Convert.ToSingle(nodeList[6].Coordinate.Y),
+                //X8 = Convert.ToSingle(nodeList[7].Coordinate.X),
+                //Y8 = Convert.ToSingle(nodeList[7].Coordinate.Y),
+                X9 = Convert.ToSingle(nodeList[6].Coordinate.X),
+                Y9 = Convert.ToSingle(nodeList[6].Coordinate.Y),
+                X10 = Convert.ToSingle(nodeList[10].Coordinate.X),
+                Y10 = Convert.ToSingle(nodeList[10].Coordinate.Y),
+                //X11 = Convert.ToSingle(nodeList[10].Coordinate.X),
+                //Y11 = Convert.ToSingle(nodeList[10].Coordinate.Y),
+                //X12 = Convert.ToSingle(nodeList[11].Coordinate.X),
+                //Y12 = Convert.ToSingle(nodeList[11].Coordinate.Y),
+                //X13 = Convert.ToSingle(nodeList[12].Coordinate.X),
+                //Y13 = Convert.ToSingle(nodeList[12].Coordinate.Y),
+                //X14 = Convert.ToSingle(nodeList[13].Coordinate.X),
+                //Y14 = Convert.ToSingle(nodeList[13].Coordinate.Y),
+                //X15 = Convert.ToSingle(nodeList[14].Coordinate.X),
+                //Y15 = Convert.ToSingle(nodeList[14].Coordinate.Y),
+                //X16 = Convert.ToSingle(nodeList[15].Coordinate.X),
+                //Y16 = Convert.ToSingle(nodeList[15].Coordinate.Y)
             };
-            // 4. Output predicted quality.
-            //    *** Assert deviation between predicted and actual value. ??
+            //// 4. Output predicted quality.
+            ////    *** Assert deviation between predicted and actual value. ??
 
             var predictedQuality = Convert.ToDouble(ConsumeModel.Predict(nodeData).Score);
             DA.SetData(0, predictedQuality);
