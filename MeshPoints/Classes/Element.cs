@@ -71,7 +71,7 @@ namespace MeshPoints.Classes
                 List<List<int>> nodeIndex = new List<List<int>>
                 {
                       new List<int> {0, 1, 5, 4}, new List<int> {1, 2, 6, 5}, new List<int> {2, 3, 7, 6},
-                      new List<int> { 3, 0, 4, 7 }, new List<int> { 0, 1, 2, 3 },  new List<int> { 4, 5, 6, 7 }
+                      new List<int> { 3, 0, 4, 7 }, new List<int> { 0, 3, 2, 1 },  new List<int> { 4, 5, 6, 7 }
                 };
   
                 foreach (List<int> indices in nodeIndex)

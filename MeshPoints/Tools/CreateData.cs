@@ -90,15 +90,17 @@ namespace MeshPoints.Tools
 
                     // 1. Add quality measure to string.
                     double qualityRound = Math.Round(avgQuality, 3);
-                    stringBuilder.Append(String.Format("{0}", qualityRound));
+                    double qualityRound1 = Math.Round(minQuality, 3);
+                    stringBuilder.Append(String.Format("{0}", qualityRound)); // AR
+                    stringBuilder.Append(String.Format(",{0}", qualityRound1)); // JR
 
                     // 2. Feature for each x and y node coordinate
                     for (int i = 0; i < nodes.Count; i++)
                     {
-                        if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
+                        //if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
                         double x = Math.Round(nodes[i].Coordinate.X, 2);
                         double y = Math.Round(nodes[i].Coordinate.Y, 2);
-                        string text = String.Format(",{0},{1},{2}", x, y, 0); // temporary 0
+                        string text = String.Format(",{0},{1}", x, y); // temporary 0
                         stringBuilder.Append(text);
                     }
                 }
@@ -111,10 +113,8 @@ namespace MeshPoints.Tools
                     }
 
                     // 1. Add quality measure to string.
-                    double qualityRound = Math.Round(avgQuality, 3); 
-                    double qualityRound1 = Math.Round(minQuality, 3);
-                    stringBuilder.Append(String.Format("{0}", qualityRound)); // AR
-                    stringBuilder.Append(String.Format(",{0}", qualityRound1)); // JR
+                    stringBuilder.Append(String.Format("{0}", avgQuality)); // AR
+                    stringBuilder.Append(String.Format(",{0}", minQuality)); // JR
 
                     // 2. Feature for each x and y node coordinate
                     for (int i = 0; i < nodes.Count; i++)
@@ -238,13 +238,14 @@ namespace MeshPoints.Tools
         private StringBuilder AddHeader(SmartMesh mesh, string filePath, int structureType)
         {
             StringBuilder header = new StringBuilder();
+
             if (structureType == 1)
             {
-                header.Append("avgQuality");
+                header.Append("avgAR,avgJR");
                 int nodes = 1;
                 for (int i = 0; i < mesh.Nodes.Count; i++)
                 {
-                    if (mesh.Nodes[i].BC_U & mesh.Nodes[i].BC_V) { continue; }
+                    //if (mesh.Nodes[i].BC_U & mesh.Nodes[i].BC_V) { continue; }
                     header.Append(String.Format(",x{0},y{0}", nodes));
                     nodes++;
                 }
