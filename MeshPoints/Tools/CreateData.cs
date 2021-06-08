@@ -34,6 +34,7 @@ namespace MeshPoints.Tools
             pManager.AddGenericParameter("AvgQuality", "avgQ", "Average quality of mesh.", GH_ParamAccess.item);
             pManager.AddGenericParameter("MinQuality", "minQ", "Minimum quality of mesh.", GH_ParamAccess.item);
             pManager.AddGenericParameter("TargetLength", "target", "Target length of mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Brep", "br", "Brep.", GH_ParamAccess.item);
             pManager[5].Optional = true;
             pManager[6].Optional = true;
         }
@@ -58,6 +59,7 @@ namespace MeshPoints.Tools
             double avgQuality = 100;
             double minQuality = 100;
             double target = 0;
+            Brep inputBrep = new Brep();
 
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref structureType);
@@ -66,6 +68,7 @@ namespace MeshPoints.Tools
             DA.GetData(4, ref avgQuality);
             DA.GetData(5, ref minQuality);
             DA.GetData(6, ref target);
+            DA.GetData(7, ref inputBrep);
 
             // 0. Check input
             if (!DA.GetData(0, ref mesh)) return;
@@ -88,17 +91,27 @@ namespace MeshPoints.Tools
                         header = AddHeader(mesh, filePath, 1);
                     }
 
-                    // 1. Add quality measure to string.
+                    // 0. Add quality measure to string.
                     double qualityRound = Math.Round(avgQuality, 3);
                     stringBuilder.Append(String.Format("{0}", qualityRound));
 
-                    // 2. Feature for each x and y node coordinate
+                    // 1. Add ordered contour nodes
+                    //foreach (int j = 0; j<inputBrep.Vertices.Count; j++)
+                    foreach ( var boundaryNode in inputBrep.Vertices)
+                    {
+                        double _x = boundaryNode.Location.X;
+                        double _y = boundaryNode.Location.Y;
+                        string text = String.Format(",{0},{1}", _x, _y); 
+                        stringBuilder.Append(text);
+                    }
+
+                    // 2. Feature for each internal x and y node coordinate
                     for (int i = 0; i < nodes.Count; i++)
                     {
-                        if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
-                        double x = Math.Round(nodes[i].Coordinate.X, 2);
-                        double y = Math.Round(nodes[i].Coordinate.Y, 2);
-                        string text = String.Format(",{0},{1},{2}", x, y, 0); // temporary 0
+                       if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
+                        double x = nodes[i].Coordinate.X;
+                        double y = nodes[i].Coordinate.Y;
+                        string text = String.Format(",{0},{1}", x, y); 
                         stringBuilder.Append(text);
                     }
                 }
@@ -198,8 +211,8 @@ namespace MeshPoints.Tools
                     for (int i = 0; i < nodes.Count; i++)
                     {
                         if (nodes[i].BC_U & nodes[i].BC_V) { continue; }
-                        double x = Math.Round(nodes[i].Coordinate.X, 2);
-                        double y = Math.Round(nodes[i].Coordinate.Y, 2);
+                        double x = Math.Round(nodes[i].Coordinate.X, 3);
+                        double y = Math.Round(nodes[i].Coordinate.Y, 3);
                         string text = String.Format(",{0},{1}", x, y); // todo: fix Z?
                         stringBuilder.Append(text);
                     }
@@ -274,13 +287,16 @@ namespace MeshPoints.Tools
             StringBuilder header = new StringBuilder();
             if (structureType == 1)
             {
+                // !! Warning, TODO: this code is currently handcarved for making 8node 3 internal meshes. dont push this anywhere
                 header.Append("avgQuality");
-                int nodes = 1;
-                for (int i = 0; i < mesh.Nodes.Count; i++)
+                for (int i = 0; i < 8; i++)
                 {
-                    if (mesh.Nodes[i].BC_U & mesh.Nodes[i].BC_V) { continue; }
-                    header.Append(String.Format(",x{0},y{0}", nodes));
-                    nodes++;
+                    //if (mesh.Nodes[i].BC_U & mesh.Nodes[i].BC_V) { continue; }
+                    header.Append(String.Format(",x{0},y{0}", i));
+                }
+                for (int j = 0; j<3; j++)
+                {
+                    header.Append(String.Format(",ix{0},iy{0}", j));
                 }
             }
             else if (structureType == 3)
