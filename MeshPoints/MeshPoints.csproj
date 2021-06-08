@@ -39,6 +39,9 @@
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="MachineLearning\MLNET\MeshQualityMoveInternal\MeshQualityMoveInternal.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="CSparse, Version=3.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\CSparse.3.5.0\lib\net45\CSparse.dll</HintPath>
     </Reference>
@@ -162,6 +165,7 @@
     <Compile Include="Classes\qConstants.cs" />
     <Compile Include="CreateMesh\CreateSurfaceMesh %28TargetLength%29.cs" />
     <Compile Include="MachineLearning\CreateTriangleMeshML.cs" />
+    <Compile Include="MachineLearning\MeshQualityML.cs" />
     <Compile Include="Mesh_outdated\BrepPoints.cs" />
     <Compile Include="Classes\Geometry.cs" />
     <Compile Include="Classes\Material.cs" />
@@ -266,7 +270,9 @@
     <None Include="Properties\Resources\Icon_TargetLength.png" />
     <Content Include="Properties\Resources\Icon_Triangle.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="MachineLearning\MLNET\MeshQualityMoveInternal\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
