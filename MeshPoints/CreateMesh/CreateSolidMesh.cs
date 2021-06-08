@@ -17,7 +17,7 @@ namespace MeshPoints.CreateMesh
         /// Initializes a new instance of the CreateSolidMesh_Sweep class.
         /// </summary>
         public CreateSolidMesh()
-          : base("CreateSolidMesh", "solid",
+          : base("Solid SmartMesh", "solid",
               "Generate solid mesh. Independent on how surface composing the brep is made.",
               "SmartMesh", "Mesh")
         {

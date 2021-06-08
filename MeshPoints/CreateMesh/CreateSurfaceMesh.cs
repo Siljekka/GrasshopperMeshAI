@@ -17,7 +17,7 @@ namespace MeshPoints.CreateMesh
         /// Initializes a new instance of the CreateSurfaceMesh class.
         /// </summary>
         public CreateSurfaceMesh()
-          : base("CreateSurfaceMesh", "surface",
+          : base("Surface SmartMesh", "surface",
               "Mesh a surface with a specified number of divisions in u- and v-direction.",
               "SmartMesh", "Mesh")
         {
