@@ -87,10 +87,10 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     # ===========================
     print(f"=== Training NN1 for edge count: {edge_count} ===\n")
 
-    log_dir = f"logs/{model_path}/" + \
-        datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = f"logs/{model_path}-" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = tf.keras.callbacks.TensorBoard(
         log_dir=log_dir, histogram_freq=1)
+
     checkpoint = tf.keras.callbacks.ModelCheckpoint(
         model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min')
 
@@ -160,7 +160,7 @@ def NN2_training(edge_count: int, internal_node_count: int, raw_data: list):
     model = NN2_model_setup(edge_count)
 
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-        1e-1, 1000, 3e-4)
+        1e-1, 10000, 1e-3)
     model.compile(loss=tf.losses.MeanSquaredError(),
                   optimizer=tf.optimizers.Adam(
                   learning_rate=lr_schedule,
@@ -177,8 +177,8 @@ def NN2_training(edge_count: int, internal_node_count: int, raw_data: list):
         model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min')
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor='val_loss', mode='min', patience=epochs//5, min_delta=0.001)
-    log_dir = f"logs/{model_path}/" + \
-        datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+    log_dir = f"logs/{model_path}-" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = tf.keras.callbacks.TensorBoard(
         log_dir=log_dir, histogram_freq=1)
 
@@ -190,6 +190,7 @@ def NN2_training(edge_count: int, internal_node_count: int, raw_data: list):
                         verbose=0,
                         callbacks=[checkpoint, early_stopping, tensorboard],
                         )
+
     # ===========================
     #        EVALUATION
     # ===========================
