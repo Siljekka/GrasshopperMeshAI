@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 import pre_processing as pp
 import point_grid as pg
@@ -9,7 +10,7 @@ TARGET_EDGE_LENGTH = 0.4
 DATASET_SIZE = {
     4: 10,
     6: 12000,
-    8: 100,
+    8: 24000,
     10: 48000,
     12: 95000,
 }
@@ -55,10 +56,10 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     training_set = dataset.sample(frac=0.85)
     test_set = dataset.drop(training_set.index)
 
-    train_features = training_set.iloc[:, :12]
+    train_features = training_set.iloc[:, :edge_count*2]
     train_labels = training_set.iloc[:, -1:]
 
-    test_features = test_set.iloc[:, :12]
+    test_features = test_set.iloc[:, :edge_count*2]
     test_labels = test_set.iloc[:, -1:]
 
     # ===========================
@@ -67,12 +68,12 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     epochs = 3000
     batch_size = 512
 
-    model_path = f"auto-model/nn1-{edge_count}"
-    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-        1e-2, 10_000, 3e-4
-    )
+    model_path = f"auto-model/nn1-{edge_count}gon"
 
     model = NN1_model_setup(edge_count)
+
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        1e-2, 10_000, 3e-4)
     model.compile(
         loss=tf.losses.MeanAbsoluteError(),
         optimizer=tf.optimizers.Adam(
@@ -83,15 +84,15 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     # ===========================
     #          TRAINING
     # ===========================
+    print(f"=== Training NN1 for edge count: {edge_count} ===\n")
     checkpoint = tf.keras.callbacks.ModelCheckpoint(
-        model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min'
-    )
+        model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min')
     history = model.fit(train_features,
                         train_labels,
                         epochs=epochs,
                         batch_size=batch_size,
                         validation_split=0.18,
-                        verbose=2,
+                        verbose=0,
                         callbacks=[checkpoint],
                         )
 
@@ -103,7 +104,7 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     test_acc = model.evaluate(
         test_features, test_labels, verbose=0)
 
-    print(f"=== Loss of nn1 with edge count {edge_count}")
+    print(f"=== Loss of NN1 with edge count {edge_count}")
     print(f"Training loss: {train_acc}, Test loss: {test_acc}")
 
     return history
@@ -135,53 +136,128 @@ def NN2_training(edge_count: int, internal_node_count: int, raw_data: list):
     training_set = dataset.sample(frac=0.85)
     test_set = dataset.drop(training_set.index)
 
-    # Split dataset into features and labels; last 4 (grid scores)
     train_features = training_set.iloc[:, :-4]
     train_labels = training_set.iloc[:, -4:]
 
     test_features = test_set.iloc[:, :-4]
     test_labels = test_set.iloc[:, -4:]
-    print(test_features)
+
+    # ===========================
+    #         MODEL SETUP
+    # ===========================
+    epochs = 5000
+    batch_size = 512
+
+    model_path = f"auto-model/nn2-{edge_count}gon-{internal_node_count}int"
+
+    model = NN2_model_setup(edge_count)
+
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        1e-1, 1000, 3e-4)
+    model.compile(loss=tf.losses.MeanSquaredError(),
+                  optimizer=tf.optimizers.Adam(
+                  learning_rate=lr_schedule,
+                  ),
+                  )
+
+    # ===========================
+    #          TRAINING
+    # ===========================
+    print(
+        f"=== Training NN2 for edge count: {edge_count} and inc: {internal_node_count} ===\n")
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(
+        model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min')
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor='val_loss', mode='min', patience=epochs//5, min_delta=0.0001)
+    history = model.fit(train_features,
+                        train_labels,
+                        epochs=epochs,
+                        batch_size=batch_size,
+                        validation_split=0.18,
+                        verbose=0,
+                        callbacks=[checkpoint, early_stopping],
+                        )
+    # ===========================
+    #        EVALUATION
+    # ===========================
+    train_acc = model.evaluate(
+        train_features, train_labels, verbose=0)
+    test_acc = model.evaluate(
+        test_features, test_labels, verbose=0)
+
+    print(
+        f"=== Loss of NN2 with edge count {edge_count}, internal node count {internal_node_count}")
+    print(f"Training loss: {train_acc}, Test loss: {test_acc}\n")
+
+    return history
 
 
 def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> list:
+    """
+    This function both creates the patch dataset for NN2 and trains NN2 on
+    several different number of internal nodes.
+
+    Returns a History object for each trained model.
+    """
+
     model_histories = []
 
     # Loop through different internal node counts
-    # for inc in range(1, 8):
-    # INTERNAL NODE COUNT = INC
-    inc = 1
+    for inc in range(1, 8):
+        # INTERNAL NODE COUNT = INC
+        inc = 1
 
-    # ===========================
-    #          DATASET
-    # ===========================
-    # Extract the internal node count column and use it to filter the dataset
-    # to only contain the rows with inc == wanted inc
-    inc_index = edge_count*2
-    inc_df = raw_data.iloc[:, inc_index]
-    df = raw_data[inc_df == float(inc)].dropna(axis=1, how="all")
-    dataset = df.drop(inc_index, axis=1)
+        # ===========================
+        #    PATCH DATA GENERATION
+        # ===========================
+        inc_index = edge_count*2
+        inc_df = raw_data.iloc[:, inc_index]
+        df = raw_data[inc_df == float(inc)].dropna(axis=1, how="all")
+        dataset = df.drop(inc_index, axis=1)
 
-    patch_dataset = pg.generate_patch_collection(
-        dataset,
-        edge_count=edge_count,
-        internal_count=inc
-    )
+        patch_dataset = pg.generate_patch_collection(
+            dataset,
+            edge_count=edge_count,
+            internal_count=inc
+        )
 
-    history = NN2_training(edge_count, inc, patch_dataset)
+        model_histories.append(NN2_training(edge_count, inc, patch_dataset))
     # return model_histories
-    pass
+    return model_histories
 
 
 if __name__ == "__main__":
-    edge_count = 4
+    # Suppress tensorflow runtime messages in terminal
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+    edge_count = 8
 
     # 1. Create dataset
-    print(f"=== Creating dataset for edge count = {edge_count} ===\n")
+    print(f"=== Creating dataset for edge count: {edge_count} ===\n")
     mesh_data = pre_processing(edge_count)
-    # 2. Train internal node count on nn1_training
-    nn1_training_history = []
-    nn2_training_history = []
-    print(NN2_wrapper(edge_count, mesh_data))
 
-    # 3. Create patch dataset for internal node count. Limit to 1-7 for 8gon
+    # 2. Train NN1
+    nn1_training_history = []
+    nn1_training_history.append(NN1_training(edge_count, mesh_data))
+
+    # 3. TRAIN NN2
+    nn2_training_history = []
+    nn2_training_history.append(NN2_wrapper(edge_count, mesh_data))
+
+    # ======================
+    #        PLOTTING
+    # ======================
+    for history in nn1_training_history:
+        plt.plot(history.history['loss'], label='training loss')
+        plt.plot(history.history['val_loss'], label='validation loss')
+        plt.legend()
+        plt.xlabel("Epochs")
+        plt.ylabel("MAE")
+
+    for history_set in nn2_training_history:
+        for history in history_set:
+            plt.plot(history.history['loss'], label='training loss')
+            plt.plot(history.history['val_loss'], label='validation loss')
+            plt.legend()
+            plt.xlabel("Epochs")
+            plt.ylabel("MSE")
