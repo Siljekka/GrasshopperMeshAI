@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import layers
+from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -85,15 +86,21 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     #          TRAINING
     # ===========================
     print(f"=== Training NN1 for edge count: {edge_count} ===\n")
+
+    log_dir = f"logs/{model_path}/" + \
+        datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard = tf.keras.callbacks.TensorBoard(
+        log_dir=log_dir, histogram_freq=1)
     checkpoint = tf.keras.callbacks.ModelCheckpoint(
         model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min')
+
     history = model.fit(train_features,
                         train_labels,
                         epochs=epochs,
                         batch_size=batch_size,
                         validation_split=0.18,
                         verbose=0,
-                        callbacks=[checkpoint],
+                        callbacks=[checkpoint, tensorboard],
                         )
 
     # ===========================
@@ -104,8 +111,8 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     test_acc = model.evaluate(
         test_features, test_labels, verbose=0)
 
-    print(f"=== Loss of NN1 with edge count {edge_count}")
-    print(f"Training loss: {train_acc}, Test loss: {test_acc}")
+    print(f"=== Loss of NN1 with edge count {edge_count} ===")
+    print(f"Training loss: {train_acc}, Test loss: {test_acc} \n")
 
     return history
 
@@ -165,17 +172,23 @@ def NN2_training(edge_count: int, internal_node_count: int, raw_data: list):
     # ===========================
     print(
         f"=== Training NN2 for edge count: {edge_count} and inc: {internal_node_count} ===\n")
+
     checkpoint = tf.keras.callbacks.ModelCheckpoint(
         model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min')
     early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor='val_loss', mode='min', patience=epochs//5, min_delta=0.0001)
+        monitor='val_loss', mode='min', patience=epochs//5, min_delta=0.001)
+    log_dir = f"logs/{model_path}/" + \
+        datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard = tf.keras.callbacks.TensorBoard(
+        log_dir=log_dir, histogram_freq=1)
+
     history = model.fit(train_features,
                         train_labels,
                         epochs=epochs,
                         batch_size=batch_size,
                         validation_split=0.18,
                         verbose=0,
-                        callbacks=[checkpoint, early_stopping],
+                        callbacks=[checkpoint, early_stopping, tensorboard],
                         )
     # ===========================
     #        EVALUATION
@@ -186,7 +199,7 @@ def NN2_training(edge_count: int, internal_node_count: int, raw_data: list):
         test_features, test_labels, verbose=0)
 
     print(
-        f"=== Loss of NN2 with edge count {edge_count}, internal node count {internal_node_count}")
+        f"=== Loss of NN2 with edge count {edge_count}, internal node count {internal_node_count} ===")
     print(f"Training loss: {train_acc}, Test loss: {test_acc}\n")
 
     return history
@@ -203,9 +216,8 @@ def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> list:
     model_histories = []
 
     # Loop through different internal node counts
-    for inc in range(1, 8):
+    for inc in range(2, 8):
         # INTERNAL NODE COUNT = INC
-        inc = 1
 
         # ===========================
         #    PATCH DATA GENERATION
@@ -228,7 +240,9 @@ def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> list:
 
 if __name__ == "__main__":
     # Suppress tensorflow runtime messages in terminal
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+    import os
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    tf.get_logger().setLevel('ERROR')
 
     edge_count = 8
 
@@ -237,8 +251,8 @@ if __name__ == "__main__":
     mesh_data = pre_processing(edge_count)
 
     # 2. Train NN1
-    nn1_training_history = []
-    nn1_training_history.append(NN1_training(edge_count, mesh_data))
+    # nn1_training_history = []
+    # nn1_training_history.append(NN1_training(edge_count, mesh_data))
 
     # 3. TRAIN NN2
     nn2_training_history = []
@@ -247,12 +261,12 @@ if __name__ == "__main__":
     # ======================
     #        PLOTTING
     # ======================
-    for history in nn1_training_history:
-        plt.plot(history.history['loss'], label='training loss')
-        plt.plot(history.history['val_loss'], label='validation loss')
-        plt.legend()
-        plt.xlabel("Epochs")
-        plt.ylabel("MAE")
+    # for history in nn1_training_history:
+    #     plt.plot(history.history['loss'], label='training loss')
+    #     plt.plot(history.history['val_loss'], label='validation loss')
+    #     plt.legend()
+    #     plt.xlabel("Epochs")
+    #     plt.ylabel("MAE")
 
     for history_set in nn2_training_history:
         for history in history_set:
