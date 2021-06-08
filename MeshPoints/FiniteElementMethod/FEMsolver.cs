@@ -200,7 +200,7 @@ namespace MeshPoints.FiniteElementMethod
            for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
                 // Substitute the natural coordinates into the symbolic expression
-                var r = gaussNodes.Row(n)[0];
+               var r = gaussNodes.Row(n)[0];
                var s = gaussNodes.Row(n)[1];
                var t = gaussNodes.Row(n)[2];
 

@@ -251,7 +251,7 @@ namespace MeshPoints.Tools
             }
             if (structureType == 2)
             {
-                header.Append("avgQuality");
+                header.Append("avgAR,avgJR");
                 int nodes = 1;
                 for (int i = 0; i < mesh.Nodes.Count; i++)
                 {
