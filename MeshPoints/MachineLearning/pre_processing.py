@@ -139,7 +139,7 @@ def create_random_displaced_ngon(number_of_sides: int) -> np.array:
     x_disp = random()*1000 - 500
     y_disp = random()*1000 - 500
 
-    polygon = np.array(polygon)*random()*5 + np.array([x_disp, y_disp])
+    polygon = np.array(polygon)*random()*100 + np.array([x_disp, y_disp])
 
     return polygon
 
@@ -157,7 +157,6 @@ def gmsh_settings() -> None:
 def mesh_contour(contour: np.array, target_edge_length: float):
     # Meshes a contour with a given edge length
     # Create a new model
-    # gmsh.initialize()
     gmsh.model.add("1")
 
     for i, p in enumerate(contour):
@@ -182,10 +181,8 @@ def mesh_contour(contour: np.array, target_edge_length: float):
 
     # Synchronize CAD entities (point, line, surface) with the gmsh-model
     gmsh.model.geo.synchronize()
-    # CharacteristicLengthFactor
     gmsh.option.set_number(
         "Mesh.CharacteristicLengthFactor", target_edge_length)
-    # gmsh.model.geo.mesh.setSize()
     gmsh.option.set_number("Mesh.Algorithm", 2)
 
     # Generate 2D mesh
@@ -195,8 +192,8 @@ def mesh_contour(contour: np.array, target_edge_length: float):
     num_nodes_total = mesh_nodes[0][-1]
     internal_nodes_count = int(num_nodes_total - contour.shape[0])
 
-    features = np.append(contour.copy(), target_edge_length)
-    features = np.append(features, internal_nodes_count)
+    # Get the coordinates of inserted internal nodes
+    features = np.append(contour.copy(), internal_nodes_count)
     if internal_nodes_count > 0:
         internal_nodes_with_z = mesh_nodes[1][-internal_nodes_count*3:]
         internal_nodes = [x for i, x in enumerate(
@@ -204,15 +201,9 @@ def mesh_contour(contour: np.array, target_edge_length: float):
         features = np.append(features, internal_nodes)
 
     # GUI (buggy on macOS)
-    # Display options:
-    gmsh.option.set_number("Mesh.Nodes", 1)
-    gmsh.option.set_number("Mesh.NodeSize", 10)
-    gmsh.option.set_number("Mesh.NodeLabels", 1)
     # if "-nopopup" not in sys.argv:
     #     gmsh.fltk.run()
-
     gmsh.clear()
-    # gmsh.finalize()
 
     return features
 
@@ -434,12 +425,16 @@ def plot_polygon(np_coords: np.array, style="") -> None:
     coords[0].append(coords[0][0])
     coords[1].append(coords[1][0])
 
-    plt.plot(coords[0], coords[1], style)
+    plt.plot(coords[0], coords[1], style, zorder=10)
     # Draw the first point as a red x
     # plt.plot(coords[0][0], coords[1][0], 'rx')
 
 
-def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: float) -> list:
+def generate_dataset(dataset_size: int, edge_count: int, target_edge_length: float) -> list:
+    # This helper function generates a dataset containing where each row has:
+    #   - the coordinates of a contour
+    #   - the number of nodes inserted by a reference mesher
+    #   - the coordinates of said nodes
 
     # Start a gmsh API session
     gmsh.initialize()
@@ -448,12 +443,12 @@ def generate_dataset(dataset_size: int, num_sides: int, target_edge_length: floa
     gmsh_settings()
     dataset = []
     for i in range(dataset_size):
-        print("meshing contour", i, "of", dataset_size, end="\r")
-        test_polygon = create_random_ngon(num_sides)
-        transformed_polygon = procrustes(test_polygon)
+        print("meshing contour", i+1, "of", dataset_size, end="\r")
+        random_ngon = create_random_ngon(edge_count)
+        transformed_polygon = simple_procrustes(random_ngon)
 
         dataset.append(mesh_contour(
-            transformed_polygon["transformed_contour"], target_edge_length))
+            transformed_polygon["contour"], target_edge_length))
 
     # Close API call
     gmsh.finalize()
