@@ -25,7 +25,7 @@ namespace MeshPoints.MachineLearning
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh2D", "m", "Insert Mesh2D class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "m", "Insert SmartMesh class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace MeshPoints.MachineLearning
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mean Quality", "jb", "Average Jacobian ratio of all elements", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Average Quality", "jb", "Average Jacobian ratio of all elements", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -47,10 +47,13 @@ namespace MeshPoints.MachineLearning
             DA.GetData(0, ref mesh);
 
             // 0. input: 16 node, 4 internal nodes, square [-1,1]
-            // 1. Extract nodes in a consistent way.
+            // 1. Extract nodes.
             List<Node> nodeList = mesh.Nodes;
+
             // 2. Transform nodes (procrustes) to get normalized input (can skip this for now).
-            // 3. Predict using model from ML.NET.
+            // We transform before input.
+            // 3. Predict using model from ML.NET. Don't look at it! :|
+            // NodeList indexes are weird because create surfaceMesh creates the mesh a bit weirdly.
             ModelInput nodeData = new ModelInput()
             {
                 //X1 = Convert.ToSingle(nodeList[0].Coordinate.X),
@@ -87,8 +90,6 @@ namespace MeshPoints.MachineLearning
                 //Y16 = Convert.ToSingle(nodeList[15].Coordinate.Y)
             };
             //// 4. Output predicted quality.
-            ////    *** Assert deviation between predicted and actual value. ??
-
             var predictedQuality = Convert.ToDouble(ConsumeModel.Predict(nodeData).Score);
             DA.SetData(0, predictedQuality);
 
