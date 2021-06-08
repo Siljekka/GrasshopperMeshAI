@@ -240,7 +240,6 @@ namespace MeshPoints.Tools
                 neighborPoint = 2;
             }
             
-            
             List<double> elementAngles = new List<double>();
             List<List<Node>> faces = element.GetFaces();
 
@@ -248,21 +247,24 @@ namespace MeshPoints.Tools
             {
                 // Create dublicated list of node
                 List<Node> nodesOfFace = new List<Node>(faces[i]);
-                nodesOfFace.AddRange(faces[i]);             
+                nodesOfFace.AddRange(faces[i]);
+                Vector3d faceNormal = element.Mesh.FaceNormals[i];
+                //if (element.Type == "Hex") { faceNormal.Reverse(); }
 
                 for (int n = 0; n < nodesOfFace.Count / 2; n++)
                 {
-                    // Create a vector from a vertex to a neighbouring vertex
+                   // Create a vector from a vertex to a neighbouring vertex
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
                     Vector3d vec2 = nodesOfFace[n].Coordinate - nodesOfFace[n + neighborPoint].Coordinate;
                     Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
-
+                    var vec3 = Vector3d.CrossProduct(vec1, vec2);
                     // Calculate angle
-                    double angleRad = Vector3d.VectorAngle(vec1, vec2, normal); 
+                    double angleRad = Vector3d.VectorAngle(vec1, vec2, normal);
+                    double testAngle = Vector3d.VectorAngle(Vector3d.CrossProduct(vec1, vec2), faceNormal);
+                    if (testAngle >= Math.PI / (double)2) { normal.Reverse(); angleRad = Vector3d.VectorAngle(vec1, vec2, normal); }
                     double angleDegree = angleRad * 180 / Math.PI; //convert from rad to deg
                     elementAngles.Add(angleDegree);
                 }
-
             }
 
             elementAngles.Sort();
@@ -381,7 +383,6 @@ namespace MeshPoints.Tools
                 Matrix<double> jacobianMatrix = shapeFunctionsDerivatedNatural.Multiply(globalCoordinates);
                 double jacobianDeterminant = jacobianMatrix.Determinant();
                 jacobiansOfElement.Add(jacobianDeterminant);
-                
             }
             List<double> a = new List<double>(jacobiansOfElement);
             element.JacDet = new List<double>(a);
@@ -545,8 +546,6 @@ namespace MeshPoints.Tools
         /// </summary>
         /// <param name="element">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
         /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
-        
-        
         double CalculateJacobianOfQuadElementOLD(Element e)
         {
             /*
@@ -732,19 +731,19 @@ namespace MeshPoints.Tools
                 case 1:
                     foreach (Quality q in qualityList)
                     {
-                        if (q.AspectRatio > 0.9)
+                        if (q.AspectRatio > 0.75) //0.9
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
-                        else if (q.AspectRatio > 0.5)
+                        else if (q.AspectRatio > 0.5) 
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.AspectRatio > 0.1)
+                        else if (q.AspectRatio > 0.1) 
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }
-                        else if (q.AspectRatio > 0)
+                        else if (q.AspectRatio > 0) 
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Red);
                         }
