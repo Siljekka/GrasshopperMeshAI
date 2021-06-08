@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using Microsoft.ML;
-using MeshPointsML.Model;
+using MeshQualityMoveInternal;
 
-namespace MeshPointsML.Model
+namespace MeshQualityMoveInternal
 {
     public class ConsumeModel
     {

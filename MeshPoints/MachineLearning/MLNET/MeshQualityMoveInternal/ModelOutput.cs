@@ -3,7 +3,7 @@
 using System;
 using Microsoft.ML.Data;
 
-namespace MeshPointsML.Model
+namespace MeshQualityMoveInternal
 {
     public class ModelOutput
     {
