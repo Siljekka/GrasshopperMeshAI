@@ -38,7 +38,9 @@ def simple_procrustes(contour: np.array) -> dict:
         contour,
         transformed_contour @ rotation_matrix.T * (1 / scale_factor) + translation,
     ), "Input contour does not match inverse transformed, transformed contour."
-
+    
+    # Inverse transformation:
+    # original_contour = contour @ rotation * scale + translation
     return {
         "contour": transformed_contour,
         "scale": (1 / scale_factor),
