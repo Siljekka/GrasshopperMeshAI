@@ -66,7 +66,7 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     epochs = 3000
     batch_size = 512
 
-    model_path = f"auto-model/nn1-{edge_count}gon"
+    model_path = f"model/nn1-{edge_count}gon"
 
     model = NN1_model_setup(edge_count)
 
@@ -81,7 +81,6 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     # ===========================
     #          TRAINING
     # ===========================
-    print(f"=== Training NN1 for edge count: {edge_count} ===\n")
 
     log_dir = f"logs/{model_path}-" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -149,7 +148,7 @@ def NN2_training(edge_count: int, raw_data: list) -> tf.keras.callbacks.History:
     epochs = 5000
     batch_size = 512
 
-    model_path = f"auto-model/nn2-{edge_count}gon"
+    model_path = f"model/nn2-{edge_count}gon"
 
     model = NN2_model_setup(edge_count)
 
@@ -199,19 +198,18 @@ def NN2_training(edge_count: int, raw_data: list) -> tf.keras.callbacks.History:
 
 def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.History:
     """
-    This function both creates the patch dataset for NN2 and trains NN2 on
-    several different number of internal nodes.
+    This function creates the patch dataset for NN2 calls the NN2_training function.
 
     Returns a History object for the trained model.
     """
 
+    # Index of the internal node count in raw_data
     inc_index = edge_count * 2
-
-    print(f"=== Training NN2 for edge count: {edge_count} ===\n")
 
     # ===========================
     #    PATCH DATA GENERATION
     # ===========================
+    print(f"=== Generating patch dataset for NN2 with edge count: {edge_count} ===\n")
     inc_df = raw_data.iloc[:, inc_index]
 
     # Drop rows with 0 internal nodes
@@ -225,8 +223,9 @@ def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.H
         edge_count=edge_count,
     )
 
+    print(f"=== Training NN2 for edge count: {edge_count} ===\n")
     history = NN2_training(edge_count, patch_dataset)
-    # return model_histories
+
     return history
 
 
@@ -246,6 +245,7 @@ if __name__ == "__main__":
 
     # 2. Train NN1
     nn1_training_history = []
+    print(f"=== Training NN1 for edge count: {edge_count} ===\n")
     nn1_training_history.append(NN1_training(edge_count, mesh_data))
 
     # 3. TRAIN NN2
