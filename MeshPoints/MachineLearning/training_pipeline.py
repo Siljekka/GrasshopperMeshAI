@@ -170,8 +170,6 @@ def NN2_training(edge_count: int, internal_node_count: int, raw_data: list):
     # ===========================
     #          TRAINING
     # ===========================
-    print(
-        f"=== Training NN2 for edge count: {edge_count} and inc: {internal_node_count} ===\n")
 
     checkpoint = tf.keras.callbacks.ModelCheckpoint(
         model_path, monitor='val_loss', verbose=0, save_best_only=True, mode='min')
@@ -215,26 +213,34 @@ def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> list:
     """
 
     model_histories = []
-
+    inc_index = edge_count*2
+    max_inc = raw_data.iloc[:, inc_index].max()
+    print(max_inc)
     # Loop through different internal node counts
-    for inc in range(2, 8):
+    for inc in range(1, int(max_inc)):
+        print(
+            f"=== Training NN2 for edge count: {edge_count} and inc: {inc} ===\n")
         # INTERNAL NODE COUNT = INC
 
         # ===========================
         #    PATCH DATA GENERATION
         # ===========================
-        inc_index = edge_count*2
-        inc_df = raw_data.iloc[:, inc_index]
-        df = raw_data[inc_df == float(inc)].dropna(axis=1, how="all")
-        dataset = df.drop(inc_index, axis=1)
+        try:
+            inc_df = raw_data.iloc[:, inc_index]
+            df = raw_data[inc_df == float(inc)].dropna(axis=1, how="all")
+            dataset = df.drop(inc_index, axis=1)
 
-        patch_dataset = pg.generate_patch_collection(
-            dataset,
-            edge_count=edge_count,
-            internal_count=inc
-        )
+            patch_dataset = pg.generate_patch_collection(
+                dataset,
+                edge_count=edge_count,
+                internal_count=inc
+            )
 
-        model_histories.append(NN2_training(edge_count, inc, patch_dataset))
+            model_histories.append(NN2_training(
+                edge_count, inc, patch_dataset))
+        except KeyError:
+            print(f"No examples of contours with {inc} internal nodes.")
+            break
     # return model_histories
     return model_histories
 
@@ -245,15 +251,15 @@ if __name__ == "__main__":
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     tf.get_logger().setLevel('ERROR')
 
-    edge_count = 8
+    edge_count = 10
 
     # 1. Create dataset
     print(f"=== Creating dataset for edge count: {edge_count} ===\n")
     mesh_data = pre_processing(edge_count)
 
     # 2. Train NN1
-    # nn1_training_history = []
-    # nn1_training_history.append(NN1_training(edge_count, mesh_data))
+    nn1_training_history = []
+    nn1_training_history.append(NN1_training(edge_count, mesh_data))
 
     # 3. TRAIN NN2
     nn2_training_history = []
@@ -261,6 +267,7 @@ if __name__ == "__main__":
 
     # ======================
     #        PLOTTING
+    #    (w/o tensorboard)
     # ======================
     # for history in nn1_training_history:
     #     plt.plot(history.history['loss'], label='training loss')
@@ -269,10 +276,10 @@ if __name__ == "__main__":
     #     plt.xlabel("Epochs")
     #     plt.ylabel("MAE")
 
-    for history_set in nn2_training_history:
-        for history in history_set:
-            plt.plot(history.history['loss'], label='training loss')
-            plt.plot(history.history['val_loss'], label='validation loss')
-            plt.legend()
-            plt.xlabel("Epochs")
-            plt.ylabel("MSE")
+    # for history_set in nn2_training_history:
+    #     for history in history_set:
+    #         plt.plot(history.history['loss'], label='training loss')
+    #         plt.plot(history.history['val_loss'], label='validation loss')
+    #         plt.legend()
+    #         plt.xlabel("Epochs")
+    #         plt.ylabel("MSE")
