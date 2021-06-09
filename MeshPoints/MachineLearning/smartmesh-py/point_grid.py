@@ -186,7 +186,7 @@ def calculate_score(
                 point.score = 3 * score
 
 
-def generate_patches(point_grid):
+def generate_patches(point_grid: list[list[GridPoint]]) -> list[GridPoint]:
     """
     Generates patches of the given patch size (NxN) containing the GridPoint-objects
     of the patch.
@@ -323,12 +323,12 @@ def generate_patch_collection_and_write_to_csv(
     write_patch_collection_to_csv(patch_collection, filename, edge_count)
 
 
-def generate_internal_nodes_from_grid_score(
+def interpolate_nodes_from_grid_score(
     point_grid, target_internal_node_count: int
-) -> list:
+) -> list[tuple[float]]:
     """
     Input:
-        - point grid with calculated/precited grid scores
+        - point grid with calculated/predicted grid scores
         - target number of internal nodes within a contour,
 
     Output:

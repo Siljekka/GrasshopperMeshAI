@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # 2. Train NN1
     nn1_training_history = []
     print(f"=== Training NN1 for edge count: {edge_count} ===\n")
-    nn1_training_history.append(NN1_training(edge_count, mesh_data))
+    # nn1_training_history.append(NN1_training(edge_count, mesh_data))
 
     # 3. TRAIN NN2
     nn2_training_history = []

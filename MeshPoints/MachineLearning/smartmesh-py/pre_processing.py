@@ -10,6 +10,16 @@ import string
 
 
 def simple_procrustes(contour: np.array) -> dict:
+    """
+    Takes an arbitrary contour and transforms it to best match a regular
+    unit polygon with the same number of edges.
+
+    The inverse transformation is given by:
+    original_contour = contour @ rotation * scale + translation
+
+    Returns a dictionary containing the transformed contour and the
+    individual transformations.
+    """
     n = contour.shape[0]  # number of nodes in input
     reference = create_regular_ngon(n)
 
@@ -28,23 +38,19 @@ def simple_procrustes(contour: np.array) -> dict:
     a = p_scaled.T @ reference
     u, c, vt = np.linalg.svd(a)
 
-    # Get optimal rotation matrix, R = U*V^T
     rotation_matrix = u @ vt
 
-    # Transformed contour given by P = p_scaled * rotation_matrix
     transformed_contour = p_scaled @ rotation_matrix
 
     assert np.allclose(
         contour,
         transformed_contour @ rotation_matrix.T * (1 / scale_factor) + translation,
     ), "Input contour does not match inverse transformed, transformed contour."
-    
-    # Inverse transformation:
-    # original_contour = contour @ rotation * scale + translation
+
     return {
         "contour": transformed_contour,
-        "scale": (1 / scale_factor),
         "rotation": rotation_matrix.T,
+        "scale": (1 / scale_factor),
         "translation": translation,
     }
 
@@ -89,9 +95,9 @@ def create_random_displaced_ngon(number_of_sides: int) -> np.array:
         theta = 2 * pi * n / number_of_sides + random() * quantile
         polygon.append([r * cos(theta), r * sin(theta)])
 
+    # Polygon is randomly scaled and translated
     x_disp = random() * 1000 - 500
     y_disp = random() * 1000 - 500
-
     polygon = np.array(polygon) * random() * 100 + np.array([x_disp, y_disp])
 
     return polygon

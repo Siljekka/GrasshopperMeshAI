@@ -9,9 +9,27 @@ from math import sqrt
 # ------------------------------------------
 #            PREDICTION METHODS
 # ------------------------------------------
+def NN1_prediction(contour: np.array, model: tf.keras.Model) -> int:
+    """
+    Takes a contour and a corresponding NN1 model and predicts the
+    number of nodes that should be inserted to ensure a good quality
+    mesh. As the prediction is a continous value, we round to the
+    nearest whole integer.
+
+    Returns the internal node count of a contour.
+    """
+    # Flatten contour list
+    contour_list = [coordinate for point in contour for coordinate in point]
+
+    features = np.expand_dims(contour_list, axis=0)
+    prediction = model(features).numpy()[0]
+
+    return round(prediction)
 
 
-def grid_prediction(contour: np.array, grid_model: tf.keras.Model) -> list[GridPoint]:
+def NN2_grid_prediction(
+    contour: np.array, grid_model: tf.keras.Model
+) -> list[GridPoint]:
     """
     This method takes a contour and a grid model suited for predicitons on contours
     of the given size. An empty point grid is instantiated and filled with
@@ -47,7 +65,9 @@ def grid_prediction(contour: np.array, grid_model: tf.keras.Model) -> list[GridP
     return point_grid
 
 
-def direct_prediction(contour: np.array, direct_model: tf.keras.Model) -> list[float]:
+def NN2_direct_prediction(
+    contour: np.array, direct_model: tf.keras.Model
+) -> list[float]:
 
     # Flatten contour list of tuples
     contour_list = [coordinate for point in contour for coordinate in point]
@@ -127,6 +147,38 @@ def calc_average_mean_and_worst_error(error_list: list[list[float]]) -> list[flo
     return [round(e_mean, 3), round(e_worst, 3), outside / len(error_list)]
 
 
-# Normalize contour with Procrustes and flatten list of tuples
-# procrustes = pp.simple_procrustes(contour)
-# transformed_contour = procrustes["contour"]
+if __name__ == "__main__":
+    # ------------------------------------------
+    #        EXAMPLE PREDICTION PIPELINE
+    # ------------------------------------------
+    edge_count = 6
+    nn1_model_path = "model/nn1-6gon"
+    nn2_model_path = "model/nn2-6gon"
+
+    # Generate and transform a random contour
+    contour = pp.create_random_ngon(edge_count)
+    procrustes = pp.simple_procrustes(contour)
+    transformed_contour, rotation, scale, translation = (
+        procrustes["contour"],
+        procrustes["rotation"],
+        procrustes["scale"],
+        procrustes["translation"],
+    )
+
+    # Load models from file
+    nn1_model = tf.keras.models.load_model(nn1_model_path)
+    nn2_model = tf.keras.models.load_model(nn2_model_path)
+
+    # Predict internal node count and point grid
+    predicted_internal_node_count = NN1_prediction(transformed_contour, nn1_model)
+    predicted_point_grid = NN2_grid_prediction(transformed_contour, nn2_model)
+
+    # Interpolate points from NN1 and NN2 predictions.
+    interpolated_points = pg.interpolate_nodes_from_grid_score(
+        predicted_point_grid, predicted_internal_node_count
+    )
+
+    normalized_mesh_nodes = np.extend(transformed_contour, interpolated_points)
+
+    mesh_nodes = normalized_mesh_nodes @ rotation * scale + translation
+    pass
