@@ -1,0 +1,2 @@
+# Using tensorboard for monitoring
+To monitor the training of models type the following command into a terminal window `smartmesh-py` folder:  `tensorboard --logdir=logs`. Open the link that appears in a browser.
