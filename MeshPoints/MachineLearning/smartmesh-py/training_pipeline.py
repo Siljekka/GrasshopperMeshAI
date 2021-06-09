@@ -6,6 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pre_processing as pp
 import point_grid as pg
+import os
+
+# Suppress tensorflow runtime messages in terminal
+# Doesn't work.
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+tf.get_logger().setLevel("ERROR")
 
 TARGET_EDGE_LENGTH = 0.4
 DATASET_SIZE = {
@@ -230,14 +236,7 @@ def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.H
 
 
 if __name__ == "__main__":
-    # Suppress tensorflow runtime messages in terminal
-    # Doesn't work.
-    import os
-
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-    tf.get_logger().setLevel("ERROR")
-
-    edge_count = 10
+    edge_count = 6
 
     # 1. Create dataset
     print(f"=== Creating dataset for edge count: {edge_count} ===\n")
