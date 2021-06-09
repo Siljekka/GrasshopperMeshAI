@@ -76,7 +76,9 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
 
     model = NN1_model_setup(edge_count)
 
-    lr_schedule = tf.keras.optimizers.schedules.PolynomialDecay(1e-2, 1_000, 3e-4)
+    lr_schedule = tf.keras.optimizers.schedules.PolynomialDecay(
+        1e-2, epochs * batch_size // 2, 3e-4
+    )
     model.compile(
         loss=tf.losses.MeanAbsoluteError(),
         optimizer=tf.optimizers.Adam(
@@ -158,7 +160,9 @@ def NN2_training(edge_count: int, raw_data: list) -> tf.keras.callbacks.History:
 
     model = NN2_model_setup(edge_count)
 
-    lr_schedule = tf.keras.optimizers.schedules.PolynomialDecay(1e-1, 1_000, 3e-4)
+    lr_schedule = tf.keras.optimizers.schedules.PolynomialDecay(
+        1e-1, epochs * batch_size // 2, 3e-4
+    )
     model.compile(
         loss=tf.losses.MeanSquaredError(),
         optimizer=tf.optimizers.Adam(
