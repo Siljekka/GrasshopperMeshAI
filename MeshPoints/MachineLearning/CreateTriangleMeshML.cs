@@ -3,6 +3,7 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using Keras.Models;
+using MeshPoints.Classes;
 using Numpy;
 using System.Linq;
 using MathNet.Numerics.LinearAlgebra;
@@ -167,6 +168,7 @@ namespace MeshPoints.MachineLearning
             return nGon;
         }
 
+        
 
         List<Point3d> NeuralNetworkPrediction(double[] brepCoordinates)
         {
@@ -189,10 +191,12 @@ namespace MeshPoints.MachineLearning
             return predictedPoints;
         }
 
-        /// <summary>
-        /// Provides an Icon for the component.
-        /// </summary>
-        protected override System.Drawing.Bitmap Icon
+        
+
+    /// <summary>
+    /// Provides an Icon for the component.
+    /// </summary>
+    protected override System.Drawing.Bitmap Icon
         {
             get
             {
