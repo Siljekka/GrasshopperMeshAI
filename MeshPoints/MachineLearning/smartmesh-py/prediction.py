@@ -29,7 +29,7 @@ def NN1_prediction(contour: np.array, model: tf.keras.Model) -> int:
 
 def NN2_grid_prediction(
     contour: np.array, grid_model: tf.keras.Model
-) -> list[GridPoint]:
+) -> list[pg.GridPoint]:
     """
     This method takes a contour and a grid model suited for predicitons on contours
     of the given size. An empty point grid is instantiated and filled with
