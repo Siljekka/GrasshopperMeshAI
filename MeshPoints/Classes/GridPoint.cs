@@ -27,6 +27,29 @@ namespace MeshPoints.Classes
             PointId = _PointId;
             X = _X;
             Y = _Y;
+            Neighbours = new List<GridPoint>();
+        }
+
+        public double MeanNeighbourhoodScore()
+        {
+            double nbhScore = this.Score;
+            if (this.Neighbours.Count != 0)
+            {
+                foreach (var nb in this.Neighbours)
+                {
+                    // Points on the edge have neighbours with score = 0 due to padding
+                    // To exclude points on the edge they are given an arbitrary penalty.
+                    if (nb.Score == 0)
+                    {
+                        return 100.0;
+                    } else
+                    {
+                        nbhScore += nb.Score;
+                    }
+                }
+            }
+            // 9 total nodes in a neighbourhood
+            return nbhScore / 9;
         }
 
         public static List<List<GridPoint>> GeneratePointGrid()
@@ -37,12 +60,15 @@ namespace MeshPoints.Classes
             List<double> yCoordinates = new List<double>();
 
             // Calculate x- and y-coordinate values
+            double gridValue = 0.0;
             int gridDimension = Globals.GRID_RESOLUTION + 2;
             for (int i = 0; i< gridDimension; i++)
             {
-                double value = i / gridDimension * Globals.VAL_RANGE;
-                xCoordinates.Add(value);
-                yCoordinates.Add(value);
+                gridValue += ((double)i / (double)gridDimension) * Globals.VAL_RANGE - Globals.VAL_RANGE/2;
+                xCoordinates.Add(gridValue);
+                yCoordinates.Add(gridValue);
+                gridValue = 0.0;
+                
             }
 
             // Build empty point grid
@@ -127,11 +153,11 @@ namespace MeshPoints.Classes
 
             for (int inc = 0; inc<internalNodeCount; inc++)
             {
-                List<GridPoint> flatGrid = tmpFlatGrid;
+                List<GridPoint> flatGrid = new List<GridPoint>(tmpFlatGrid);
                 // Find min value of grid and get the grid point with the minScore.
-                // todo: this may introduce bugs.
-                double minScore = flatGrid.Select(gp => gp.Score).Min();
-                GridPoint minGridPoint = flatGrid.Where(gp => gp.Score == minScore).FirstOrDefault();
+                // This is probably not computationally efficient, but since there is only 400 grid points it should not be too bad.
+                double minScore = flatGrid.Select(gp => gp.MeanNeighbourhoodScore()).Min();
+                GridPoint minGridPoint = flatGrid.Where(gp => gp.MeanNeighbourhoodScore() == minScore).FirstOrDefault();
 
                 // Build a neighbourhood
                 List<GridPoint> neighbourhood = minGridPoint.Neighbours;
@@ -152,18 +178,28 @@ namespace MeshPoints.Classes
                 foreach (var point in neighbourhood)
                 {
                     intX += weights[i] * point.X;
-                    intY += weights[i] * point.X;
+                    intY += weights[i] * point.Y;
+                    i++;
                 }
                 intX /= totalWeight;
                 intY /= totalWeight;
 
                 internalNodes.Add(new Point3d(intX, intY, 0));
 
-                // Remove neighbourhood from the pointgrid
+                // Remove neighbourhood from the point grid
+                // And neighbours' neighbours. And neighbours' neighbours' neighbours.
                 List<int> exclusionPointsById = new List<int>();
                 foreach (var point in neighbourhood)
                 {
                     exclusionPointsById.Add(point.PointId);
+                    foreach (var nbPoint in point.Neighbours)
+                    {
+                        exclusionPointsById.Add(nbPoint.PointId);
+                        foreach(var nbNbPoint in nbPoint.Neighbours)
+                        {
+                            exclusionPointsById.Add(nbPoint.PointId);
+                        }
+                    }
                 }
                 tmpFlatGrid.Clear();
                 foreach (var point in flatGrid)

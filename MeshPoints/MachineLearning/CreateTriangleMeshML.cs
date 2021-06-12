@@ -1,4 +1,5 @@
 ﻿using Grasshopper.Kernel;
+using Rhino;
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace MeshPoints.MachineLearning
         /// Initializes a new instance of the PredictInternalNodesOfMesh class.
         /// </summary>
         public CreateTriangleMeshML()
-          : base("Create Triangle Mesh (Machine Learning)", "TriMeshML",
+          : base("Create Triangle Mesh (ML)", "TriMeshML",
               "Creates a triangle mesh based on predictions from neural network.",
               "SmartMesh", "Machine Learning")
         {
@@ -29,6 +30,7 @@ namespace MeshPoints.MachineLearning
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Brep", "sf", "Brep", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Internal node count", "inc", "The number of internal nodes that should be predicted.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -37,8 +39,6 @@ namespace MeshPoints.MachineLearning
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Triangle Mesh", "tm", "Triangle mesh (Delauney)", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Internal nodes (ML)", "in", "Predicted internal nodes from NN-model.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Transformed contour", "tc", "debugging", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -48,9 +48,12 @@ namespace MeshPoints.MachineLearning
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             Brep inputSurface = null;
+            int internalNodeCount = 0;
             DA.GetData(0, ref inputSurface);
+            DA.GetData(1, ref internalNodeCount);
             if (!DA.GetData(0, ref inputSurface)) { return; }
-            if (inputSurface.Vertices.Count != 6) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input contour must be hexagon."); return; }
+            if (!DA.GetData(1, ref internalNodeCount)) { return; }
+            if (inputSurface.Vertices.Count != 8) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Component currently only supports octagons."); return; }
 
             // Get transformation (and inverse transformation) to/from normalized surface 
             Transform procrustesTransform = ProcrustesSuperimposition(inputSurface);
@@ -70,32 +73,21 @@ namespace MeshPoints.MachineLearning
             // Transform surface vertices with procrustes. Cast to list as output from transformList is datatype Array.
             List<Point3d> transformedSurfaceVertices = procrustesTransform.TransformList(surfaceVertices).ToList();
 
-            // Create array suited for prediction [x1 y1 ... xn yn]
-            var transformedSurfaceVerticesForPrediction = new double[inputSurface.Vertices.Count * 2];
-            int i = 0;
-            foreach (var point in transformedSurfaceVertices)
-            {
-                transformedSurfaceVerticesForPrediction[i * 2] = point.X;
-                transformedSurfaceVerticesForPrediction[i * 2 + 1] = point.Y;
-                i++;
-            }
+            var predictedGrid = GridPrediction(transformedSurfaceVertices);
+            List<Point3d> predictedInternalNodes = GridPoint.InterpolateNodesFromGridScore(predictedGrid, internalNodeCount);
 
-            // *** ARTIFICIAL INTELLIGENCE ***
-            List<Point3d> predictedInternalNodes = NeuralNetworkPrediction(transformedSurfaceVerticesForPrediction);
             
             // Inverse transform predicted nodes to fit with the input surface
             List<Point3d> inverseTransformedPredictedInternalNodes = inverseProcrustes.TransformList(predictedInternalNodes).ToList();
             
             // Mesh prediction together with input surface
-            Mesh triangleMesh = DelaunayTriangulation(surfaceVertices, inverseTransformedPredictedInternalNodes);
+            Mesh triangleMesh = DelaunayTriangulation(surfaceVertices, inverseTransformedPredictedInternalNodes, inputSurface);
 
             DA.SetData(0, triangleMesh);
-            DA.SetDataList(1, inverseTransformedPredictedInternalNodes);
-            DA.SetDataList(2, transformedSurfaceVertices);
 
         }
 
-        public Mesh DelaunayTriangulation(List<Point3d> edgeNodes, List<Point3d> internalNodes)
+        public Mesh DelaunayTriangulation(List<Point3d> edgeNodes, List<Point3d> internalNodes, Brep meshSurface)
         {
             List<Point3d> nodeCollection = new List<Point3d>();
             nodeCollection.AddRange(edgeNodes);
@@ -106,7 +98,44 @@ namespace MeshPoints.MachineLearning
             var meshFaces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
             var triangleMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(meshNodes, 0.01, ref meshFaces);
 
-            return triangleMesh;
+            Mesh culledTriangleMesh = CullMeshFacesOutsideSurface(triangleMesh, meshSurface);
+
+            return culledTriangleMesh;
+        }
+
+        /// <summary>
+        /// Cull unwanted mesh faces by checking if their center points are outside the actual surface of the mesh.
+        /// </summary>
+        /// <returns>A <see cref="Mesh"/> with (hopefully) no outside mesh faces.</returns>
+        public Mesh CullMeshFacesOutsideSurface(Mesh meshSurface, Brep brep)
+        {
+            Mesh insideFaces = meshSurface.DuplicateMesh();
+            for (int i = meshSurface.Faces.Count - 1; i > 0; i--) // reverse iteration to maintain indices
+            {
+                if (!IsPointOnBrepSurface(meshSurface.Faces.GetFaceCenter(i), brep))
+                {
+                    insideFaces.Faces.RemoveAt(i);
+                }
+            }
+            return insideFaces;
+        }
+        /// <summary>
+        /// Takes an input point and a Brep surface. If the distance between input point 
+        /// and the closest point on the Brep ~ 0, the point is deemed on the surface.
+        /// </summary>
+        /// <returns>True if point is on Brep.</returns>
+        public bool IsPointOnBrepSurface(Point3d point, Brep brep)
+        {
+            var testPointSurfaceDistance = point.DistanceTo(brep.ClosestPoint(point));
+
+            if (testPointSurfaceDistance < RhinoMath.SqrtEpsilon)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public Transform ProcrustesSuperimposition(Brep inputSurface)
@@ -152,7 +181,7 @@ namespace MeshPoints.MachineLearning
             return procrustesSuperimposition;
         }
 
-        public List<List<Double>> CreateRegularNgon(int edgeCount)
+        public List<List<double>> CreateRegularNgon(int edgeCount)
         {
             List<List<Double>> nGon = new List<List<Double>>();
 
@@ -173,7 +202,7 @@ namespace MeshPoints.MachineLearning
         {
             // Load model
             Keras.Keras.DisablePySysConsoleLog = true;
-            var model = Sequential.LoadModel(Path.GetFullPath("MachineLearning/models/nn2-8gon"));
+            var model = Sequential.LoadModel("C:\\Users\\mkunn\\skole\\master\\Mesh\\MeshPoints\\MachineLearning\\models\\nn2-8gon");
 
             // Create empty grid
             var pointGrid = GridPoint.GeneratePointGrid();
@@ -219,7 +248,7 @@ namespace MeshPoints.MachineLearning
             return pointGrid;
         }
 
-        List<Point3d> NeuralNetworkPrediction(double[] brepCoordinates)
+        List<Point3d> DirectPrediction(double[] brepCoordinates)
         {
             Keras.Keras.DisablePySysConsoleLog = true;
             // Load model

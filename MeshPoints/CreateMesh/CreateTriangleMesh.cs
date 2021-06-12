@@ -104,7 +104,7 @@ namespace MeshPoints.CreateMesh
         /// Cull unwanted mesh faces by checking if their center points are outside the actual surface of the mesh.
         /// </summary>
         /// <returns>A <see cref="Mesh"/> with (hopefully) no outside mesh faces.</returns>
-        private Mesh CullMeshFacesOutsideSurface(Mesh meshSurface, Brep brep)
+        public Mesh CullMeshFacesOutsideSurface(Mesh meshSurface, Brep brep)
         {
             Mesh insideFaces = meshSurface.DuplicateMesh();
             for (int i = meshSurface.Faces.Count-1; i>0; i--) // reverse iteration to maintain indices
