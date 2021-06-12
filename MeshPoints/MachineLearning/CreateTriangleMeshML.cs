@@ -1,14 +1,13 @@
 ﻿using Grasshopper.Kernel;
+using Keras.Models;
+using MathNet.Numerics.LinearAlgebra;
+using MeshPoints.Classes;
+using Numpy;
 using Rhino;
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
-using Keras.Models;
-using MeshPoints.Classes;
-using Numpy;
 using System.Linq;
-using System.IO;
-using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.MachineLearning
 {
@@ -31,6 +30,7 @@ namespace MeshPoints.MachineLearning
         {
             pManager.AddGenericParameter("Brep", "sf", "Brep", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Internal node count", "inc", "The number of internal nodes that should be predicted.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Model", "mt", "Select which model to use. GH = 1, gmsh = 2.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -49,13 +49,15 @@ namespace MeshPoints.MachineLearning
         {
             Brep inputSurface = null;
             int internalNodeCount = 0;
+            int modelSelection = 0;
             DA.GetData(0, ref inputSurface);
             DA.GetData(1, ref internalNodeCount);
+            DA.GetData(2, ref modelSelection);
             if (!DA.GetData(0, ref inputSurface)) { return; }
             if (!DA.GetData(1, ref internalNodeCount)) { return; }
             if (inputSurface.Vertices.Count != 8) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Component currently only supports octagons."); return; }
 
-            // Get transformation (and inverse transformation) to/from normalized surface 
+            // Get transformation (and inverse transformation) to/from normalized surface
             Transform procrustesTransform = ProcrustesSuperimposition(inputSurface);
             if (!procrustesTransform.TryGetInverse(out Transform inverseProcrustes))
             {
@@ -74,18 +76,16 @@ namespace MeshPoints.MachineLearning
             List<Point3d> transformedSurfaceVertices = procrustesTransform.TransformList(surfaceVertices).ToList();
 
             // ARTIFICIAL INTELLIGENCE
-            var predictedGrid = GridPrediction(transformedSurfaceVertices);
+            var predictedGrid = GridPrediction(transformedSurfaceVertices, modelSelection);
             List<Point3d> predictedInternalNodes = GridPoint.InterpolateNodesFromGridScore(predictedGrid, internalNodeCount);
 
-            
             // Inverse transform predicted nodes to fit with the input surface
             List<Point3d> inverseTransformedPredictedInternalNodes = inverseProcrustes.TransformList(predictedInternalNodes).ToList();
-            
+
             // Mesh prediction together with input surface
             Mesh triangleMesh = DelaunayTriangulation(surfaceVertices, inverseTransformedPredictedInternalNodes, inputSurface);
 
             DA.SetData(0, triangleMesh);
-
         }
 
         public Mesh DelaunayTriangulation(List<Point3d> edgeNodes, List<Point3d> internalNodes, Brep meshSurface)
@@ -120,8 +120,9 @@ namespace MeshPoints.MachineLearning
             }
             return insideFaces;
         }
+
         /// <summary>
-        /// Takes an input point and a Brep surface. If the distance between input point 
+        /// Takes an input point and a Brep surface. If the distance between input point
         /// and the closest point on the Brep ~ 0, the point is deemed on the surface.
         /// </summary>
         /// <returns>True if point is on Brep.</returns>
@@ -153,7 +154,7 @@ namespace MeshPoints.MachineLearning
             // Translation. Also perform the translation on brepSurface for Svd-stuff later
             Transform translationTransformation = Transform.Translation(Point3d.Origin - parametrizedSurface.PointAt(0.5, 0.5));
             brepSurface.Translate(Point3d.Origin - parametrizedSurface.PointAt(0.5, 0.5));
-            
+
             // Create list of translated surfacePoints and build matrices for Svd-operations
             var surfacePoints = new List<List<double>>();
             foreach (var point in brepSurface.Vertices)
@@ -199,11 +200,19 @@ namespace MeshPoints.MachineLearning
             return nGon;
         }
 
-        List<List<GridPoint>> GridPrediction(List<Point3d> contourPoints)
+        private List<List<GridPoint>> GridPrediction(List<Point3d> contourPoints, int modelSelection)
         {
             // Load model
             Keras.Keras.DisablePySysConsoleLog = true;
-            var model = Sequential.LoadModel("C:\\Users\\mkunn\\skole\\master\\Mesh\\MeshPoints\\MachineLearning\\models\\nn2-8gon");
+            var modelPath = "";
+            if (modelSelection == 1)
+            {
+                modelPath = "C:\\Users\\mkunn\\skole\\master\\Mesh\\MeshPoints\\MachineLearning\\models\\thesis-grid-8gon-3int";
+            } else
+            {
+                modelPath = "C:\\Users\\mkunn\\skole\\master\\Mesh\\MeshPoints\\MachineLearning\\models\\thesis-grid-8gon-3int-gh";
+            }
+            var model = Sequential.LoadModel(modelPath);
 
             // Create empty grid
             var pointGrid = GridPoint.GeneratePointGrid();
@@ -227,7 +236,7 @@ namespace MeshPoints.MachineLearning
                 foreach (var point in patch)
                 {
                     patchCoordinates[j * 2] = point.X;
-                    patchCoordinates[j * 2 +1] = point.Y;
+                    patchCoordinates[j * 2 + 1] = point.Y;
                     j++;
                 }
 
@@ -249,7 +258,7 @@ namespace MeshPoints.MachineLearning
             return pointGrid;
         }
 
-        List<Point3d> DirectPrediction(double[] brepCoordinates)
+        private List<Point3d> DirectPrediction(double[] brepCoordinates)
         {
             Keras.Keras.DisablePySysConsoleLog = true;
             // Load model
@@ -261,21 +270,18 @@ namespace MeshPoints.MachineLearning
             var predictionResult = model.Predict(predictionData);
             var prediction = predictionResult[0].GetData<float>();
 
-            List<Point3d> predictedPoints = new List<Point3d> { 
+            List<Point3d> predictedPoints = new List<Point3d> {
                 new Point3d(prediction[0], prediction[1], 0),
                 new Point3d(prediction[2], prediction[3], 0)
             };
 
-            
             return predictedPoints;
         }
 
-        
-
-    /// <summary>
-    /// Provides an Icon for the component.
-    /// </summary>
-    protected override System.Drawing.Bitmap Icon
+        /// <summary>
+        /// Provides an Icon for the component.
+        /// </summary>
+        protected override System.Drawing.Bitmap Icon
         {
             get
             {

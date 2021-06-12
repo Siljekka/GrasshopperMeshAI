@@ -240,6 +240,12 @@
     <None Include="MachineLearning\models\nn2-8gon\saved_model.pb" />
     <None Include="MachineLearning\models\nn2-8gon\variables\variables.data-00000-of-00001" />
     <None Include="MachineLearning\models\nn2-8gon\variables\variables.index" />
+    <None Include="MachineLearning\models\thesis-grid-8gon-3int-gh\saved_model.pb" />
+    <None Include="MachineLearning\models\thesis-grid-8gon-3int-gh\variables\variables.data-00000-of-00001" />
+    <None Include="MachineLearning\models\thesis-grid-8gon-3int-gh\variables\variables.index" />
+    <None Include="MachineLearning\models\thesis-grid-8gon-3int\saved_model.pb" />
+    <None Include="MachineLearning\models\thesis-grid-8gon-3int\variables\variables.data-00000-of-00001" />
+    <None Include="MachineLearning\models\thesis-grid-8gon-3int\variables\variables.index" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
