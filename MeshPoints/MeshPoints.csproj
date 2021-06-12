@@ -284,6 +284,8 @@
     <Folder Include="MachineLearning\MLNET\MeshQualityMoveInternal\" />
     <Folder Include="MachineLearning\models\nn1-8gon\assets\" />
     <Folder Include="MachineLearning\models\nn2-8gon\assets\" />
+    <Folder Include="MachineLearning\models\thesis-grid-8gon-3int-gh\assets\" />
+    <Folder Include="MachineLearning\models\thesis-grid-8gon-3int\assets\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

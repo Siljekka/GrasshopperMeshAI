@@ -15,7 +15,7 @@ namespace MeshPoints.MachineLearning
         /// Initializes a new instance of the PredictInternalNodeCount class.
         /// </summary>
         public PredictInternalNodeCount()
-          : base("PredictInternalNodeCount", "pinc",
+          : base("Internal Node Count", "pinc",
               "Predict the number of internal nodes to be calculated by CreateTriangleMeshML",
               "SmartMesh", "Machine Learning")
         {
