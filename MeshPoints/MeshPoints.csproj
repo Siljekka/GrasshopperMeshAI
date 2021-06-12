@@ -231,6 +231,10 @@
     <None Include="MachineLearning\models\direct-internal-nodes\saved_model.pb" />
     <None Include="MachineLearning\models\direct-internal-nodes\variables\variables.data-00000-of-00001" />
     <None Include="MachineLearning\models\direct-internal-nodes\variables\variables.index" />
+    <None Include="MachineLearning\models\nn2-8gon\keras_metadata.pb" />
+    <None Include="MachineLearning\models\nn2-8gon\saved_model.pb" />
+    <None Include="MachineLearning\models\nn2-8gon\variables\variables.data-00000-of-00001" />
+    <None Include="MachineLearning\models\nn2-8gon\variables\variables.index" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -273,6 +277,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MachineLearning\MLNET\MeshQualityMoveInternal\" />
+    <Folder Include="MachineLearning\models\nn2-8gon\assets\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

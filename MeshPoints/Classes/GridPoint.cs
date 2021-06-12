@@ -29,7 +29,7 @@ namespace MeshPoints.Classes
             Y = _Y;
         }
 
-        public List<List<GridPoint>> GeneratePointGrid()
+        public static List<List<GridPoint>> GeneratePointGrid()
         {
             var pointGrid = new List<List<GridPoint>>();
             int pointId = 0;
@@ -98,7 +98,7 @@ namespace MeshPoints.Classes
             return cleanedPointGrid;
         }
 
-        public List<List<GridPoint>> GeneratePatches(List<List<GridPoint>> pointGrid)
+        public static List<List<GridPoint>> GeneratePatches(List<List<GridPoint>> pointGrid)
         {
             List<List<GridPoint>> patches = new List<List<GridPoint>>();
             for (int row = 0; row < Globals.GRID_RESOLUTION; row += Globals.PATCH_SIZE)
@@ -116,7 +116,7 @@ namespace MeshPoints.Classes
             return patches;
         }
         
-        public List<Point3d> InterpolateNodesFromGridScore(
+        public static List<Point3d> InterpolateNodesFromGridScore(
             List<List<GridPoint>> pointGrid, 
             int internalNodeCount)
         {

@@ -6,6 +6,7 @@ using Keras.Models;
 using MeshPoints.Classes;
 using Numpy;
 using System.Linq;
+using System.IO;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.MachineLearning
@@ -168,7 +169,55 @@ namespace MeshPoints.MachineLearning
             return nGon;
         }
 
-        
+        List<List<GridPoint>> GridPrediction(List<Point3d> contourPoints)
+        {
+            // Load model
+            Keras.Keras.DisablePySysConsoleLog = true;
+            var model = Sequential.LoadModel(Path.GetFullPath("MachineLearning/models/nn2-8gon"));
+
+            // Create empty grid
+            var pointGrid = GridPoint.GeneratePointGrid();
+            var patches = GridPoint.GeneratePatches(pointGrid);
+
+            // Transform data to proper format for prediction
+            double[] contourPointsArray = new double[contourPoints.Count * 2];
+            int i = 0;
+            foreach (var point in contourPoints)
+            {
+                contourPointsArray[i * 2] = point.X;
+                contourPointsArray[i * 2 + 1] = point.Y;
+                i++;
+            }
+
+            foreach (var patch in patches)
+            {
+                // Prepare patch data
+                double[] patchCoordinates = new double[8];
+                int j = 0;
+                foreach (var point in patch)
+                {
+                    patchCoordinates[j * 2] = point.X;
+                    patchCoordinates[j * 2 +1] = point.Y;
+                    j++;
+                }
+
+                // Write to numpy for Tensorflow
+                var raw_features = np.append(contourPointsArray, patchCoordinates);
+                var features = np.expand_dims(raw_features, axis: 0);
+
+                // ARTIFICIAL INTELLIGENCE
+                var patchPrediction = model.Predict(features)[0].GetData<float>();
+
+                // Write scores to point grid
+                int k = 0;
+                foreach (var point in patch)
+                {
+                    point.Score = patchPrediction[k];
+                    k++;
+                }
+            }
+            return pointGrid;
+        }
 
         List<Point3d> NeuralNetworkPrediction(double[] brepCoordinates)
         {
