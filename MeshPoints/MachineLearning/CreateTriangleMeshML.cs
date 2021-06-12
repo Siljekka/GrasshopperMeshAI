@@ -73,6 +73,7 @@ namespace MeshPoints.MachineLearning
             // Transform surface vertices with procrustes. Cast to list as output from transformList is datatype Array.
             List<Point3d> transformedSurfaceVertices = procrustesTransform.TransformList(surfaceVertices).ToList();
 
+            // ARTIFICIAL INTELLIGENCE
             var predictedGrid = GridPrediction(transformedSurfaceVertices);
             List<Point3d> predictedInternalNodes = GridPoint.InterpolateNodesFromGridScore(predictedGrid, internalNodeCount);
 
@@ -138,7 +139,7 @@ namespace MeshPoints.MachineLearning
             }
         }
 
-        public Transform ProcrustesSuperimposition(Brep inputSurface)
+        public static Transform ProcrustesSuperimposition(Brep inputSurface)
         {
             Brep brepSurface = (Brep)inputSurface.Duplicate();
             int edgeCount = brepSurface.Vertices.Count;
@@ -181,7 +182,7 @@ namespace MeshPoints.MachineLearning
             return procrustesSuperimposition;
         }
 
-        public List<List<double>> CreateRegularNgon(int edgeCount)
+        public static List<List<double>> CreateRegularNgon(int edgeCount)
         {
             List<List<Double>> nGon = new List<List<Double>>();
 
