@@ -13,7 +13,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         public DeconstructQNode()
           : base("Deconstruct qNode", "qNode",
-              "Deconstruct qNode class",
+              "Deconstructing qNode Class.",
               "SmartMesh", "Deconstruct")
         {
         }
@@ -23,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("qNode", "qel", "Input qNode class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("qNode", "qN", "qNode Class.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Point","pt","Coordinate of node", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Point","pt","Coordinate of node.", GH_ParamAccess.item);
             pManager.AddGenericParameter("IsBoundaryNode", "Boundary", "If true, node is boundary node.", GH_ParamAccess.item);
         }
 
