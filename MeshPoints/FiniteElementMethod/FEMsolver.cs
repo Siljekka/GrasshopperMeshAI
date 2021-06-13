@@ -21,8 +21,9 @@ namespace MeshPoints.FiniteElementMethod
         /// Initializes a new instance of the FEMsolver class.
         /// </summary>
         public FEMSolver()
-          : base("FEM solver", "FEM",
-              "Finite element method solver with quad 4 and hex 8 elements.",
+          : base("FEM Solver", "Solver",
+              "Solver for FEM problems. Can be used on geometries meshed with solid elements." +
+                "Uses 3 translation DOFS pr node, linear shape functions, two Gauss Points and full integration.",
               "SmartMesh", "FEM")
         { 
         }
@@ -32,10 +33,10 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "smartMesh", "Input a SmartMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Loads", "loads", "Input a load vector", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Boundary conditions", "BC", "Input a boundary condition vector.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Material", "material", "Input a material class.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Loads", "load", "Load vector from FEM Load.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Boundary Conditions", "BC", "Boundary conditions from FEM Boundary Condtion.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Material", "material", "Material from FEM Material.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -43,11 +44,11 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("u1", "u1", "Displacement of nodes in u1 dir", GH_ParamAccess.list);
-            pManager.AddGenericParameter("u2", "u2", "Displacement of nodes in u2 dir", GH_ParamAccess.list);
-            pManager.AddGenericParameter("u3", "u3", "Displacement of node in u3 dir", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Element stress", "element mises", "List of element von Mises stress.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Node stress", "node mises", "List of node von Mises stress.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u1", "u1", "Displacement of nodes in x-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u2", "u2", "Displacement of nodes in y-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u3", "u3", "Displacement of nodes in z-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Element Stress", "element mises", "List of Von Mises stress in element.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Node Stress", "node mises", "List of von Mises stress in node.", GH_ParamAccess.list);
         }
 
         /// <summary>
