@@ -93,7 +93,6 @@
     <Compile Include="Classes\Quality.cs" />
     <Compile Include="Classes\Element.cs" />
     <Compile Include="Classes\FEM.cs" />
-    <Compile Include="MyComponent1.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
