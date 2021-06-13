@@ -29,7 +29,7 @@ namespace MeshPoints.Tools
             pManager.AddGenericParameter("u genes ", "qp", "Translation vectors for u-direction.", GH_ParamAccess.list); 
             pManager.AddGenericParameter("v genes", "qp", "Translation vectors for v-direction.", GH_ParamAccess.list);
             pManager.AddGenericParameter("w genes", "qp", "Translation vectors for w-direction.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Symmetry line", "sym", "Introduce symmetry by inserting symmetri line.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Symmetry Line", "sym", "Introduce symmetry by inserting symmetri line.", GH_ParamAccess.item);
             pManager[3].Optional = true; // if solid
             pManager[4].Optional = true; // if symmetry
         }
