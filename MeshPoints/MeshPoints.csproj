@@ -86,7 +86,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Classes\qConstants.cs" />
-    <Compile Include="CreateMesh\CreateSurfaceMesh %28TargetLength%29.cs" />
     <Compile Include="Classes\Geometry.cs" />
     <Compile Include="Classes\Material.cs" />
     <Compile Include="Classes\Node.cs" />
@@ -100,9 +99,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Tools\CreateData.cs" />
-    <Compile Include="CreateMesh\CreateSolidMesh.cs" />
-    <Compile Include="CreateMesh\CreateSurfaceMesh.cs" />
-    <Compile Include="CreateMesh\CreateTriangleMesh.cs" />
+    <Compile Include="CreateMesh\SolidSmartMesh.cs" />
+    <Compile Include="CreateMesh\SurfaceSmartMesh.cs" />
+    <Compile Include="CreateMesh\TriangleMesh.cs" />
     <Compile Include="DeconstructClasses\DeconstructGeometry.cs" />
     <Compile Include="FiniteElementMethod\FEMBoundaryCondition.cs" />
     <Compile Include="FiniteElementMethod\FEMLoad.cs" />
@@ -128,7 +127,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Classes\qEdge.cs" />
     <Compile Include="Classes\qElement.cs" />
-    <Compile Include="Tools\QuadRemesh.cs" />
+    <Compile Include="CreateMesh\QuadRemesh.cs" />
     <Compile Include="CreateMesh\SweepSmartMesh.cs" />
     <Compile Include="DeconstructClasses\DeconstructQEdge.cs" />
     <Compile Include="DeconstructClasses\DeconstructQElement.cs" />

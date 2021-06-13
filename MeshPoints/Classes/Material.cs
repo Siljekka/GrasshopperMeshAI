@@ -14,10 +14,10 @@ namespace MeshPoints.Classes
         public double PossionRatio { get; set; }
         public double YieldingStress { get; set; }
 
-        // constructer
+        // Constructor
         public Material()
-        { 
-             // empty constructer
+        {
+            // empty constructor
         }
 
         public Material(double _youngModulus, double _possionRatio, double _yieldingStress)

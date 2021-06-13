@@ -9,14 +9,14 @@ using Rhino.Geometry.Collections;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateTriangleMesh : GH_Component
+    public class TriangleMesh : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the CreateTriangleMesh class.
         /// </summary>
-        public CreateTriangleMesh()
+        public TriangleMesh()
           : base("Triangle Mesh", "TriMesh",
-              "Creates a triangle mesh on a (2D) Brep surface using built-in Delaunay method",
+              "Creates a triangle mesh on a planar brep.",
               "SmartMesh", "Mesh")
         {
         }
@@ -26,9 +26,9 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddBrepParameter("Brep surface", "b", "Insert brep of surface.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Edge Node Count", "c", "Insert wanted amount of edge nodes. Note that this is only a target value.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Inner Nodes", "n", "Insert a list with inner points.", GH_ParamAccess.list);
+            pManager.AddBrepParameter("Brep", "brep", "Planar brep.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Edge Node Count", "count", "Wanted amount of edge nodes. Note that this is only a target value.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Inner Nodes", "points", "A list with points inside the brep.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddMeshParameter("Triangle Mesh", "m", "Triangle mesh (Delauney)", GH_ParamAccess.item);
+            pManager.AddMeshParameter("Mesh", "mesh", "Mesh (triangle-elements).", GH_ParamAccess.item);
         }
 
         /// <summary>

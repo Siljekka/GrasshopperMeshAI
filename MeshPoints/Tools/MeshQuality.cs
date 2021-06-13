@@ -104,7 +104,7 @@ namespace MeshPoints.Tools
             DA.SetData(4, colorMesh);
         }
 
-        #region Component methods
+        #region Methods
         double CalculateAspectRatio(Element element)
         {
             // Calculate Aspact Ratio like Abaqus
@@ -257,7 +257,7 @@ namespace MeshPoints.Tools
                     Vector3d vec1 = nodesOfFace[n].Coordinate - nodesOfFace[n + 1].Coordinate;
                     Vector3d vec2 = nodesOfFace[n].Coordinate - nodesOfFace[n + neighborPoint].Coordinate;
                     Vector3d normal = Vector3d.CrossProduct(vec1, vec2);
-                    var vec3 = Vector3d.CrossProduct(vec1, vec2);
+
                     // Calculate angle
                     double angleRad = Vector3d.VectorAngle(vec1, vec2, normal);
                     double testAngle = Vector3d.VectorAngle(Vector3d.CrossProduct(vec1, vec2), faceNormal);
@@ -781,7 +781,7 @@ namespace MeshPoints.Tools
                 case 3:
                     foreach (Quality q in qualityList)
                     {
-                        if (q.JacobianRatio > 0.8)
+                        if (q.JacobianRatio > 0.75)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Green);
                         }
@@ -789,7 +789,7 @@ namespace MeshPoints.Tools
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);
                         }
-                        else if (q.JacobianRatio > 0.03)
+                        else if (q.JacobianRatio > 0.1)
                         {
                             q.element.Mesh.VertexColors.CreateMonotoneMesh(Color.Orange);
                         }

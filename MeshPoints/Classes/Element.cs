@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Rhino.Geometry;
 
 
@@ -19,13 +15,10 @@ namespace MeshPoints.Classes
         public List<double> JacDet { get; set; }
 
         //Constructer
-
-        //_empty
         public Element()
         {
             //Empty constructor
         }
-
         public Element(int _id, List<Node> _nodes, List<int> _connectivity)
         {
             Id = _id;
