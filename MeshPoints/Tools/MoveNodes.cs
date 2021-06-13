@@ -14,8 +14,8 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the MoveMesh3DVertices class.
         /// </summary>
         public MoveNodes()
-          : base("Move Nodes", "mn",
-              "Move nodes of a structured SmartMesh with gene pools",
+          : base("Move Nodes", "moveN",
+              "Move nodes of a structured SmartMesh by translation vectors in range [-1,1].",
               "SmartMesh", "Tools")
         {
         }
@@ -25,11 +25,11 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "Input a SmartMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list); 
-            pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
-            pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Symmetry line", "sym", "Introduce symmetry by inserting symmetri line", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("u genes ", "qp", "Translation vectors for u-direction.", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("v genes", "qp", "Translation vectors for v-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("w genes", "qp", "Translation vectors for w-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Symmetry line", "sym", "Introduce symmetry by inserting symmetri line.", GH_ParamAccess.item);
             pManager[3].Optional = true; // if solid
             pManager[4].Optional = true; // if symmetry
         }
@@ -39,8 +39,8 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "Updated mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "Updated SmartMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh.", GH_ParamAccess.item);
         }
 
         /// <summary>

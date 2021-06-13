@@ -10,13 +10,13 @@ using System.IO;
 
 namespace MeshPoints.Tools
 {
-    public class CreateData : GH_Component
+    public class CSVExport : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the CreateData class.
         /// </summary>
-        public CreateData()
-          : base("Create Data", "data",
+        public CSVExport()
+          : base("CSV Export", "csv",
               "Export data to CSV file.",
               "SmartMesh", "Tools")
         {
@@ -27,9 +27,9 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "m", "Surface mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh Class.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Structure", "cs", "1: feautre for each x and y node coordinate. 2: one feature for all nodes. 3: Input to NN Mesh.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("FilePath", "fp", "File path to where data are saved", GH_ParamAccess.item);
+            pManager.AddGenericParameter("FilePath", "fp", "File path to where data are saved.", GH_ParamAccess.item);
             pManager.AddBooleanParameter("Save", "w", "True: data is written to file, False: data is not written to file.", GH_ParamAccess.item);
             pManager.AddGenericParameter("AvgQuality", "avgQ", "Average quality of mesh.", GH_ParamAccess.item);
             pManager.AddGenericParameter("MinQuality", "minQ", "Minimum quality of mesh.", GH_ParamAccess.item);

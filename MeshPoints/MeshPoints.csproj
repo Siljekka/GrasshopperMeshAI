@@ -98,7 +98,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Tools\CreateData.cs" />
+    <Compile Include="Tools\CSVExport.cs" />
     <Compile Include="CreateMesh\SolidSmartMesh.cs" />
     <Compile Include="CreateMesh\SurfaceSmartMesh.cs" />
     <Compile Include="CreateMesh\TriangleMesh.cs" />
@@ -111,7 +111,7 @@
     <Compile Include="DeconstructClasses\DeconstructQuality.cs" />
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
     <Compile Include="Tools\CreateRandomPolygon.cs" />
-    <Compile Include="Tools\DataToExcel.cs" />
+    <Compile Include="Tools\ExcelExport.cs" />
     <Compile Include="Tools\GlobalSmoothing.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MeshToSmarMesh.cs" />
@@ -119,7 +119,7 @@
     <Compile Include="Tools\MoveGrids.cs" />
     <Compile Include="Tools\MoveNodes.cs" />
     <Compile Include="Classes\SmartMesh.cs" />
-    <Compile Include="Tools\GenerateINPfile.cs" />
+    <Compile Include="Tools\INPExport.cs" />
     <Compile Include="Tools\MeshQuality.cs" />
     <Compile Include="Tools\IdealizePoints.cs" />
     <Compile Include="Tools\MeshPointsInfo.cs" />

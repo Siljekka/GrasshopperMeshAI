@@ -14,7 +14,7 @@ namespace MeshPoints.Tools
         /// </summary>
         public MergeSmartMesh()
           : base("Merge SmartMesh", "merge",
-              "Merge multiple SmartMesh to one SmartMesh",
+              "Merge multiple SmartMesh to one SmartMesh.",
               "SmartMesh", "Tools")
         {
         }
@@ -24,7 +24,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("List of SmartMesh", "smartMeshes", "Input a list of SmartMesh to merge", GH_ParamAccess.list);
+            pManager.AddGenericParameter("List of SmartMesh", "smartMeshes", "List of SmartMeshes to merge.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -32,8 +32,8 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "smartMesh", "Merged SmartMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Grid Information", "grids", "Grid information is build as: grid information -> grid groups -> grids -> nodes", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SmartMesh", "smartMesh", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Grid Information", "grids", "Grid information is build as: grid information -> grid groups -> grids -> nodes.", GH_ParamAccess.list);
         }
 
         /// <summary>

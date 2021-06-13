@@ -12,7 +12,7 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the PreviewGridInformation class.
         /// </summary>
         public PreviewGridInformation()
-          : base("Preview grids", "grids",
+          : base("Preview Grids", "grids",
               "Preview grid information.",
               "SmartMesh", "Tools")
         {

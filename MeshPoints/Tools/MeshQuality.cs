@@ -16,8 +16,8 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the Mesh_Quality class.
         /// </summary>
         public MeshQuality()
-          : base("Mesh Quality", "mq",
-              "Mesh Quality",
+          : base("Mesh Quality", "quality",
+              "Calculates quality of a SmartMesh.",
               "SmartMesh", "Tools")
         {
         }
@@ -27,8 +27,8 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "Insert a SmartMesh class", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Quality to color", "q", "Color mesh with quality metric: Aspect Ratio = 1, Skewness = 2, Jacobian = 3", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh Class.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Color", "col", "Color the mesh with quality metric: Aspect Ratio = 1, Skewness = 2, Jacobian = 3.", GH_ParamAccess.item);
             pManager[1].Optional = true; // coloring the mesh is optional
         }
 
@@ -37,11 +37,11 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Quality", "mq", "Mesh Quality for elements", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Avg. Aspect Ratio", "ar", "Average aspect ratio of all elements.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Avg. Skewness", "sk", "Average skewness of all elements.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Avg. Jacobian", "jb", "Average Jacobian ratio of all elements", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Color Mesh", "cm", "Color map of quality check", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Quality", "mq", "Quality Class.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Avg. Aspect Ratio", "AR", "Average aspect ratio of the mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Avg. Skewness", "SK", "Average skewness of the mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Avg. Jacobian Ratio", "JR", "Average jacobian ratio of the mesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Color Mesh", "mesh", "Colored mesh with decided quality metric.", GH_ParamAccess.item);
         }
 
         /// <summary>

@@ -13,8 +13,8 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the MoveGrids class.
         /// </summary>
         public MoveGrids()
-          : base("Move Grids", "mg",
-              "Move mesh grids",
+          : base("Move Grids", "moveG",
+              "Move grids of a SmartMesh by translation vectors in range [-1,1].",
               "SmartMesh", "Tools")
         {
         }
@@ -24,12 +24,13 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "Input a SmartMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
-            pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
-            pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("u genes ", "qp", "Translation vectors for u-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("v genes", "qp", "Translation vectors for v-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("w genes", "qp", "Translation vectors for w-direction.", GH_ParamAccess.list);
             pManager.AddGenericParameter("Grid information", "grid", "Input gridinformation for merged SmartMesh.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("grid genes", "grid", "Gene pool for translation of grids from gridinformation. Number needs to match the number of grid groups.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("grid genes", "grid", "Translation vectors for grids from grid information. " +
+                "Number needs to match the number of grid groups.", GH_ParamAccess.list);
 
             // if unmerged SmartMesh
             pManager[1].Optional = true; 
@@ -47,8 +48,8 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "Updated mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "Updated SmartMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh.", GH_ParamAccess.item);
         }
 
         /// <summary>

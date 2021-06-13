@@ -12,7 +12,7 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the CreateRandomNgon class.
         /// </summary>
         public CreateRandomPolygon()
-          : base("CreateRandomNgon", "Nickname",
+          : base("CreateRandomPolygon", "polygon",
               "Creates a random N-gon roughly defined in the range x, y := [-1, 1].",
               "SmartMesh", "Tools")
         {
@@ -23,7 +23,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Edge Count", "ed", "The number of edges (integer) of the N-gon. Non-integer parameters are rounded down.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Edge Count", "Count", "The number of edges (integer) of the N-gon. Non-integer parameters are rounded down.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Surface", "sf", "A polygon surface with a given number of edges.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Surface", "srf", "A polygon surface with a given number of edges.", GH_ParamAccess.item);
         }
 
         /// <summary>
