@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Text;
-using MathNet;
-using System.Linq;
 using System.IO;
 
 namespace MeshPoints.Tools

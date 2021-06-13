@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-// Deconstruct the class Node
-
 namespace MeshPoints.DeconstructClasses
 {
     public class Deconstruct_Node : GH_Component

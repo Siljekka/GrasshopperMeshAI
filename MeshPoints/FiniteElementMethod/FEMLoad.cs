@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using MathNet.Numerics.LinearAlgebra;
 using MeshPoints.Classes;
-using Rhino;
-using System.Linq;
 
 
 namespace MeshPoints.FiniteElementMethod

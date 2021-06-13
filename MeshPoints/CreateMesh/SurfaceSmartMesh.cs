@@ -4,10 +4,6 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Linq;
-using Grasshopper;
-using Grasshopper.Kernel.Data;
-using Rhino.Geometry.Intersect;
-using Rhino.Geometry.Collections;
 
 namespace MeshPoints.CreateMesh
 {

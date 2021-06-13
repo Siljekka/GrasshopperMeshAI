@@ -1,4 +1,8 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using Grasshopper.Kernel;
+using Rhino.Geometry;
+using System;
+using System.Collections.Generic;
+using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 
 namespace MeshPoints.Classes
