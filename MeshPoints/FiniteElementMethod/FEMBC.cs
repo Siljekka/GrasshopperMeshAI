@@ -6,14 +6,14 @@ using MeshPoints.Classes;
 
 namespace MeshPoints.FiniteElementMethod
 {
-    public class FEMBoundaryCondition : GH_Component
+    public class FEMBC : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the FEMBoundaryCondition class.
         /// </summary>
-        public FEMBoundaryCondition()
-          : base("FEM Boundary condtion", "BC",
-              "Create boundary consition for FEM solver.",
+        public FEMBC()
+          : base("FEM Boundary Condtion", "BC",
+              "Create boundary condition for the FEM Solver.",
               "SmartMesh", "FEM")
         {
         }
@@ -23,7 +23,7 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "SM", "Input a SmartMesh.", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item); 
             pManager.AddIntegerParameter("Faces", "faces", "Index of faces with boundary conditions.", GH_ParamAccess.list);
             pManager.AddIntegerParameter("Edges", "edges","Index of edges with boundary conditions.", GH_ParamAccess.list);
             pManager.AddGenericParameter("Tx", "Tx", "True if no translation in x-direction.", GH_ParamAccess.item);
@@ -42,8 +42,8 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Boundary conditions", "BC", "List of DOFS that are fixed", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Points", "pts", "List of node coordinates applied boundary conditions to", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Boundary conditions", "BC", "List of DOFS that are fixed.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Points", "pts", "List of points with boundary conditions.", GH_ParamAccess.list);
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
 ﻿using Grasshopper.Kernel;
+using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
@@ -21,8 +22,9 @@ namespace MeshPoints.FiniteElementMethod
         /// Initializes a new instance of the FEMsolver class.
         /// </summary>
         public FEMSolver()
-          : base("FEM solver", "FEM",
-              "Finite element method solver with quad 4 and hex 8 elements.",
+          : base("FEM Solver", "Solver",
+              "Solver for FEM problems meshed with solid elements." +
+                "Uses 3 translation DOFS pr node, linear shape functions, two Gauss Points and full integration.",
               "SmartMesh", "FEM")
         { 
         }
@@ -32,10 +34,10 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "smartMesh", "Input a SmartMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Loads", "loads", "Input a load vector", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Boundary conditions", "BC", "Input a boundary condition vector.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Material", "material", "Input a material class.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Loads", "load", "Load vector from FEM Load.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Boundary Conditions", "BC", "Boundary conditions from FEM Boundary Condtion.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Material", "material", "Material from FEM Material.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -43,12 +45,11 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("u1", "u1", "Displacement of nodes in u1 dir", GH_ParamAccess.list);
-            pManager.AddGenericParameter("u2", "u2", "Displacement of nodes in u2 dir", GH_ParamAccess.list);
-            pManager.AddGenericParameter("u3", "u3", "Displacement of node in u3 dir", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Nodal stress", "node stress", "List of stress components for each node.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Element mises stress", "element mises", "List of element mises stress.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Node mises stress", "node mises", "List of node mises stress.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u1", "u1", "Displacement of nodes in x-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u2", "u2", "Displacement of nodes in y-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u3", "u3", "Displacement of nodes in z-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Element Stress", "element mises", "List of Von Mises stress in element.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Node Stress", "node mises", "List of von Mises stress in node.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -138,9 +139,8 @@ namespace MeshPoints.FiniteElementMethod
             DA.SetDataList(0, u1);
             DA.SetDataList(1, u2);
             DA.SetDataList(2, u3);
-            DA.SetDataList(3, nodalStress);
-            DA.SetDataList(4, elementMises);
-            DA.SetDataList(5, nodalMises);
+            DA.SetDataList(3, elementMises);
+            DA.SetDataList(4, nodalMises);
         }
 
         #region Methods
@@ -197,12 +197,12 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             //Numerical integration
-           LA.Matrix<double> gaussNodes = _FEM.GetGaussPoints((double)Math.Sqrt((double)1 / (double)3), 3);
+           LA.Matrix<double> gaussNodes = _FEM.GetNaturalCoordinate((double)Math.Sqrt((double)1 / (double)3), 3);
 
            for (int n = 0; n < gaussNodes.RowCount; n++)  // loop gauss nodes
             {
                 // Substitute the natural coordinates into the symbolic expression
-                var r = gaussNodes.Row(n)[0];
+               var r = gaussNodes.Row(n)[0];
                var s = gaussNodes.Row(n)[1];
                var t = gaussNodes.Row(n)[2];
 
@@ -423,7 +423,7 @@ namespace MeshPoints.FiniteElementMethod
             }
 
             // get node strain and stress by extrapolation
-            LA.Matrix<double> extrapolationNodes = _FEM.GetGaussPoints(Math.Sqrt(3),3);
+            LA.Matrix<double> extrapolationNodes = _FEM.GetNaturalCoordinate(Math.Sqrt(3),3);
 
             for (int n = 0; n < B_local.Count; n++)
             { 
@@ -533,7 +533,7 @@ namespace MeshPoints.FiniteElementMethod
             double range = (maxValue - minValue) / (double) 13;
             for (int i = 0; i < mesh.Nodes.Count; i++)
             {
-                // to do: change, for likt synne
+                // to do: Reference Synne, same color mapping
                 if (mises[i] < minValue + range) color = Color.Blue;
                 else if (mises[i] < minValue + 2 * range) color = Color.RoyalBlue;
                 else if (mises[i] < minValue + 3 * range) color = Color.DeepSkyBlue;

@@ -13,8 +13,8 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the MoveCorners class.
         /// </summary>
         public MoveCorners()
-          : base("Move Corners", "mc",
-              "Move corners of a surface with foure edges",
+          : base("Move Corners", "moveC",
+              "Move corners of a surface with four edges.",
               "SmartMesh", "Tools")
         {
         }
@@ -25,8 +25,8 @@ namespace MeshPoints.Tools
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Surface", "srf", "Surface to modify", GH_ParamAccess.item);
-            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction. Gene Count: 4. Range: -1 to 1.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction. Gene Count: 4. Range: -1 to 1.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("u genes ", "qp", "Translation vectors for u-direction. Count: 4. Range: -1 to 1.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("v genes", "qp", "Translation vectors for v-direction.. Count: 4. Range: -1 to 1.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -34,8 +34,8 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Surface", "srf", "¨Modified Surface ", GH_ParamAccess.item);
-            pManager.AddGenericParameter("New corner points", "cp", "Modified corner points", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface", "srf", "Modified Surface.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("New corner points", "corners", "Modified corner points.", GH_ParamAccess.list);
         }
 
         /// <summary>

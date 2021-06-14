@@ -1,4 +1,5 @@
 ﻿using Grasshopper.Kernel;
+using Rhino;
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
@@ -6,26 +7,19 @@ using System.Linq;
 using MeshPoints.Classes;
 using Rhino.Geometry.Collections;
 
-namespace MeshPoints.Tools
+namespace MeshPoints.CreateMesh
 {
-    public class GlobalSmoothing : GH_Component
-    {
-        //
-        // The implementation of Global Smoothing are based on the paper:
-        // "An approach to Combined Laplacian and Optimization-Based Smoothing for Triangular, Quadrilateral and
-        // Quad-Dominant Meshes" (1998) by Cannan, Tristano, and Staten
-        // 
-        // In addition, modification and assumtions by the paper by Karl Erik Levik are implementet:
-        // "Q-Morph - Implementing a Quadrilateral Meshing Algorithm" (2002) by Levik, Karl Erik
-        // 
 
+
+    public class TriangleMesh : GH_Component
+    {
         /// <summary>
-        /// Initializes a new instance of the GlobalSmoothing class.
+        /// Initializes a new instance of the CreateTriangleMesh class.
         /// </summary>
-        public GlobalSmoothing()
-          : base("GlobalSmoothing", "smooth",
-              "Constrained Laplacian Smooth after paper from Cannan.",
-              "SmartMesh", "Tools")
+        public TriangleMesh()
+          : base("Triangle Mesh", "TriMesh",
+              "Creates a triangle mesh on a planar brep. Constrained Laplacian Smooth are performed to improve mesh quality.",
+              "SmartMesh", "Mesh")
         {
         }
 
@@ -34,8 +28,9 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh", "mesh", "Mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Brep", "bp", "The same brep the mesh is created from.", GH_ParamAccess.item);
+            pManager.AddBrepParameter("Brep", "brep", "Planar brep.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Edge Node Count", "count", "Wanted amount of edge nodes. Note that this is only a target value.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Inner Nodes", "points", "A list with points inside the brep.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -43,8 +38,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh", "mesh", "Mesh", GH_ParamAccess.item);
-
+            pManager.AddMeshParameter("Mesh", "mesh", "Mesh (triangle-elements).", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -53,13 +47,56 @@ namespace MeshPoints.Tools
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            Mesh inputMesh = new Mesh();
-            Brep brep = new Brep();
-            DA.GetData(0, ref inputMesh);
-            DA.GetData(1, ref brep);
+            // Inputs
+            Brep meshSurface = new Brep();
+            double totalEdgeNodeCount = 0;
+            List<Point3d> innerNodeList = new List<Point3d>();
+            DA.GetData(0, ref meshSurface);
+            DA.GetData(1, ref totalEdgeNodeCount);
+            DA.GetDataList(2, innerNodeList);
 
-            // 1. Get initial edges and elements of mesh using mesh topology properties
-            var initialEdgeAndElementList = GetInitialEdgesAndElements(inputMesh);
+            // 1. Create nodes along the edges of the surface and flatten.
+            List<List<Point3d>> edgeNodesSurface = CreateEdgePointsByCount(meshSurface, totalEdgeNodeCount);
+            // We flatten the list here, as the ListList-structure of CreateEdgePointsByCount is useful elsewhere.
+            List<Point3d> flattenedEdgeNodes = new List<Point3d>();
+            foreach(List<Point3d> edge in edgeNodesSurface)
+            {
+                // Do not add endnode of edge as this is duplicate of startnode of next edge
+                for ( int i = 0; i<edge.Count()-1; i++)
+                {
+                    flattenedEdgeNodes.Add(edge[i]);
+                }
+            }
+
+            // 2. Create points inside the surface by creating a bounding box, populating it with points, and culling all points not inside the surface.
+            Brep boundingBoxSurface = CreateBoundingBoxFromBrep(meshSurface);
+            if (boundingBoxSurface == null) { return; }
+            List<Point3d> nodeGridBoundingBox = innerNodeList; //CreatePointGridInBoundingBox(boundingBoxSurface, meshSurface, totalInnerNodeCount);
+            List<Point3d> nodesInsideSurface = CullPointsOutsideSurface(nodeGridBoundingBox, flattenedEdgeNodes, meshSurface);
+
+
+            // 3. Collect flat list of all points to use for triangle meshing and cast to compatible data structure (Node2List) for Delaunay method.
+            List<Point3d> nodeCollection = new List<Point3d>();
+            nodeCollection.AddRange(flattenedEdgeNodes);
+            nodeCollection.AddRange(nodesInsideSurface);
+            Point3d[] culledNodes = Point3d.CullDuplicates(nodeCollection, 0.001);
+
+            var meshNodes = new Grasshopper.Kernel.Geometry.Node2List(culledNodes);
+
+            // 4. Throw all our points into the Delaunay mesher. Adjust jitter_amount as needed.
+            var meshFaces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
+            var triangleMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(meshNodes, 0.01, ref meshFaces); // todo: what is "double jitter_amount"?
+            
+            // 5. Sometimes the mesh acts up; in these cases it is necessary to cull mesh faces that are outside the surface.
+            Mesh culledTriangleMesh = CullMeshFacesOutsideSurface(triangleMesh, meshSurface);
+            
+            if (!culledTriangleMesh.IsValid)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The mesh is invalid. Check for duplicate points.");
+            }
+
+            // 6. Get initial edges and elements of mesh using mesh topology properties
+            var initialEdgeAndElementList = GetInitialEdgesAndElements(culledTriangleMesh);
             List<qEdge> globalEdgeList = initialEdgeAndElementList.Item1;
             List<qElement> globalElementList = initialEdgeAndElementList.Item2;
             foreach (qElement element in globalElementList)
@@ -67,10 +104,10 @@ namespace MeshPoints.Tools
                 element.FixEdgeOrder();
             }
 
-            // 2. Do global smoothing
-            DoGlobalSmoothing(brep, globalEdgeList, globalElementList);
+            // 7. Do global smoothing
+            DoGlobalSmoothing(meshSurface, globalEdgeList, globalElementList);
 
-            // 3. Convert mesh to SmartMesh Class and create final mesh
+            // 8. Convert mesh to SmartMesh Class and create final mesh
             var meshProperties = ConvertToMainMeshClasses(globalElementList);
             Mesh newMesh = new Mesh();
             foreach (Element e in meshProperties.Item2)
@@ -89,11 +126,150 @@ namespace MeshPoints.Tools
             }
             newMesh.Weld(0.1);
 
-           
+            // Outputs
             DA.SetData(0, newMesh);
         }
-
         #region Methods
+        /// <summary>
+        /// Cull unwanted mesh faces by checking if their center points are outside the actual surface of the mesh.
+        /// </summary>
+        /// <returns>A <see cref="Mesh"/> with (hopefully) no outside mesh faces.</returns>
+        private Mesh CullMeshFacesOutsideSurface(Mesh meshSurface, Brep brep)
+        {
+            Mesh insideFaces = meshSurface.DuplicateMesh();
+            for (int i = meshSurface.Faces.Count-1; i>0; i--) // reverse iteration to maintain indices
+            {
+                if (!IsPointOnBrepSurface(meshSurface.Faces.GetFaceCenter(i), brep))
+                {
+                    insideFaces.Faces.RemoveAt(i);
+                }
+            }
+            return insideFaces;
+        }
+
+        /// <summary>
+        /// Takes an input point and a Brep surface. If the distance between input point 
+        /// and the closest point on the Brep ~ 0, the point is deemed on the surface.
+        /// </summary>
+        /// <returns>True if point is on Brep.</returns>
+        private bool IsPointOnBrepSurface(Point3d point, Brep brep)
+        {
+            var testPointSurfaceDistance = point.DistanceTo(brep.ClosestPoint(point));
+
+            if (testPointSurfaceDistance < RhinoMath.SqrtEpsilon) 
+            { 
+                return true; 
+            }
+            else 
+            { 
+                return false; 
+            }
+        }
+
+        /// <summary>
+        /// Takes a list of <see cref="Point3d"/> and checks if points are inside an input <see cref="Brep"/> surface.
+        /// </summary>
+        /// <returns>A list of <see cref="Point3d"/> containing points inside the input <see cref="Brep"/> surface.</returns>
+        private List<Point3d> CullPointsOutsideSurface(List<Point3d> pointGrid, List<Point3d> edgeNodes, Brep meshSurface)
+        {
+            var insidePoints = new List<Point3d>();
+            HashSet<Point3d> edgeNodesSet = new HashSet<Point3d>(edgeNodes);
+            foreach (Point3d point in pointGrid)
+            {
+                if (IsPointOnBrepSurface(point, meshSurface) && !edgeNodesSet.Contains(point))
+                {
+
+                    insidePoints.Add(point);
+                }
+            }
+            return insidePoints;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Brep"/> rectangle around an arbitrary plane <see cref="Brep"/> geometry and fills it with points.
+        /// </summary>
+        private Brep CreateBoundingBoxFromBrep(Brep meshSurface)
+        {
+            double zAxis = 0.0; // double representing the points' placement on the z-axis 
+            BoundingBox boundingBox = meshSurface.GetBoundingBox(false);
+            Brep boundingBoxBrep = Brep.CreateFromCornerPoints(
+                new Point3d(boundingBox.Min.X, boundingBox.Min.Y, zAxis),
+                new Point3d(boundingBox.Max.X, boundingBox.Min.Y, zAxis),
+                new Point3d(boundingBox.Max.X, boundingBox.Max.Y, zAxis),
+                new Point3d(boundingBox.Min.X, boundingBox.Max.Y, zAxis),
+                RhinoMath.ZeroTolerance
+                );
+
+            return boundingBoxBrep;
+        }
+
+        /// <summary>
+        /// Creates points on the <see cref="BrepEdge"/>s of a <see cref="Brep"/> based on a given total edge node count.
+        /// </summary>
+        /// <returns>Returnds a list of <see cref="Point3d"/> along the edge of a <see cref="Brep"/>.</returns>
+        private List<List<Point3d>> CreateEdgePointsByCount(Brep meshSurface, double totalEdgeNodeCount)
+        {
+            var edgePoints = new List<List<Point3d>>();
+
+            double totalEdgeLength = 0;
+            foreach (Curve edge in meshSurface.Edges)
+            {
+                totalEdgeLength += edge.GetLength();
+            }
+            foreach (Curve edge in meshSurface.Edges)
+            {
+                double[] tValues;
+                var innerEdgePoints = new List<Point3d>();
+                double edgeLength = edge.GetLength();
+                var edgeNodeCount = Convert.ToInt32(totalEdgeNodeCount * (edgeLength / totalEdgeLength) + 1);
+                
+                tValues = edge.DivideByCount(edgeNodeCount, true);
+                foreach ( var t in tValues)
+                {
+                    innerEdgePoints.Add(edge.PointAt(t));
+                }
+                edgePoints.Add(innerEdgePoints);
+            }
+            return edgePoints;
+        }
+
+        /// <summary>
+        /// Creates a grid of points in a bounding box <see cref="Brep"/> based on a given number of wanted internal nodes in a surface.
+        /// </summary>
+        /// <returns>A List of <see cref="Point3d"/> describing a grid of points in a rectangle.</returns>
+        private List<Point3d> CreatePointGridInBoundingBox(Brep boundingBox, Brep meshSurface, double nodeCount)
+        {
+            var gridPoints = new List<Point3d>(); // output
+            
+            // boundingBoxEdgeNodeCount is crudely implemented and is only accurate at a high number of nodes && a quadratic bounding box.
+            // It tries to calculate how many evenly spaced nodes we need on the edge of the bounding box to 
+            // achieve the wanted amount of inner nodes. Send an e-mail to magnus@kunnas.no for explanation.
+            boundingBox.Scale(0.90);
+            var boundingBoxEdgeNodeCount = Math.Sqrt(nodeCount * boundingBox.GetArea() / meshSurface.GetArea()) * 4 - 4;
+
+            List<List<Point3d>> edgeGrid = CreateEdgePointsByCount(boundingBox, boundingBoxEdgeNodeCount); 
+
+            var edge1 = edgeGrid[0];
+            var edge2 = edgeGrid[1];
+            var edge3 = edgeGrid[2];
+            // var edge4 = edgeGrid[3]; // not used
+            edge3.Reverse();
+
+            var pointsInUdirection = edge1.Count();
+            var pointsInVdirection = edge2.Count();
+
+            for(int i = 0; i<pointsInUdirection; i++)
+            {
+                double[] tValues;
+                var line = new LineCurve(edge1[i], edge3[i]); // draw lines between points on opposite edges
+                tValues = line.DivideByCount(pointsInVdirection - 1, true); // # of divisions is one less than # of nodes along edge
+                foreach (double t in tValues)
+                {
+                    gridPoints.Add(line.PointAt(t));
+                }
+            }
+            return gridPoints;
+        }
         private Tuple<List<Node>, List<Element>> ConvertToMainMeshClasses(List<qElement> globalqElementList)
         {
             // Create global qNode list
@@ -379,8 +555,14 @@ namespace MeshPoints.Tools
             return globalNodeList;
         }
 
-
-        // After paper by Cannan, with modifications by Qmorp-fyren for the quads.
+        //
+        // The implementation of Global Smoothing are based on the paper:
+        // "An approach to Combined Laplacian and Optimization-Based Smoothing for Triangular, Quadrilateral and
+        // Quad-Dominant Meshes" (1998) by Cannan, Tristano, and Staten
+        // 
+        // In addition, modification and assumtions by the paper by Karl Erik Levik are implementet:
+        // "Q-Morph - Implementing a Quadrilateral Meshing Algorithm" (2002) by Levik, Karl Erik
+        // 
         private void DoGlobalSmoothing(Brep brep, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
             List<qNode> globalNodeList = GetGlobalNodeList(globalEdgeList);
@@ -503,7 +685,7 @@ namespace MeshPoints.Tools
                 n++;
             }
         }
-        private double CalculateDistortionMetric(qElement element) //OK  move to qElement
+        private double CalculateDistortionMetric(qElement element)
         {
             double my = 0; // distortion metric
             if (!element.IsQuad)
@@ -599,7 +781,7 @@ namespace MeshPoints.Tools
                 }
             }
             return alpha;
-        } // OK
+        }
         private double CoincidentNodes(qElement element)
         {
             List<qNode> elementNodes = element.GetNodesOfElement();
@@ -611,7 +793,7 @@ namespace MeshPoints.Tools
             nodeDistance.Add((elementNodes[3].Coordinate - elementNodes[1].Coordinate).Length);
             nodeDistance.Add((elementNodes[3].Coordinate - elementNodes[2].Coordinate).Length);
             return nodeDistance.Min();
-        } // OK
+        }
         private qNode ConstrainedLaplacianSmooth(qNode node, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
             // 1. Move node with Laplacian smooth
@@ -699,71 +881,7 @@ namespace MeshPoints.Tools
             }
             Vector3d laplacian = vectorSum / (double)connectedEdges.Count;
             return laplacian;
-        } // OK
-        private qNode OptimizationBasedSmoothing(qNode node, double maxModelDimension, List<qEdge> globalEdgeList)
-        {
-            qNode newNode = new qNode();
-            double myMin = 100; // dummy-value
-            Vector3d g = Vector3d.Zero;
-            List<Vector3d> gi = new List<Vector3d>();
-            List<qElement> connectedElements = node.GetConnectedElements(globalEdgeList);
-
-            // 1. Estimate gradient vector for each element connected to node
-            double delta = Math.Pow(10, -5) * maxModelDimension; // constant form paper
-            List<qElement> connectedElementsCopy = new List<qElement>(connectedElements);
-            foreach (qElement element in connectedElementsCopy)
-            {
-                if (element.DistortionMetric < 0) { connectedElements.Remove(element); continue; }
-                double giX = CalculateGradient(element, node, delta, "x");
-                double giY = CalculateGradient(element, node, delta, "y");
-                double giZ = 0;// CalculateGradient(element, node, delta, "z");
-                if ((new Vector3d(giX, giY, giZ)).Length > 0.00001 & element.DistortionMetric < myMin)
-                {
-                    myMin = element.DistortionMetric;
-                    g = new Vector3d(giX, giY, giZ);
-                }
-                gi.Add(new Vector3d(giX, giY, giZ));
-            }
-
-            // 2. Calculate gamma used to move node
-            double gamma = 100;
-            bool gammaLimited = false;
-            for (int i = 0; i < connectedElements.Count; i++)
-            {
-                if (Vector3d.Multiply(g, gi[i]) < 0)
-                {
-                    gammaLimited = true;
-                    double gamma_i = (connectedElements[i].DistortionMetric - myMin) / (Vector3d.Multiply(g, g) - Vector3d.Multiply(g, gi[i]));
-                    if (gamma_i < gamma) { gamma = gamma_i; }
-                }
-            }
-            if (!gammaLimited) { gamma = 0.8; } // Constant as in qmorph-fyr
-
-            // 3. Move node:
-            for (int i = 0; i <= 4; i++) // Constant "4" as proposed in paper
-            {
-                Point3d newPoint = new Point3d((node.Coordinate + gamma * g).X, (node.Coordinate + gamma * g).Y, (node.Coordinate + gamma * g).Z);
-                double myMinNew = 100;
-
-                foreach (qElement element in connectedElements)
-                {
-                    List<qNode> elementNodes = element.GetNodesOfElement();
-                    elementNodes[elementNodes.IndexOf(node)] = new qNode(newPoint, node.BoundaryNode);
-                    qElement newElement = CreateElementFromNodes(elementNodes);
-                    double my = CalculateDistortionMetric(newElement);
-                    if (my < myMinNew) { myMinNew = my; }
-                }
-
-                if (myMinNew >= myMin + 0.0001) // Constant as proposed in paper
-                {
-                    newNode = new qNode(newPoint, node.BoundaryNode);
-                    newNode.OBS = true;
-                    break;
-                }
-                else { gamma = gamma / 2; newNode = node; newNode.OBS = false; }
-            }
-            return newNode;
-        }
+        } 
         private double CalculateGradient(qElement element, qNode node, double delta, string direction)
         {
             if (direction == "x")
@@ -840,8 +958,8 @@ namespace MeshPoints.Tools
             return edge;
         }
 
-
         #endregion
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
@@ -851,7 +969,7 @@ namespace MeshPoints.Tools
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_Triangle;
             }
         }
 
@@ -860,7 +978,7 @@ namespace MeshPoints.Tools
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("994cfb8f-8b27-4e56-95aa-a5bee10ca2c0"); }
+            get { return new Guid("a07a01a6-a771-4d75-9f96-e87ece274885"); }
         }
     }
 }

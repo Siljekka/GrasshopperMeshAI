@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-namespace MeshPoints.QuadRemesh
+namespace MeshPoints.DeconstructClasses
 {
     public class DeconstructQEdge : GH_Component
     {
@@ -12,9 +12,9 @@ namespace MeshPoints.QuadRemesh
         /// Initializes a new instance of the DeconstructQEdge class.
         /// </summary>
         public DeconstructQEdge()
-          : base("Deconstruct qEdge", "dqe",
-              "Deconstruct qEdge class",
-              "SmartMesh", "QuadRemesh")
+          : base("Deconstruct qEdge", "qEdge",
+              "Deconstructing the qEdge Class.",
+              "SmartMesh", "Deconstruct")
         {
         }
 
@@ -23,7 +23,7 @@ namespace MeshPoints.QuadRemesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("qEdge", "qel", "Input qEdge class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("qEdge", "qEg", "qEdge Class.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,14 +31,14 @@ namespace MeshPoints.QuadRemesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Start node", "sn", "Start node of edge", GH_ParamAccess.item);
-            pManager.AddGenericParameter("End node", "en", "End node of edge", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Element 1", "e1", "Adjacent element", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Element 2", "e2", "Adjacent element", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Left front neighbor ", "lf", "Adjacent front egde to left", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Right front neighbor ", "rf", "Adjacent front egde to right", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Line", "l", "Edge line", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Level", "l", "Level", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Start node", "sN", "Start node of edge.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("End node", "eN", "End node of edge.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Element 1", "e1", "Adjacent element.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Element 2", "e2", "Adjacent element.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Left front neighbor ", "lF", "Adjacent front egde to left.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Right front neighbor ", "rF", "Adjacent front egde to right.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Line", "l", "Edge line.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Level", "l", "Level.", GH_ParamAccess.item);
         }
 
         /// <summary>

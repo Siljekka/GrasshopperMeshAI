@@ -14,8 +14,8 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the MeshToSmarMesh class.
         /// </summary>
         public MeshToSmarMesh()
-          : base("MeshToSmarMesh", "ToSmartMesh",
-              "Transforms Class Mesh to Class SmartMesh",
+          : base("TrinagleMesh To SmarMesh", "ToSM",
+              "Transforms the class Mesh to class SmartMesh. The mesh must be composed of triangle elements.",
               "SmartMesh", "Tools")
         {
         }
@@ -25,7 +25,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh", "mesh", "Surface Mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Triangle Mesh", "mesh", "Surface mesh with triangle elements.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh for surfaces", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh for surfaces.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -253,7 +253,7 @@ namespace MeshPoints.Tools
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_MeshToSM;
             }
         }
 

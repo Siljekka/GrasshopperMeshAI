@@ -13,8 +13,8 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the MoveGrids class.
         /// </summary>
         public MoveGrids()
-          : base("Move Grids", "mg",
-              "Move mesh grids",
+          : base("Move Grids", "moveG",
+              "Move grids of a SmartMesh by translation vectors in range [-1,1].",
               "SmartMesh", "Tools")
         {
         }
@@ -24,12 +24,13 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "Input a SmartMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("u genes ", "qp", "Gene pool for translation in u direction", GH_ParamAccess.list);
-            pManager.AddGenericParameter("v genes", "qp", "Gene pool for translation in v direction", GH_ParamAccess.list);
-            pManager.AddGenericParameter("w genes", "qp", "Gene pool for translation in w direction", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("u genes ", "qp", "Translation vectors for u-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("v genes", "qp", "Translation vectors for v-direction.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("w genes", "qp", "Translation vectors for w-direction.", GH_ParamAccess.list);
             pManager.AddGenericParameter("Grid information", "grid", "Input gridinformation for merged SmartMesh.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("grid genes", "grid", "Gene pool for translation of grids from gridinformation. Number needs to match the number of grid groups.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("grid genes", "grid", "Translation vectors for grids from grid information. " +
+                "Number needs to match the number of grid groups.", GH_ParamAccess.list);
 
             // if unmerged SmartMesh
             pManager[1].Optional = true; 
@@ -47,9 +48,8 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "Updated mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh", "m", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Nodes", "m", "", GH_ParamAccess.list); // to do : slett
+            pManager.AddGenericParameter("SmartMesh", "SM", "Updated SmartMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -79,6 +79,7 @@ namespace MeshPoints.Tools
             double overlapTolerance = 0.95; // ensure no collision of vertices, reduce number to avoid "the look of triangles".
             List<Node> newNodes = new List<Node>();
 
+            // to do: fix return criterias...
 
             // 1. Write error if wrong input
             if (!DA.GetData(0, ref oldMesh)) { return; }
@@ -121,10 +122,7 @@ namespace MeshPoints.Tools
                             else { genU = genesU[i - 1]; }
 
                             int nodeIndex = i + j * oldMesh.nu + k * oldMesh.nu * oldMesh.nv;
-                            if (nodeIndex == 84)
-                            { 
-                            
-                            }
+
                             Tuple<bool, BrepFace> pointFace = PointOnFace(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnFace, Item2: face. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                             Tuple<bool, BrepEdge> pointEdge = PointOnEdge(oldMesh.Nodes[nodeIndex], brep); // Item1: IsOnEdge, Item2: edge. Silje: flytte dette inn i Node klasse? Og kall på fra GetNewCoord
                             Point3d newPoint = GetNewCoordinateOfNode(nodeIndex, pointFace, pointEdge, oldMesh, genU, genV, genW, overlapTolerance);
@@ -185,29 +183,16 @@ namespace MeshPoints.Tools
                             if (gridGroup[j][i].Type == "Merged")
                             {
                                 tempPoint = oldPoint;
-                                //tempPointFront = gridGroup[j + 1][i].Coordinate;
-                                //tempPointBack = gridGroup[j - 1][i].Coordinate;
                             }
                             
-                            if (gridGroup[j+1][i].Type == "Merged")
-                            {
-                                //tempPointFront = gridGroup[j + 1][i].Coordinate;
-                            }
-                            if (gridGroup[j - 1][i].Type == "Merged")
-                            {
-                                //tempPointBack = gridGroup[j - 1][i].Coordinate;
-                            }
-
 
                             if (gene >= 0) 
                             {
-                                //translation = 0.5 * (gridGroup[j + 1][i].Coordinate - tempPoint) * gene * overlapTolerance;
                                 translation = 0.5 * (tempPointFront - tempPoint) * gene * overlapTolerance;
 
                             }
                             else
                             {
-                                //translation = 0.5 * (tempPoint - gridGroup[j - 1][i].Coordinate) * gene * overlapTolerance;
                                 translation = 0.5 * (tempPoint - tempPointBack) * gene * overlapTolerance;
                             }
 
@@ -232,12 +217,9 @@ namespace MeshPoints.Tools
                 newMesh = new SmartMesh(newNodes, newElements, "Surface");
             }
 
-
-
             // Output
             DA.SetData(0, newMesh);
             DA.SetData(1, newMesh.Mesh);
-            DA.SetDataList(2, newNodes);
         }
         #region Methods
 
@@ -426,7 +408,7 @@ namespace MeshPoints.Tools
                 {
                     //You can add image files to your project resources and access them like this:
                     // return Resources.IconForThisComponent;
-                    return null;
+                    return Properties.Resources.Icon_MoveGrids;
                 }
             }
 

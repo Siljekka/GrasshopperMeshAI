@@ -4,17 +4,17 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-namespace MeshPoints.Tools
+namespace MeshPoints.DeconstructClasses
 {
-    public class IdealizePoints : GH_Component
+    public class DeconstructQElement : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the MapPoints class.
+        /// Initializes a new instance of the DeconstructQElement class.
         /// </summary>
-        public IdealizePoints()
-          : base("Idealize Points", "map",
-              "Map points of a surface to a perfect quad/cube.",
-              "SmartMesh", "Tools")
+        public DeconstructQElement()
+          : base("Deconstruct qElement", "qElement",
+              "Deconstructing the qElement Class.",
+              "SmartMesh", "Deconstruct")
         {
         }
 
@@ -23,7 +23,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "SmartMesh Class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("qElement", "qEl", "qElement Class.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,7 +31,11 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "np", "SmartMesh Class with normalized node coordinates.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("qEdges", "qE", "Element edges.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Angles", "qE", "Element angles.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("IsQuad", "qE", "True if element is a quad.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Distortion Metric", "dM", "Distortion metric of element.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Contour", "c", "Contour of element.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -40,22 +44,14 @@ namespace MeshPoints.Tools
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            SmartMesh mesh = new SmartMesh();
-            DA.GetData(0, ref mesh);
+            qElement element = new qElement();
+            DA.GetData(0, ref element);
 
-
-            NurbsSurface surface = mesh.Geometry.Brep.Faces[0].ToNurbsSurface();
-            surface.SetDomain(0, new Interval(0, 1));
-            surface.SetDomain(1, new Interval(0, 1));
-            foreach (Node node in mesh.Nodes)
-            {
-                surface.ClosestPoint(node.Coordinate, out double PointU, out double PointV);
-                Point3d newPoint = new Point3d(PointU, PointV, 0);
-                int id = mesh.Nodes.IndexOf(node);
-                mesh.Nodes[id].Coordinate = newPoint;
-            }
-
-            DA.SetData(0, mesh);
+            DA.SetDataList(0, element.EdgeList);
+            DA.SetDataList(1, element.AngleList);
+            DA.SetData(2, element.IsQuad);
+            DA.SetData(3, element.DistortionMetric);
+            DA.SetDataList(4, element.Contour);
         }
 
         /// <summary>
@@ -67,7 +63,7 @@ namespace MeshPoints.Tools
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_DecQElement;
             }
         }
 
@@ -76,7 +72,7 @@ namespace MeshPoints.Tools
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("14c464b4-b62c-4dec-9420-8bf9826578f0"); }
+            get { return new Guid("6c7a5125-b4e9-45f1-992b-1bcfe1a9274e"); }
         }
     }
 }

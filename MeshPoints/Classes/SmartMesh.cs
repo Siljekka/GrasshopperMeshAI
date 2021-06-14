@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
-using MathNet.Numerics.LinearAlgebra;
+using System;
+using System.Collections.Generic;
 
 namespace MeshPoints.Classes
 {
@@ -212,7 +209,6 @@ namespace MeshPoints.Classes
                     int g = element.Connectivity[6];
                     int h = element.Connectivity[7];
 
-
                     mesh.Faces.AddFace(a, b, f, e);
                     mesh.Faces.AddFace(b, c, g, f);
                     mesh.Faces.AddFace(c, d, h, g);
@@ -227,6 +223,24 @@ namespace MeshPoints.Classes
                 {
                     mesh.Faces.AddFace(element.Connectivity[0], element.Connectivity[1], element.Connectivity[2]);
                 }
+            }
+            else if (this.Elements[0].Type == "Tet")
+            {
+                foreach (Element element in this.Elements)
+                {
+                    int a = element.Connectivity[0];
+                    int b = element.Connectivity[1];
+                    int c = element.Connectivity[2];
+                    int d = element.Connectivity[3];
+                    int e = element.Connectivity[4];
+                    int f = element.Connectivity[5];
+
+                    mesh.Faces.AddFace(a, b, c);
+                    mesh.Faces.AddFace(d, e, f);
+                    mesh.Faces.AddFace(a, b, e, d);
+                    mesh.Faces.AddFace(b, c, f, e);
+                    mesh.Faces.AddFace(c, a, d, f);
+                }               
             }
 
             mesh.Normals.ComputeNormals();

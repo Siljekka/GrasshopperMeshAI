@@ -15,8 +15,8 @@ namespace MeshPoints.CreateMesh
         /// Initializes a new instance of the SweepSmartMesh class.
         /// </summary>
         public SweepSmartMesh()
-          : base("Sweep SmartMesh", "ss",
-              "Sweep a referance surface SmartMesh",
+          : base("Sweep SmartMesh", "SweepSM",
+              "Sweeps a surface SmartMesh.",
               "SmartMesh", "Mesh")
         {
         }
@@ -26,10 +26,10 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "Brep to mesh with sweeping", "", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("BottomFace", "index", "Index of bottomFace", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("w", "w","Number element in w direction", GH_ParamAccess.item, 4);
-            pManager.AddGenericParameter("SmartMesh", "mb", "Reference SmartMesh to sweep", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Brep", "brep", "Brep to be meshed with sweeping.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Index", "i", "Index of the bottom face of the brep.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("w", "w","Number element in w-direction.", GH_ParamAccess.item, 4);
+            pManager.AddGenericParameter("SmartMesh", "SM", "Reference SmartMesh to sweep.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -37,8 +37,8 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "SmartMesh from sweeping", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh", "m", "Mesh from sweeping", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh (hexahedral-elements).", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -234,14 +234,27 @@ namespace MeshPoints.CreateMesh
                     List<int> connectivity = new List<int>();
                     Element refElement = refMesh.Elements[j];
 
-                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * i);
-                    connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * (i+1));
-                    connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * (i+1));
-                    connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i+1));
-                    connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * (i+1));
+                    if (refMesh.Elements[0].Type == "Triangle")
+                    {
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i + 1));
+                    }
+                    else 
+                    {
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * i);
+                        connectivity.Add(refElement.Connectivity[0] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[1] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[2] + numNodesInPlane * (i + 1));
+                        connectivity.Add(refElement.Connectivity[3] + numNodesInPlane * (i + 1));
+
+                    }
 
                     foreach (int id in connectivity)
                     {
@@ -249,24 +262,6 @@ namespace MeshPoints.CreateMesh
                     }
 
                     Element element = new Element(elemId, elementNodes, connectivity);
-
-                    // create local mesh
-                    Mesh localMesh = new Mesh();
-                    foreach (Node node in elementNodes)
-                    {
-                        localMesh.Vertices.Add(node.Coordinate); 
-                    }
-                    localMesh.Faces.AddFace(0, 1, 5, 4);
-                    localMesh.Faces.AddFace(1, 2, 6, 5);
-                    localMesh.Faces.AddFace(2, 3, 7, 6);
-                    localMesh.Faces.AddFace(3, 0, 4, 7);
-                    localMesh.Faces.AddFace(0, 1, 2, 3);
-                    localMesh.Faces.AddFace(4, 5, 6, 7);
-
-                    localMesh.Normals.ComputeNormals();
-                    localMesh.FaceNormals.ComputeFaceNormals();  // want a consistant mesh
-                    localMesh.Compact(); // to ensure that it calculate
-                    element.Mesh = localMesh;
 
                     //add element and mesh to element list
                     elements.Add(element);

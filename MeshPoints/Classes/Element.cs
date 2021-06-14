@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
+using System;
+using System.Collections.Generic;
 
 
 namespace MeshPoints.Classes
@@ -19,13 +17,10 @@ namespace MeshPoints.Classes
         public List<double> JacDet { get; set; }
 
         //Constructer
-
-        //_empty
         public Element()
         {
             //Empty constructor
         }
-
         public Element(int _id, List<Node> _nodes, List<int> _connectivity)
         {
             Id = _id;
@@ -71,7 +66,7 @@ namespace MeshPoints.Classes
                 List<List<int>> nodeIndex = new List<List<int>>
                 {
                       new List<int> {0, 1, 5, 4}, new List<int> {1, 2, 6, 5}, new List<int> {2, 3, 7, 6},
-                      new List<int> { 3, 0, 4, 7 }, new List<int> { 0, 1, 2, 3 },  new List<int> { 4, 5, 6, 7 }
+                      new List<int> { 3, 0, 4, 7 }, new List<int> { 0, 3, 2, 1 },  new List<int> { 4, 5, 6, 7 }
                 };
   
                 foreach (List<int> indices in nodeIndex)
@@ -110,6 +105,14 @@ namespace MeshPoints.Classes
             else if (this.Type == "Triangle")
             {
                 mesh.Faces.AddFace(0, 1, 2);
+            }
+            else if (this.Type == "Tet")
+            {
+                mesh.Faces.AddFace(0, 1, 2);
+                mesh.Faces.AddFace(3, 4, 5);
+                mesh.Faces.AddFace(0, 1, 4, 3);
+                mesh.Faces.AddFace(1, 2, 5, 4);
+                mesh.Faces.AddFace(2, 0, 3, 5);
             }
 
             mesh.Compact(); //to ensure that it calculate
