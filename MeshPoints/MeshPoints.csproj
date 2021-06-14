@@ -166,7 +166,9 @@
     <None Include="Properties\Resources\Icon_Material.png" />
     <None Include="Properties\Resources\Icon_MergeMesh.png" />
     <Content Include="Properties\Resources\Icon_MergeNodes.png" />
+    <None Include="Properties\Resources\Icon_MeshToSM.png" />
     <Content Include="Properties\Resources\Icon_MoveCorners.png" />
+    <None Include="Properties\Resources\Icon_MoveGrids.png" />
     <Content Include="Properties\Resources\Icon_MoveNodes.png" />
     <Content Include="Properties\Resources\Icon_NormalizeSurface.png" />
     <None Include="Properties\Resources\Icon_PreviewGrid.png" />
