@@ -23,7 +23,7 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         public FEMSolver()
           : base("FEM Solver", "Solver",
-              "Solver for FEM problems. Can be used on geometries meshed with solid elements." +
+              "Solver for FEM problems meshed with solid elements." +
                 "Uses 3 translation DOFS pr node, linear shape functions, two Gauss Points and full integration.",
               "SmartMesh", "FEM")
         { 
