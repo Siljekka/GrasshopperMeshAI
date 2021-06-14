@@ -103,7 +103,7 @@
     <Compile Include="CreateMesh\SurfaceSmartMesh.cs" />
     <Compile Include="CreateMesh\TriangleMesh.cs" />
     <Compile Include="DeconstructClasses\DeconstructGeometry.cs" />
-    <Compile Include="FiniteElementMethod\FEMBoundaryCondition.cs" />
+    <Compile Include="FiniteElementMethod\FEMBC.cs" />
     <Compile Include="FiniteElementMethod\FEMLoad.cs" />
     <Compile Include="FiniteElementMethod\FEMMaterial.cs" />
     <Compile Include="DeconstructClasses\DeconstructElement.cs" />
