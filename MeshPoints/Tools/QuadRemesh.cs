@@ -299,7 +299,8 @@ namespace MeshPoints.Tools
             DA.SetDataList(2, globalElementList);
             DA.SetData(3, quadElement);
             DA.SetData(4, E_front);
-            DA.SetData(5, surfaceMesh);
+            DA.SetData(5, E_k_left);
+            DA.SetData(6, E_k_right);
             /*DA.SetDataList(6, nodesTest);
             DA.SetDataList(7, v);
             DA.SetDataList(8, p);
