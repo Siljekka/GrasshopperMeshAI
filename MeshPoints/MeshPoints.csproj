@@ -112,7 +112,6 @@
     <Compile Include="DeconstructClasses\DeconstructNode.cs" />
     <Compile Include="Tools\CreateRandomPolygon.cs" />
     <Compile Include="Tools\ExcelExport.cs" />
-    <Compile Include="Tools\GlobalSmoothing.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
     <Compile Include="Tools\MeshToSmarMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
@@ -122,7 +121,6 @@
     <Compile Include="Tools\INPExport.cs" />
     <Compile Include="Tools\MeshQuality.cs" />
     <Compile Include="MeshPointsInfo.cs" />
-    <Compile Include="Tools\IsSweepable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Classes\qEdge.cs" />
     <Compile Include="Classes\qElement.cs" />
