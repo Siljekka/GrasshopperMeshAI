@@ -77,8 +77,6 @@ namespace MeshPoints.Tools
             if (!DA.GetData(2, ref performeLocalSmoothing)) return; 
             if (!DA.GetData(3, ref iterationsToPerformBeforeStop)) return;
 
-            #region Code
-
 
             // Get initial edges and elements using mesh topology properties
             var initialEdgeAndElementList = GetInitialEdgesAndElements(mesh);
@@ -289,7 +287,6 @@ namespace MeshPoints.Tools
             double badestQuality = meshValues.Item2;
             surfaceMesh.Mesh = meshValues.Item3;
             
-            #endregion End Code
 
 
 

@@ -14,7 +14,6 @@ namespace MeshPoints.Classes
         public Quality MeshQuality { get; set; }
         public int Id { get; set; }
         public Mesh Mesh { get; set; }
-        public List<double> JacDet { get; set; }
 
         //Constructer
         public Element()

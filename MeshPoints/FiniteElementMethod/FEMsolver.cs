@@ -71,8 +71,6 @@ namespace MeshPoints.FiniteElementMethod
             DA.GetData(3, ref material);
 
 
-            // Code
-
             // 0. Initial step
             if (!DA.GetData(0, ref smartMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid SmartMesh input."); return; }
             List<Node> nodes = smartMesh.Nodes;
@@ -133,7 +131,6 @@ namespace MeshPoints.FiniteElementMethod
             {
                nodalStress.Add(globalStress.Column(i).ToArray());
             }
-
 
             // Output
             DA.SetDataList(0, u1);

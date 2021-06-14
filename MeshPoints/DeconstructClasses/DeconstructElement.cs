@@ -58,7 +58,6 @@ namespace MeshPoints.DeconstructClasses
             DA.SetData(2, e.Type);
             DA.SetData(3, e.Id);
             DA.SetData(4, e.Mesh);
-            DA.SetDataList(5, e.JacDet);
         }
 
         /// <summary>

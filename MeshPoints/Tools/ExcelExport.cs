@@ -15,7 +15,7 @@ namespace MeshPoints.Tools
         /// </summary>
         public ExcelExport()
           : base("Excel Export", "excel",
-              "Create data file that can be imported to excel.", //todo: fix description
+              "Create data file that can be imported to excel.", 
               "SmartMesh", "Tools")
         {
         }

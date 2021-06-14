@@ -105,6 +105,9 @@ namespace MeshPoints.Tools
         }
 
         #region Methods
+        /// <summary>
+        /// Calculates the Aspect Ratio of an element.
+        /// </summary>
         double CalculateAspectRatio(Element element)
         {
             // Calculate Aspact Ratio like Abaqus
@@ -165,65 +168,6 @@ namespace MeshPoints.Tools
             double minDistance = nodeToNodeDistance[0];
             double maxDistance = nodeToNodeDistance[nodeToNodeDistance.Count - 1];
             double AR = minDistance / maxDistance;
-            return AR;
-        }
-        /// <summary>
-        /// Calculates the Aspect Ratio of an element.
-        /// </summary>
-        double CalculateAspectRatioAnsys(Element element)
-        {
-            // Calculate Aspect Ratio like Ansys
-            double AR = 0;
-            double maxDistance = 0;
-            double minDistance = 0;
-            double idealAR = 0.5 / Math.Sqrt(Math.Pow(0.5, 2) * 3);
-
-            List<double> nodeToNodeDistance = new List<double>();
-            List<double> nodeToCentroidDistance = new List<double>();
-            List<double> faceToCentroidDistance = new List<double>();
-
-            List<Point3d> faceCenterPts = GetFaceCenter(element);
-            Point3d centroidPt = GetCentroidOfElement(element);
-            List<Node> nodes = new List<Node>(element.Nodes);
-
-            // List of nodes 
-            List<Point3d> nodeCoordinates = new List<Point3d>(); ;
-            foreach (Node node in nodes)
-            {
-                nodeCoordinates.Add(node.Coordinate);
-            }
-            nodeCoordinates.Add(nodeCoordinates[0]);
-
-
-            // Find distances from corners to centroid
-            for (int n = 0; n < nodeCoordinates.Count - 1 ; n++)
-            {
-                nodeToCentroidDistance.Add(nodeCoordinates[n].DistanceTo(centroidPt));
-                nodeToNodeDistance.Add(nodeCoordinates[n].DistanceTo(nodeCoordinates[n + 1])); // add the distance between the points, following mesh edges CCW
-            }
-
-            // Find distances from face center to centroid
-            for (int n = 0; n < faceCenterPts.Count; n++)
-            {
-                faceToCentroidDistance.Add(faceCenterPts[n].DistanceTo(centroidPt));
-            }
-
-            nodeToCentroidDistance.Sort();
-            nodeToNodeDistance.Sort();
-            faceToCentroidDistance.Sort();
-
-            if (element.Type == "Quad") // surface
-            {
-                minDistance = nodeToNodeDistance[0];
-                maxDistance = nodeToNodeDistance[nodeToNodeDistance.Count - 1];
-                AR = minDistance / maxDistance;
-            }
-            else // solid
-            {
-                minDistance = Math.Min(nodeToCentroidDistance[0], faceToCentroidDistance[0]);
-                maxDistance = Math.Max(nodeToCentroidDistance[nodeToCentroidDistance.Count - 1], faceToCentroidDistance[faceToCentroidDistance.Count - 1]);
-                AR = (minDistance / maxDistance) / idealAR; // normalized AR
-            }
             return AR;
         }
 
@@ -287,46 +231,6 @@ namespace MeshPoints.Tools
         }
 
         /// <summary>
-        /// Returns a list of the face centroid to an element
-        /// </summary>
-        private List<Point3d> GetFaceCenter(Element element)
-        {
-            List<Point3d> faceCenterPts = new List<Point3d>();
-            int numFaces = 1; // surface
-            if (element.Type == "Hex") { numFaces = 6; } // solid
-
-            for (int i = 0; i < numFaces; i++)
-            {
-                faceCenterPts.Add(element.Mesh.Faces.GetFaceCenter(i));
-            }
-            return faceCenterPts;
-        }
-
-        /// <summary>
-        /// Return the centroid of an element
-        /// </summary>
-        Point3d GetCentroidOfElement(Element element)
-        {
-            double sx = 0;
-            double sy = 0;
-            double sz = 0;
-            List<Node> nodes = element.Nodes;
-            List<Point3d> pts = new List<Point3d>(); ;
-
-            foreach (Node node in nodes)
-            {
-                Point3d pt = node.Coordinate;
-                sx = sx + pt.X;
-                sy = sy + pt.Y;
-                sz = sz + pt.Z; 
-            }
-            int n = nodes.Count;
-            Point3d centroidPt = new Point3d(sx / n, sy / n, sz / n);
-
-            return centroidPt;
-        }
-
-        /// <summary>
         /// Calculate the Jacobian Ratio
         /// </summary>
         private double CalculateJacobianRatio(Element element) 
@@ -384,8 +288,6 @@ namespace MeshPoints.Tools
                 double jacobianDeterminant = jacobianMatrix.Determinant();
                 jacobiansOfElement.Add(jacobianDeterminant);
             }
-            List<double> a = new List<double>(jacobiansOfElement);
-            element.JacDet = new List<double>(a);
 
             double jacobianRatio = 0;
             // If any of the determinants are negative, we have to divide the maximum with the minimum
@@ -406,233 +308,6 @@ namespace MeshPoints.Tools
 
             return jacobianRatio;
         }
-
-        /// <summary>
-        /// Calculates the Jacobian Ratio of a hexahedral 8-node 3D element.
-        /// </summary>
-        /// <param name="element">An 8 node <see cref="Element"/> that is part of a <see cref="SmartMesh"/></param>
-        /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
-        private double CalculateJacobianOf8NodeElementOLD(Element element)
-        {
-                var naturalNodes = new List<List<Double>>
-            {
-                new List<double> { -1, -1, -1 }, new List<double> { 1, -1, -1}, new List<double> { 1, 1, -1 }, new List<double> { -1, 1, -1 },
-                new List<double> { -1, -1, 1 }, new List<double> { 1, -1, 1 }, new List<double> { 1, 1, 1 }, new List<double> { -1, 1, 1 }
-            };
-
-            // Global X, Y, and Z-coordinates of the corner nodes of the actual element
-            List<double> gX = new List<double>();
-            List<double> gY = new List<double>();
-            List<double> gZ = new List<double>();
-            foreach (Node node in element.Nodes)
-            {
-                gX.Add(node.Coordinate.X);
-                gY.Add(node.Coordinate.Y);
-                gZ.Add(node.Coordinate.Z);
-
-
-            }
-
-            // Evaluate in each of the corner nodes.
-            List<double> jacobiansOfElement = new List<double>();
-            foreach (List<Double> node in naturalNodes)
-            {
-                // Substitute the natural coordinates into the symbolic expression
-                var r = node[0];
-                var s = node[1];
-                var t = node[2];
-
-                // Partial derivatives of the shape functions
-                var N1Dr = -0.125 * (s - 1) * (t - 1);
-                var N1Ds = -0.125 * (r - 1) * (t - 1);
-                var N1Dt = -0.125 * (r - 1) * (s - 1);
-                var N2Dr = 0.125 * (s - 1) * (t - 1);
-                var N2Ds = 0.125 * (r + 1) * (t - 1);
-                var N2Dt = 0.125 * (r + 1) * (s - 1);
-                var N3Dr = -0.125 * (s + 1) * (t - 1);
-                var N3Ds = -0.125 * (r + 1) * (t - 1);
-                var N3Dt = -0.125 * (r + 1) * (s + 1);
-                var N4Dr = 0.125 * (s + 1) * (t - 1);
-                var N4Ds = 0.125 * (r - 1) * (t - 1);
-                var N4Dt = 0.125 * (r - 1) * (s + 1);
-                var N5Dr = 0.125 * (s - 1) * (t + 1);
-                var N5Ds = 0.125 * (r - 1) * (t + 1);
-                var N5Dt = 0.125 * (r - 1) * (s - 1);
-                var N6Dr = -0.125 * (s - 1) * (t + 1);
-                var N6Ds = -0.125 * (r + 1) * (t + 1);
-                var N6Dt = -0.125 * (r + 1) * (s - 1);
-                var N7Dr = 0.125 * (s + 1) * (t + 1);
-                var N7Ds = 0.125 * (r + 1) * (t + 1);
-                var N7Dt = 0.125 * (r + 1) * (s + 1);
-                var N8Dr = -0.125 * (s + 1) * (t + 1);
-                var N8Ds = -0.125 * (r - 1) * (t + 1);
-                var N8Dt = -0.125 * (r - 1) * (s + 1);
-
-                var sfDr = new List<double> // shape functions differentiated on r
-                    {
-                        N1Dr, N2Dr, N3Dr, N4Dr, N5Dr, N6Dr, N7Dr, N8Dr
-                    };
-                var sfDs = new List<double>
-                    {
-                        N1Ds, N2Ds, N3Ds, N4Ds, N5Ds, N6Ds, N7Ds, N8Ds
-                    };
-                var sfDt = new List<double>
-                    {
-                        N1Dt, N2Dt, N3Dt, N4Dt, N5Dt, N6Dt, N7Dt, N8Dt
-                    };
-
-                // Evaluates each partial derivative in the isoparametric node
-                var calcDerivs = new List<Double>
-                    {
-                        MultiplyLists(gX, sfDr),
-                        MultiplyLists(gX, sfDs),
-                        MultiplyLists(gX, sfDt),
-
-                        MultiplyLists(gY, sfDr),
-                        MultiplyLists(gY, sfDs),
-                        MultiplyLists(gY, sfDt),
-
-                        MultiplyLists(gZ, sfDr),
-                        MultiplyLists(gZ, sfDs),
-                        MultiplyLists(gZ, sfDt)
-                    };
-
-                // Helper function to piecewise multiply elements of two lists of length 8 and add them together
-                double MultiplyLists(List<double> a, List<double> b)
-                {
-                    double sum = 0.0;
-                    for (int i = 0; i < 8; i++)
-                    {
-                        sum += (a[i] * b[i]);
-                    }
-                    return sum;
-                }
-
-                // Structure data in the form of a Jacobian matrix
-                Matrix<double> jacobianMatrix = DenseMatrixModule.ofArray2(new double[,]
-                {
-                        {calcDerivs[0], calcDerivs[3], calcDerivs[6] },
-                        {calcDerivs[1], calcDerivs[4], calcDerivs[7] },
-                        {calcDerivs[2], calcDerivs[5], calcDerivs[8] },
-                });
-
-                var jacobianDeterminant = jacobianMatrix.Determinant();
-                jacobiansOfElement.Add(jacobianDeterminant);
-
-            }
-
-            double jacobianRatio = 0;
-            // If any of the determinants are negative, we have to divide the maximum with the minimum
-            if (jacobiansOfElement.Any(x => x < 0))
-            {
-                jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
-
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {element.Id} is negative.");
-                if (jacobianRatio < 0)
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {element.Id} is negative.");
-                }
-            }
-            else
-            {
-                jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
-            }
-
-            return jacobianRatio;
-        } // to do: slett
-
-        /// <summary>
-        /// Calculates the Jacobian ratio of a simple quadrilateral mesh element.
-        /// </summary>
-        /// <param name="element">An <see cref="Element"/> object describing a mesh face; see <see cref="Element"/> class for attributes.</param>
-        /// <returns>A <see cref="double"/> between 0.0 and 1.0.</returns>
-        double CalculateJacobianOfQuadElementOLD(Element e)
-        {
-            /*
-             * This method uses the idea of shape functions and natural coordinate system to 
-             * calculate the Jacobian at given points on a simple quadrilateral element.
-             * 
-             * 1. Transform the input 3D quad element (and specifically the corner points) to a 2D space (X', Y', Z'=0).
-             * 2. Define natural coordinates we want to calculate the Jacobian in. This could be the corner points (or 
-             *    alternatively the Gauss points) of the quad element. 
-             * 3. Calculate the Jacobian determinant of each point. 
-             * 4. The ratio is the ratio of the minimum and maximum Jacobian calculated, given as a double from 0.0 to 1.0.
-             *    A negative Jacobian indicates a self-intersecting or convex element and should not happen.
-                */
-            List<Point3d> cornerPoints = new List<Point3d>();
-            foreach (Node node in e.Nodes)
-            {
-                cornerPoints.Add(node.Coordinate);
-            }
-
-            List<Point3d> localPoints = TransformQuadSurfaceTo2DPoints(cornerPoints);
-
-            var gX = new List<Double>()
-            {
-                localPoints[0].X, localPoints[1].X, localPoints[2].X, localPoints[3].X,
-            };
-            var gY = new List<Double>()
-            {
-                localPoints[0].Y, localPoints[1].Y, localPoints[2].Y, localPoints[3].Y,
-            };
-
-            var naturalPoints = new List<List<Double>> // natural coordinates of corner points
-            {
-                new List<double>{ -1, -1}, new List<double> { 1, -1 }, new List<double> { 1, 1 }, new List<double> { -1, 1 }
-            };
-
-            #region Todo: Implement which points we want to evaluate the jacobians for (corner vs 4 gauss integration points)
-            //double s = 0.57735; // this represents the Gauss point of an isoparametric quadrilateral element: sqrt(1/3)
-            //var naturalGaussPoints = new List<List<Double>> // natural coordinates of Gauss points
-            //{
-            //    new List<double>{ -s, -s}, new List<double> { s, -s }, new List<double> { s, s }, new List<double> { -s, s }
-            //};
-            #endregion
-
-            var jacobiansOfElement = new List<Double>();
-
-            // Calculate the Jacobian determinant of each corner point
-            for (int n=0; n<naturalPoints.Count; n++)
-            {
-                double nX = naturalPoints[n][0];
-                double nY = naturalPoints[n][1];
-
-                // See documentation for derivation of formula
-                double jacobianDeterminantOfPoint = 0.0625 *
-                    (
-                    ((1 - nY) * (gX[1] - gX[0]) + (1 + nY) * (gX[2] - gX[3]))*
-                    ((1 - nX) * (gY[3] - gY[0]) + (1 + nX) * (gY[2] - gY[1]))
-                    -
-                    ((1 - nY) * (gY[1] - gY[0]) + (1 + nY) * (gY[2] - gY[3])) *
-                    ((1 - nX) * (gX[3] - gX[0]) + (1 + nX) * (gX[2] - gX[1]))
-                    );
-
-                jacobiansOfElement.Add(jacobianDeterminantOfPoint);
-            };
-            List<double> a = new List<double>(jacobiansOfElement);
-            e.JacDet = new List<double>(a);
-            // Minimum element divided by maximum element. A value of 1 denotes a rectangular element.
-            double jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
-
-            // If any of the determinants are negative, we have to divide the maximum with the minimum
-            if (jacobiansOfElement.Any(x => x < 0))
-            {
-                jacobianRatio = jacobiansOfElement.Max() / jacobiansOfElement.Min();
-
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"One or more Jacobian determinants of element {e.Id} is negative.");
-                if (jacobianRatio < 0)
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"The Jacobian Ratio of element {e.Id} is negative.");
-                }
-            }
-            else
-            {
-                jacobianRatio = jacobiansOfElement.Min() / jacobiansOfElement.Max();
-            }
-
-            return jacobianRatio;
-        } // to do: slett
-
 
         /// <summary>
         /// Transforms the corner points of an arbitrary 3D quad surface to a 2D plane.
