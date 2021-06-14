@@ -253,9 +253,29 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Icon_MeshToSM {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MeshToSM", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Icon_MoveCorners {
             get {
                 object obj = ResourceManager.GetObject("Icon_MoveCorners", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_MoveGrids {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MoveGrids", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
