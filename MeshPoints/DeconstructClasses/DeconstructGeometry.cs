@@ -13,7 +13,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         public DeconstructGeometry()
           : base("Deconstruct Geometry", "geo",
-              "Deconstructing Geometry Class",
+              "Deconstructing the Geometry Class.",
               "SmartMesh", "Deconstruct")
         {
         }
@@ -23,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Geometry", "geo", "Geometry class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Geometry", "geo", "Geometry Class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,9 +31,9 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Faces", "f", "List of faces", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Edges", "e", "List of edges", GH_ParamAccess.list); //1
-            pManager.AddGenericParameter("Vertices", "v", "List of vertices", GH_ParamAccess.list); //2
+            pManager.AddGenericParameter("Faces", "f", "List of faces.", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("Edges", "e", "List of edges.", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("Vertices", "v", "List of vertices.", GH_ParamAccess.list); 
         }
 
 

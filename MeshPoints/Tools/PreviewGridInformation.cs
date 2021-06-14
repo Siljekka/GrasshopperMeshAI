@@ -12,7 +12,7 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the PreviewGridInformation class.
         /// </summary>
         public PreviewGridInformation()
-          : base("Preview grids", "grids",
+          : base("Preview Grids", "grids",
               "Preview grid information.",
               "SmartMesh", "Tools")
         {
@@ -26,7 +26,7 @@ namespace MeshPoints.Tools
             pManager.AddGenericParameter("Grid Information", "grid info", "Input grid information.", GH_ParamAccess.list);
             pManager.AddIntegerParameter("Grid groups", "group", "Index of grid group to return.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Grid in groups", "grid in group", "Index of grid in grid group to return.", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Grid", "grid", "Index of grid to return, independent of grid groups.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Grid", "grid", "Index of grid to return, independent of grid groups. Edge grids are neglected.", GH_ParamAccess.item);
 
             pManager[1].Optional = true;
             pManager[2].Optional = true;
@@ -68,14 +68,18 @@ namespace MeshPoints.Tools
             foreach (List<List<Node>> gridGroup in gridInfo)
             {
                 gridGroupsCount.Add(gridGroup.Count);
-                foreach (List<Node> gridInGroup in gridGroup)
+                for (int i = 0; i < gridGroup.Count; i++) 
                 {
+                    List<Node> gridInGroup = gridGroup[i];
                     gridGroups.AddRange(gridInGroup);
-                    if (gridNumWOgroup == counter)
+                    if (i != 0 & i != gridGroup.Count-1)
                     {
-                        grid = gridInGroup;
+                        if (gridNumWOgroup == counter)
+                        {
+                            grid = gridInGroup;
+                        }
+                        counter++;
                     }
-                    counter++;
                 }
             }
 

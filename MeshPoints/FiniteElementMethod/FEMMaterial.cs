@@ -1,5 +1,7 @@
 ﻿using Grasshopper.Kernel;
+using Rhino.Geometry;
 using System;
+using System.Collections.Generic;
 using MeshPoints.Classes;
 
 namespace MeshPoints.FiniteElementMethod
@@ -10,8 +12,8 @@ namespace MeshPoints.FiniteElementMethod
         /// Initializes a new instance of the FEMMaterial class.
         /// </summary>
         public FEMMaterial()
-          : base("FEM Material", "FEM",
-              "Create material to input Finite Element Solver.",
+          : base("FEM Material", "Material",
+              "Create material for the FEM Solver.",
               "SmartMesh", "FEM")
         {
         }
@@ -21,9 +23,9 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddNumberParameter("Young modulus", "E", "Input a Young modulus [MPa]", GH_ParamAccess.item, 210000);
-            pManager.AddNumberParameter("Possion Ratio", "nu", "Input a Possion Ratio", GH_ParamAccess.item, 0.3);
-            pManager.AddNumberParameter("Yielding stress", "fy", "Input a yield stress [MPa]", GH_ParamAccess.item, 355);
+            pManager.AddNumberParameter("Young modulus", "E", "Young modulus [MPa]. Default value: 210000 MPa.", GH_ParamAccess.item, 210000);
+            pManager.AddNumberParameter("Possion Ratio", "nu", "Possion Ratio [-]. Default value: 0.3.", GH_ParamAccess.item, 0.3);
+            pManager.AddNumberParameter("Yielding stress", "fy", "Yield stress [MPa]. Default value: 355 MPa.", GH_ParamAccess.item, 355);
 
         }
 
@@ -32,7 +34,7 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Material", "mat", "Material", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Material", "mat", "Material.", GH_ParamAccess.list);
         }
 
         /// <summary>

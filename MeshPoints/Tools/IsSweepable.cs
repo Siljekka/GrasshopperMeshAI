@@ -15,7 +15,7 @@ namespace MeshPoints
         /// </summary>
         public IsSweepable()
           : base("IsSweepable", "Sweepable",
-              "Checks if brep is Sweepable",
+              "Checks if brep is sweepable",
               "SmartMesh", "Tools")
         {
         }
@@ -25,7 +25,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "bp", "Brep to check if sweepable", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Brep", "brep", "Brep to check if sweepable.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -33,8 +33,8 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("IsSweepable", "Sweepable", "True if brep is sweepable", GH_ParamAccess.item);
-            pManager.AddGenericParameter("SweepableFaces", "Faces", "List of sweepable faces of the brep", GH_ParamAccess.list);
+            pManager.AddGenericParameter("IsSweepable", "sweepable", "True if brep is sweepable.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SweepableFaces", "faces", "List of sweepable faces of the brep.", GH_ParamAccess.list);
         }
 
         /// <summary>

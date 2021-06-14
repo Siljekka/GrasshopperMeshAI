@@ -1,8 +1,7 @@
-﻿using System;
+﻿using Grasshopper.Kernel;
+using Rhino.Geometry;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MeshPoints.Classes
 {
@@ -19,12 +18,21 @@ namespace MeshPoints.Classes
         }
         public double GetThetaToleranceForClosing()
         {
-            return 1.5 * Math.PI / (double)6; // 1.5 * ThetaTolerance
+            return 1.5 * this.GetThetaTolerance();
         }
 
         public double GetTransitionTolerance()
         {
             return 2.5;
+        }
+
+        public double GetEpsilon1()
+        {
+            return 0.04 * Math.PI;
+        }
+        public double GetEpsilon2()
+        {
+            return 0.09 * Math.PI;
         }
 
     }

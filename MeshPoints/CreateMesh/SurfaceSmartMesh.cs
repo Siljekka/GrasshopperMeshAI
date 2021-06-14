@@ -4,21 +4,17 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 using System.Linq;
-using Grasshopper;
-using Grasshopper.Kernel.Data;
-using Rhino.Geometry.Intersect;
-using Rhino.Geometry.Collections;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateSurfaceMesh : GH_Component
+    public class SurfaceSmartMesh : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the CreateSurfaceMesh class.
         /// </summary>
-        public CreateSurfaceMesh()
-          : base("CreateSurfaceMesh", "surface",
-              "Mesh a surface with a specified number of divisions in u- and v-direction.",
+        public SurfaceSmartMesh()
+          : base("Surface SmartMesh", "SurfaceSM",
+              "Creates a SmartMesh of quadrilateral-elements.",
               "SmartMesh", "Mesh")
         {
         }
@@ -29,9 +25,9 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Surface", "srf", "Surface", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("u", "u", "division in u direction", GH_ParamAccess.item, 4);
-            pManager.AddIntegerParameter("v", "v", "division in v direction", GH_ParamAccess.item, 4);
+            pManager.AddGenericParameter("Surface", "srf", "Surface.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("u", "u", "Number element in u-direction.", GH_ParamAccess.item, 4);
+            pManager.AddIntegerParameter("v", "v", "Number element in v-direction.", GH_ParamAccess.item, 4);
         }
 
         /// <summary>
@@ -39,8 +35,8 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "surface", "SmartMesh generated", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh", "m", "Mesh (surface elements).", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh (quadrilateral-elements).", GH_ParamAccess.item);
         }
 
         /// <summary>

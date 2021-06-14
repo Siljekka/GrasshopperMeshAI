@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
+using System;
+using System.Collections.Generic;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace MeshPoints.Classes
@@ -14,10 +12,10 @@ namespace MeshPoints.Classes
         public double PossionRatio { get; set; }
         public double YieldingStress { get; set; }
 
-        // constructer
+        // Constructor
         public Material()
-        { 
-             // empty constructer
+        {
+            // empty constructor
         }
 
         public Material(double _youngModulus, double _possionRatio, double _yieldingStress)

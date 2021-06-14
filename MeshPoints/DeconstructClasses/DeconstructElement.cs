@@ -15,8 +15,8 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the Deconstruct_Node class.
         /// </summary>
         public DeconstructElement()
-        : base("Deconstruct Element", "decE",
-              "Deconstructing element class for SmartMesh Class",
+        : base("Deconstruct Element", "element",
+              "Deconstructing the Element Class.",
               "SmartMesh", "Deconstruct")
         {
         }
@@ -26,7 +26,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Element class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Element", "e", "Element Class.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -34,11 +34,11 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Nodes", "nodes", "Nodes of element", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Connectivity", "con", "Connectivity of local to global nodes", GH_ParamAccess.list); //0
-            pManager.AddGenericParameter("Type", "type", "Element type", GH_ParamAccess.item); //0
-            pManager.AddGenericParameter("Id", "id", "Element Id", GH_ParamAccess.item); //8
-            pManager.AddGenericParameter("Mesh", "m", "Element mesh", GH_ParamAccess.item); //9
+            pManager.AddGenericParameter("Nodes", "n", "Nodes of element.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Connectivity", "con", "Connectivity of local to global nodes.", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("Type", "t", "Element type.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Id", "id", "Element Id.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Element mesh.", GH_ParamAccess.item); 
             pManager.AddGenericParameter("Determinant", "det", "Jacobian ratio of mesh", GH_ParamAccess.list);
         }
 

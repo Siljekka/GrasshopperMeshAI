@@ -13,8 +13,8 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the NormalizeSurface class.
         /// </summary>
         public NormalizeSurface()
-          : base("Normalize Surface", "Nickname",
-              "Translates a Surface to origin and scales to [-1,1]",
+          : base("Normalize Surface", "normalize",
+              "Translates a surface to origin and scales to [-1,1].",
               "SmartMesh", "Tools")
         {
         }
@@ -24,7 +24,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Surface", "sf", "Surface", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Surface", "srf", "Surface.", GH_ParamAccess.item);
             pManager.AddGenericParameter("Settings", "ts", "1 = simple normalization. 2 = procrustes superimposition.", GH_ParamAccess.item);
             pManager[1].Optional = true;
         }
@@ -34,7 +34,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "sf", "Translated and scaled Brep surface", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Brep", "brep", "Translated and scaled surface.", GH_ParamAccess.item);
         }
 
         /// <summary>
