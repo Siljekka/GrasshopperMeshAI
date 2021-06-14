@@ -12,8 +12,8 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the DeconstructMesh3d class.
         /// </summary>
         public DeconstructSmartMesh()
-          : base("Deconstruct SmartMesh", "decMesh",
-              "Deconstructing SmartMesh class",
+          : base("Deconstruct SmartMesh", "SmartMesh",
+              "Deconstructing the SmartMesh Class.",
               "SmartMesh", "Deconstruct")
         {
         }
@@ -23,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh Class.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,10 +31,10 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Elements", "e", "List of elements", GH_ParamAccess.list); 
-            pManager.AddGenericParameter("Nodes", "n", "List of nodes", GH_ParamAccess.list); 
-            pManager.AddGenericParameter("Geometry", "geo", "Geometry information", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Mesh", "m", "Mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Elements", "e", "List of elements.", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("Nodes", "n", "List of nodes.", GH_ParamAccess.list); 
+            pManager.AddGenericParameter("Geometry", "geo", "Geometry information.", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh.", GH_ParamAccess.item);
 
         }
 

@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Grasshopper.Kernel;
+using Rhino.Geometry;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Rhino.Geometry;
 
 namespace MeshPoints.Classes
 {
@@ -26,7 +25,6 @@ namespace MeshPoints.Classes
             Edges = _edges;
             Vertices = _vertices;   
         }
-
         public Geometry(Brep _brep, int bottomFace) // solid
         {
             Brep = _brep;
@@ -34,7 +32,6 @@ namespace MeshPoints.Classes
             Edges = SortBrepEdges(_brep, bottomFace);
             Vertices = SortBrepVertex(_brep, bottomFace);
         } 
-
         private List<BrepFace> SortBrepFaces(Brep brep, int bottomFace)
         {
             List<BrepFace> faceSorted = new List<BrepFace>();
@@ -55,7 +52,6 @@ namespace MeshPoints.Classes
             foreach (int index in indexAdjecentFaces) { faceSorted.Add(brepFace[index]); }
             return faceSorted;
         }
-
         private List<BrepEdge> SortBrepEdges(Brep brep, int bottomFace)
         {
             List<BrepFace> faceSorted = SortBrepFaces(brep, bottomFace);
@@ -78,7 +74,6 @@ namespace MeshPoints.Classes
             foreach (BrepEdge edge in rails) { edgeSorted.Add(edge); }
             return edgeSorted;
         }
-
         public List<BrepVertex> SortBrepVertex(Brep brep, int bottomFace)
         {
             List<BrepVertex> vertexSorted = new List<BrepVertex>();
@@ -98,7 +93,6 @@ namespace MeshPoints.Classes
             }
             return vertexSorted;
         }
-
         public bool IsVertexOnFace(Point3d point, BrepFace face)
         {
             bool isOnFace = false;

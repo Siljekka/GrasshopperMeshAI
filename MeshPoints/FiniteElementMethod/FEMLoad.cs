@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using MathNet.Numerics.LinearAlgebra;
 using MeshPoints.Classes;
-using Rhino;
-using System.Linq;
 
 
 namespace MeshPoints.FiniteElementMethod
@@ -16,8 +14,8 @@ namespace MeshPoints.FiniteElementMethod
         /// Initializes a new instance of the FEMLoad class.
         /// </summary>
         public FEMLoad()
-          : base("FEM Load", "FEM load",
-              "Create load for FEM solver.",
+          : base("FEM Load", "Load",
+              "Create load for the FEM solver.",
               "SmartMesh", "FEM")
         {
         }
@@ -27,11 +25,11 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {        
-            pManager.AddGenericParameter("SmartMesh", "SM", "Input a SmartMesh.", GH_ParamAccess.item); 
-            pManager.AddIntegerParameter("Type", "type", "Load type: Point load = 1, Surface load = 2", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Position", "pos", "List of coordinates for point loads.", GH_ParamAccess.list); 
-            pManager.AddIntegerParameter("Surface", "srf", "Input surface index of geometry to apply load to.", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Vector", "vec", "List of vectors for the loads. If surface load, only one vector.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item); 
+            pManager.AddIntegerParameter("Type", "type", "Load type: Point load = 1, Surface load = 2.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Position", "pos", "If type = 1: List of coordinates for point loads.", GH_ParamAccess.list); 
+            pManager.AddIntegerParameter("Surface", "srf", "If type = 2: Face index of geometry to apply surface load.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Vector", "vec", "List of vectors of the loads. If surface load, only one vector.", GH_ParamAccess.list);
 
             pManager[0].Optional = true;
             pManager[1].Optional = true;
@@ -45,8 +43,8 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-             pManager.AddGenericParameter("Load", "load", "List of residual forces(R).", GH_ParamAccess.list);
-             pManager.AddGenericParameter("Points", "pts", "List of node coordinates applied load to", GH_ParamAccess.list);
+             pManager.AddGenericParameter("Load", "load", "List of residual forces (R).", GH_ParamAccess.list);
+             pManager.AddGenericParameter("Points", "pts", "List of points subjected to load.", GH_ParamAccess.list);
         }
 
         /// <summary>

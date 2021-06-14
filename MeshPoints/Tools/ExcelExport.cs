@@ -8,13 +8,13 @@ using System.IO;
 
 namespace MeshPoints.Tools
 {
-    public class DataToExcel : GH_Component
+    public class ExcelExport : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the GH_DataToExcel class.
         /// </summary>
-        public DataToExcel()
-          : base("DataToExcel", "excel",
+        public ExcelExport()
+          : base("Excel Export", "excel",
               "Create data file that can be imported to excel.", //todo: fix description
               "SmartMesh", "Tools")
         {
@@ -24,7 +24,7 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("FilePath", "fp", "File path to where data are saved", GH_ParamAccess.item);
+            pManager.AddGenericParameter("FilePath", "fp", "File path to where data are saved.", GH_ParamAccess.item);
             pManager.AddBooleanParameter("Save", "save", "True: data is written to file, False: data is not written to file.", GH_ParamAccess.item);
             pManager.AddGenericParameter("Col1", "c1", "Column 1 in excel.", GH_ParamAccess.list);
             pManager.AddGenericParameter("Col2", "c2", "Column 2 in excel.", GH_ParamAccess.list);

@@ -7,14 +7,15 @@ using System.IO;
 
 namespace MeshPoints
 {
-    public class GenerateINPfile : GH_Component
+    public class INPExport : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the GenerateINPfile class.
         /// </summary>
-        public GenerateINPfile()
-          : base("Generate inp-file", "inp",
-              "Generate inp-file for 3D analysis. Solid elements (C3D8) and shell elements (S4) are made for SmartMesh dependent on mesh type. Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
+        public INPExport()
+          : base("INP Export", "inp",
+              "Generate inp-file for 3D analysis. Solid elements (C3D8) and shell elements (S4) are used for solid mesh and surface mesh, respectively." +
+                " Default material is steel with E=210000, nu=0.3. Made for linear elastic analysis.",
               "SmartMesh", "Tools")
         {
         }
@@ -24,10 +25,10 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "mesh", "SmartMesh Class. Geometry must have been modelled in mm.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("FilePath", "path", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Save", "save", "", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for SurfaceMesh. Default value is 10 mm", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh Class. Geometry must have been modeled in mm.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("FilePath", "path", "File path to where data are saved.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Save", "save", "True: data is written to file, False: data is not written to file.", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Shell thickness", "t", "Value of shell thickness [mm]. Only for surface SmartMesh. Default value is 10 mm", GH_ParamAccess.item);
             pManager.AddNumberParameter("Young modulus", "E", "Value of Young modulus [MPa]. Default value is 210000 MPa", GH_ParamAccess.item);
             pManager.AddNumberParameter("Poisson Ratio", "nu", "Value of poisson ratio [-]. Default value is 0.3", GH_ParamAccess.item);
            
@@ -44,7 +45,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("inp", "inp", "String containing inp-file", GH_ParamAccess.list); //todo: change name.
+            pManager.AddGenericParameter("inp", "inp", "String viewing inp-file.", GH_ParamAccess.list); //todo: change name.
         }
 
         /// <summary>

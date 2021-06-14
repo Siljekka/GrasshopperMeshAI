@@ -15,8 +15,8 @@ namespace MeshPoints.CreateMesh
         /// Initializes a new instance of the SweepSmartMesh class.
         /// </summary>
         public SweepSmartMesh()
-          : base("Sweep SmartMesh", "ss",
-              "Sweep a referance surface SmartMesh",
+          : base("Sweep SmartMesh", "SweepSM",
+              "Sweeps a surface SmartMesh.",
               "SmartMesh", "Mesh")
         {
         }
@@ -26,10 +26,10 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "Brep to mesh with sweeping", "", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("BottomFace", "index", "Index of bottomFace", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("w", "w","Number element in w direction", GH_ParamAccess.item, 4);
-            pManager.AddGenericParameter("SmartMesh", "mb", "Reference SmartMesh to sweep", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Brep", "brep", "Brep to be meshed with sweeping.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Index", "i", "Index of the bottom face of the brep.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("w", "w","Number element in w-direction.", GH_ParamAccess.item, 4);
+            pManager.AddGenericParameter("SmartMesh", "SM", "Reference SmartMesh to sweep.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -37,8 +37,8 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "sm", "SmartMesh from sweeping", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh", "m", "Mesh from sweeping", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh (hexahedral-elements).", GH_ParamAccess.item);
         }
 
         /// <summary>

@@ -12,8 +12,8 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the DeconstructQuality class.
         /// </summary>
         public DeconstructQuality()
-          : base("Deconstruct Quality", "decQ",
-              "Deconstructing quality class",
+          : base("Deconstruct Quality", "quality",
+              "Deconstructing the Quality Class.",
               "SmartMesh", "Deconstruct")
         {
         }
@@ -23,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Quality", "q", "Quality class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Quality", "q", "Quality Class.", GH_ParamAccess.item);
 
         }
 
@@ -32,10 +32,10 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Element", "e", "Corresponing element", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Aspect Ratio", "AR", "Ratio between shortest and longest mesh edge", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Skewness", "SK", "Angle ratio of mesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Jacobian Ratio", "JR", "Jacobian ratio of mesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Element", "e", "Element.", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Aspect Ratio", "AR", "Ratio between shortest and longest element edge.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Skewness", "SK", "Angle ratio of the element.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Jacobian Ratio", "JR", "Jacobian ratio of the element.", GH_ParamAccess.item);
         }
 
         /// <summary>

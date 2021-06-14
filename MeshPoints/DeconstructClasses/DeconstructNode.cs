@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using MeshPoints.Classes;
 
-// Deconstruct the class Node
-
 namespace MeshPoints.DeconstructClasses
 {
     public class Deconstruct_Node : GH_Component
@@ -14,8 +12,8 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the Deconstruct_Node class.
         /// </summary>
         public Deconstruct_Node()
-          : base("Deconstruct Node", "decN",
-              "Deconstructing node class",
+          : base("Deconstruct Node", "node",
+              "Deconstructing the Node Class",
               "SmartMesh", "Deconstruct")
         {
         }
@@ -25,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Node", "n", "Node class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Node", "n", "Node Class", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -33,8 +31,8 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Global Id", "gid", "Global Id", GH_ParamAccess.item); 
-            pManager.AddGenericParameter("Coordinate", "xyz", "Coordinate", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Global Id", "id", "Global Id", GH_ParamAccess.item); 
+            pManager.AddGenericParameter("Coordinate", "coord", "Coordinate of node.", GH_ParamAccess.item);
             pManager.AddGenericParameter("BC u-dir", "bcu", "Boundary condtion in u-direction", GH_ParamAccess.item);
             pManager.AddGenericParameter("BC v-dir", "bcv", "Boundary condtion in v-direction", GH_ParamAccess.item);
             pManager.AddGenericParameter("BC w-dir", "bcw", "Boundary condtion in w-direction", GH_ParamAccess.item);

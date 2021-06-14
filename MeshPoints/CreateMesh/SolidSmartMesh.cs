@@ -7,18 +7,17 @@ using System.Linq;
 using Grasshopper;
 using Grasshopper.Kernel.Data;
 using Rhino.Geometry.Intersect;
-using Rhino.Geometry.Collections;
 
 namespace MeshPoints.CreateMesh
 {
-    public class CreateSolidMesh : GH_Component
+    public class SolidSmartMesh : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the CreateSolidMesh_Sweep class.
         /// </summary>
-        public CreateSolidMesh()
-          : base("Solid SmartMesh", "solid",
-              "Generate solid mesh. Independent on how surface composing the brep is made.",
+        public SolidSmartMesh()
+          : base("Solid SmartMesh", "SolidSM",
+              "Creates a SmartMesh of hexahedral-elements.",
               "SmartMesh", "Mesh")
         {
         }
@@ -28,11 +27,11 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "bp", "Brep", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("BottomSurface", "bottom", "Index of bottom surface of Brep", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("u", "u", "division in u direction", GH_ParamAccess.item, 4);
-            pManager.AddIntegerParameter("v", "v", "division in v direction", GH_ParamAccess.item, 4);
-            pManager.AddIntegerParameter("w", "w", "division in w direction", GH_ParamAccess.item, 4);
+            pManager.AddGenericParameter("Brep", "brep", "Brep.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Index", "i", "Index of the bottom face of the brep.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("u", "u", "Number element in u-direction.", GH_ParamAccess.item, 4);
+            pManager.AddIntegerParameter("v", "v", "Number element in v-direction.", GH_ParamAccess.item, 4);
+            pManager.AddIntegerParameter("w", "w", "Number element in w-direction.", GH_ParamAccess.item, 4);
         }
 
         /// <summary>
@@ -40,9 +39,8 @@ namespace MeshPoints.CreateMesh
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("SmartMesh", "solid", "Creates a SolidMesh", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mesh", "m", "Mesh (solid elements).", GH_ParamAccess.item);
-            //pManager.AddGenericParameter("test2", "", "", GH_ParamAccess.list);
+            pManager.AddGenericParameter("SmartMesh", "SM", "SmartMesh.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh (hexahedral-elements).", GH_ParamAccess.item);
         }
 
         /// <summary>

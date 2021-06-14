@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
+using System;
+using System.Collections.Generic;
 
 
 namespace MeshPoints.Classes
@@ -19,13 +17,10 @@ namespace MeshPoints.Classes
         public List<double> JacDet { get; set; }
 
         //Constructer
-
-        //_empty
         public Element()
         {
             //Empty constructor
         }
-
         public Element(int _id, List<Node> _nodes, List<int> _connectivity)
         {
             Id = _id;

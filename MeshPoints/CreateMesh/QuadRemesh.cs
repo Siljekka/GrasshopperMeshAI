@@ -16,9 +16,9 @@ namespace MeshPoints.Tools
         /// Initializes a new instance of the AnalyzeTriangleMesh class.
         /// </summary>
         public QuadRemesh()
-          : base("Quad Remesh", "atm",
-              "Remesh from triangle mesh to quadrilateral mesh.",
-              "SmartMesh", "QuadRemesh")
+          : base("Quad Remesh", "Remesh",
+              "Re-mesh a triangle mesh to quadrilateral mesh.",
+              "SmartMesh", "Mesh")
         {
         }
 

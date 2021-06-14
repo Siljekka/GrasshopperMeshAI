@@ -12,8 +12,8 @@ namespace MeshPoints.DeconstructClasses
         /// Initializes a new instance of the DeconstructQElement class.
         /// </summary>
         public DeconstructQElement()
-          : base("Deconstruct qElement", "dqe",
-              "Deconstruct qElement class",
+          : base("Deconstruct qElement", "qElement",
+              "Deconstructing the qElement Class.",
               "SmartMesh", "Deconstruct")
         {
         }
@@ -23,7 +23,7 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("qElement", "qel", "Input qElement class", GH_ParamAccess.item);
+            pManager.AddGenericParameter("qElement", "qEl", "qElement Class.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -31,11 +31,11 @@ namespace MeshPoints.DeconstructClasses
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("qEdges", "qe", "Element edges", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Angles", "qe", "Element angles", GH_ParamAccess.list);
-            pManager.AddGenericParameter("IsQuad", "qe", "True if element is a quad", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Distortion Metric", "dm", "Distortion metric of element", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Contour", "qe", "Contour of element", GH_ParamAccess.list);
+            pManager.AddGenericParameter("qEdges", "qE", "Element edges.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Angles", "qE", "Element angles.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("IsQuad", "qE", "True if element is a quad.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Distortion Metric", "dM", "Distortion metric of element.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Contour", "c", "Contour of element.", GH_ParamAccess.list);
         }
 
         /// <summary>
