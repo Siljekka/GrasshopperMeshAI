@@ -6,12 +6,12 @@ using MeshPoints.Classes;
 
 namespace MeshPoints.FiniteElementMethod
 {
-    public class FEMBoundaryCondition : GH_Component
+    public class FEMBC : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the FEMBoundaryCondition class.
         /// </summary>
-        public FEMBoundaryCondition()
+        public FEMBC()
           : base("FEM Boundary Condtion", "BC",
               "Create boundary condition for the FEM Solver.",
               "SmartMesh", "FEM")
