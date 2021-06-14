@@ -14,10 +14,10 @@ namespace MeshPoints.MachineLearning
     public class CreateTriangleMeshML : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the PredictInternalNodesOfMesh class.
+        /// Initializes a new instance of the CreateTriangleMeshML class.
         /// </summary>
         public CreateTriangleMeshML()
-          : base("Create Triangle Mesh (ML)", "TriMeshML",
+          : base("Create Triangle Mesh (ML)", "NN2",
               "Creates a triangle mesh based on predictions from neural network.",
               "SmartMesh", "Machine Learning")
         {
@@ -28,9 +28,9 @@ namespace MeshPoints.MachineLearning
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Brep", "sf", "Brep", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Internal node count", "inc", "The number of internal nodes that should be predicted.", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Model", "mt", "Select which model to use. GH = 1, gmsh = 2.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Surface", "Srf", "Input surface to be meshed.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Internal node count", "Int", "The number of internal nodes that should be predicted.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Model path", "Model", "The file path of the ML model to be used for prediction", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace MeshPoints.MachineLearning
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Triangle Mesh", "tm", "Triangle mesh (Delauney)", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Triangle Mesh", "Mesh", "Triangle mesh (Delauney)", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -49,13 +49,13 @@ namespace MeshPoints.MachineLearning
         {
             Brep inputSurface = null;
             int internalNodeCount = 0;
-            int modelSelection = 0;
+            string modelPath = "";
             DA.GetData(0, ref inputSurface);
             DA.GetData(1, ref internalNodeCount);
-            DA.GetData(2, ref modelSelection);
+            DA.GetData(2, ref modelPath);
             if (!DA.GetData(0, ref inputSurface)) { return; }
             if (!DA.GetData(1, ref internalNodeCount)) { return; }
-            if (inputSurface.Vertices.Count != 8) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Component currently only supports octagons."); return; }
+            if (!DA.GetData(2, ref modelPath)) { return; }
 
             // Get transformation (and inverse transformation) to/from normalized surface
             Transform procrustesTransform = ProcrustesSuperimposition(inputSurface);
@@ -76,7 +76,7 @@ namespace MeshPoints.MachineLearning
             List<Point3d> transformedSurfaceVertices = procrustesTransform.TransformList(surfaceVertices).ToList();
 
             // ARTIFICIAL INTELLIGENCE
-            var predictedGrid = GridPrediction(transformedSurfaceVertices, modelSelection);
+            var predictedGrid = GridPrediction(transformedSurfaceVertices, modelPath);
             List<Point3d> predictedInternalNodes = GridPoint.InterpolateNodesFromGridScore(predictedGrid, internalNodeCount);
 
             // Inverse transform predicted nodes to fit with the input surface
@@ -200,18 +200,11 @@ namespace MeshPoints.MachineLearning
             return nGon;
         }
 
-        private List<List<GridPoint>> GridPrediction(List<Point3d> contourPoints, int modelSelection)
+        private List<List<GridPoint>> GridPrediction(List<Point3d> contourPoints, string modelPath)
         {
             // Load model
             Keras.Keras.DisablePySysConsoleLog = true;
-            var modelPath = "";
-            if (modelSelection == 1)
-            {
-                modelPath = "C:\\Users\\mkunn\\skole\\master\\Mesh\\MeshPoints\\MachineLearning\\models\\thesis-grid-8gon-3int";
-            } else
-            {
-                modelPath = "C:\\Users\\mkunn\\skole\\master\\Mesh\\MeshPoints\\MachineLearning\\models\\thesis-grid-8gon-3int-gh";
-            }
+
             var model = Sequential.LoadModel(modelPath);
 
             // Create empty grid
@@ -256,26 +249,6 @@ namespace MeshPoints.MachineLearning
                 }
             }
             return pointGrid;
-        }
-
-        private List<Point3d> DirectPrediction(double[] brepCoordinates)
-        {
-            Keras.Keras.DisablePySysConsoleLog = true;
-            // Load model
-            var model = Sequential.LoadModel("C:\\Users\\magnus\\master\\GrasshopperMeshAI\\MeshPoints\\MachineLearning\\models\\direct-internal-nodes\\");
-
-            var features = np.array(brepCoordinates);
-            var predictionData = np.expand_dims(features, axis: 0);
-
-            var predictionResult = model.Predict(predictionData);
-            var prediction = predictionResult[0].GetData<float>();
-
-            List<Point3d> predictedPoints = new List<Point3d> {
-                new Point3d(prediction[0], prediction[1], 0),
-                new Point3d(prediction[2], prediction[3], 0)
-            };
-
-            return predictedPoints;
         }
 
         /// <summary>
