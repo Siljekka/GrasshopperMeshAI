@@ -8,12 +8,12 @@ using System.Linq;
 
 namespace MeshPoints.Tools
 {
-    public class MeshToSmarMesh : GH_Component
+    public class MeshToSmartMesh : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MeshToSmarMesh class.
         /// </summary>
-        public MeshToSmarMesh()
+        public MeshToSmartMesh()
           : base("TrinagleMesh To SmarMesh", "ToSM",
               "Transforms the class Mesh to class SmartMesh. The mesh must be composed of triangle elements.",
               "SmartMesh", "Tools")

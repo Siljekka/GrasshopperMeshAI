@@ -194,7 +194,7 @@
     <Compile Include="Tools\KillSwitch.cs" />
     <Compile Include="Tools\ExcelExport.cs" />
     <Compile Include="Tools\MergeSmartMesh.cs" />
-    <Compile Include="Tools\MeshToSmarMesh.cs" />
+    <Compile Include="Tools\MeshToSmartMesh.cs" />
     <Compile Include="Tools\MoveCorners.cs" />
     <Compile Include="Tools\MoveGrids.cs" />
     <Compile Include="Tools\MoveNodes.cs" />
