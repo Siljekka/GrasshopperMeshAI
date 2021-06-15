@@ -338,5 +338,4 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
-/MeshPoints/MachineLearning/.vscode
-/MeshPoints/MachineLearning/data
+.DS_Store
