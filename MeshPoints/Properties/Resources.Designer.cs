@@ -263,6 +263,26 @@ namespace MeshPoints.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Icon_MLCount {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MLCount", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Icon_MLTriangle {
+            get {
+                object obj = ResourceManager.GetObject("Icon_MLTriangle", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Icon_MoveCorners {
             get {
                 object obj = ResourceManager.GetObject("Icon_MoveCorners", resourceCulture);
