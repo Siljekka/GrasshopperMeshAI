@@ -10,9 +10,9 @@ namespace MeshPoints.Classes
     {
         public int GlobalId { get; set; }
         public Point3d Coordinate { get; set; }
-        public bool BC_U { get; set; } // to do: change if time
-        public bool BC_V { get; set; } // to do: change if time
-        public bool BC_W { get; set; } // to do: change if time
+        public bool BC_U { get; set; } 
+        public bool BC_V { get; set; } 
+        public bool BC_W { get; set; } 
         public string Type { get; set; }
 
         //Constructor

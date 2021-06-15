@@ -28,9 +28,5 @@ namespace MeshPoints.Classes
             JacobianRatio = _jacobianRatio;
             element = _elem;
         }
-
-        //Methods
-
-
     }
 }
