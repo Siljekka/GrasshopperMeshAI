@@ -80,7 +80,7 @@ namespace MeshPoints.Tools
                     // 0. Add header
                     if (new FileInfo(@filePath).Length == 0)
                     {
-                        header = AddHeader(mesh, filePath, 2);
+                        header = AddHeader(mesh, 2);
                     }
 
                     // 1. Add quality measure to string.
@@ -102,7 +102,7 @@ namespace MeshPoints.Tools
                     // 0. Add header
                     if (new FileInfo(@filePath).Length == 0)
                     {
-                        header = AddHeader(mesh, filePath, 1);
+                        header = AddHeader(mesh, 1);
                     }
 
                     // 1. Add quality measure to string.
@@ -124,7 +124,7 @@ namespace MeshPoints.Tools
                     // 0. Add header
                     if (new FileInfo(@filePath).Length == 0)
                     {
-                        header = AddHeader(mesh, filePath, 1);
+                        header = AddHeader(mesh, 1);
                     }
 
                     // 1. Add quality measure to string.
@@ -154,7 +154,11 @@ namespace MeshPoints.Tools
             }
             else { return; }
         }
-        private StringBuilder AddHeader(SmartMesh mesh, string filePath, int structureType)
+        /// <summary>
+        /// Creates a header to the CSV-file
+        /// </summary>
+        /// <returns>Nothing</returns>
+        private StringBuilder AddHeader(SmartMesh mesh, int structureType)
         {
             StringBuilder header = new StringBuilder();
 
@@ -192,21 +196,7 @@ namespace MeshPoints.Tools
             }
             return header;
         }
-        // Referer til Youtube-video
-        private void WriteTextFile(string variable, string filepath)
-        {
-            try
-            {
-                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@filepath, true))
-                {
-                    file.WriteLine(variable);
-                }
-            }
-            catch (Exception exeption)
-            {
-                throw new ApplicationException("Something went wrong.", exeption);
-            }
-        }
+
 
         /// <summary>
         /// Provides an Icon for the component.
