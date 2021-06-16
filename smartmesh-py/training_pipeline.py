@@ -239,9 +239,7 @@ def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.H
     return history
 
 
-if __name__ == "__main__":
-    edge_count = 8
-
+def main(edge_count=8) -> None:
     # 1. Create dataset
     print(f"=== Creating dataset for edge count: {edge_count} ===\n")
     mesh_data = create_meshed_contour_dataset(edge_count)
@@ -255,21 +253,6 @@ if __name__ == "__main__":
     nn2_training_history = []
     nn2_training_history.append(NN2_wrapper(edge_count, mesh_data))
 
-    # ======================
-    #        PLOTTING
-    #    (w/o tensorboard)
-    # ======================
-    # for history in nn1_training_history:
-    #     plt.plot(history.history['loss'], label='training loss')
-    #     plt.plot(history.history['val_loss'], label='validation loss')
-    #     plt.legend()
-    #     plt.xlabel("Epochs")
-    #     plt.ylabel("MAE")
 
-    # for history_set in nn2_training_history:
-    #     for history in history_set:
-    #         plt.plot(history.history['loss'], label='training loss')
-    #         plt.plot(history.history['val_loss'], label='validation loss')
-    #         plt.legend()
-    #         plt.xlabel("Epochs")
-    #         plt.ylabel("MSE")
+if __name__ == "__main__":
+    main()
