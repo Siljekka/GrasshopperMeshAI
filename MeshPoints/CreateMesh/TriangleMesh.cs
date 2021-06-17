@@ -57,7 +57,8 @@ namespace MeshPoints.CreateMesh
 
             // 1. Create nodes along the edges of the surface and flatten.
             List<List<Point3d>> edgeNodesSurface = CreateEdgePointsByCount(meshSurface, totalEdgeNodeCount);
-            // We flatten the list here, as the ListList-structure of CreateEdgePointsByCount is useful elsewhere.
+
+            // 2. Flatten the list here, as the ListList-structure of CreateEdgePointsByCount is useful elsewhere.
             List<Point3d> flattenedEdgeNodes = new List<Point3d>();
             foreach(List<Point3d> edge in edgeNodesSurface)
             {
@@ -68,26 +69,25 @@ namespace MeshPoints.CreateMesh
                 }
             }
 
-            // 2. Create points inside the surface by creating a bounding box, populating it with points, and culling all points not inside the surface.
+            // 3. Create points inside the surface by creating a bounding box, populating it with points, and culling all points not inside the surface.
             Brep boundingBoxSurface = CreateBoundingBoxFromBrep(meshSurface);
             if (boundingBoxSurface == null) { return; }
-            List<Point3d> nodeGridBoundingBox = innerNodeList; //CreatePointGridInBoundingBox(boundingBoxSurface, meshSurface, totalInnerNodeCount);
+            List<Point3d> nodeGridBoundingBox = innerNodeList;
             List<Point3d> nodesInsideSurface = CullPointsOutsideSurface(nodeGridBoundingBox, flattenedEdgeNodes, meshSurface);
 
 
-            // 3. Collect flat list of all points to use for triangle meshing and cast to compatible data structure (Node2List) for Delaunay method.
+            // 4. Collect flat list of all points to use for triangle meshing and cast to compatible data structure (Node2List) for Delaunay method.
             List<Point3d> nodeCollection = new List<Point3d>();
             nodeCollection.AddRange(flattenedEdgeNodes);
             nodeCollection.AddRange(nodesInsideSurface);
             Point3d[] culledNodes = Point3d.CullDuplicates(nodeCollection, 0.001);
-
             var meshNodes = new Grasshopper.Kernel.Geometry.Node2List(culledNodes);
 
-            // 4. Throw all our points into the Delaunay mesher. Adjust jitter_amount as needed.
+            // 5. Throw all our points into the Delaunay mesher. Adjust jitter_amount as needed.
             var meshFaces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
             var triangleMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(meshNodes, 0.01, ref meshFaces); // todo: what is "double jitter_amount"?
             
-            // 5. Sometimes the mesh acts up; in these cases it is necessary to cull mesh faces that are outside the surface.
+            // 6. Sometimes the mesh acts up; in these cases it is necessary to cull mesh faces that are outside the surface.
             Mesh culledTriangleMesh = CullMeshFacesOutsideSurface(triangleMesh, meshSurface);
             
             if (!culledTriangleMesh.IsValid)
@@ -95,7 +95,7 @@ namespace MeshPoints.CreateMesh
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The mesh is invalid. Check for duplicate points.");
             }
 
-            // 6. Get initial edges and elements of mesh using mesh topology properties
+            // 7. Get initial edges and elements of mesh using mesh topology properties
             var initialEdgeAndElementList = GetInitialEdgesAndElements(culledTriangleMesh);
             List<qEdge> globalEdgeList = initialEdgeAndElementList.Item1;
             List<qElement> globalElementList = initialEdgeAndElementList.Item2;
@@ -104,18 +104,18 @@ namespace MeshPoints.CreateMesh
                 element.FixEdgeOrder();
             }
 
-            // 7. Do global smoothing
+            // 8. Do global smoothing
             DoGlobalSmoothing(meshSurface, globalEdgeList, globalElementList);
 
-            // 8. Convert mesh to SmartMesh Class and create final mesh
+            // 9. Convert mesh to SmartMesh Class and create final mesh
             var meshProperties = ConvertToMainMeshClasses(globalElementList);
             Mesh newMesh = new Mesh();
             foreach (Element e in meshProperties.Item2)
             {
                 Mesh mesh = new Mesh();
-                mesh.Vertices.Add(e.Nodes[0].Coordinate); //0
-                mesh.Vertices.Add(e.Nodes[1].Coordinate); //1
-                mesh.Vertices.Add(e.Nodes[2].Coordinate); //2
+                mesh.Vertices.Add(e.Nodes[0].Coordinate); 
+                mesh.Vertices.Add(e.Nodes[1].Coordinate); 
+                mesh.Vertices.Add(e.Nodes[2].Coordinate); 
                 mesh.Faces.AddFace(0, 1, 2);
                 mesh.Normals.ComputeNormals();  //Control if needed
                 mesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
@@ -237,39 +237,6 @@ namespace MeshPoints.CreateMesh
         /// Creates a grid of points in a bounding box <see cref="Brep"/> based on a given number of wanted internal nodes in a surface.
         /// </summary>
         /// <returns>A List of <see cref="Point3d"/> describing a grid of points in a rectangle.</returns>
-        private List<Point3d> CreatePointGridInBoundingBox(Brep boundingBox, Brep meshSurface, double nodeCount)
-        {
-            var gridPoints = new List<Point3d>(); // output
-            
-            // boundingBoxEdgeNodeCount is crudely implemented and is only accurate at a high number of nodes && a quadratic bounding box.
-            // It tries to calculate how many evenly spaced nodes we need on the edge of the bounding box to 
-            // achieve the wanted amount of inner nodes. Send an e-mail to magnus@kunnas.no for explanation.
-            boundingBox.Scale(0.90);
-            var boundingBoxEdgeNodeCount = Math.Sqrt(nodeCount * boundingBox.GetArea() / meshSurface.GetArea()) * 4 - 4;
-
-            List<List<Point3d>> edgeGrid = CreateEdgePointsByCount(boundingBox, boundingBoxEdgeNodeCount); 
-
-            var edge1 = edgeGrid[0];
-            var edge2 = edgeGrid[1];
-            var edge3 = edgeGrid[2];
-            // var edge4 = edgeGrid[3]; // not used
-            edge3.Reverse();
-
-            var pointsInUdirection = edge1.Count();
-            var pointsInVdirection = edge2.Count();
-
-            for(int i = 0; i<pointsInUdirection; i++)
-            {
-                double[] tValues;
-                var line = new LineCurve(edge1[i], edge3[i]); // draw lines between points on opposite edges
-                tValues = line.DivideByCount(pointsInVdirection - 1, true); // # of divisions is one less than # of nodes along edge
-                foreach (double t in tValues)
-                {
-                    gridPoints.Add(line.PointAt(t));
-                }
-            }
-            return gridPoints;
-        }
         private Tuple<List<Node>, List<Element>> ConvertToMainMeshClasses(List<qElement> globalqElementList)
         {
             // Create global qNode list

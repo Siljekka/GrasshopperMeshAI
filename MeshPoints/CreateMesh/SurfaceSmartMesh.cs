@@ -67,7 +67,6 @@ namespace MeshPoints.CreateMesh
             smartMesh.Type = "Surface";
             smartMesh.Geometry = brepGeometry;
 
-
             // 3. Generate grid of points on surface
             NurbsSurface nurbsSurface = NurbsSurface.CreateNetworkSurface(brep.Edges, 0, 0.0001, 0.0001, 0.0001, out int error); // make planar brep to nurbssurface
             List<Point3d> meshPoints = CreateGridOfPointsUV(nurbsSurface, u, v);
@@ -86,7 +85,6 @@ namespace MeshPoints.CreateMesh
             DA.SetData(1, smartMesh.Mesh);
         }
         
-
         /// <summary>
         /// Makes grid of points in U and V direction
         /// </summary>

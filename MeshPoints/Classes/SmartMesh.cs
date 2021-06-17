@@ -14,11 +14,11 @@ namespace MeshPoints.Classes
         public int nv { get; set; } //number of nodes in y-dir
         public int nw { get; set; } //number of nodes in z-dir
         public string Type { get; set; } // to do: inplementer
-        public Geometry Geometry { get; set; } // to do: temporary
+        public Geometry Geometry { get; set; }
         public List<List<List<Point3d>>> GridInformation {get; set;}
 
         // Constructors
-        public SmartMesh() // to do: sjekk om kan endres
+        public SmartMesh() 
         {
             //Empty constructor
         }
@@ -180,7 +180,7 @@ namespace MeshPoints.Classes
         {
             Mesh mesh = new Mesh();
 
-            // Cerate mesh vertices from node coordinates        
+            // Create mesh vertices from node coordinates        
             foreach (Node node in this.Nodes)
             {
                 mesh.Vertices.Add(node.Coordinate);

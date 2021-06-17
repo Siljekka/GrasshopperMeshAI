@@ -8,12 +8,12 @@ using System.Linq;
 
 namespace MeshPoints.Tools
 {
-    public class MeshToSmarMesh : GH_Component
+    public class MeshToSmartMesh : GH_Component
     {
         /// <summary>
         /// Initializes a new instance of the MeshToSmarMesh class.
         /// </summary>
-        public MeshToSmarMesh()
+        public MeshToSmartMesh()
           : base("TrinagleMesh To SmarMesh", "ToSM",
               "Transforms the class Mesh to class SmartMesh. The mesh must be composed of triangle elements.",
               "SmartMesh", "Tools")
@@ -135,7 +135,11 @@ namespace MeshPoints.Tools
                 {
                     elementMesh.Faces.AddFace(0, 1, 2, 3);
                 }
-                elementMesh.Faces.AddFace(0, 1, 2);
+                //elementMesh.Faces.AddFace(0, 1, 2);
+               
+                elementMesh.Normals.ComputeNormals();  //Control if needed
+                elementMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                elementMesh.Compact(); //to ensure that it calculate
                 element.Mesh = elementMesh;
 
                 // Add element to element list
@@ -253,7 +257,7 @@ namespace MeshPoints.Tools
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_MeshToSM;
             }
         }
 

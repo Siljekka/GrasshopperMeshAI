@@ -51,7 +51,6 @@ namespace MeshPoints.Tools
             DA.GetDataList(0,  smartMeshList);
 
             // Code
-
             SmartMesh mergedSmartMesh = new SmartMesh();
             List<List<List<Point3d>>> gridInformation = new List<List<List<Point3d>>>();
 
@@ -356,7 +355,7 @@ namespace MeshPoints.Tools
         {
             // Create grid grops, each node, grid[i], can move relative to neighbor grid nodes, grid[i+-1]. For nodes grid[0] and grid[endIndex] no translation.
 
-            // Assmune all mesh input are structured
+            // Assmume all mesh input are structured
             List<List<Point3d>> gridGroupU = new List<List<Point3d>>();
             List<List<Point3d>> gridGroupV = new List<List<Point3d>>();
 

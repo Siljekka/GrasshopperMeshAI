@@ -23,7 +23,7 @@ namespace MeshPoints.FiniteElementMethod
         /// </summary>
         public FEMSolver()
           : base("FEM Solver", "Solver",
-              "Solver for FEM problems. Can be used on geometries meshed with solid elements." +
+              "Solver for FEM problems meshed with solid elements." +
                 "Uses 3 translation DOFS pr node, linear shape functions, two Gauss Points and full integration.",
               "SmartMesh", "FEM")
         { 
@@ -70,8 +70,6 @@ namespace MeshPoints.FiniteElementMethod
             DA.GetDataList(2, boundaryConditions);
             DA.GetData(3, ref material);
 
-
-            // Code
 
             // 0. Initial step
             if (!DA.GetData(0, ref smartMesh)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid SmartMesh input."); return; }
@@ -133,7 +131,6 @@ namespace MeshPoints.FiniteElementMethod
             {
                nodalStress.Add(globalStress.Column(i).ToArray());
             }
-
 
             // Output
             DA.SetDataList(0, u1);
