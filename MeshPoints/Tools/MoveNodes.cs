@@ -86,7 +86,6 @@ namespace MeshPoints.Tools
                 if ((genesU.Count < oldMesh.Nodes.Count/2) | (genesV.Count < oldMesh.Nodes.Count/2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
                 if (oldMesh.Type == "Solid" & (genesW.Count < oldMesh.Nodes.Count/2)) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Must increase genes."); return; }
                 if (oldMesh.nu == 0 | oldMesh.nv == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Do not support SmartMesh made as unstructured."); return; }
-                // add warning if not even sym ..?
             }
 
             // 2. Inherit properties from old mesh
@@ -96,7 +95,6 @@ namespace MeshPoints.Tools
             newMesh.Type = oldMesh.Type;
             newMesh.Geometry = oldMesh.Geometry;
             Brep brep = oldMesh.Geometry.Brep;
-
 
             // 2. If sym-case, find the symmetry
             if (symLine != null)

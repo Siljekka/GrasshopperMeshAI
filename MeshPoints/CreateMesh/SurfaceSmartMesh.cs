@@ -116,37 +116,6 @@ namespace MeshPoints.CreateMesh
         } 
 
         /// <summary>
-        /// Create global nodes by assigning global id, coordinate, boundary condiditon in u and v direction
-        /// </summary>
-        /// <returns></returns>
-        List<Node> CreateNodes(List<Point3d> meshPoints, int nu, int nv)// to do: slett
-        {
-            List<Node> nodes = new List<Node>();
-            int uSequence = 0;
-            int vSequence = 0;
-            for (int i = 0; i < meshPoints.Count; i++)
-            {
-                bool BC_U = false;
-                bool BC_V = false;
-
-                // assign boundary condition
-                if (uSequence == 0 | uSequence == nu - 1) { BC_U = true; } // assign BC u-dir
-                if (vSequence == 0 | vSequence == nv - 1) { BC_V = true; } // assign BC v-dir
-
-                Node node = new Node(i, meshPoints[i], BC_U, BC_V); // assign global id and cooridinates
-
-                uSequence++;
-                if (uSequence == nu)
-                {
-                    vSequence++;
-                    uSequence = 0;
-                }
-                nodes.Add(node);
-            }
-            return nodes;
-        }
-
-        /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
         protected override System.Drawing.Bitmap Icon

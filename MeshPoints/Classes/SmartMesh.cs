@@ -101,7 +101,6 @@ namespace MeshPoints.Classes
 
             for (int i = 0; i < (nu - 1) * (nv - 1); i++) // loop elements
             {
-                Mesh mesh = new Mesh();
                 List<Node> elementNodes = new List<Node>();
                 List<int> connectivity = new List<int>();
                 connectivity.Add(counter);
@@ -112,7 +111,6 @@ namespace MeshPoints.Classes
                 foreach (int id in connectivity)
                 {
                     elementNodes.Add(nodes[id]);
-                    mesh.Vertices.Add(nodes[id].Coordinate);
                 };
 
                 Element element = new Element(i, elementNodes, connectivity);

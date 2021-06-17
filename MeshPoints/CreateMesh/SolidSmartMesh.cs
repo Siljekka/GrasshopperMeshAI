@@ -282,7 +282,6 @@ namespace MeshPoints.CreateMesh
         private List<Point3d> CreateGridOfPointsAtEachFloor(int u, int v, List<NurbsSurface> surfaceAtNw, DataTree<Point3d> railPoints)
         {
             List<Point3d> pointList = new List<Point3d>();
-            //DataTree<Point3d> points = new DataTree<Point3d>();
             Vector3d direction = Vector3d.Zero;
             for (int i = 0; i < surfaceAtNw.Count; i++) // loop floors
             {
