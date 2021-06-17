@@ -17,8 +17,11 @@ TARGET_EDGE_LENGTH = 0.4
 DATASET_SIZE = {
     4: 10,
     6: 12000,
+    7: 16000,
     8: 24000,
+    9: 30000,
     10: 48000,
+    11: 66000,
     12: 95000,
 }
 
@@ -72,7 +75,7 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     epochs = 3000
     batch_size = 512
 
-    model_path = f"model/nn1-{edge_count}gon"
+    model_path = f"model/{edge_count}gon-nn1"
 
     model = NN1_model_setup(edge_count)
 
@@ -156,7 +159,7 @@ def NN2_training(edge_count: int, raw_data: list) -> tf.keras.callbacks.History:
     epochs = 5000
     batch_size = 512
 
-    model_path = f"model/nn2-{edge_count}gon"
+    model_path = f"model/{edge_count}gon-nn2"
 
     model = NN2_model_setup(edge_count)
 
@@ -239,9 +242,7 @@ def NN2_wrapper(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.H
     return history
 
 
-if __name__ == "__main__":
-    edge_count = 8
-
+def main(edge_count=8) -> None:
     # 1. Create dataset
     print(f"=== Creating dataset for edge count: {edge_count} ===\n")
     mesh_data = create_meshed_contour_dataset(edge_count)
@@ -255,21 +256,6 @@ if __name__ == "__main__":
     nn2_training_history = []
     nn2_training_history.append(NN2_wrapper(edge_count, mesh_data))
 
-    # ======================
-    #        PLOTTING
-    #    (w/o tensorboard)
-    # ======================
-    # for history in nn1_training_history:
-    #     plt.plot(history.history['loss'], label='training loss')
-    #     plt.plot(history.history['val_loss'], label='validation loss')
-    #     plt.legend()
-    #     plt.xlabel("Epochs")
-    #     plt.ylabel("MAE")
 
-    # for history_set in nn2_training_history:
-    #     for history in history_set:
-    #         plt.plot(history.history['loss'], label='training loss')
-    #         plt.plot(history.history['val_loss'], label='validation loss')
-    #         plt.legend()
-    #         plt.xlabel("Epochs")
-    #         plt.ylabel("MSE")
+if __name__ == "__main__":
+    main()
