@@ -135,7 +135,11 @@ namespace MeshPoints.Tools
                 {
                     elementMesh.Faces.AddFace(0, 1, 2, 3);
                 }
-                elementMesh.Faces.AddFace(0, 1, 2);
+                //elementMesh.Faces.AddFace(0, 1, 2);
+               
+                elementMesh.Normals.ComputeNormals();  //Control if needed
+                elementMesh.FaceNormals.ComputeFaceNormals();  //want a consistant mesh
+                elementMesh.Compact(); //to ensure that it calculate
                 element.Mesh = elementMesh;
 
                 // Add element to element list

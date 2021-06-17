@@ -271,7 +271,7 @@ namespace MeshPoints.Tools
                 // to do: temporay solution for E_frontFail
             }
 
-            DoGlobalSmoothing(globalEdgeList, globalElementList);
+            //DoGlobalSmoothing(globalEdgeList, globalElementList);
             
 
             // ___________Transform to main mesh classes_______________
@@ -285,7 +285,7 @@ namespace MeshPoints.Tools
             var meshValues = CalculateQuality(globalElementList);
             double avgQuality = meshValues.Item1;
             double badestQuality = meshValues.Item2;
-            surfaceMesh.Mesh = meshValues.Item3;
+            //surfaceMesh.Mesh = meshValues.Item3;
             
 
 
@@ -300,8 +300,8 @@ namespace MeshPoints.Tools
             DA.SetData(6, E_k_right);
             /*DA.SetDataList(6, nodesTest);
             DA.SetDataList(7, v);
-            DA.SetDataList(8, p);
-            DA.SetData(9, e);*/
+            DA.SetDataList(8, p);*/
+            DA.SetData(9, surfaceMesh);
 
         }
 
@@ -1132,10 +1132,6 @@ namespace MeshPoints.Tools
                 if (globalElementList[i].IsQuad) { mesh.Faces.AddFace(0, 1, 2, 3);  }
                 else { mesh.Faces.AddFace(0, 1, 2); }
      
-                if (ARList[i] > 0.9) { mesh.VertexColors.CreateMonotoneMesh(Color.Green); }
-                else if (ARList[i] > 0.7) { mesh.VertexColors.CreateMonotoneMesh(Color.Yellow);}
-                else if (ARList[i] > 0.6){mesh.VertexColors.CreateMonotoneMesh(Color.Orange);}
-                else if (ARList[i] > 0){mesh.VertexColors.CreateMonotoneMesh(Color.Red);}
                 colorMesh.Append(mesh);
             }
             return Tuple.Create(avgQuality, badestQuality, colorMesh);

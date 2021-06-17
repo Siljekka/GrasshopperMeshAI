@@ -17,7 +17,7 @@ namespace MeshPoints.MachineLearning
         /// Initializes a new instance of the CreateTriangleMeshML class.
         /// </summary>
         public CreateTriangleMeshML()
-          : base("Create Triangle Mesh (ML)", "NN2",
+          : base("Triangle Mesh (ML)", "NN2",
               "Creates a triangle mesh based on predictions from neural network.",
               "SmartMesh", "Machine Learning")
         {
