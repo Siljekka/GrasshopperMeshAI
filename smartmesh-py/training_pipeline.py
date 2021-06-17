@@ -72,7 +72,7 @@ def NN1_training(edge_count: int, raw_data: pd.DataFrame) -> tf.keras.callbacks.
     epochs = 3000
     batch_size = 512
 
-    model_path = f"model/nn1-{edge_count}gon"
+    model_path = f"model/{edge_count}gon-nn1"
 
     model = NN1_model_setup(edge_count)
 
@@ -156,7 +156,7 @@ def NN2_training(edge_count: int, raw_data: list) -> tf.keras.callbacks.History:
     epochs = 5000
     batch_size = 512
 
-    model_path = f"model/nn2-{edge_count}gon"
+    model_path = f"model/{edge_count}gon-nn2"
 
     model = NN2_model_setup(edge_count)
 
