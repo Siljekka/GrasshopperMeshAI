@@ -66,14 +66,14 @@ namespace MeshPoints.MachineLearning
                 //Y4 = Convert.ToSingle(nodeList[3].Coordinate.Y),
                 X5 = Convert.ToSingle(nodeList[5].Coordinate.X),
                 Y5 = Convert.ToSingle(nodeList[5].Coordinate.Y),
-                X6 = Convert.ToSingle(nodeList[9].Coordinate.X),
-                Y6 = Convert.ToSingle(nodeList[9].Coordinate.Y),
+                X6 = Convert.ToSingle(nodeList[6].Coordinate.X),
+                Y6 = Convert.ToSingle(nodeList[6].Coordinate.Y),
                 //X7 = Convert.ToSingle(nodeList[6].Coordinate.X),
                 //Y7 = Convert.ToSingle(nodeList[6].Coordinate.Y),
                 //X8 = Convert.ToSingle(nodeList[7].Coordinate.X),
                 //Y8 = Convert.ToSingle(nodeList[7].Coordinate.Y),
-                X9 = Convert.ToSingle(nodeList[6].Coordinate.X),
-                Y9 = Convert.ToSingle(nodeList[6].Coordinate.Y),
+                X9 = Convert.ToSingle(nodeList[9].Coordinate.X),
+                Y9 = Convert.ToSingle(nodeList[9].Coordinate.Y),
                 X10 = Convert.ToSingle(nodeList[10].Coordinate.X),
                 Y10 = Convert.ToSingle(nodeList[10].Coordinate.Y),
                 //X11 = Convert.ToSingle(nodeList[10].Coordinate.X),
@@ -104,7 +104,7 @@ namespace MeshPoints.MachineLearning
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_MLQuality;
             }
         }
 

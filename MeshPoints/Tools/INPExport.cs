@@ -45,7 +45,7 @@ namespace MeshPoints
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("inp", "inp", "String viewing inp-file.", GH_ParamAccess.list); //todo: change name.
+            pManager.AddGenericParameter("inp", "inp", "String viewing inp-file.", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -73,17 +73,16 @@ namespace MeshPoints
             // Variables
             List<string> inpText = new List<string>();
             string elementType = "Empty";
-            string partName = "Geometry"; //todo: fix name
-            string sectionName = "Section"; //todo: fix name
+            string partName = "Geometry"; 
+            string sectionName = "Section"; 
             string materialName = "Steel";
 
 
             // 0. Check input.
             if (!DA.GetData(0, ref smartMesh)) return;
-            
 
             // 1. Set material properties.
-            if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } //todo: egendefinert på engelsk
+            if (Emodul != 210000 | nu != 0.3) { materialName = "custom material"; } 
 
             // 2. Set element type dependent on solid or surface mesh.
             if (smartMesh.Type == "Solid") { elementType = "C3D8"; }
@@ -130,7 +129,7 @@ namespace MeshPoints
             List<Element> elements = solidMesh.Elements;
 
             inpText.Add("*Heading");
-            inpText.Add("**<Input: text describing the problem being simulated.>"); //todo: fix description
+            inpText.Add("**<Input: text describing the problem being simulated.>"); 
             inpText.Add("**SI Units");
             inpText.Add("**x1=x, x2=y, x3=z");
             inpText.Add("*Preprint, echo=YES, model=YES, history=YES"); //recomended. Gives printout of the input file and of the model and history definition data
@@ -184,7 +183,7 @@ namespace MeshPoints
 
             // Section
             inpText.Add(String.Format("** Section: {0}", sectionName));
-            inpText.Add(String.Format("*Solid Section, elset=Whole, material={0}", materialName));//todo: fix materialinput;
+            inpText.Add(String.Format("*Solid Section, elset=Whole, material={0}", materialName));
             inpText.Add(",");
             inpText.Add("*End Part");
 
@@ -199,7 +198,6 @@ namespace MeshPoints
             inpText.Add("*End Instance");
             inpText.Add("**");
             inpText.Add("*End Assembly");
-            //todo: check extra elset, nset
 
             // Material
             inpText.Add("**");
@@ -213,12 +211,12 @@ namespace MeshPoints
             inpText.Add("**");
             inpText.Add("** BOUNDARY CONDITIONS");
             inpText.Add("**");
-            inpText.Add("** Name: BCType1 Type: Displacement/Rotation"); //fix name
+            inpText.Add("** Name: BCType1 Type: Displacement/Rotation"); 
             inpText.Add("*Boundary");
-            inpText.Add("<Input: Fill out relevant BC>"); //todo: fill in BC
-            inpText.Add("** Name: BCType2 Type: Displacement/Rotation"); //fix name
+            inpText.Add("<Input: Fill out relevant BC>"); 
+            inpText.Add("** Name: BCType2 Type: Displacement/Rotation"); 
             inpText.Add("**Boundary");
-            inpText.Add("**<Input: Fill out relevant BC>"); //todo: fill in BC
+            inpText.Add("**<Input: Fill out relevant BC>"); 
 
             // STEP
             inpText.Add("**----------------------------------------------------------------");
@@ -233,16 +231,15 @@ namespace MeshPoints
             // Load
             inpText.Add("** LOADS");
             inpText.Add("**");
-            inpText.Add("** Name: LoadType   Type: <Input: Type of load>"); //todo: fix 
+            inpText.Add("** Name: LoadType   Type: <Input: Type of load>"); 
             inpText.Add("<Input: Fill out relevant loads>");
             inpText.Add("<Input: Fill out relevant loads>");
             inpText.Add("**");
 
             // OUTPUT
-            //todo: fix output
             inpText.Add("**OUTPUT REQUESTS");
             inpText.Add("**");
-            inpText.Add("*Restart, write, frequency=0"); //fix for solid
+            inpText.Add("*Restart, write, frequency=0"); 
             inpText.Add("**");
 
             inpText.Add("**FIELD OUTPUT: F-Output-1");
@@ -275,7 +272,7 @@ namespace MeshPoints
             List<Node> nodes = surfaceMesh.Nodes;
             List<Element> elements = surfaceMesh.Elements;
             inpText.Add("*Heading");
-            inpText.Add("**< text describing the problem being simulated.>"); //todo: fix description
+            inpText.Add("**< text describing the problem being simulated.>"); 
             inpText.Add("**SI Units");
             inpText.Add("**x1=x, x2=y, x3=z");
             inpText.Add("*Preprint, echo=YES, model=YES, history=YES"); //recomended. Gives printout of the input file and of the model and history definition data
@@ -325,7 +322,7 @@ namespace MeshPoints
 
             // Section
             inpText.Add(String.Format("**Section: {0}", sectionName));
-            inpText.Add(String.Format("*Shell General Section, elset=Whole, material={0}", materialName));//todo: fix materialinput
+            inpText.Add(String.Format("*Shell General Section, elset=Whole, material={0}", materialName));
             inpText.Add(String.Format("{0},", sectionThickness));
             inpText.Add("*End Part");
 
@@ -340,7 +337,6 @@ namespace MeshPoints
             inpText.Add("*End Instance");
             inpText.Add("**");
             inpText.Add("*End Assembly");
-            //todo: check extra elset, nset
 
             // Material
             inpText.Add("**");
@@ -375,13 +371,12 @@ namespace MeshPoints
             inpText.Add("**");
             inpText.Add("**LOADS");
             inpText.Add("**");
-            inpText.Add("**Name: LoadType   Type: <Input: Type of load>"); //todo: fix 
+            inpText.Add("**Name: LoadType   Type: <Input: Type of load>"); 
             inpText.Add("<Input: Fill out relevant loads>");
             inpText.Add("<Input: Fill out relevant loads>");
             inpText.Add("**");
 
             // OUTPUT
-            //todo: fix output
             inpText.Add("**OUTPUT REQUESTS");
             inpText.Add("**");
             inpText.Add("*Restart, write, frequency=0"); //fix for solid

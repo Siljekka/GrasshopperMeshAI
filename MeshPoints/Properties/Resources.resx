@@ -178,6 +178,15 @@
   <data name="Icon_MeshToSM" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\Icon_MeshToSM.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Icon_MLCount" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Icon_MLCount.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_MLQuality" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Icon_MLQuality.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_MLTriangle" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Icon_MLTriangle.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Icon_MoveCorners" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resources\icon_movecorners.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -207,6 +216,9 @@
   </data>
   <data name="Icon_SweepSolid" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resources\icon_sweepsolid.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Icon_Switch" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Icon_Switch.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Icon_TargetLength" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\Icon_TargetLength.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>

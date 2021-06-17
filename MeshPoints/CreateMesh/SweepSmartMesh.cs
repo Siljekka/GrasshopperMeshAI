@@ -101,7 +101,6 @@ namespace MeshPoints.CreateMesh
             {
                 if (!indexAdjecentFaces.Contains(brepFace.IndexOf(brepFace[i])))
                 {
-                    //indexAdjecentEdges.AddRange(brepFace[bottomFaceIndex].AdjacentEdges()); // bottom face edges, to do: slett
                     indexAdjecentEdges.AddRange(brepFace[i].AdjacentEdges()); //top face edges
                     break;
                 }
@@ -157,7 +156,7 @@ namespace MeshPoints.CreateMesh
                 Point3d pt3 = brepBottomFace.PointAt(1, 1);
                 Point3d pt2 = brepBottomFace.PointAt(0, 1);
                 List<Point3d> newBasePt = new List<Point3d>() { pt1, pt2, pt3, pt4 };
-                for (int i = 0; i < railPoints.BranchCount; i++)// lopp
+                for (int i = 0; i < railPoints.BranchCount; i++)
                 {
                     Point3d pt = railPoints.Branch(i)[0];
                     foreach (Point3d basePt in newBasePt)
@@ -180,7 +179,6 @@ namespace MeshPoints.CreateMesh
             {
                 Vector3d vec1 = railPoints.Branch(i)[1] - railPoints.Branch(i)[0];
                 Vector3d vec2 = railPoints.Branch(i)[3] - railPoints.Branch(i)[0];
-                Vector3d normal = Vector3d.CrossProduct(vec1, vec2); // to do: Hilde, slett?
                 Plane plane = new Plane(railPoints.Branch(i)[0], vec1, vec2);
                 planes.Add(plane);
             }
@@ -204,7 +202,7 @@ namespace MeshPoints.CreateMesh
                 // Creating global nodes
                 for (int j = 0; j < nodetest2.Count; j++)
                 {
-                    Node nodeToTransform = nodetest2[j];//meshToTransform.Nodes[j];
+                    Node nodeToTransform = nodetest2[j];
                     Point3d pointToTransform = nodeToTransform.Coordinate;
                     pointToTransform.Transform(tranformation);
                     int idJump = numNodesInPlane;

@@ -17,7 +17,7 @@ namespace MeshPoints.MachineLearning
         /// Initializes a new instance of the CreateTriangleMeshML class.
         /// </summary>
         public CreateTriangleMeshML()
-          : base("Create Triangle Mesh (ML)", "NN2",
+          : base("Triangle Mesh (ML)", "NN2",
               "Creates a triangle mesh based on predictions from neural network.",
               "SmartMesh", "Machine Learning")
         {
@@ -260,7 +260,7 @@ namespace MeshPoints.MachineLearning
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return null;
+                return Properties.Resources.Icon_MLTriangle;
             }
         }
 
