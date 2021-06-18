@@ -113,7 +113,6 @@ namespace MeshPoints.CreateMesh
             return pt;
         } 
 
-
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
