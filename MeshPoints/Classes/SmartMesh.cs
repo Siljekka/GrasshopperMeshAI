@@ -186,45 +186,37 @@ namespace MeshPoints.Classes
                 mesh.Vertices.Add(node.Coordinate);
             }
 
-            // Create mesh faces from element connectivity
-            if (this.Elements[0].Type == "Quad")
+            foreach (Element element in this.Elements)
             {
-                foreach (Element element in this.Elements)
+                // Create mesh faces from element connectivity
+                if (element.Type == "Quad")
                 {
+
                     mesh.Faces.AddFace(element.Connectivity[0], element.Connectivity[1], element.Connectivity[2], element.Connectivity[3]);
                 }
-            }
-            else if (this.Elements[0].Type == "Hex")
-            {
-                foreach (Element element in this.Elements)
+                else if (element.Type == "Hex")
                 {
-                    int a = element.Connectivity[0];
-                    int b = element.Connectivity[1];
-                    int c = element.Connectivity[2];
-                    int d = element.Connectivity[3];
-                    int e = element.Connectivity[4];
-                    int f = element.Connectivity[5];
-                    int g = element.Connectivity[6];
-                    int h = element.Connectivity[7];
+                        int a = element.Connectivity[0];
+                        int b = element.Connectivity[1];
+                        int c = element.Connectivity[2];
+                        int d = element.Connectivity[3];
+                        int e = element.Connectivity[4];
+                        int f = element.Connectivity[5];
+                        int g = element.Connectivity[6];
+                        int h = element.Connectivity[7];
 
-                    mesh.Faces.AddFace(a, b, f, e);
-                    mesh.Faces.AddFace(b, c, g, f);
-                    mesh.Faces.AddFace(c, d, h, g);
-                    mesh.Faces.AddFace(d, a, e, h);
-                    mesh.Faces.AddFace(a, b, c, d);
-                    mesh.Faces.AddFace(e, f, g, h);
+                        mesh.Faces.AddFace(a, b, f, e);
+                        mesh.Faces.AddFace(b, c, g, f);
+                        mesh.Faces.AddFace(c, d, h, g);
+                        mesh.Faces.AddFace(d, a, e, h);
+                        mesh.Faces.AddFace(a, b, c, d);
+                        mesh.Faces.AddFace(e, f, g, h);
                 }
-            }
-            else if (this.Elements[0].Type == "Triangle")
-            {
-                foreach (Element element in this.Elements)
+                else if (element.Type == "Triangle")
                 {
-                    mesh.Faces.AddFace(element.Connectivity[0], element.Connectivity[1], element.Connectivity[2]);
+                        mesh.Faces.AddFace(element.Connectivity[0], element.Connectivity[1], element.Connectivity[2]);
                 }
-            }
-            else if (this.Elements[0].Type == "Tet")
-            {
-                foreach (Element element in this.Elements)
+                else if (element.Type == "Tet")
                 {
                     int a = element.Connectivity[0];
                     int b = element.Connectivity[1];
@@ -238,8 +230,9 @@ namespace MeshPoints.Classes
                     mesh.Faces.AddFace(a, b, e, d);
                     mesh.Faces.AddFace(b, c, f, e);
                     mesh.Faces.AddFace(c, a, d, f);
-                }               
+                }
             }
+            
 
             mesh.Normals.ComputeNormals();
             mesh.Compact();

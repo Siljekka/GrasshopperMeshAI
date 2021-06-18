@@ -28,14 +28,9 @@ namespace MeshPoints.Tools
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Triangle mesh", "trimesh", "Input a trinagle mesh", GH_ParamAccess.item);
-            pManager.AddNumberParameter("# elements to remesh", "number", "Input an integer", GH_ParamAccess.item, 1);
-            pManager.AddGenericParameter("Local smoothing", "tI", "", GH_ParamAccess.item);
-            pManager.AddNumberParameter("number iteration before stop", "temp", "Temoprary: number of iteration to perform", GH_ParamAccess.item, 2);
+            pManager.AddNumberParameter("Remesh count", "number", "Input the number of creating a quad element. Optional if full remesh.", GH_ParamAccess.item, 1);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
-            pManager[2].Optional = true;
-            pManager[3].Optional = true;
-
         }
 
         /// <summary>
@@ -43,16 +38,11 @@ namespace MeshPoints.Tools
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Front edges", "element", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Edge list", "11", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Element list", "10", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("qElements", "element", "", GH_ParamAccess.list);
-            pManager.AddGenericParameter("E_front", "element", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("E_k_left", "element", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("E_k_right ", "element", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("avg quality ", "q", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("badest quality ", "bq", "", GH_ParamAccess.item);
-            pManager.AddGenericParameter("color mesh", "bq", "m", GH_ParamAccess.item);
+            pManager.AddGenericParameter("SmartMesh", "element", "SmartMesh", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Edges", "element", "List of edges, qEdge.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Elements", "11", "List of elements, qElement.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Front edges", "10", "List of front edges, qEdge.", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Last element", "element", "Last element made.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -64,18 +54,12 @@ namespace MeshPoints.Tools
             // Input
             Mesh mesh = new Mesh();
             double numberElementsToRemesh = 0;
-            double iterationsToPerformBeforeStop = 0;
-            bool performeLocalSmoothing = false;
             
             DA.GetData(0, ref mesh);
             DA.GetData(1, ref numberElementsToRemesh);
-            DA.GetData(2, ref performeLocalSmoothing);
-            DA.GetData(3, ref iterationsToPerformBeforeStop);
 
             if (!DA.GetData(0, ref mesh)) return; 
-            if (!DA.GetData(1, ref numberElementsToRemesh)) return; 
-            if (!DA.GetData(2, ref performeLocalSmoothing)) return; 
-            if (!DA.GetData(3, ref iterationsToPerformBeforeStop)) return;
+            if (!DA.GetData(1, ref numberElementsToRemesh)) return;
 
 
             // Get initial edges and elements using mesh topology properties
@@ -87,26 +71,20 @@ namespace MeshPoints.Tools
             List<qEdge> frontEdges = GetFrontEdges(globalEdgeList);
 
             // check if even number of boundary nodes
-            //if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Need the initial mesh to have an even number of boundary nodes to make it an all quad mesh"); return; }
             if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Need the initial mesh to have an even number of boundary nodes to make it an all quad mesh"); }
-            if (numberElementsToRemesh == 0 | iterationsToPerformBeforeStop == 0) return;
+            if (numberElementsToRemesh == 0) return;
 
             // temporary variables
             qEdge E_k_left = new qEdge(); // left side edge of quad
             qEdge E_k_right = new qEdge(); // right side edge of quad
             qEdge E_front = new qEdge(); // bottom of quad
             qEdge E_top = new qEdge(); // top if quad
-            int iterationCounter = 0;
             qElement quadElement = new qElement();
             qEdge unselectedEdge = new qEdge();
 
             for (int n = 0; n < numberElementsToRemesh; n++)
             {
-                // Temporary stop
-                if (iterationCounter == iterationsToPerformBeforeStop) { AddRuntimeMessage(GH_RuntimeMessageLevel.Blank, "Iteration stop"); break; }
-                iterationCounter++;
                 ClearRuntimeMessages();
-
 
                 // Logical values for succesful selection of edges
                 bool E_k_left_performed = true;
@@ -129,35 +107,15 @@ namespace MeshPoints.Tools
                 E_front = E_frontAndEdgeState.Item1;
                 var edgeState = E_frontAndEdgeState.Item2;
                 unselectedEdge.Unselectable = false;
-                if (iterationCounter == 115)
-                {
-                    //break;
-                }
 
-                bool loopOf4Edges = LoopControll(frontEdges, globalEdgeList, globalElementList); // to do: legg inn krit når kun 8 edges igjen
+                bool loopOf4Edges = LoopControll(frontEdges, globalEdgeList, globalElementList); 
                 CleanUpChevorns(globalEdgeList, globalElementList, frontEdges);
 
                 if (loopOf4Edges)
                 {
                     continue;
                 }
-                /*
-                 if (loop.Count == 8)
-                {
-                    foreach (qEdge edge in loop)
-                    {
-                        qElement frontElement = edge.GetFrontElement();
-                        foreach (qEdge elementEdge in frontElement.EdgeList)
-                        {
-                            if (IsFrontLoopsEven(frontEdges, elementEdge, globalEdgeList).Item1)
-                            { 
-                                E_front = 
-                            }
-                        }
-                    }              
-                }
-                 
-                 */
+
                 //________________ check special case________________
                 var specialCaseValues = CheckSpecialCase(E_front, globalEdgeList, globalElementList, frontEdges);
                 bool seamAnglePerformed = specialCaseValues.Item1;
@@ -245,64 +203,26 @@ namespace MeshPoints.Tools
                     continue;
                 }
 
-
                 //________________ quadrilateral formation________________
                 List<qEdge> quadEdges = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
                 quadElement = CreateQuadElement(quadEdges, globalEdgeList, globalElementList, frontEdges);
 
 
                 // ________________Local smoothing________________
-                if (performeLocalSmoothing)
-                { DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); }
-                /*
-                // to do: fix....
-                if (!IsFrontLoopsEven(frontEdges, null, globalEdgeList).Item1)
-                {
-                    globalElementList = globalElementListBackUp; // reset changes made in the iteration
-                    globalEdgeList = globalEdgeListBackUp; // reset changes made in the iteration
-                    E_front.Unselectable = true;
-                    unselectedEdge = E_front;
-                    n--;
-                    continue;
-                }*/
-
-                // to do: what if closing front og special case?
-                // to do: apply local smoothing for seamAngle
-                // to do: temporay solution for E_frontFail
-            }
-
-            //DoGlobalSmoothing(globalEdgeList, globalElementList);
-            
+                 DoLocalSmoothing(quadElement, globalEdgeList, frontEdges, globalElementList); 
+            }            
 
             // ___________Transform to main mesh classes_______________
             var meshProperties = ConvertToMainMeshClasses(globalElementList);
             List<Node> nodes = meshProperties.Item1;
             List<Element> elements = meshProperties.Item2;
             SmartMesh surfaceMesh = new SmartMesh(nodes, elements, "Surface");
-
-
-            List<qEdge> test = new List<qEdge>() { E_front, E_k_right, E_k_left, E_top };
-            var meshValues = CalculateQuality(globalElementList);
-            double avgQuality = meshValues.Item1;
-            double badestQuality = meshValues.Item2;
-            //surfaceMesh.Mesh = meshValues.Item3;
-            
-
-
-
-           
-            DA.SetDataList(0, frontEdges);
+          
+            DA.SetData(0, surfaceMesh);
             DA.SetDataList(1, globalEdgeList);
             DA.SetDataList(2, globalElementList);
-            DA.SetData(3, quadElement);
-            DA.SetData(4, E_front);
-            DA.SetData(5, E_k_left);
-            DA.SetData(6, E_k_right);
-            /*DA.SetDataList(6, nodesTest);
-            DA.SetDataList(7, v);
-            DA.SetDataList(8, p);*/
-            DA.SetData(9, surfaceMesh);
-
+            DA.SetDataList(3, frontEdges);
+            DA.SetData(4, quadElement);
         }
 
         #region Methods
@@ -689,7 +609,7 @@ namespace MeshPoints.Tools
         }
 
         // _________________________________________ for topology  _______________________________________________
-        private qNode GetNodeOfFrontEdge(int nodeToEvaluate, qEdge edge) // to do: flytt til edge
+        private qNode GetNodeOfFrontEdge(int nodeToEvaluate, qEdge edge)
         {
             // summary: get a node of a front edge, 0=left, 1=right
             qNode sharedNode = new qNode();
@@ -1073,69 +993,9 @@ namespace MeshPoints.Tools
                     else { existingEdgeIsClosingFront = true; }
                 }
             }
-
-
-            // to do: temporary, need to find a correct solution            
-            // to do: delete
-            /*
-            List<qNode> notNodeCandidates = new List<qNode>();
-                foreach (qEdge edge in GetFrontEdgesConnectedToNode(N_k, globalEdgeList))
-                {
-                    foreach (qEdge edgeConncected in GetConnectedEdges(GetOppositeNode(N_k, edge), globalEdgeList))
-                    {
-                        notNodeCandidates.Add(edgeConncected.StartNode);
-                        notNodeCandidates.Add(edgeConncected.EndNode);
-                    }
-                }
-
-                if (theta_i_list_sorted[0] < thetaToleranceForClosing)
-                {
-                    N_m = GetOppositeNode(N_k, E_i_candidates_sorted[0]);
-                    if (IsFrontNode(N_m, frontEdges) & !notNodeCandidates.Contains(N_m)) // to do: change this to another criterion.
-                    { 
-                        existingEdgeIsClosingFront = IsFrontNode(N_m, frontEdges);
-                    }
-                }*/
                 return existingEdgeIsClosingFront;
         }
-        private Tuple<double, double, Mesh> CalculateQuality(List<qElement> globalElementList) // to do: more qualities?
-        {
-            // summary: calculate quality aspect ratio and create color mesh
-            double avgQuality = 0;
-            double badestQuality = 0;
-            List<double> ARList = new List<double>();
 
-            foreach (qElement element in globalElementList)
-            {
-                double maxEdgeLength = 0;
-                double minEdgeLength = 10000;
-                foreach(qEdge edge in element.EdgeList)
-                {
-                    if (edge.Length < minEdgeLength) { minEdgeLength = edge.Length;}
-                    if (edge.Length > maxEdgeLength) { maxEdgeLength = edge.Length; }
-                }
-                double AR = minEdgeLength / maxEdgeLength;
-                ARList.Add(AR);
-                avgQuality = avgQuality + AR;
-            }
-
-            badestQuality = ARList.Min();
-            avgQuality = Math.Round(avgQuality / globalElementList.Count, 3);
-
-            Mesh colorMesh = new Mesh();
-            for (int i = 0; i < globalElementList.Count; i++)
-            {
-                Mesh mesh = new Mesh();
-                List<qNode> nodes = globalElementList[i].GetNodesOfElement();
-                foreach (qNode node in nodes) {mesh.Vertices.Add(node.Coordinate);}
-
-                if (globalElementList[i].IsQuad) { mesh.Faces.AddFace(0, 1, 2, 3);  }
-                else { mesh.Faces.AddFace(0, 1, 2); }
-     
-                colorMesh.Append(mesh);
-            }
-            return Tuple.Create(avgQuality, badestQuality, colorMesh);
-        }
         private bool LoopControll(List<qEdge> frontEdges, List<qEdge> globalEdgeList, List<qElement> globalElementList)
         {
             // summary: check if E_k_left and E_k_right is in same loop
@@ -3224,18 +3084,7 @@ namespace MeshPoints.Tools
                         else if (tr > 2.5 & tr <= 20)
                         {
                             // silje comment:  Gjør koden mindre: Ta ut edge-lister fra elementene og connectedEdges. Slå sammen til en list. Loop foreach edge add dersom edge ikke er sharedEdge eller front?.
-                            /*
-                                List<qEdge> edgesToLoop = new List<qEdge>();
-                                edgesToLoop.AddRange(quadElements[0].EdgeList);
-                                edgesToLoop.AddRange(quadElements[1].EdgeList);
-                                edgesToLoop.AddRange(connectedEdges);
-
-                            foreach(qEdge edge in edgesToLoop)
-                            {
-                                (!IsFrontEdge(edge) & edge != sharedEdge) { sumSurroundingEdges = edge1.Length + sumSurroundingEdges; }
-                                if (connectedEdges.Contain(edge)) {n++;}
-                            }
-                            */
+      
                             for (int i = 0; i < 4; i++)
                             {
                                 qEdge edge1 = quadElements[0].EdgeList[i];
@@ -3283,7 +3132,7 @@ namespace MeshPoints.Tools
             
             Point3d smoothNode = new Point3d(Ni.Coordinate.X + deltaI.X, Ni.Coordinate.Y + deltaI.Y, Ni.Coordinate.Z + deltaI.Z);
             return smoothNode;
-        } // todo: check if this is OK
+        } 
         private Tuple<Vector3d,Vector3d> TrueIsoparametricSmooth(qNode Ni, List<qElement> quadElements)
         {
             // summary: get translations vectors to perfome true isoparametric smoothing
@@ -3336,7 +3185,7 @@ namespace MeshPoints.Tools
             Vi_mark = ((double)1 / (double)numberOfConnectedQuads) * vectorSum;
             deltaA =  Vi_mark - Vi;
             return Tuple.Create(Vi_mark, deltaA);
-        } // todo: check if this is OK
+        } 
         private Vector3d GetAngularSmoothness(qNode Ni, qNode Nj, double ld, bool Ni_IsFrontNode, List<qEdge> globalEdgeList) 
         {
             // summary: get a translation vector to performe angular smoothing
@@ -3447,7 +3296,7 @@ namespace MeshPoints.Tools
                 bisectVector.Rotate(0.5 * angle, Vector3d.ZAxis); // todo: not for 3d surface, make axis for normal to plane (vec1, vec2)
                 bisectVector.Unitize();
                 return bisectVector;
-            } // todo: test if this is OK
+            } 
         private List<qEdge> GetFrontEdgesConnectedToNode(qNode node, List<qEdge> globalEdgeList)
             {
                 // summary: get front edges connected to a node
@@ -3482,7 +3331,7 @@ namespace MeshPoints.Tools
                 nodeFrontEdges.Add(nodeRightFront);
 
                 return nodeFrontEdges;
-        } //todo: test if this is OK
+        } 
 
         // __________________________________________ Global smoothing ______________________________________________________
         //
